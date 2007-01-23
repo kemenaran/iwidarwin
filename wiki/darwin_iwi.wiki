@@ -1,6 +1,5 @@
 #summary readm me,first.
 #labels top
-#label feature
 = Introduction =
 
 this is development information to port Intel Wireless Driver  to Darwin and Mac OS X.
@@ -23,6 +22,5 @@ this is development information to port Intel Wireless Driver  to Darwin and Mac
 irc.macspeak.net
 
   #darwin_iwi
-
 
 
