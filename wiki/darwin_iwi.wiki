@@ -17,6 +17,12 @@ this is development information to port Intel Wireless Driver  to Darwin and Mac
  * [DevMemo Development Information]
 
 
+= IRC =
+irc.macspeak.net
+
+  #darwin_iwi
+
+
 
 
 
