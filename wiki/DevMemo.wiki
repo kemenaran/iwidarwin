@@ -1,5 +1,5 @@
 #labels development,link
-#Development Informations
+Development Informations. links for develpment , and specification information
 
 = Specs =
  * [packet skb ,mbuf and ieee80211 data frames]
