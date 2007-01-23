@@ -1,0 +1,10 @@
+Development Informations
+
+= Specs =
+* [packet skb ,mbuf and ieee80211 data frames]
+
+= link =
+
+* [https://trac.kismac.de/browser/others/GTDriver/ GTDriver Source Code] GTDriver is prism GT driver for Mac OS X.
+* [http://ipw2200.sf.net/ ipw2200 project] Linux Driver.
+
