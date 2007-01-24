@@ -502,6 +502,17 @@ typedef enum {
 } mediumType_t;
 
 
+/*
+ *      This is an Ethernet frame header.
+ */
+/* copy from linux/if_ether.h */
+
+struct ethhdr {
+        unsigned char   h_dest[ETH_ALEN];       /* destination eth addr */
+        unsigned char   h_source[ETH_ALEN];     /* source ether addr    */
+        unsigned short  h_proto;                /* packet type ID field */
+} __attribute__((packed));
+
 class darwin_iwi2200 : public IO80211Controller
 {
 	OSDeclareDefaultStructors(darwin_iwi2200)
@@ -640,6 +651,7 @@ virtual IOOptionBits getState( void ) const;
 	virtual struct ipw_rx_queue *darwin_iwi2200::ipw_rx_queue_alloc(struct ipw_priv *priv);
 	virtual int ipw_queue_tx_hcmd(struct ipw_priv *priv, int hcmd, void *buf,
 			     int len, int sync);
+	virtual int ipw_net_is_queue_full(struct net_device *dev, int pri);
 	virtual int ipw_queue_space(const struct clx2_queue *q);
 	virtual int ipw_queue_tx_reclaim(struct ipw_priv *priv,
 				struct clx2_tx_queue *txq, int qindex);
@@ -796,6 +808,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual int ipw_send_cmd_pdu(struct ipw_priv *priv, u8 command, u8 len,
 			    void *data);
 	// add kazu
+	virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
 	virtual void ieee80211_rx_mgt(struct ieee80211_device *ieee, 
 									  struct ieee80211_hdr_4addr *header,
 									   struct ieee80211_rx_stats *stats);
@@ -933,7 +946,19 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
 	return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
 }
-
+/* skb functions */
+#define skb_reserve(skb,len) mbuf_adj(skb, len)
+inline unsigned char *skb_put(mbuf_t m,size_t len)
+{
+	unsigned char *tmp = (unsigned char *)mbuf_datastart(m);
+	mbuf_align_32(m, len);
+	return tmp;
+}
+inline unsigned char *skb_pull(mbuf_t *m,size_t len)
+{
+	mbuf_pullup(m,len);
+	return  (unsigned char *)mbuf_datastart(*m);
+}
 
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
 

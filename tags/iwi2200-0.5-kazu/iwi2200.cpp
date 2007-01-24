@@ -789,16 +789,312 @@ bool darwin_iwi2200::addMediumType(UInt32 type, UInt32 speed, UInt32 code, char*
 struct ieee80211_txb * darwin_iwi2200::mbuf2txb(mbuf_t m)
 {
 	struct ieee80211_txb *txb;
+	struct ieee80211_device *ieee = priv->ieee;
+	struct ieee80211_hdr_3addrqos *frag_hdr;
+	int i, bytes_per_frag, nr_frags, bytes_last_frag, frag_size,
+	    rts_required;
+	unsigned long flags;
+	struct net_device_stats *stats = &priv->ieee->stats;
+	int ether_type, encrypt, host_encrypt, host_encrypt_msdu, host_build_iv;
+	int bytes, fc, hdr_len;
+	//struct sk_buff *skb_frag;
+	mbuf_t skb_frag;
+	struct ieee80211_hdr_3addrqos header;
+/*	 = {// Ensure zero initialized 
+		.duration_id = 0,
+		.seq_ctl = 0,
+		.qos_ctl = 0
+	}; */
+	
+	u8 dest[ETH_ALEN], src[ETH_ALEN];
+	struct ieee80211_crypt_data *crypt;
+	int priority = 0;//skb->priority;
+	int snapped = 0;
+	header.duration_id = 0;
+	header.seq_ctl = 0;
+	header.qos_ctl = 0;
+	
+	if (ipw_net_is_queue_full( (struct  net_device *)NULL  ,priority)){
+		//return NETDEV_TX_BUSY;
+		return NULL;
+	}
+	if (unlikely( mbuf_len(m) < SNAP_SIZE + sizeof(u16) ) ) {
+		IWI_DEBUG( "%s: skb too small (%d).\n",
+		       ieee->dev->name, mbuf_len(m));
+		goto success;
+	} 
+	ether_type = ntohs(((struct ethhdr *)mbuf_datastart(m))->h_proto);
+	crypt = ieee->crypt[ieee->tx_keyidx];
+	
+	encrypt = !(ether_type == ETH_P_PAE && ieee->ieee802_1x) &&
+	    ieee->sec.encrypt;
+	
+	host_encrypt = ieee->host_encrypt && encrypt && crypt;
+	host_encrypt_msdu = ieee->host_encrypt_msdu && encrypt && crypt;
+	host_build_iv = ieee->host_build_iv && encrypt && crypt;
+	
+	if (!encrypt && ieee->ieee802_1x &&
+	    ieee->drop_unencrypted && ether_type != ETH_P_PAE) {
+		stats->tx_dropped++;
+		goto success;
+	}
+	/* Save source and destination addresses */
+	//memcpy(dest, skb->data, ETH_ALEN);
+	//memcpy(src, skb->data + ETH_ALEN, ETH_ALEN);
+	memcpy(dest, mbuf_datastart(m), ETH_ALEN);
+	memcpy(dest,(UInt8*)mbuf_datastart(m) + ETH_ALEN, ETH_ALEN);
+	if (host_encrypt || host_build_iv)
+		fc = IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA |
+		    IEEE80211_FCTL_PROTECTED;
+	else
+		fc = IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA;
+	
+		if (ieee->iw_mode == IW_MODE_INFRA) {
+		fc |= IEEE80211_FCTL_TODS;
+		/* To DS: Addr1 = BSSID, Addr2 = SA, Addr3 = DA */
+		memcpy(header.addr1, ieee->bssid, ETH_ALEN);
+		memcpy(header.addr2, src, ETH_ALEN);
+		memcpy(header.addr3, dest, ETH_ALEN);
+	} else if (ieee->iw_mode == IW_MODE_ADHOC) {
+		/* not From/To DS: Addr1 = DA, Addr2 = SA, Addr3 = BSSID */
+		memcpy(header.addr1, dest, ETH_ALEN);
+		memcpy(header.addr2, src, ETH_ALEN);
+		memcpy(header.addr3, ieee->bssid, ETH_ALEN);
+	}
+	hdr_len = IEEE80211_3ADDR_LEN;
+	
+	/* fix me: if qos is enable, change follow
+	if (ieee->is_qos_active && ieee->is_qos_active(dev, skb)) {
+		fc |= IEEE80211_STYPE_QOS_DATA;
+		hdr_len += 2;
+
+		skb->priority = ieee80211_classify(skb);
+		header.qos_ctl |= cpu_to_le16(skb->priority & IEEE80211_QCTL_TID);
+	} */
+	header.frame_ctl = cpu_to_le16(fc);
+	//skb_pull(m, sizeof(struct ethhdr));
+	mbuf_pullup(&m,sizeof(struct ethhdr));
+	bytes = mbuf_len(m) + SNAP_SIZE + sizeof(u16);
+	
+	/* Encrypt msdu first on the whole data packet. */
+	if ((host_encrypt || host_encrypt_msdu) &&
+	    crypt && crypt->ops && crypt->ops->encrypt_msdu) {
+		IWI_DEBUG("encrypt is not supported\n");
+		goto failed;
+#if 0
+		int res = 0;
+		int len = bytes + hdr_len + crypt->ops->extra_msdu_prefix_len +
+		    crypt->ops->extra_msdu_postfix_len;
+		struct sk_buff *skb_new = dev_alloc_skb(len);
+
+		if (unlikely(!skb_new))
+			goto failed;
+
+		skb_reserve(skb_new, crypt->ops->extra_msdu_prefix_len);
+		memcpy(skb_put(skb_new, hdr_len), &header, hdr_len);
+		snapped = 1;
+		ieee80211_copy_snap(skb_put(skb_new, SNAP_SIZE + sizeof(u16)),
+				    ether_type);
+		memcpy(skb_put(skb_new, skb->len), skb->data, skb->len);
+		res = crypt->ops->encrypt_msdu(skb_new, hdr_len, crypt->priv);
+		if (res < 0) {
+			IEEE80211_ERROR("msdu encryption failed\n");
+			dev_kfree_skb_any(skb_new);
+			goto failed;
+		}
+		dev_kfree_skb_any(skb);
+		skb = skb_new;
+		bytes += crypt->ops->extra_msdu_prefix_len +
+		    crypt->ops->extra_msdu_postfix_len;
+		skb_pull(skb, hdr_len);
+#endif /* 0 */		
+	}
+	if (host_encrypt || ieee->host_open_frag) {
+		IWI_DEBUG("%s fragmentation is not supported\n",__FUNCTION__);
+		goto failed;
+#if 0	
+		/* Determine fragmentation size based on destination (multicast
+		 * and broadcast are not fragmented) */
+		if (is_multicast_ether_addr(dest) ||
+		    is_broadcast_ether_addr(dest))
+			frag_size = MAX_FRAG_THRESHOLD;
+		else
+			frag_size = ieee->fts;
+
+		/* Determine amount of payload per fragment.  Regardless of if
+		 * this stack is providing the full 802.11 header, one will
+		 * eventually be affixed to this fragment -- so we must account
+		 * for it when determining the amount of payload space. */
+		bytes_per_frag = frag_size - IEEE80211_3ADDR_LEN;
+		if (ieee->config &
+		    (CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+			bytes_per_frag -= IEEE80211_FCS_LEN;
+
+		/* Each fragment may need to have room for encryptiong
+		 * pre/postfix */
+		if (host_encrypt)
+			bytes_per_frag -= crypt->ops->extra_mpdu_prefix_len +
+			    crypt->ops->extra_mpdu_postfix_len;
+
+		/* Number of fragments is the total
+		 * bytes_per_frag / payload_per_fragment */
+		nr_frags = bytes / bytes_per_frag;
+		bytes_last_frag = bytes % bytes_per_frag;
+		if (bytes_last_frag)
+			nr_frags++;
+		else
+			bytes_last_frag = bytes_per_frag;
+#endif			
+	} else {
+		nr_frags = 1;
+		bytes_per_frag = bytes_last_frag = bytes;
+		frag_size = bytes + IEEE80211_3ADDR_LEN;
+	}
+	
+	rts_required = (frag_size > ieee->rts
+			&& ieee->config & CFG_IEEE80211_RTS);
+	if (rts_required)
+		nr_frags++;
+		
+	/* When we allocate the TXB we allocate enough space for the reserve
+	 * and full fragment bytes (bytes_per_frag doesn't include prefix,
+	 * postfix, header, FCS, etc.) */
+	//txb = ieee80211_alloc_txb(nr_frags, frag_size,
+	//			  ieee->tx_headroom, GFP_ATOMIC);
+	
 	(void*)txb = kmalloc(sizeof(struct ieee80211_txb), NULL);
-	  
+	if (txb) {
+		memset(txb, 0, sizeof(struct ieee80211_txb));
+		txb->nr_frags = nr_frags;
+		txb->frag_size = frag_size;
+		if (txb->nr_frags != 1) {
+			IWI_DEBUG("fragmentation is not supported\n");
+			goto failed;
+		}
+		//txb->fragments[0]  = __dev_alloc_skb(txb_size + headroom,gfp_mask);
+		//skb_reserve
+		txb->fragments[0] = allocatePacket(frag_size + ieee->tx_headroom + 16 );
+		//fix me: should check if allocated or not.
+		mbuf_adj(txb->fragments[0], 16 + ieee->tx_headroom );
+	}
+	if (unlikely(!txb)) {
+		IWI_DEBUG( "%s: Could not allocate TXB\n",
+		       ieee->dev->name);
+		goto failed;
+	}
+	txb->encrypted = encrypt;
+	
+	if (host_encrypt)
+		txb->payload_size = frag_size * (nr_frags - 1) +
+		    bytes_last_frag;
+	else
+		txb->payload_size = bytes;
+		
+	if (rts_required) {
+		IWI_DEBUG("rts is not supported\n");
+		goto failed;
+#if 0
+		skb_frag = txb->fragments[0];
+		frag_hdr =
+		    (struct ieee80211_hdr_3addrqos *)skb_put(skb_frag, hdr_len);
+
+		/*
+		 * Set header frame_ctl to the RTS.
+		 */
+		header.frame_ctl =
+		    cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_RTS);
+		memcpy(frag_hdr, &header, hdr_len);
+
+		/*
+		 * Restore header frame_ctl to the original data setting.
+		 */
+		header.frame_ctl = cpu_to_le16(fc);
+
+		if (ieee->config &
+		    (CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+			skb_put(skb_frag, 4);
+
+		txb->rts_included = 1;
+		i = 1;
+#endif /* 0 */		
+	} else
+		i = 0;
+	
+	for (; i < nr_frags; i++) {
+		skb_frag = txb->fragments[i];
+
+		if (host_encrypt || host_build_iv)
+			skb_reserve(skb_frag,
+				    crypt->ops->extra_mpdu_prefix_len);
+
+		frag_hdr =
+		    (struct ieee80211_hdr_3addrqos *)skb_put(skb_frag, hdr_len);
+		memcpy(frag_hdr, &header, hdr_len);
+
+		/* If this is not the last fragment, then add the MOREFRAGS
+		 * bit to the frame control */
+		if (i != nr_frags - 1) {
+			frag_hdr->frame_ctl =
+			    cpu_to_le16(fc | IEEE80211_FCTL_MOREFRAGS);
+			bytes = bytes_per_frag;
+		} else {
+			/* The last fragment takes the remaining length */
+			bytes = bytes_last_frag;
+		}
+
+		if (i == 0 && !snapped) {
+			ieee80211_copy_snap(skb_put
+					    (skb_frag, SNAP_SIZE + sizeof(u16)),
+					    ether_type);
+			bytes -= SNAP_SIZE + sizeof(u16);
+		}
+		memcpy((void *)skb_put(skb_frag, bytes), mbuf_datastart(m), bytes);
+		
+		/* Advance the SKB... */
+		skb_pull(&m, bytes);
+
+		/* Encryption routine will move the header forward in order
+		 * to insert the IV between the header and the payload */
+#if 0
+		// fix me: encryption 
+		if (host_encrypt)
+			ieee80211_encrypt_fragment(ieee, skb_frag, hdr_len);
+		else if (host_build_iv) {
+			struct ieee80211_crypt_data *crypt;
+
+			crypt = ieee->crypt[ieee->tx_keyidx];
+			atomic_inc(&crypt->refcnt);
+			if (crypt->ops->build_iv)
+				crypt->ops->build_iv(skb_frag, hdr_len,
+				      ieee->sec.keys[ieee->sec.active_key],
+				      ieee->sec.key_sizes[ieee->sec.active_key],
+				      crypt->priv);
+			atomic_dec(&crypt->refcnt);
+		}
+#endif /* 0 */
+		if (ieee->config &
+		    (CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+			skb_put(skb_frag, 4);
+	}
+	
+    success:
 	return txb;
+    failed:
+        stats->tx_errors++;
+        return NULL;
 }
 UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param) {
 	IOReturn ret;
 	ieee80211_txb *txb;
 	IWI_DEBUG("TODO %s \n",__FUNCTION__);
 	txb = mbuf2txb(m);
-	ipw_net_hard_start_xmit(txb,priv->net_dev,1 );
+	//ipw_net_hard_start_xmit(txb,priv->net_dev,1 );
+	if(txb){
+		IWI_DEBUG("mbuf2txb is successed\n");
+	}else {
+		IWI_DEBUG("mbuf2txb() is failed\n");
+	}
+	kfree(txb);
 	return kIOReturnOutputSuccess;
 }
 IOOutputQueue * darwin_iwi2200::createOutputQueue( void )
@@ -3155,7 +3451,21 @@ darwin_iwi2200::MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt
 
 	return memBuffer;
 }
+int darwin_iwi2200::ipw_net_is_queue_full(struct net_device *dev, int pri)
+{
+	//struct ipw_priv *priv = ieee80211_priv(dev);
+#ifdef CONFIG_IPW2200_QOS
+	int tx_id = ipw_get_tx_queue_number(priv, pri);
+	struct clx2_tx_queue *txq = &priv->txq[tx_id];
+#else
+	struct clx2_tx_queue *txq = &priv->txq[0];
+#endif				/* CONFIG_IPW2200_QOS */
 
+	if (ipw_queue_space(&txq->q) < txq->q.high_mark)
+		return 1;
+
+	return 0;
+}
 int darwin_iwi2200::ipw_queue_space(const struct clx2_queue *q)
 {
 	int s = q->last_used - q->first_empty;
@@ -5252,7 +5562,7 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	//ipw_init_ordinals(priv);
 	//configu(priv);
 	super::enable(fNetif);
-	ipw_up(priv);
+	//ipw_up(priv);
 	interface->setPoweredOnByUser(true);
 	//ifnet_set_flags(fifnet, IFF_UP | IFF_RUNNING | IFF_MULTICAST | IFF_BROADCAST | IFF_SIMPLEX , IFF_RUNNING | IFF_MULTICAST | IFF_UP | IFF_BROADCAST | IFF_SIMPLEX);
 	//setLinkStatus(kIONetworkLinkActive, mediumTable[MEDIUM_TYPE_AUTO]);
@@ -7349,7 +7659,30 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 				notif->subtype, notif->flags, notif->size);
 	}
 }
+int darwin_iwi2200::ieee80211_copy_snap(u8 * data, u16 h_proto)
+{
+	struct ieee80211_snap_hdr *snap;
+	u8 *oui;
+	u8 P802_1H_OUI[P80211_OUI_LEN] = { 0x00, 0x00, 0xf8 };
+          u8 RFC1042_OUI[P80211_OUI_LEN] = { 0x00, 0x00, 0x00 };
 
+	snap = (struct ieee80211_snap_hdr *)data;
+	snap->dsap = 0xaa;
+	snap->ssap = 0xaa;
+	snap->ctrl = 0x03;
+
+	if (h_proto == 0x8137 || h_proto == 0x80f3)
+		oui = P802_1H_OUI;
+	else
+		oui = RFC1042_OUI;
+	snap->oui[0] = oui[0];
+	snap->oui[1] = oui[1];
+	snap->oui[2] = oui[2];
+
+	*(u16 *) (data + SNAP_SIZE) = htons(h_proto);
+
+	return SNAP_SIZE + sizeof(u16);
+}
 int darwin_iwi2200::ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
 				       *frame, struct ieee80211_rx_stats *stats)
 {
