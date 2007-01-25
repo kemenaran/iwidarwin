@@ -595,7 +595,7 @@ bool darwin_iwi2200::start(IOService *provider)
         	// Without this, the PCIDevice may be in state 0, and the
         	// PCI config space may be invalid if the machine has been
        		// sleeping.
-		if (fPCIDevice->requestPowerDomainState(kIOPMCapabilitiesMask, 
+		if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
 			(IOPowerConnection *) getParentEntry(gIOPowerPlane),
 			IOPMLowestState ) != IOPMNoErr) {
 				IWI_DEBUG("%s Power thingi failed\n", getName());
@@ -706,14 +706,14 @@ bool darwin_iwi2200::start(IOService *provider)
 		
 		registerService();
 		
-		
+		//mutex=IOLockAlloc();
 	
 		/*lck_grp_attr_t	*ga=lck_grp_attr_alloc_init();
 		lck_grp_t		*gr=lck_grp_alloc_init("mut",ga);
 		lck_attr_t		*lca=lck_attr_alloc_init();
 		mutex=lck_mtx_alloc_init(gr,lca);
 	
-		lck_grp_attr_t	*ga2=lck_grp_attr_alloc_init();
+		/*lck_grp_attr_t	*ga2=lck_grp_attr_alloc_init();
 		lck_grp_t		*gr2=lck_grp_alloc_init("spn",ga2);
 		lck_attr_t		*lca2=lck_attr_alloc_init();
 		//spin= lck_spin_alloc_init(gr2,lca2);
@@ -732,13 +732,13 @@ bool darwin_iwi2200::start(IOService *provider)
 		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rx_queue_replenish),NULL,NULL,false);
 		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adhoc_check),NULL,NULL,false);
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_bg_qos_activate),NULL,NULL,false);
-
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_led_activity_off),NULL,NULL,false);
 		
 		pl=1;
 		return true;			// end start successfully
 	} while (false);
 		
-	stop(provider);
+	//stop(provider);
 	free();
 	return false;			// end start insuccessfully
 }
@@ -959,8 +959,8 @@ void darwin_iwi2200::ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_que
 		if (rxq->pool[i].skb != NULL) {
 			//pci_unmap_single(priv->pci_dev, rxq->pool[i].dma_addr, IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
 			//dev_kfree_skb(rxq->pool[i].skb);
-			rxq->pool[i].dma_addr=NULL;
-			mbuf_freem_list(rxq->pool[i].skb);
+			//rxq->pool[i].dma_addr=NULL;
+			//mbuf_freem_list(rxq->pool[i].skb);
 			rxq->pool[i].skb = NULL;
 		}
 		list_add_tail(&rxq->pool[i].list, &rxq->rx_used);
@@ -1001,24 +1001,30 @@ void darwin_iwi2200::ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 
 	/* unmap chunks if any */
 	for (i = 0; i < le32_to_cpu(bd->u.data.num_chunks); i++) {
-		//pci_unmap_single(dev, le32_to_cpu(bd->u.data.chunk_ptr[i]), le16_to_cpu(bd->u.data.chunk_len[i]), PCI_DMA_TODEVICE);
 		bd->u.data.chunk_ptr[i]=NULL;
+		//pci_unmap_single(dev, le32_to_cpu(bd->u.data.chunk_ptr[i]),
+		//		 le16_to_cpu(bd->u.data.chunk_len[i]),
+		//		 PCI_DMA_TODEVICE);
 		if (txq->txb[txq->q.last_used]) {
-			//ieee80211_txb_free(txq->txb[txq->q.last_used]);
-			int ii;
-			if (unlikely(!txq->txb[txq->q.last_used]))
-			{}
-			else
-			{
-			for (ii = 0; ii < txq->txb[txq->q.last_used]->nr_frags; ii++)
-				if (txq->txb[txq->q.last_used]->fragments[ii])
-					//dev_kfree_skb_any(txq->txb[txq->q.last_used]->fragments[ii]);
-					mbuf_freem_list(txq->txb[txq->q.last_used]->fragments[ii]);
-			kfree(txq->txb[txq->q.last_used]);
-			}
-			txq->txb[txq->q.last_used] = NULL;
+			ieee80211_txb_free(txq->txb[txq->q.last_used]);
+			//txq->txb[txq->q.last_used] = NULL;
 		}
 	}
+}
+
+void darwin_iwi2200::ieee80211_txb_free(struct ieee80211_txb *txb)
+{
+	int i;
+	if (unlikely(!txb))
+		return;
+	for (i = 0; i < txb->nr_frags; i++)
+		if (txb->fragments[i]) 
+		{
+			mbuf_freem_list(txb->fragments[i]);
+			//txb->fragments[i]=NULL;
+		}
+	kfree(txb);
+	//txb=NULL;
 }
 
 void darwin_iwi2200::ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_queue *txq)
@@ -1038,7 +1044,7 @@ void darwin_iwi2200::ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_que
 	/* free buffers belonging to queue itself */
 	//pci_free_consistent(dev, sizeof(txq->bd[0]) * q->n_bd, txq->bd, q->dma_addr);
 	kfree(txq->txb);
-
+	//txq->txb=NULL;
 	/* 0 fill whole structure */
 	memset(txq, 0, sizeof(*txq));
 }
@@ -1098,7 +1104,7 @@ int darwin_iwi2200::ipw_queue_tx_init(struct ipw_priv *priv,
 		IWI_DEBUG("pci_alloc_consistent(%zd) failed\n",
 			  sizeof(q->bd[0]) * count);
 		kfree(q->txb);
-		q->txb = NULL;
+		//q->txb = NULL;
 		return -ENOMEM;
 	}
 
@@ -1191,7 +1197,6 @@ void darwin_iwi2200::ipw_rx_queue_replenish(void *data)
 
 		//rxb->dma_addr = pci_map_single(priv->pci_dev, rxb->skb->data, IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
 		rxb->dma_addr = mbuf_data_to_physical(mbuf_datastart(rxb->skb));	
-	
 		list_add_tail(&rxb->list, &rxq->rx_free);
 		rxq->free_count++;
 	}
@@ -1678,12 +1683,53 @@ pl++;
 	return -1;
 }
 
+IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
+{
+	//if ((priv->status & STATUS_ASSOCIATED)) return -1;
+	IWI_DEBUG("ifconfig down\n");
+	switch ((ifnet_flags(fifnet) & IFF_UP) && (ifnet_flags(fifnet) & IFF_RUNNING))
+	{
+	case true:
+		IWI_DEBUG("ifconfig going down\n");
+		//super::disable(fNetif);
+		//fNetif->setPoweredOnByUser(false);
+		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
+		fNetif->setLinkState(kIO80211NetworkLinkDown);
+		//(if_flags & ~mask) | (new_flags & mask) if mask has IFF_UP if_updown fires up (kpi_interface.c in xnu)
+		ifnet_set_flags(fifnet, 0 , IFF_UP | IFF_RUNNING );
+		if ((priv->status & STATUS_ASSOCIATED)) enable(fNetif);
+		return kIOReturnSuccess;
+		break;
+	default:
+		IWI_DEBUG("ifconfig already down\n");
+		return -1;
+		break;
+	}
+}
+
 IOReturn darwin_iwi2200::enable( IONetworkInterface * netif ) 
 {
-	IWI_DEBUG("enabling netif...\n");
-	ipw_up(priv);
-
-	return kIOReturnSuccess;
+	if ((priv->status & STATUS_RF_KILL_HW)) return -1;
+	IWI_DEBUG("ifconfig up\n");
+	switch ((ifnet_flags(fifnet) & IFF_UP) && (ifnet_flags(fifnet) & IFF_RUNNING))
+	{
+	case false:
+		IWI_DEBUG("ifconfig going up\n ");
+		//super::enable(fNetif);
+		//fNetif->setPoweredOnByUser(true);
+		setLinkStatus(kIONetworkLinkActive, mediumTable[MEDIUM_TYPE_AUTO]);
+		fNetif->setLinkState(kIO80211NetworkLinkUp);
+		//(if_flags & ~mask) | (new_flags & mask) if mask has IFF_UP if_updown fires up (kpi_interface.c in xnu)
+		ifnet_set_flags(fifnet, IFF_UP|IFF_RUNNING|IFF_BROADCAST|IFF_SIMPLEX|IFF_MULTICAST|IFF_NOTRAILERS 
+		, IFF_UP | IFF_RUNNING );
+		return kIOReturnSuccess;
+		break;
+	default:
+		IWI_DEBUG("ifconfig already up\n");
+		return -1;
+		break;
+	}
+	
 }
 
 inline int darwin_iwi2200::ipw_is_init(struct ipw_priv *priv)
@@ -1952,6 +1998,7 @@ void darwin_iwi2200::ipw_down(struct ipw_priv *priv)
 
 	/* Clear all bits but the RF Kill */
 	priv->status &= STATUS_RF_KILL_MASK | STATUS_EXIT_PENDING;
+	fTransmitQueue->stop();
 	fNetif->setLinkState(kIO80211NetworkLinkDown);
 	//netif_stop_queue(priv->net_dev);
 
@@ -1981,7 +2028,6 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(struct ipw_priv *priv,
 	u32 hw_tail;
 	int used;
 	struct clx2_queue *q = &txq->q;
-
 	hw_tail = ipw_read32(q->reg_r);
 	if (hw_tail >= q->n_bd) {
 		IWI_DEBUG
@@ -2003,7 +2049,6 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(struct ipw_priv *priv,
 	used = q->first_empty - q->last_used;
 	if (used < 0)
 		used += q->n_bd;
-
 	return used;
 }
 
@@ -2054,7 +2099,7 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 		priv->status &= ~STATUS_RF_KILL_SW;
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 		fNetif->setLinkState(kIO80211NetworkLinkDown);
-		ipw_led_link_down(priv);
+		if ((ifnet_flags(fifnet) & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
 		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rf_kill),priv,2,true);
 		ret |= IPW_INTA_BIT_RF_KILL_DONE;
 	}
@@ -4012,7 +4057,6 @@ int darwin_iwi2200::ipw_scan(struct ipw_priv *priv, int type)
 {
 	struct ipw_scan_request_ext scan;
 	int err = 0, scan_type;
-	IWI_DEBUG("scanning...\n");
 	if (!(priv->status & STATUS_INIT) ||
 	    (priv->status & STATUS_EXIT_PENDING))
 		return 0;
@@ -4125,6 +4169,8 @@ int darwin_iwi2200::ipw_scan(struct ipw_priv *priv, int type)
 
  
 	  done:
+	  
+
 	return err;
 
 }
@@ -4314,7 +4360,7 @@ void darwin_iwi2200::ipw_handle_mgmt_packet(struct ipw_priv *priv,
 	//mbuf_align_32(skb,IPW_RX_FRAME_SIZE);
 	//struct ieee80211_hdr_4addr *header = (struct ieee80211_hdr_4addr *)(mbuf_datastart(skb));// + IPW_RX_FRAME_SIZE);
 	//struct ieee80211_hdr_4addr *header =(struct ieee80211_hdr_4addr *)mbuf_pkthdr_header(skb);
-	struct ieee80211_hdr_4addr *header = (struct ieee80211_hdr_4addr *)(((UInt8*)(mbuf_datastart(skb))+ IPW_RX_FRAME_SIZE));
+	struct ieee80211_hdr_4addr *header = (struct ieee80211_hdr_4addr *)((UInt8*)mbuf_datastart(skb)+IPW_RX_FRAME_SIZE);
 	ieee80211_rx_mgt(priv->ieee, header, stats);
 
 	if (priv->ieee->iw_mode == IW_MODE_ADHOC &&
@@ -4379,10 +4425,12 @@ void darwin_iwi2200::__ipw_led_activity_on(struct ipw_priv *priv)
 
 		//cancel_delayed_work(&priv->led_act_off);
 		//queue_delayed_work(priv->workqueue, &priv->led_act_off,				   LD_TIME_ACT_ON);
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_led_activity_off),priv,.25,false);
 	} else {
 		/* Reschedule LED off for full time period */
 		//cancel_delayed_work(&priv->led_act_off);
 		//queue_delayed_work(priv->workqueue, &priv->led_act_off,		   LD_TIME_ACT_ON);
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_led_activity_off),priv,.25,false);
 	}
 }
 
@@ -4403,8 +4451,8 @@ void darwin_iwi2200::ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 	case SEC_LEVEL_3:
 		IWI_DEBUG("ipw_rebuild_decrypted_skb level3");
 		/* Remove CCMP HDR */
-		memmove((UInt8*)mbuf_datastart(skb) + IEEE80211_3ADDR_LEN,
-			(UInt8*)mbuf_datastart(skb) + IEEE80211_3ADDR_LEN + 8,
+		memmove(((UInt8*)mbuf_datastart(skb) + IEEE80211_3ADDR_LEN),
+			((UInt8*)mbuf_datastart(skb) + IEEE80211_3ADDR_LEN + 8),
 			(size_t)((UInt8*)mbuf_datastart(skb) - IEEE80211_3ADDR_LEN - 8));
 		//skb_trim(skb, skb->len - 16);	/* CCMP_HDR_LEN + CCMP_MIC_LEN */
 		mbuf_adj(skb,mbuf_len(skb)-16);
@@ -4415,8 +4463,8 @@ void darwin_iwi2200::ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 	case SEC_LEVEL_1:
 		/* Remove IV */
 		IWI_DEBUG("ipw_rebuild_decrypted_skb level1");
-		memmove((UInt8*)mbuf_datastart(skb) + IEEE80211_3ADDR_LEN,
-			(UInt8*)mbuf_datastart(skb) + IEEE80211_3ADDR_LEN + 4,
+		memmove(((UInt8*)mbuf_datastart(skb) + IEEE80211_3ADDR_LEN),
+			((UInt8*)mbuf_datastart(skb) + IEEE80211_3ADDR_LEN + 4),
 			(size_t)((UInt8*)mbuf_datastart(skb) - IEEE80211_3ADDR_LEN - 4));
 		//skb_trim(skb, skb->len - 8);	/* IV + ICV */
 		mbuf_adj(skb,mbuf_len(skb)-8);
@@ -4459,11 +4507,10 @@ void darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 
 	/* Advance skb->data to the start of the actual payload */
 	//skb_reserve(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
-	mbuf_adj(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
-	
+	//mbuf_setlen(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
 	/* Set the size of the skb to the size of the frame */
 	//skb_put(rxb->skb, le16_to_cpu(pkt->u.frame.length));
-	mbuf_align_32(rxb->skb, le16_to_cpu(pkt->u.frame.length));
+	mbuf_setlen(rxb->skb, le16_to_cpu(pkt->u.frame.length));
 	
 	IWI_DEBUG("Rx packet of %d bytes.\n", mbuf_len(rxb->skb));
 
@@ -4474,14 +4521,13 @@ void darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	     !priv->ieee->host_mc_decrypt : !priv->ieee->host_decrypt))
 		ipw_rebuild_decrypted_skb(priv, rxb->skb);
 
-	fNetif->inputPacket(rxb->skb,mbuf_len(rxb->skb),IONetworkInterface::kInputOptionQueuePacket);
-	fNetif->flushInputQueue();
-	//if (!ieee80211_rx(priv->ieee, rxb->skb, stats))
-	//	priv->ieee->stats.rx_errors++;
-	//else {			/* ieee80211_rx succeeded, so it now owns the SKB */
+	
+	if (!ieee80211_rx(priv->ieee, rxb->skb, stats))
+		priv->ieee->stats.rx_errors++;
+	else {			/* ieee80211_rx succeeded, so it now owns the SKB */
 		rxb->skb = NULL;
-		//__ipw_led_activity_on(priv);
-	//}
+		__ipw_led_activity_on(priv);
+	}
 }
 
 int darwin_iwi2200::is_duplicate_packet(struct ipw_priv *priv,
@@ -4623,7 +4669,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 				//mbuf_prepend(&rxb->skb,IPW_RX_FRAME_SIZE,MBUF_WAITOK);
 				//header =(struct ieee80211_hdr_4addr *)mbuf_pkthdr_header(rxb->skb);
 				//header =(struct ieee80211_hdr_4addr *)(mbuf_datastart(rxb->skb) );//+  IPW_RX_FRAME_SIZE);
-				header = (struct ieee80211_hdr_4addr *)(((UInt8*)(mbuf_datastart(rxb->skb))+ IPW_RX_FRAME_SIZE));
+				header = (struct ieee80211_hdr_4addr *)((UInt8*)mbuf_datastart(rxb->skb)+IPW_RX_FRAME_SIZE);
 				/* TODO: Check Ad-Hoc dest/source and make sure
 				 * that we are actually parsing these packets
 				 * correctly -- we should probably use the
@@ -4712,7 +4758,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		if (rxb->skb != NULL) {
 			//dev_kfree_skb_any(rxb->skb);
 			mbuf_freem_list(rxb->skb);
-			rxb->skb = NULL;
+			//rxb->skb = NULL;
 		}
 
 		//pci_unmap_single(priv->pci_dev, rxb->dma_addr, IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
@@ -4799,17 +4845,6 @@ int darwin_iwi2200::resetTxQueue()
 void darwin_iwi2200::free(void)
 {
 	IWI_DEBUG("%s Freeing\n", getName());
-	if (pl==0)
-	{
-		stop(NULL);
-		super::free();
-	}
-}
-
-void darwin_iwi2200::stop(IOService *provider)
-{
-	CSR_WRITE_4(memBase, IWI_CSR_RST, IWI_RST_SOFT_RESET);
-
 	if (fInterruptSrc && fWorkLoop)
 	        fWorkLoop->removeEventSource(fInterruptSrc);
 
@@ -4817,21 +4852,26 @@ void darwin_iwi2200::stop(IOService *provider)
 	RELEASE(fInterruptSrc);
 	RELEASE(fPCIDevice);
 	RELEASE(map);
-		
-	if (provider) super::stop(provider);
+	IOFree(this,sizeof(this));
+	//super::free();
 }
 
-IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
+void darwin_iwi2200::stop(IOService *provider)
 {
-	IWI_DEBUG("trying to down the interface\n");
-	if (pl==0)
-	{
-	super::disable(netif);
-	//stop(NULL);
-	return kIOReturnSuccess;
-	}
-	return kIOReturnSuccess;//-1;
+	IWI_DEBUG("%s stop\n", getName());
+	/*CSR_WRITE_4(memBase, IWI_CSR_RST, IWI_RST_SOFT_RESET);
+
+	if (fInterruptSrc && fWorkLoop)
+	        fWorkLoop->removeEventSource(fInterruptSrc);
+
+	fPCIDevice->close(this);
+	RELEASE(fInterruptSrc);
+	RELEASE(fPCIDevice);
+	RELEASE(map);*/
+		
+	super::stop(provider);
 }
+
 
 /*const char * darwin_iwi2200::getNamePrefix() const
 {
@@ -4996,8 +5036,8 @@ darwin_iwi2200::ipw_poll_bit(UInt32 reg, UInt32 mask, int timeout)
 		i += 10;
 	} while (i < timeout);
 
-	return -ETIME;}
-
+	return -ETIME;
+}
 
 
 /******************************************************************************* 
@@ -5117,6 +5157,7 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	memcpy(&priv->ieee->dev->name,i,sizeof(i)); // can we assign ieee->dev to fifnet??
 
 	ipw_load(priv);
+	
 	//ipw_init_ordinals(priv);
 	//configu(priv);
 	super::enable(fNetif);
@@ -5271,8 +5312,8 @@ void darwin_iwi2200::queue_td(int num , thread_call_func_t func)
 IOReturn darwin_iwi2200::message( UInt32 type, IOService * provider,
                               void * argument)
 {
-	IWI_DEBUG("message %8x\n",type);
-	return 0;
+	IWI_DEBUG("message type %8x argument %8x\n",type,argument);
+	return super::message(type,provider,argument);
 
 }
 
@@ -6414,13 +6455,11 @@ void darwin_iwi2200::ipw_link_up(struct ipw_priv *priv)
 	priv->last_seq_num = -1;
 	priv->last_frag_num = -1;
 	priv->last_packet_time = 0;
-	ifaddr_t tt=(ifaddr_t)priv->bssid;
-	setHardwareAddress(&tt, ETHER_ADDR_LEN);
-	ifnet_set_flags(fifnet, IFF_RUNNING , IFF_RUNNING);
-	setLinkStatus(kIONetworkLinkActive, mediumTable[MEDIUM_TYPE_AUTO]);
-	fNetif->setLinkState(kIO80211NetworkLinkUp);
+	//ifaddr_t tt=(ifaddr_t)priv->bssid;
+	//setHardwareAddress(&tt, ETHER_ADDR_LEN);
+	//configu(priv);
 	//ifnet_set_lladdr(fifnet, tt, ETHER_ADDR_LEN);
-	//super::enable(fNetif);
+	enable(fNetif);
 	fTransmitQueue->start();
 	/*netif_carrier_on(priv->net_dev);
 	if (netif_queue_stopped(priv->net_dev)) {
@@ -6685,9 +6724,19 @@ void darwin_iwi2200::ipw_link_down(struct ipw_priv *priv)
 	ipw_led_link_down(priv);
 	fTransmitQueue->stop();
 	fTransmitQueue->flush();
+	if ((priv->status & STATUS_ASSOCIATED))
+		{
+			ipw_disassociate(priv);
+			queue_td(5,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_associate));
+		}
+	disable(fNetif);
+	/*if ((priv->status & STATUS_ASSOCIATED))
+	{
+		ipw_disassociate(priv);
+	}
 	setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
 	fNetif->setLinkState(kIO80211NetworkLinkDown);
-
+	ifnet_set_flags(fifnet, 0 , IFF_UP | IFF_RUNNING );*/
 	//netif_carrier_off(priv->net_dev);
 	//netif_stop_queue(priv->net_dev);
 	//notify_wx_assoc_event(priv);
@@ -6735,6 +6784,7 @@ void darwin_iwi2200::ipw_adhoc_check(void *data)
 
 void darwin_iwi2200::ipw_handle_missed_beacon(struct ipw_priv *priv, int missed_count)
 {
+	//if (!(ifnet_flags(fifnet) & IFF_RUNNING)) return;
 	priv->notif_missed_beacons = missed_count;
 
 	if (missed_count > priv->disassociate_threshold &&
@@ -6960,7 +7010,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 			struct notif_authenticate *auth = &notif->u.auth;
 			switch (auth->state) {
 			case CMAS_AUTHENTICATED:
-				IWI_DEBUG("authenticated: '%s' %02x:%02x:%02x:%02x:%02x:%02x \n",
+				IWI_DEBUG("AUthenticated: '%s' %02x:%02x:%02x:%02x:%02x:%02x \n",
 					  escape_essid((const char*)priv->essid,
 						       priv->essid_len),
 					  MAC_ARG(priv->bssid));
@@ -6969,13 +7019,13 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 
 			case CMAS_INIT:
 				if (priv->status & STATUS_AUTH) {
-					IWI_DEBUG(						  "authentication failed (0x%04X): %s\n",
+					IWI_DEBUG(						  "AUthentication failed (0x%04X): %s\n",
 						  ntohs(auth->status),
 						  ipw_get_status_code(ntohs
 								      (auth->
 								       status)));
 				}
-				IWI_DEBUG(					  "deauthenticated: '%s' %02x:%02x:%02x:%02x:%02x:%02x\n",
+				IWI_DEBUG(					  "DEauthenticated: '%s' %02x:%02x:%02x:%02x:%02x:%02x\n",
 					  escape_essid((const char*)priv->essid,
 						       priv->essid_len),
 					  MAC_ARG(priv->bssid));
@@ -7159,7 +7209,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 				     "be %zd)\n", notif->size, sizeof(*x));
 				break;
 			}
-			IWI_DEBUG("ipw_handle_missed_beacon\n");
+			//IWI_DEBUG("ipw_handle_missed_beacon\n");
 			if (le32_to_cpu(x->state) ==
 			    HOST_NOTIFICATION_STATUS_BEACON_MISSING)
 				ipw_handle_missed_beacon(priv, le32_to_cpu(x->number));
@@ -7215,6 +7265,1015 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 				"subtype=%d,flags=0x%2x,size=%d\n",
 				notif->subtype, notif->flags, notif->size);
 	}
+}
+
+int darwin_iwi2200::ipw_get_tx_queue_number(struct ipw_priv *priv, u16 priority)
+{
+	if (priority > 7 || !priv->qos_data.qos_enable)
+		priority = 0;
+
+	return from_priority_to_tx_queue[priority] - 1;
+}
+
+
+
+int darwin_iwi2200::ipw_net_is_queue_full(struct net_device *dev, int pri)
+{
+//#ifdef CONFIG_IPW2200_QOS
+	int tx_id = ipw_get_tx_queue_number(priv, pri);
+	struct clx2_tx_queue *txq = &priv->txq[tx_id];
+//#else
+//	struct clx2_tx_queue *txq = &priv->txq[0];
+//#endif				/* CONFIG_IPW2200_QOS */
+
+	if (ipw_queue_space(&txq->q) < txq->q.high_mark)
+		return 1;
+
+	return 0;
+}
+
+u8 darwin_iwi2200::ipw_find_station(struct ipw_priv *priv, u8 * bssid)
+{
+	int i;
+
+	for (i = 0; i < priv->num_stations; i++)
+		if (!memcmp(priv->stations[i], bssid, ETH_ALEN))
+			return i;
+
+	return IPW_INVALID_STATION;
+}
+
+struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_size,
+						 int headroom, int gfp_mask)
+{
+	struct ieee80211_txb *txb;
+	int i;
+	(void*)txb = kmalloc(sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags),
+		      gfp_mask);
+	if (!txb)
+		return NULL;
+
+	memset(txb, 0, sizeof(struct ieee80211_txb));
+	txb->nr_frags = nr_frags;
+	txb->frag_size = txb_size;
+
+	for (i = 0; i < nr_frags; i++) {
+		txb->fragments[i] = allocatePacket(txb_size + headroom);
+		//__dev_alloc_skb(txb_size + headroom,						    gfp_mask);
+		if (unlikely(!txb->fragments[i])) {
+			i--;
+			break;
+		}
+		//skb_reserve(txb->fragments[i], headroom);
+		mbuf_setlen(txb->fragments[i], headroom);
+	}
+	if (unlikely(i != nr_frags)) {
+		while (i >= 0)
+		{
+			mbuf_freem_list(txb->fragments[i--]);
+			//txb->fragments[i--]=NULL;
+		//	dev_kfree_skb_any(txb->fragments[i--]);
+		}
+		kfree(txb);
+		//txb=NULL;
+		return NULL;
+	}
+	return txb;
+}
+
+int darwin_iwi2200::ipw_is_qos_active(struct net_device *dev, mbuf_t skb)
+{
+	//struct ipw_priv *priv = ieee80211_priv(dev);
+	struct ieee80211_qos_data *qos_data = NULL;
+	int active, supported;
+	u8 *daddr = ((UInt8*)mbuf_datastart(skb) + ETH_ALEN);
+	int unicast = !ipw_is_multicast_ether_addr(daddr);
+
+	if (!(priv->status & STATUS_ASSOCIATED))
+		return 0;
+
+	qos_data = &priv->assoc_network->qos_data;
+
+	if (priv->ieee->iw_mode == IW_MODE_ADHOC) {
+		if (unicast == 0)
+			qos_data->active = 0;
+		else
+			qos_data->active = qos_data->supported;
+	}
+	active = qos_data->active;
+	supported = qos_data->supported;
+	IWI_DEBUG("QoS  %d network is QoS active %d  supported %d  "
+		      "unicast %d\n",
+		      priv->qos_data.qos_enable, active, supported, unicast);
+	if (active && priv->qos_data.qos_enable)
+		return 1;
+
+	return 0;
+
+}
+
+int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
+				   struct net_device *dev, int pri)
+{
+	//struct ipw_priv *priv = ieee80211_priv(dev);
+	unsigned long flags;
+	int ret;
+
+	IWI_DEBUG("dev->xmit(%d bytes)\n", txb->payload_size);
+	//spin_lock_irqsave(&priv->lock, flags);
+
+	if (!(priv->status & STATUS_ASSOCIATED)) {
+		IWI_DEBUG("Tx attempt while not associated.\n");
+		priv->ieee->stats.tx_carrier_errors++;
+		//netif_stop_queue(dev);
+		fTransmitQueue->stop();
+		goto fail_unlock;
+	}
+
+	//ret = ipw_tx_skb(priv, txb, pri);
+	struct clx2_tx_queue *txq = &priv->txq[0];
+	struct clx2_queue *q = &txq->q;
+	txq->txb[q->first_empty] = txb;
+	q->first_empty = ipw_queue_inc_wrap(q->first_empty, q->n_bd);
+	ipw_write32( q->reg_w, q->first_empty);
+
+	if (ipw_queue_space(q) < q->high_mark) fTransmitQueue->stop();
+	//	netif_stop_queue(priv->net_dev);
+	__ipw_led_activity_on(priv);
+	return kIOReturnOutputSuccess;//NETDEV_TX_OK;
+	
+	if (ret == kIOReturnOutputSuccess)//NETDEV_TX_OK)
+		__ipw_led_activity_on(priv);
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return ret;
+
+      fail_unlock:
+	//spin_unlock_irqrestore(&priv->lock, flags);
+	return 1;
+}
+
+int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
+{
+	struct ieee80211_device *ieee = priv->ieee;//netdev_priv(dev);
+	struct ieee80211_txb *txb = NULL;
+	struct ieee80211_hdr_3addrqos *frag_hdr;
+	int i, bytes_per_frag, nr_frags, bytes_last_frag, frag_size,
+	    rts_required;
+	unsigned long flags;
+	struct net_device_stats *stats = &ieee->stats;
+	int ether_type, encrypt, host_encrypt, host_encrypt_msdu, host_build_iv;
+	int bytes, fc, hdr_len;
+	mbuf_t skb_frag;
+	struct ieee80211_hdr_3addrqos header;/* Ensure zero initialized */
+		header.duration_id = 0;
+		header.seq_ctl = 0;
+		header.qos_ctl = 0;
+	u8 dest[ETH_ALEN], src[ETH_ALEN];
+	struct ieee80211_crypt_data *crypt;
+	int priority = 0;//skb->priority;
+	int snapped = 0;
+
+	if (ieee->is_queue_full && ipw_net_is_queue_full(dev, priority))
+		return kIOReturnOutputStall;//NETDEV_TX_BUSY;
+
+	//spin_lock_irqsave(&ieee->lock, flags);
+	/* If there is no driver handler to take the TXB, dont' bother
+	 * creating it... */
+	/*if (!ieee->hard_start_xmit) {
+		printk(KERN_WARNING "%s: No xmit handler.\n", ieee->dev->name);
+		goto success;
+	}*/
+
+	if (unlikely(mbuf_len(skb) < SNAP_SIZE + sizeof(u16))) {
+		IWI_DEBUG( "%s: skb too small (%d).\n",
+		       ieee->dev->name, mbuf_len(skb));
+		goto success;
+	}
+	IWI_DEBUG("t1\n");
+	ether_type = ntohs(((struct ethhdr *)mbuf_datastart(skb))->h_proto);
+
+	crypt = ieee->crypt[ieee->tx_keyidx];
+
+	encrypt = !(ether_type == ETH_P_PAE && ieee->ieee802_1x) &&
+	    ieee->sec.encrypt;
+
+	host_encrypt = ieee->host_encrypt && encrypt && crypt;
+	host_encrypt_msdu = ieee->host_encrypt_msdu && encrypt && crypt;
+	host_build_iv = ieee->host_build_iv && encrypt && crypt;
+
+	if (!encrypt && ieee->ieee802_1x &&
+	    ieee->drop_unencrypted && ether_type != ETH_P_PAE) {
+		stats->tx_dropped++;
+		goto success;
+	}
+
+	/* Save source and destination addresses */
+	memcpy(dest, mbuf_datastart(skb), ETH_ALEN);
+	memcpy(src, ((UInt8*)mbuf_datastart(skb) + ETH_ALEN), ETH_ALEN);
+
+	if (host_encrypt || host_build_iv)
+		fc = IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA |
+		    IEEE80211_FCTL_PROTECTED;
+	else
+		fc = IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA;
+
+	if (ieee->iw_mode == IW_MODE_INFRA) {
+		fc |= IEEE80211_FCTL_TODS;
+		/* To DS: Addr1 = BSSID, Addr2 = SA, Addr3 = DA */
+		memcpy(header.addr1, ieee->bssid, ETH_ALEN);
+		memcpy(header.addr2, src, ETH_ALEN);
+		memcpy(header.addr3, dest, ETH_ALEN);
+	} else if (ieee->iw_mode == IW_MODE_ADHOC) {
+		/* not From/To DS: Addr1 = DA, Addr2 = SA, Addr3 = BSSID */
+		memcpy(header.addr1, dest, ETH_ALEN);
+		memcpy(header.addr2, src, ETH_ALEN);
+		memcpy(header.addr3, ieee->bssid, ETH_ALEN);
+	}
+	hdr_len = IEEE80211_3ADDR_LEN;
+
+	if (ieee->is_qos_active && ipw_is_qos_active(dev, skb)) {
+		fc |= IEEE80211_STYPE_QOS_DATA;
+		hdr_len += 2;
+
+		//skb->priority = ieee80211_classify(skb);
+		//header.qos_ctl |= cpu_to_le16(skb->priority & IEEE80211_QCTL_TID);
+	}
+	header.frame_ctl = cpu_to_le16(fc);
+
+	/* Advance the SKB to the start of the payload */
+	//skb_pull(skb, sizeof(struct ethhdr));
+	mbuf_adj(skb, sizeof(struct ethhdr));
+	/* Determine total amount of storage required for TXB packets */
+	bytes = mbuf_len(skb) + SNAP_SIZE + sizeof(u16);
+
+	/* Encrypt msdu first on the whole data packet. */
+	if ((host_encrypt || host_encrypt_msdu) &&
+	    crypt && crypt->ops && crypt->ops->encrypt_msdu) {
+		int res = 0;
+		int len = bytes + hdr_len + crypt->ops->extra_msdu_prefix_len +
+		    crypt->ops->extra_msdu_postfix_len;
+		mbuf_t skb_new = allocatePacket(len);
+
+		if (unlikely(!skb_new))
+			goto failed;
+
+		//skb_reserve(skb_new, crypt->ops->extra_msdu_prefix_len);
+		mbuf_setlen(skb_new, crypt->ops->extra_msdu_prefix_len);
+		//memcpy(skb_put(skb_new, hdr_len), &header, hdr_len);
+		memcpy(((UInt8*)mbuf_datastart(skb_new)+hdr_len), &header, hdr_len);
+		snapped = 1;
+		ieee80211_copy_snap(((UInt8*)mbuf_datastart(skb_new) +SNAP_SIZE + sizeof(u16)),
+				    ether_type);
+		memcpy(((UInt8*)mbuf_datastart(skb_new)+mbuf_len(skb)), mbuf_datastart(skb), mbuf_len(skb));
+		IWI_DEBUG("TODO: msdu encryption\n");
+		res = 0;//crypt->ops->encrypt_msdu(skb_new, hdr_len, crypt->priv);
+		if (res < 0) {
+			IWI_DEBUG("msdu encryption failed\n");
+			//dev_kfree_skb_any(skb_new);
+			mbuf_freem_list(skb);
+			//skb_new=NULL;
+			goto failed;
+		}
+		//dev_kfree_skb_any(skb);
+		mbuf_freem_list(skb);
+		//skb=NULL;
+		skb = skb_new;
+		bytes += crypt->ops->extra_msdu_prefix_len +
+		    crypt->ops->extra_msdu_postfix_len;
+		//skb_pull(skb, hdr_len);
+		mbuf_adj(skb, hdr_len);
+	}
+
+	if (host_encrypt || ieee->host_open_frag) {
+		/* Determine fragmentation size based on destination (multicast
+		 * and broadcast are not fragmented) */
+		if (is_multicast_ether_addr(dest) ||
+		    is_broadcast_ether_addr(dest))
+			frag_size = MAX_FRAG_THRESHOLD;
+		else
+			frag_size = ieee->fts;
+
+		/* Determine amount of payload per fragment.  Regardless of if
+		 * this stack is providing the full 802.11 header, one will
+		 * eventually be affixed to this fragment -- so we must account
+		 * for it when determining the amount of payload space. */
+		bytes_per_frag = frag_size - IEEE80211_3ADDR_LEN;
+		if (ieee->config &
+		    (CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+			bytes_per_frag -= IEEE80211_FCS_LEN;
+
+		/* Each fragment may need to have room for encryptiong
+		 * pre/postfix */
+		if (host_encrypt)
+			bytes_per_frag -= crypt->ops->extra_mpdu_prefix_len +
+			    crypt->ops->extra_mpdu_postfix_len;
+
+		/* Number of fragments is the total
+		 * bytes_per_frag / payload_per_fragment */
+		nr_frags = bytes / bytes_per_frag;
+		bytes_last_frag = bytes % bytes_per_frag;
+		if (bytes_last_frag)
+			nr_frags++;
+		else
+			bytes_last_frag = bytes_per_frag;
+	} else {
+		nr_frags = 1;
+		bytes_per_frag = bytes_last_frag = bytes;
+		frag_size = bytes + IEEE80211_3ADDR_LEN;
+	}
+
+	rts_required = (frag_size > ieee->rts
+			&& ieee->config & CFG_IEEE80211_RTS);
+	if (rts_required)
+		nr_frags++;
+IWI_DEBUG("t2\n");
+	/* When we allocate the TXB we allocate enough space for the reserve
+	 * and full fragment bytes (bytes_per_frag doesn't include prefix,
+	 * postfix, header, FCS, etc.) */
+	txb = ieee80211_alloc_txb(nr_frags, frag_size,
+				  ieee->tx_headroom, NULL);
+	if (unlikely(!txb)) {
+		IWI_DEBUG( "%s: Could not allocate TXB\n",
+		       ieee->dev->name);
+		goto failed;
+	}
+	IWI_DEBUG("t2.1\n");
+	txb->encrypted = encrypt;
+	if (host_encrypt)
+		txb->payload_size = frag_size * (nr_frags - 1) +
+		    bytes_last_frag;
+	else
+		txb->payload_size = bytes;
+
+	if (rts_required) {
+	IWI_DEBUG("t2.2\n");
+		skb_frag = txb->fragments[0];
+		frag_hdr =(struct ieee80211_hdr_3addrqos *)((UInt8*)mbuf_datastart(skb_frag)+hdr_len);
+		 //   (struct ieee80211_hdr_3addrqos *)skb_put(skb_frag, hdr_len);
+
+		/*
+		 * Set header frame_ctl to the RTS.
+		 */
+		header.frame_ctl =
+		    cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_RTS);
+		memcpy(frag_hdr, &header, hdr_len);
+
+		/*
+		 * Restore header frame_ctl to the original data setting.
+		 */
+		header.frame_ctl = cpu_to_le16(fc);
+
+		if (ieee->config &
+		   (CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+		   mbuf_adj(skb_frag, 4);
+			//skb_put(skb_frag, 4);
+
+		txb->rts_included = 1;
+		i = 1;
+	} else
+		i = 0;
+
+IWI_DEBUG("t2.3\n");
+	for (; i < nr_frags; i++) {
+	IWI_DEBUG("t2.4\n");
+		skb_frag = txb->fragments[i];
+
+		if (host_encrypt || host_build_iv)
+		//	skb_reserve(skb_frag,crypt->ops->extra_mpdu_prefix_len);
+		mbuf_setlen(skb_frag,crypt->ops->extra_mpdu_prefix_len);
+		frag_hdr =(struct ieee80211_hdr_3addrqos *)((UInt8*)mbuf_datastart(skb_frag)+hdr_len);
+		//    (struct ieee80211_hdr_3addrqos *)skb_put(skb_frag, hdr_len);
+		memcpy(frag_hdr, &header, hdr_len);
+
+		/* If this is not the last fragment, then add the MOREFRAGS
+		 * bit to the frame control */
+		if (i != nr_frags - 1) {
+			frag_hdr->frame_ctl =
+			    cpu_to_le16(fc | IEEE80211_FCTL_MOREFRAGS);
+			bytes = bytes_per_frag;
+		} else {
+			/* The last fragment takes the remaining length */
+			bytes = bytes_last_frag;
+		}
+IWI_DEBUG("t2.5\n");
+		if (i == 0 && !snapped) {
+			ieee80211_copy_snap(((UInt8*)mbuf_datastart(skb_frag)+ SNAP_SIZE + sizeof(u16)),
+					    ether_type);
+			bytes -= SNAP_SIZE + sizeof(u16);
+		}
+IWI_DEBUG("t2.6\n");
+		//memcpy(skb_put(skb_frag, bytes), skb->data, bytes);
+		memcpy(((UInt8*)mbuf_datastart(skb_frag)+bytes), mbuf_datastart(skb), bytes);
+		/* Advance the SKB... */
+		//skb_pull(skb, bytes);
+		mbuf_adj(skb, bytes);
+		/* Encryption routine will move the header forward in order
+		 * to insert the IV between the header and the payload */
+		/*if (host_encrypt)
+			ieee80211_encrypt_fragment(ieee, skb_frag, hdr_len);
+		else if (host_build_iv) {
+			struct ieee80211_crypt_data *crypt;
+
+			crypt = ieee->crypt[ieee->tx_keyidx];
+			atomic_inc(&crypt->refcnt);
+			if (crypt->ops->build_iv)
+				crypt->ops->build_iv(skb_frag, hdr_len,
+				      ieee->sec.keys[ieee->sec.active_key],
+				      ieee->sec.key_sizes[ieee->sec.active_key],
+				      crypt->priv);
+			atomic_dec(&crypt->refcnt);
+		}*/
+
+		if (ieee->config &
+		   (CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+		   mbuf_adj(skb_frag, 4);
+			//skb_put(skb_frag, 4);
+	}
+
+      success:
+	//spin_unlock_irqrestore(&ieee->lock, flags);
+	IWI_DEBUG("t3\n");
+	//dev_kfree_skb_any(skb);
+	mbuf_freem_list(skb);
+	//skb=NULL;
+	if (txb) {
+		//int ret = ipw_tx_skb(priv,txb, priority);
+		int ret=ipw_net_hard_start_xmit(txb,dev,priority);
+		IWI_DEBUG("t4\n");
+		if (ret == kIOReturnOutputSuccess) {
+			stats->tx_packets++;
+			stats->tx_bytes += txb->payload_size;
+			return kIOReturnOutputSuccess;
+		}
+
+		ieee80211_txb_free(txb);
+	}
+
+	return kIOReturnOutputSuccess;
+
+      failed:
+	//spin_unlock_irqrestore(&ieee->lock, flags);
+	//netif_stop_queue(dev);
+	fTransmitQueue->stop();
+	stats->tx_errors++;
+	return kIOReturnOutputDropped;
+}
+
+int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb, int pri)
+{
+	struct ieee80211_hdr_3addrqos *hdr = (struct ieee80211_hdr_3addrqos*)mbuf_datastart(txb->fragments[0]);
+	int i = 0;
+	struct tfd_frame *tfd;
+//#ifdef CONFIG_IPW2200_QOS
+	int tx_id = ipw_get_tx_queue_number(priv,pri);
+	struct clx2_tx_queue *txq = &priv->txq[tx_id];
+//#else
+//	struct clx2_tx_queue *txq = &priv->txq[0];
+//#endif
+	struct clx2_queue *q = &txq->q;
+	u8 id, hdr_len, unicast;
+	u16 remaining_bytes;
+	int fc;
+
+	hdr_len = ieee80211_get_hdrlen(le16_to_cpu(hdr->frame_ctl));
+	switch (priv->ieee->iw_mode) {
+	case IW_MODE_ADHOC:
+		unicast = !ipw_is_multicast_ether_addr(hdr->addr1);
+		id = ipw_find_station(priv, hdr->addr1);
+		if (id == IPW_INVALID_STATION) {
+			id = ipw_add_station(priv, hdr->addr1);
+			if (id == IPW_INVALID_STATION) {
+				IWI_DEBUG("Attempt to send data to "
+					    "invalid cell: " MAC_FMT "\n",
+					    MAC_ARG(hdr->addr1));
+				goto drop;
+			}
+		}
+		break;
+
+	case IW_MODE_INFRA:
+	default:
+		unicast = !ipw_is_multicast_ether_addr(hdr->addr3);
+		id = 0;
+		break;
+	}
+
+	tfd = &txq->bd[q->first_empty];
+	txq->txb[q->first_empty] = txb;
+	memset(tfd, 0, sizeof(*tfd));
+	tfd->u.data.station_number = id;
+
+	tfd->control_flags.message_type = TX_FRAME_TYPE;
+	tfd->control_flags.control_bits = TFD_NEED_IRQ_MASK;
+
+	tfd->u.data.cmd_id = DINO_CMD_TX;
+	tfd->u.data.len = cpu_to_le16(txb->payload_size);
+	remaining_bytes = txb->payload_size;
+
+	if (priv->assoc_request.ieee_mode == IPW_B_MODE)
+		tfd->u.data.tx_flags_ext |= DCT_FLAG_EXT_MODE_CCK;
+	else
+		tfd->u.data.tx_flags_ext |= DCT_FLAG_EXT_MODE_OFDM;
+
+	if (priv->assoc_request.preamble_length == DCT_FLAG_SHORT_PREAMBLE)
+		tfd->u.data.tx_flags |= DCT_FLAG_SHORT_PREAMBLE;
+
+	fc = le16_to_cpu(hdr->frame_ctl);
+	hdr->frame_ctl = cpu_to_le16(fc & ~IEEE80211_FCTL_MOREFRAGS);
+
+	memcpy(&tfd->u.data.tfd.tfd_24.mchdr, hdr, hdr_len);
+
+	if (!unlikely(unicast))
+		tfd->u.data.tx_flags |= DCT_FLAG_ACK_REQD;
+
+	if (txb->encrypted && !priv->ieee->host_encrypt) {
+		switch (priv->ieee->sec.level) {
+		case SEC_LEVEL_3:
+			tfd->u.data.tfd.tfd_24.mchdr.frame_ctl |=
+			    cpu_to_le16(IEEE80211_FCTL_PROTECTED);
+			/* XXX: ACK flag must be set for CCMP even if it
+			 * is a multicast/broadcast packet, because CCMP
+			 * group communication encrypted by GTK is
+			 * actually done by the AP. */
+			if (!unicast)
+				tfd->u.data.tx_flags |= DCT_FLAG_ACK_REQD;
+
+			tfd->u.data.tx_flags &= ~DCT_FLAG_NO_WEP;
+			tfd->u.data.tx_flags_ext |= DCT_FLAG_EXT_SECURITY_CCM;
+			tfd->u.data.key_index = 0;
+			tfd->u.data.key_index |= DCT_WEP_INDEX_USE_IMMEDIATE;
+			break;
+		case SEC_LEVEL_2:
+			tfd->u.data.tfd.tfd_24.mchdr.frame_ctl |=
+			    cpu_to_le16(IEEE80211_FCTL_PROTECTED);
+			tfd->u.data.tx_flags &= ~DCT_FLAG_NO_WEP;
+			tfd->u.data.tx_flags_ext |= DCT_FLAG_EXT_SECURITY_TKIP;
+			tfd->u.data.key_index = DCT_WEP_INDEX_USE_IMMEDIATE;
+			break;
+		case SEC_LEVEL_1:
+			tfd->u.data.tfd.tfd_24.mchdr.frame_ctl |=
+			    cpu_to_le16(IEEE80211_FCTL_PROTECTED);
+			tfd->u.data.key_index = priv->ieee->tx_keyidx;
+			if (priv->ieee->sec.key_sizes[priv->ieee->tx_keyidx] <=
+			    40)
+				tfd->u.data.key_index |= DCT_WEP_KEY_64Bit;
+			else
+				tfd->u.data.key_index |= DCT_WEP_KEY_128Bit;
+			break;
+		case SEC_LEVEL_0:
+			break;
+		default:
+			IWI_DEBUG("Unknow security level %d\n",
+			       priv->ieee->sec.level);
+			break;
+		}
+	} else
+		/* No hardware encryption */
+		tfd->u.data.tx_flags |= DCT_FLAG_NO_WEP;
+
+//#ifdef CONFIG_IPW2200_QOS
+	if (fc & IEEE80211_STYPE_QOS_DATA)
+		ipw_qos_set_tx_queue_command(priv, pri, &(tfd->u.data));
+//#endif				/* CONFIG_IPW2200_QOS */
+//goto kick;
+	/* payload */
+	tfd->u.data.num_chunks = cpu_to_le32(min((u8) (NUM_TFD_CHUNKS - 2),
+						 txb->nr_frags));
+	IWI_DEBUG("%d fragments being sent as %d chunks.\n",
+		       txb->nr_frags, le32_to_cpu(tfd->u.data.num_chunks));
+			   
+	for (i = 0; i < le32_to_cpu(tfd->u.data.num_chunks); i++) {
+		IWI_DEBUG("Adding fragment %d of %d (%d bytes).\n",
+			       i, le32_to_cpu(tfd->u.data.num_chunks),
+			       mbuf_len(txb->fragments[i]) - hdr_len);
+		IWI_DEBUG("Dumping TX packet frag %d of %d (%d bytes):\n",
+			     i, tfd->u.data.num_chunks,
+			     mbuf_len(txb->fragments[i]) - hdr_len);
+		//IWI_DEBUG(IPW_DL_TX, txb->fragments[i]->data + hdr_len,
+		//	   mbuf_len(txb->fragments[i]) - hdr_len);
+		struct IOPhysicalSegment vector;
+		IOMbufLittleMemoryCursor *_mbufCursor;
+		_mbufCursor = IOMbufLittleMemoryCursor::withSpecification(3000, 1);
+		mbuf_adj(txb->fragments[i],hdr_len);
+		int rm = _mbufCursor->getPhysicalSegmentsWithCoalesce(txb->fragments[i], &vector, 1);
+		if (rm!=0 && (mbuf_len(txb->fragments[i]) > hdr_len))
+		{
+		tfd->u.data.chunk_ptr[i] = vector.location; //cpu_to_le32(mbuf_data_to_physical(mbuf_datastart(txb->fragments[i])));
+		    //cpu_to_le32( 
+			/*pci_map_single
+				(priv->pci_dev,
+				 txb->fragments[i]->data + hdr_len,
+				 txb->fragments[i]->len - hdr_len,
+				 PCI_DMA_TODEVICE));*/
+				
+		tfd->u.data.chunk_len[i] = *((UInt16*)(&vector.length)); //cpu_to_le16(mbuf_len(txb->fragments[i])- hdr_len);
+		IWI_DEBUG("chunk_len %d\n",tfd->u.data.chunk_len[i]);
+		}
+	}
+
+	if (i != txb->nr_frags) {
+		mbuf_t skb;
+		u16 remaining_bytes = 0;
+		int j;
+
+		for (j = i; j < txb->nr_frags; j++)
+			remaining_bytes += mbuf_len(txb->fragments[j]) - hdr_len;
+
+		IWI_DEBUG("Trying to reallocate for %d bytes\n",
+		       remaining_bytes);
+		//skb = alloc_skb(remaining_bytes, GFP_ATOMIC);
+		skb=allocatePacket(remaining_bytes);
+		if (skb != NULL) {
+			tfd->u.data.chunk_len[i] = cpu_to_le16(remaining_bytes);
+			for (j = i; j < txb->nr_frags; j++) {
+				int size = mbuf_len(txb->fragments[j]) - hdr_len;
+
+				IWI_DEBUG( "Adding frag %d %d...\n",
+				       j, size);
+				mbuf_copydata(txb->fragments[j], hdr_len, size, skb);
+				//memcpy(skb,skb_put(skb, size),txb->fragments[j]+ hdr_len , size);
+			}
+			//dev_kfree_skb_any(txb->fragments[i]);
+			mbuf_freem_list(txb->fragments[i]);
+			//txb->fragments[i]=NULL;
+			txb->fragments[i] = skb;
+			tfd->u.data.chunk_ptr[i] = cpu_to_le32(mbuf_data_to_physical(mbuf_datastart(skb)));
+			   /* cpu_to_le32(
+				pci_map_single
+					(priv->pci_dev, skb->data,
+					 tfd->u.data.chunk_len[i],
+					 PCI_DMA_TODEVICE));*/
+
+			tfd->u.data.num_chunks =
+			    cpu_to_le32(le32_to_cpu(tfd->u.data.num_chunks) +
+					1);
+		}
+	}
+
+kick:
+	/* kick DMA */
+	q->first_empty = ipw_queue_inc_wrap(q->first_empty, q->n_bd);
+	ipw_write32( q->reg_w, q->first_empty);
+
+	if (ipw_queue_space(q) < q->high_mark) fTransmitQueue->stop();
+	//	netif_stop_queue(priv->net_dev);
+	return kIOReturnOutputSuccess;//NETDEV_TX_OK;
+
+      drop:
+	IWI_DEBUG("Silently dropping Tx packet.\n");
+	ieee80211_txb_free(txb);
+	return kIOReturnOutputSuccess;//NETDEV_TX_OK;
+}
+
+UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
+{
+	int offset = (4 - ((int)(mbuf_datastart(m)) & 3)) % 4;    //packet needs to be 4 byte aligned
+	mbuf_t nm;
+	if (offset) { 
+	nm = copyPacket(m, 0);
+	freePacket(m);
+	}
+	else    nm=m;
+
+	if (!(ifnet_flags(fifnet) & IFF_RUNNING) || mbuf_len(nm)==0 || nm==NULL)
+	{
+        if (nm!=NULL) freePacket(nm);
+        return kIOReturnOutputDropped;
+    }
+	IWI_DEBUG("call ieee80211_xmit\n");
+	int ret= ieee80211_xmit(nm,priv->net_dev);
+	return ret;
+}
+
+int darwin_iwi2200::ipw_qos_set_tx_queue_command(struct ipw_priv *priv,
+					u16 priority, struct tfd_data *tfd)
+{
+	int tx_queue_id = 0;
+
+	tx_queue_id = from_priority_to_tx_queue[priority] - 1;
+	tfd->tx_flags_ext |= DCT_FLAG_EXT_QOS_ENABLED;
+
+	if (priv->qos_data.qos_no_ack_mask & (1UL << tx_queue_id)) {
+		tfd->tx_flags &= ~DCT_FLAG_ACK_REQD;
+		tfd->tfd.tfd_26.mchdr.qos_ctrl |= cpu_to_le16(CTRL_QOS_NO_ACK);
+	}
+	return 0;
+}
+
+int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
+		 struct ieee80211_rx_stats *rx_stats)
+{
+	struct net_device *dev = ieee->dev;
+	struct ieee80211_hdr_4addr *hdr;
+	size_t hdrlen;
+	u16 fc, type, stype, sc;
+	struct net_device_stats *stats;
+	unsigned int frag;
+	u8 *payload;
+	u16 ethertype;
+	u8 dst[ETH_ALEN];
+	u8 src[ETH_ALEN];
+	struct ieee80211_crypt_data *crypt = NULL;
+	int keyidx = 0;
+	int can_be_decrypted = 0;
+
+	hdr = (struct ieee80211_hdr_4addr *)mbuf_datastart(skb);
+	stats = &ieee->stats;
+
+	if (mbuf_len(skb) < 10) {
+		IWI_DEBUG( "%s: SKB length < 10\n", dev->name);
+		goto rx_dropped;
+	}
+
+	fc = le16_to_cpu(hdr->frame_ctl);
+	type = WLAN_FC_GET_TYPE(fc);
+	stype = WLAN_FC_GET_STYPE(fc);
+	sc = le16_to_cpu(hdr->seq_ctl);
+	frag = WLAN_GET_SEQ_FRAG(sc);
+	hdrlen = ieee80211_get_hdrlen(fc);
+
+	/* Put this code here so that we avoid duplicating it in all
+	 * Rx paths. - Jean II */
+#ifdef CONFIG_WIRELESS_EXT
+#ifdef IW_WIRELESS_SPY		/* defined in iw_handler.h */
+	/* If spy monitoring on */
+	if (ieee->spy_data.spy_number > 0) {
+		struct iw_quality wstats;
+
+		wstats.updated = 0;
+		if (rx_stats->mask & IEEE80211_STATMASK_RSSI) {
+			wstats.level = rx_stats->rssi;
+			wstats.updated |= IW_QUAL_LEVEL_UPDATED;
+		} else
+			wstats.updated |= IW_QUAL_LEVEL_INVALID;
+
+		if (rx_stats->mask & IEEE80211_STATMASK_NOISE) {
+			wstats.noise = rx_stats->noise;
+			wstats.updated |= IW_QUAL_NOISE_UPDATED;
+		} else
+			wstats.updated |= IW_QUAL_NOISE_INVALID;
+
+		if (rx_stats->mask & IEEE80211_STATMASK_SIGNAL) {
+			wstats.qual = rx_stats->signal;
+			wstats.updated |= IW_QUAL_QUAL_UPDATED;
+		} else
+			wstats.updated |= IW_QUAL_QUAL_INVALID;
+
+		/* Update spy records */
+		wireless_spy_update(ieee->dev, hdr->addr2, &wstats);
+	}
+#endif				/* IW_WIRELESS_SPY */
+#endif				/* CONFIG_WIRELESS_EXT */
+
+	if (ieee->iw_mode == IW_MODE_MONITOR) {
+		stats->rx_packets++;
+		stats->rx_bytes += mbuf_len(skb);
+		//ieee80211_monitor_rx(ieee, skb, rx_stats);
+		return 1;
+	}
+
+	can_be_decrypted = (is_multicast_ether_addr(hdr->addr1) ||
+			    is_broadcast_ether_addr(hdr->addr2)) ?
+	    ieee->host_mc_decrypt : ieee->host_decrypt;
+
+	if (can_be_decrypted) {
+		int idx = 0;
+		if (mbuf_len(skb) >= hdrlen + 3) {
+			/* Top two-bits of byte 3 are the key index */
+			idx = ((UInt8*)(mbuf_datastart(skb)))[hdrlen + 3] >> 6;
+		}
+
+		/* ieee->crypt[] is WEP_KEY (4) in length.  Given that idx
+		 * is only allowed 2-bits of storage, no value of idx can
+		 * be provided via above code that would result in idx
+		 * being out of range */
+		crypt = ieee->crypt[idx];
+
+		/* allow NULL decrypt to indicate an station specific override
+		 * for default encryption */
+		if (crypt && (crypt->ops == NULL ||
+			      crypt->ops->decrypt_mpdu == NULL))
+			crypt = NULL;
+
+		if (!crypt && (fc & IEEE80211_FCTL_PROTECTED)) {
+			/* This seems to be triggered by some (multicast?)
+			 * frames from other than current BSS, so just drop the
+			 * frames silently instead of filling system log with
+			 * these reports. */
+			IWI_DEBUG("Decryption failed (not set)"
+					     " (SA=" MAC_FMT ")\n",
+					     MAC_ARG(hdr->addr2));
+			ieee->ieee_stats.rx_discards_undecryptable++;
+			goto rx_dropped;
+		}
+	}
+
+
+	/* Data frame - extract src/dst addresses */
+	if (mbuf_len(skb) < IEEE80211_3ADDR_LEN)
+		goto rx_dropped;
+
+	switch (fc & (IEEE80211_FCTL_FROMDS | IEEE80211_FCTL_TODS)) {
+	case IEEE80211_FCTL_FROMDS:
+		memcpy(dst, hdr->addr1, ETH_ALEN);
+		memcpy(src, hdr->addr3, ETH_ALEN);
+		break;
+	case IEEE80211_FCTL_TODS:
+		memcpy(dst, hdr->addr3, ETH_ALEN);
+		memcpy(src, hdr->addr2, ETH_ALEN);
+		break;
+	case IEEE80211_FCTL_FROMDS | IEEE80211_FCTL_TODS:
+		if (mbuf_len(skb) < IEEE80211_4ADDR_LEN)
+			goto rx_dropped;
+		memcpy(dst, hdr->addr3, ETH_ALEN);
+		memcpy(src, hdr->addr4, ETH_ALEN);
+		break;
+	case 0:
+		memcpy(dst, hdr->addr1, ETH_ALEN);
+		memcpy(src, hdr->addr2, ETH_ALEN);
+		break;
+	}
+
+
+	dev->last_rx = jiffies;
+
+
+	/* Nullfunc frames may have PS-bit set, so they must be passed to
+	 * hostap_handle_sta_rx() before being dropped here. */
+
+	stype &= ~IEEE80211_STYPE_QOS_DATA;
+
+	if (stype != IEEE80211_STYPE_DATA &&
+	    stype != IEEE80211_STYPE_DATA_CFACK &&
+	    stype != IEEE80211_STYPE_DATA_CFPOLL &&
+	    stype != IEEE80211_STYPE_DATA_CFACKPOLL) {
+		if (stype != IEEE80211_STYPE_NULLFUNC)
+			IWI_DEBUG("RX: dropped data frame "
+					     "with no data (type=0x%02x, "
+					     "subtype=0x%02x, len=%d)\n",
+					     type, stype, mbuf_len(skb));
+		goto rx_dropped;
+	}
+
+	/* skb: hdr + (possibly fragmented, possibly encrypted) payload */
+/*
+	if ((fc & IEEE80211_FCTL_PROTECTED) && can_be_decrypted &&
+	    (keyidx = ieee80211_rx_frame_decrypt(ieee, skb, crypt)) < 0)
+		goto rx_dropped;
+
+	hdr = (struct ieee80211_hdr_4addr *)mbuf_datastart(skb);
+
+	// skb: hdr + (possibly fragmented) plaintext payload 
+	// PR: FIXME: hostap has additional conditions in the "if" below:
+	// ieee->host_decrypt && (fc & IEEE80211_FCTL_PROTECTED) &&
+	if ((frag != 0) || (fc & IEEE80211_FCTL_MOREFRAGS)) {
+		int flen;
+		mbuf_t frag_skb = ieee80211_frag_cache_get(ieee, hdr);
+		IWI_DEBUG("Rx Fragment received (%u)\n", frag);
+
+		if (!frag_skb) {
+			IWI_DEBUG("Rx cannot get skb from fragment "
+					"cache (morefrag=%d seq=%u frag=%u)\n",
+					(fc & IEEE80211_FCTL_MOREFRAGS) != 0,
+					WLAN_GET_SEQ_SEQ(sc), frag);
+			goto rx_dropped;
+		}
+
+		flen = mbuf_len(skb);
+		if (frag != 0)
+			flen -= hdrlen;
+
+		if (frag_skb->tail + flen > frag_skb->end) {
+			IWI_DEBUG( "%s: host decrypted and "
+			       "reassembled frame did not fit skb\n",
+			       dev->name);
+			ieee80211_frag_cache_invalidate(ieee, hdr);
+			goto rx_dropped;
+		}
+
+		if (frag == 0) {
+			// copy first fragment (including full headers) into
+			 // beginning of the fragment cache skb 
+			memcpy(skb_put(frag_skb, flen), mbuf_datastart(skb), flen);
+		} else {
+			// append frame payload to the end of the fragment
+			 // cache skb 
+			memcpy(skb_put(frag_skb, flen), mbuf_datastart(skb) + hdrlen,
+			       flen);
+		}
+		//dev_kfree_skb_any(skb);
+		mbuf_freem_list(skb);
+		//skb = NULL;
+
+		if (fc & IEEE80211_FCTL_MOREFRAGS) {
+			// more fragments expected - leave the skb in fragment
+			 // cache for now; it will be delivered to upper layers
+			 //after all fragments have been received 
+			goto rx_exit;
+		}
+
+		// this was the last fragment and the frame will be
+		 // delivered, so remove skb from fragment cache 
+		skb = frag_skb;
+		hdr = (struct ieee80211_hdr_4addr *)mbuf_datastart(skb);
+		ieee80211_frag_cache_invalidate(ieee, hdr);
+	}
+
+	// skb: hdr + (possible reassembled) full MSDU payload; possibly still
+	 // encrypted/authenticated 
+	if ((fc & IEEE80211_FCTL_PROTECTED) && can_be_decrypted &&
+	    ieee80211_rx_frame_decrypt_msdu(ieee, skb, keyidx, crypt))
+		goto rx_dropped;
+
+	hdr = (struct ieee80211_hdr_4addr *)mbuf_datastart(skb);
+	if (crypt && !(fc & IEEE80211_FCTL_PROTECTED) && !ieee->open_wep) {
+		if (		
+			   ieee80211_is_eapol_frame(ieee, skb)) {
+			// pass unencrypted EAPOL frames even if encryption is
+			 // configured 
+		} else {
+			IWI_DEBUG("encryption configured, but RX "
+					     "frame not encrypted (SA=" MAC_FMT
+					     ")\n", MAC_ARG(hdr->addr2));
+			goto rx_dropped;
+		}
+	}
+
+	if (crypt && !(fc & IEEE80211_FCTL_PROTECTED) && !ieee->open_wep &&
+	    !ieee80211_is_eapol_frame(ieee, skb)) {
+		IWI_DEBUG("dropped unencrypted RX data "
+				     "frame from " MAC_FMT
+				     " (drop_unencrypted=1)\n",
+				     MAC_ARG(hdr->addr2));
+		goto rx_dropped;
+	}*/
+
+	/* skb: hdr + (possible reassembled) full plaintext payload */
+
+	payload = ((UInt8*)mbuf_datastart(skb) + hdrlen);
+	ethertype = (payload[6] << 8) | payload[7];
+
+
+	/* convert hdr + possible LLC headers into Ethernet header */
+	if ( mbuf_len(skb) - hdrlen >= 8 &&
+	    ((memcmp(payload, rfc1042_header, SNAP_SIZE) == 0 &&
+	      ethertype != ETH_P_AARP && ethertype != ETH_P_IPX) ||
+	     memcmp(payload, bridge_tunnel_header, SNAP_SIZE) == 0)) {
+		/* remove RFC1042 or Bridge-Tunnel encapsulation and
+		 * replace EtherType */
+		//skb_pull(skb, hdrlen + SNAP_SIZE);
+		mbuf_adj(skb, hdrlen + SNAP_SIZE);
+		//memcpy(skb_push(skb, ETH_ALEN), src, ETH_ALEN);
+		//memcpy(skb_push(skb, ETH_ALEN), dst, ETH_ALEN);
+		memcpy(((UInt8*)mbuf_datastart(skb) + ETH_ALEN), src, ETH_ALEN);
+		memcpy(((UInt8*)mbuf_datastart(skb) +ETH_ALEN), dst, ETH_ALEN);
+	} else {
+		u16 len;
+		/* Leave Ethernet header part of hdr and full payload */
+		//skb_pull(skb, hdrlen);
+		mbuf_adj(skb, hdrlen);
+		len = htons(mbuf_len(skb));
+		//memcpy(skb_push(skb, 2), &len, 2);
+		//memcpy(skb_push(skb, ETH_ALEN), src, ETH_ALEN);
+		//memcpy(skb_push(skb, ETH_ALEN), dst, ETH_ALEN);
+		memcpy(((UInt8*)mbuf_datastart(skb) + 2), &len, 2);
+		memcpy(((UInt8*)mbuf_datastart(skb) + ETH_ALEN), src, ETH_ALEN);
+		memcpy(((UInt8*)mbuf_datastart(skb) + ETH_ALEN), dst, ETH_ALEN);
+	}
+
+
+	stats->rx_packets++;
+	stats->rx_bytes += mbuf_len(skb);
+
+
+	if (skb) {
+		//skb->protocol = eth_type_trans(skb, dev);
+		//memset(skb->cb, 0, sizeof(skb->cb));
+		//skb->dev = dev;
+		//skb->ip_summed = CHECKSUM_NONE;	/* 802.11 crc not sufficient */
+		fNetif->inputPacket(skb,mbuf_len(skb),IONetworkInterface::kInputOptionQueuePacket);
+		fNetif->flushInputQueue();
+		//if (netif_rx(skb) == NET_RX_DROP) {
+			/* netif_rx always succeeds, but it might drop
+			 * the packet.  If it drops the packet, we log that
+			 * in our stats. */
+		//	IWI_DEBUG ("RX: netif_rx dropped the packet\n");
+		//	stats->rx_dropped++;
+		//}
+	}
+
+      rx_exit:
+
+	return 1;
+
+      rx_dropped:
+	stats->rx_dropped++;
+
+	/* Returning 0 indicates to caller that we have not handled the SKB--
+	 * so it is still allocated and can be used again by underlying
+	 * hardware as a DMA target */
+	return 0;
 }
 
 int darwin_iwi2200::ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
@@ -7336,11 +8395,165 @@ int darwin_iwi2200::ipw_handle_assoc_response(struct net_device *dev,
 	ipw_qos_association_resp(priv, network);
 	return 0;
 }
-// linux ipw3945
-/*static int ipw_handle_probe_request(struct net_device *dev, struct ieee80211_probe_request
+
+struct ipw_frame *darwin_iwi2200::ipw_get_free_frame(struct ipw_priv *priv)
+{
+	struct ipw_frame *frame;
+	struct list_head *element;
+	//if (list_empty(&priv->free_frames)) {
+		(void*)frame = kzalloc(sizeof(*frame), NULL);
+		if (!frame) {
+			IWI_DEBUG("Could not allocate frame!\n");
+			return 0;
+		}
+
+		/*priv->frames_count++;
+
+		if (priv->frames_count >= FREE_FRAME_THRESHOLD) {
+			IPW_WARNING("%d frames allocated.  "
+				    "Are we losing them?\n",
+				    priv->frames_count);
+		}*/
+
+		return frame;
+//	}
+
+//	element = priv->free_frames.next;
+//	list_del(element);
+//	return list_entry(element, struct ipw_frame, list);
+}
+
+void *darwin_iwi2200::ieee80211_next_info_element(struct ieee80211_info_element
+					 *info_element)
+{
+	return &info_element->data[info_element->len];
+}
+
+int darwin_iwi2200::ipw_fill_beacon_frame(struct ipw_priv *priv,
+				 struct ieee80211_hdr *hdr, u8 * dest, int left)
+{
+	struct ieee80211_probe_response *frame = NULL;
+	struct ieee80211_info_element *info_element = NULL;
+	int len = 0;
+	u16 ret_rates;
+
+	if (!(priv->status & (STATUS_ASSOCIATED | STATUS_ASSOCIATING))
+	    || (priv->ieee->iw_mode != IW_MODE_ADHOC))
+		return 0;
+
+	frame = (struct ieee80211_probe_response *)hdr;
+	frame->header.frame_ctl = IEEE80211_FTYPE_MGMT | IEEE80211_STYPE_BEACON;
+
+	memcpy(frame->header.addr1, dest, ETH_ALEN);
+	memcpy(frame->header.addr2, priv->mac_addr, ETH_ALEN);
+	memcpy(frame->header.addr3, priv->assoc_request.bssid, ETH_ALEN);
+
+	frame->header.seq_ctl = 0;
+
+	/* fill the probe fields */
+	frame->capability = priv->assoc_request.capability;
+	frame->time_stamp[0] = priv->assoc_request.assoc_tsf_lsw;
+	frame->time_stamp[1] = priv->assoc_request.assoc_tsf_msw;
+
+	frame->beacon_interval = priv->assoc_request.beacon_interval;
+	frame->capability |= WLAN_CAPABILITY_IBSS;
+	if (priv->capability & CAP_PRIVACY_ON)
+		frame->capability |= WLAN_CAPABILITY_PRIVACY;
+	else
+		frame->capability &= ~WLAN_CAPABILITY_PRIVACY;
+	frame->capability &= ~WLAN_CAPABILITY_SHORT_SLOT_TIME;
+
+	info_element = frame->info_element;
+
+	/* fill in ssid broadcast */
+	info_element->id = MFIE_TYPE_SSID;
+	info_element->len = priv->essid_len;
+	memcpy(info_element->data, priv->essid, priv->essid_len);
+
+	/* Account for the size we know... */
+	len = sizeof(struct ieee80211_probe_response) +
+	    sizeof(struct ieee80211_info_element) + priv->essid_len;
+
+	/* Advance to next IE... */
+	(void*)info_element = ieee80211_next_info_element(info_element);
+
+	/*  atim window */
+	info_element->id = MFIE_TYPE_IBSS_SET;
+	info_element->data[0] = (u8) priv->assoc_request.atim_window;
+	info_element->data[1] = 0x0;
+	info_element->len = 2;
+
+	len += sizeof(struct ieee80211_info_element) + info_element->len;
+
+	/* Advance to next IE... */
+	(void*)info_element = ieee80211_next_info_element(info_element);
+
+	info_element->id = MFIE_TYPE_RATES;
+	info_element->len = 0;
+	/*ret_rates =
+	    ipw_supported_rate_to_ie(info_element, priv->active_rate,
+				     priv->active_rate_basic,
+				     IPW_SUPPORTED_RATES_IE_LEN);
+
+	ret_rates = ~ret_rates & priv->active_rate;*/
+
+	len += sizeof(struct ieee80211_info_element) + info_element->len;
+
+	if (ret_rates != 0) {
+
+		/* Now see how much space is left.... */
+		if (left < sizeof(struct ieee80211_info_element) +
+		    IPW_SUPPORTED_RATES_IE_LEN)
+			return 0;
+
+		(void*)info_element = ieee80211_next_info_element(info_element);
+		info_element->id = MFIE_TYPE_RATES_EX;
+		info_element->len = 0;
+		/*ipw_supported_rate_to_ie(info_element,
+					 ret_rates,
+					 priv->active_rate_basic,
+					 IPW_SUPPORTED_RATES_IE_LEN);*/
+		if (info_element->len > 0)
+			/* account for this IE */
+			len += sizeof(struct ieee80211_info_element) +
+			    info_element->len;
+	}
+
+	/* add ERP present IE if not 11a or 11b */
+	if (priv->assoc_request.ieee_mode == IPW_G_MODE) {
+		(void*)info_element = ieee80211_next_info_element(info_element);
+
+		info_element->id = MFIE_TYPE_ERP_INFO;
+		info_element->len = 1;
+
+		//info_element->data[0] = priv->assoc_request.erp_value;
+
+		if (info_element->data[0] & IEEE80211_ERP_BARKER_PREAMBLE_MODE) {
+			frame->capability &= ~WLAN_CAPABILITY_SHORT_PREAMBLE;
+		}
+		len += sizeof(struct ieee80211_info_element) +
+		    info_element->len;
+	}
+	/* add DS present IE */
+	if (priv->assoc_request.ieee_mode != IPW_A_MODE) {
+		(void*)info_element = ieee80211_next_info_element(info_element);
+
+		info_element->id = MFIE_TYPE_DS_SET;
+		info_element->len = 1;
+
+		info_element->data[0] = priv->channel;
+
+		len += sizeof(struct ieee80211_info_element) +
+		    info_element->len;
+
+	}
+
+	return len;
+}
+
+int darwin_iwi2200::ipw_handle_probe_request(struct net_device *dev, struct ieee80211_probe_request
 				    *frame, struct ieee80211_rx_stats *stats)
 {
-	struct ipw_priv *priv = ieee80211_priv(dev);
 	int rc = 0;
 	u16 left;
 	struct ieee80211_info_element *info_element;
@@ -7385,7 +8598,7 @@ int darwin_iwi2200::ipw_handle_assoc_response(struct net_device *dev,
 	out_frame = ipw_get_free_frame(priv);
 
 	if (!out_frame) {
-		IPW_ERROR("Could not allocate frame for auth work.\n");
+		IWI_DEBUG("Could not allocate frame for auth work.\n");
 		return -ENOMEM;
 	}
 
@@ -7393,21 +8606,22 @@ int darwin_iwi2200::ipw_handle_assoc_response(struct net_device *dev,
 				    frame->header.addr2, sizeof(out_frame->u));
 
 	if (len) {
-		IPW_DEBUG_11H("Sending %d bytes.\n", len);
+		IWI_DEBUG("Sending %d bytes.\n", len);
 		out_frame->u.frame.frame_ctl = IEEE80211_FTYPE_MGMT |
 		    IEEE80211_STYPE_PROBE_RESP;
-#if IPW3945_COMPAT >= 2
-		ieee80211_tx_frame(priv->ieee, &out_frame->u.frame, 0, len, 0);
-#else
-		ieee80211_tx_frame(priv->ieee, &out_frame->u.frame, len);
-#endif
+		//ieee80211_tx_frame(priv->ieee, &out_frame->u.frame, 0, len, 0);
+		mbuf_t temp=allocatePacket(len);
+		memcpy(temp, &out_frame->u.frame, len);
+		outputPacket(temp,0);
+		
 	}
 
-	ipw_free_frame(priv, out_frame);
-
+	//ipw_free_frame(priv, out_frame);
+	memset(frame, 0, sizeof(*frame));
 	return 0;
-}*/
+}
 
+// linux ipw3945
 /*static int ipw_handle_auth(struct net_device *dev, struct ieee80211_auth *auth)
 {
 	struct ipw_priv *priv = ieee80211_priv(dev);
@@ -7501,6 +8715,9 @@ void darwin_iwi2200::ieee80211_rx_mgt(struct ieee80211_device *ieee,
 			IEEE80211_DEBUG_MGMT("received PROBE RESPONSE (%d)\n",
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));	
+			/*ipw_handle_probe_request(ieee->dev, (struct
+                                                    ieee80211_probe_request *)
+                                                   header, stats);*/
                 ieee80211_process_probe_response(ieee,
                                                  (struct
                                                   ieee80211_probe_response *)
@@ -8105,11 +9322,11 @@ void darwin_iwi2200::ieee80211_process_probe_response(struct ieee80211_device *i
 	//spin_unlock_irqrestore(&ieee->lock, flags);
 
 	if (is_beacon(beacon->header.frame_ctl)) {
-		ipw_handle_probe_response(dev, beacon, target);
+				ipw_handle_probe_response(dev, beacon, target);
 		//if (ieee->handle_beacon != NULL)
 		//	ieee->handle_beacon(dev, beacon, target);
 	} else {
-		ipw_handle_beacon(dev, beacon, target);
+				ipw_handle_beacon(dev, beacon, target);
 		//if (ieee->handle_probe_response != NULL)
 		//	ieee->handle_probe_response(dev, beacon, target);
 	}

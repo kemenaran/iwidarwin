@@ -5,6 +5,38 @@
 #include "defines.h"
 #include "iwieth.h"
 
+
+
+u8 P802_1H_OUI[P80211_OUI_LEN] = { 0x00, 0x00, 0xf8 };
+u8 RFC1042_OUI[P80211_OUI_LEN] = { 0x00, 0x00, 0x00 };
+
+typedef __u16 __be16;
+struct ethhdr {
+	unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
+	unsigned char	h_source[ETH_ALEN];	/* source ether addr	*/
+	__be16		h_proto;		/* packet type ID field	*/
+} __attribute__((packed));
+
+struct ipw_frame {
+	int len;
+	union {
+		struct ieee80211_hdr frame;
+		u8 raw[IEEE80211_FRAME_LEN];
+		u8 cmd[360];
+	} u;
+	struct list_head list;
+};
+
+static int from_priority_to_tx_queue[] = {
+	IPW_TX_QUEUE_1, IPW_TX_QUEUE_2, IPW_TX_QUEUE_2, IPW_TX_QUEUE_1,
+	IPW_TX_QUEUE_3, IPW_TX_QUEUE_3, IPW_TX_QUEUE_4, IPW_TX_QUEUE_4
+};
+
+ static unsigned char rfc1042_header[] = { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
+
+/* Bridge-Tunnel header (for EtherTypes ETH_P_AARP and ETH_P_IPX) */
+static unsigned char bridge_tunnel_header[] =   { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0xf8 };
+
 #define IPW_CMD(x) case IPW_CMD_ ## x : return #x
 static char *get_cmd_string(u8 cmd)
 {
@@ -155,6 +187,16 @@ static const char *get_info_element_string(u16 id)
 		return "UNKNOWN";
 	}
 }			
+
+inline int is_multicast_ether_addr(const u8 *addr)
+{
+       return addr[0] & 0x01;
+}
+
+inline int is_broadcast_ether_addr(const u8 *addr)
+{
+        return (addr[0] & addr[1] & addr[2] & addr[3] & addr[4] & addr[5]) == 0xff;
+}
 
 inline unsigned int
 __div(unsigned long long n, unsigned int base)
@@ -645,6 +687,13 @@ virtual IOOptionBits getState( void ) const;
 				struct clx2_tx_queue *txq, int qindex);
 	virtual int is_duplicate_packet(struct ipw_priv *priv,
 			       struct ieee80211_hdr_4addr *header);
+	virtual int ipw_get_tx_queue_number(struct ipw_priv *priv, u16 priority);
+	virtual int ipw_net_is_queue_full(struct net_device *dev, int pri);
+	virtual int ipw_qos_set_tx_queue_command(struct ipw_priv *priv,
+					u16 priority, struct tfd_data *tfd);
+	virtual int ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
+				   struct net_device *dev, int pri);
+	
 	
 	
 	
@@ -899,9 +948,23 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 				  int roaming);
 	virtual void ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 				      mbuf_t skb);
-	
-	
-	
+	virtual int ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
+		 struct ieee80211_rx_stats *rx_stats);
+	virtual UInt32 outputPacket(mbuf_t m, void * param);
+	virtual void ieee80211_txb_free(struct ieee80211_txb *txb);
+	virtual u8 ipw_find_station(struct ipw_priv *priv, u8 * bssid);
+	virtual int ipw_handle_probe_request(struct net_device *dev, struct ieee80211_probe_request
+				    *frame, struct ieee80211_rx_stats *stats);
+	virtual struct ipw_frame *ipw_get_free_frame(struct ipw_priv *priv);
+	virtual int ipw_fill_beacon_frame(struct ipw_priv *priv,
+				 struct ieee80211_hdr *hdr, u8 * dest, int left);
+	virtual void *ieee80211_next_info_element(struct ieee80211_info_element
+					 *info_element);
+	virtual int ieee80211_xmit(mbuf_t skb, struct net_device *dev);
+	virtual int ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb, int pri);
+	virtual struct ieee80211_txb *ieee80211_alloc_txb(int nr_frags, int txb_size,
+						 int headroom, int gfp_mask);
+	virtual int ipw_is_qos_active(struct net_device *dev, mbuf_t skb);
 	
 	
 	
@@ -909,6 +972,31 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 
 
 
+
+
+
+int ieee80211_copy_snap(u8 * data, u16 h_proto)
+{
+	struct ieee80211_snap_hdr *snap;
+	u8 *oui;
+
+	snap = (struct ieee80211_snap_hdr *)data;
+	snap->dsap = 0xaa;
+	snap->ssap = 0xaa;
+	snap->ctrl = 0x03;
+
+	if (h_proto == 0x8137 || h_proto == 0x80f3)
+		oui = P802_1H_OUI;
+	else
+		oui = RFC1042_OUI;
+	snap->oui[0] = oui[0];
+	snap->oui[1] = oui[1];
+	snap->oui[2] = oui[2];
+
+	*(u16 *) (data + SNAP_SIZE) = htons(h_proto);
+
+	return SNAP_SIZE + sizeof(u16);
+}
 
 inline void *kzalloc(size_t size, unsigned flags)
 {
@@ -1001,7 +1089,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int antenna;
 	struct ipw_supported_rates rates;
 	u32 power;
-	lck_mtx_t *mutex;
+	IOLock *mutex;
 	IOSimpleLock *spin;
 	u32 freq_band;
 	u32 band;
@@ -1018,7 +1106,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	u16 rts_threshold;
 	struct list_head network_list;
 	struct list_head network_free_list;
-	thread_call_t tlink[9];
+	thread_call_t tlink[20];
 	ipw_priv *priv;
 	ieee80211_device ieee2;
 	ipw_priv priv2;
@@ -1029,7 +1117,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int burst_duration_CCK;
 	int burst_duration_OFDM;
 	ifnet_t fifnet;
-	
+
 	
 };
 
