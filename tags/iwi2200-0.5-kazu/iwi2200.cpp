@@ -1091,11 +1091,16 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param) {
 	//ipw_net_hard_start_xmit(txb,priv->net_dev,1 );
 	if(txb){
 		IWI_DEBUG("mbuf2txb is successed\n");
-	}else {
-		IWI_DEBUG("mbuf2txb() is failed\n");
+		if(ipw_net_hard_start_xmit(txb,priv->net_dev,1) == NETDEV_TX_OK)
+			IWI_DEBUG("tx packet is added to queue\n");
+		else
+			IWI_DEBUG("tx packet is not added to queue\n");
+		//kfree(txb);
+		return kIOReturnOutputSuccess;
+			
 	}
-	kfree(txb);
-	return kIOReturnOutputSuccess;
+	IWI_DEBUG("mbuf2txb() is failed\n");
+	return kIOReturnOutputDropped;
 }
 IOOutputQueue * darwin_iwi2200::createOutputQueue( void )
 {
@@ -2000,7 +2005,7 @@ IOReturn darwin_iwi2200::enable( IONetworkInterface * netif )
 	IWI_DEBUG("enabling netif...\n");
 	//queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_up),priv,NULL,true);
 	//ipw_up(priv);
-	ipw_associate(priv);
+	//ipw_associate(priv);
 	IWI_DEBUG("enabling done\n");
 	return kIOReturnSuccess;
 }
@@ -5562,7 +5567,7 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	//ipw_init_ordinals(priv);
 	//configu(priv);
 	super::enable(fNetif);
-	//ipw_up(priv);
+	ipw_up(priv);
 	interface->setPoweredOnByUser(true);
 	//ifnet_set_flags(fifnet, IFF_UP | IFF_RUNNING | IFF_MULTICAST | IFF_BROADCAST | IFF_SIMPLEX , IFF_RUNNING | IFF_MULTICAST | IFF_UP | IFF_BROADCAST | IFF_SIMPLEX);
 	//setLinkStatus(kIONetworkLinkActive, mediumTable[MEDIUM_TYPE_AUTO]);
@@ -5605,6 +5610,7 @@ darwin_iwi2200::setPOWER(IO80211Interface *interface,
 						struct apple80211_power_data *pd)
 {
 	IWI_DEBUG("setPOWER %d, %d %d %d %d\n",pd->num_radios, pd->power_state[0],pd->power_state[1],pd->power_state[2],pd->power_state[3]);
+	//ipw_up(priv);
 	if (pd->power_state[pd->num_radios]==1)
 	{
 		IWI_DEBUG("power on\n");
@@ -8902,7 +8908,7 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 	if (rtap_iface && netif_running(priv->prom_net_dev))
 		ipw_handle_promiscuous_tx(priv, txb);
 #endif
-
+	IWI_DEBUG("%s np \n",__FUNCTION__);
 	ret = ipw_tx_skb(priv, txb, pri);
 	if (ret == NETDEV_TX_OK)
 		__ipw_led_activity_on(priv);
@@ -8928,7 +8934,8 @@ u8 darwin_iwi2200::ipw_find_station(struct ipw_priv *priv, u8 * bssid)
 int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb, int pri)
 {
 	/* fix me: must set */
-	struct ieee80211_hdr_3addrqos *hdr /*= (struct ieee80211_hdr_3addrqos *)
+	struct ieee80211_hdr_3addrqos *hdr = (struct ieee80211_hdr_3addrqos *)mbuf_datastart(txb->fragments[0]);
+	/*= (struct ieee80211_hdr_3addrqos *)
 	    txb->fragments[0]->data */; 
 	int i = 0;
 	struct tfd_frame *tfd;
@@ -9047,15 +9054,15 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 	/* payload */
 	tfd->u.data.num_chunks = cpu_to_le32(min((u8) (NUM_TFD_CHUNKS - 2),
 						 txb->nr_frags));
-	IPW_DEBUG_FRAG("%i fragments being sent as %i chunks.\n",
+	IWI_DEBUG("%i fragments being sent as %i chunks.\n",
 		       txb->nr_frags, le32_to_cpu(tfd->u.data.num_chunks));
 	for (i = 0; i < le32_to_cpu(tfd->u.data.num_chunks); i++) {
-		IPW_DEBUG_FRAG("Adding fragment %i of %i (%d bytes).\n",
+		IWI_DEBUG("Adding fragment %i of %i (%d bytes).\n",
 			       i, le32_to_cpu(tfd->u.data.num_chunks),
-			       txb->fragments[i]->len - hdr_len);
-		IPW_DEBUG_TX("Dumping TX packet frag %i of %i (%d bytes):\n",
+			       mbuf_len(txb->fragments[i]) - hdr_len);
+		IWI_DEBUG("Dumping TX packet frag %i of %i (%d bytes):\n",
 			     i, tfd->u.data.num_chunks,
-			     txb->fragments[i]->len - hdr_len);
+			     mbuf_len(txb->fragments[i]) - hdr_len);
 		/*printk_buf(IPW_DL_TX, txb->fragments[i]->data + hdr_len,
 			   txb->fragments[i]->len - hdr_len); */
 		// fix me: must use mbuf cursor
@@ -9088,7 +9095,7 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 			remaining_bytes += mbuf_len(txb->fragments[j]) - hdr_len;
 			//remaining_bytes += txb->fragments[j]->len - hdr_len;
 
-		printk(KERN_INFO "Trying to reallocate for %d bytes\n",
+		IWI_DEBUG( "Trying to reallocate for %d bytes\n",
 		       remaining_bytes);
 		//skb = alloc_skb(remaining_bytes, GFP_ATOMIC); // must research alloc_skb
 		skb = allocatePacket(remaining_bytes);
@@ -9099,7 +9106,7 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 				//fix me 
 				int size = mbuf_len(txb->fragments[j]) - hdr_len;
 
-				printk(KERN_INFO "Adding frag %d %d...\n",
+				IWI_DEBUG( "Adding frag %d %d...\n",
 				       j, size);
 				// fix me : must treat fragments
 				/* memcpy(skb_put(skb, size),
