@@ -1,0 +1,81 @@
+#summary method of iwi kext
+#labels Featured,Install
+= Introduction =
+this is currently installation documents for iwi2200.
+
+
+= Requirement =
+ * Mac OS X 10.4.7( have problemn in 10.4.8)
+
+= Steps =
+typing in Terminal in 2-3
+1. go to Terminal.App
+2. extract file 
+type in terminal
+{{{
+% unzip -l iwi2200.zip
+}}}
+2. change owner
+{{{
+% sudo chown -R root:wheel iwi2200.kext
+}}}
+   if you ask password , plz type.
+3. load kernel module
+{{{
+  % sudo kextload iwi2200
+}}}
+4. enabling power 
+   press airpot power button?
+   ( I dont know detail , my machine cannot set power button)
+   
+   if power is enable, "Radio is disable" display.
+
+   edit file iwi2200/Contents/Info.plist and change value 1 to 0
+{{{
+                        <key>p_disable</key>
+                        <integer>1</integer> <- shuld change
+}}}  
+{{{
+                        <key>p_disable</key>
+                        <integer>0</integer> <- shuld change
+}}}
+   and reboot. after reboot, plz load kernel modeul ( 3.)
+
+= Warning = 
+* this driver dont work perfectly.
+* working features is from booting to association. cannot send data packet to hardware and upper layer.
+* if display "associated: ***(network nmae)", it work. 
+
+= Bugs = 
+about bug report
+
+if can use google project, send report to issues.
+if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
+
+
+= about 10.4.8 =
+ * Crashed in 10.4.8  when  you set channel in Airpot menu.
+  if open network and cannot use encrpytion , np.
+ * cannot start network scanning and associating.
+   if you display " Failed to send TX_POWER: Already sending a command." in log.
+  
+   it may be work xkazu's unstables version.
+   if you has xcode environment,
+   plz get source code from svn and build it. binaries is not released yet.
+  
+   locations is  tags/iwi2200-0.5-kazu in this project's svn repository.
+
+
+
+
+
+ 
+  
+
+
+
+
+
+
+
+
