@@ -502,17 +502,6 @@ typedef enum {
 } mediumType_t;
 
 
-/*
- *      This is an Ethernet frame header.
- */
-/* copy from linux/if_ether.h */
-
-struct ethhdr {
-        unsigned char   h_dest[ETH_ALEN];       /* destination eth addr */
-        unsigned char   h_source[ETH_ALEN];     /* source ether addr    */
-        unsigned short  h_proto;                /* packet type ID field */
-} __attribute__((packed));
-
 class darwin_iwi2200 : public IO80211Controller
 {
 	OSDeclareDefaultStructors(darwin_iwi2200)
@@ -546,8 +535,8 @@ public:
 	virtual const OSString * newVendorString( void ) const;
 	virtual bool		addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name = 0);
 	virtual IOReturn	selectMedium(const IONetworkMedium * medium);
-	virtual struct ieee80211_txb * darwin_iwi2200::mbuf2txb(mbuf_t m);
-          virtual UInt32	outputPacket(mbuf_t m, void * param);			
+
+			
 	virtual int			sendCommand(UInt8 type,void *data,UInt8 len,bool async);
 	virtual int			ipw_scan(struct ipw_priv *priv, int type);
 	virtual int			initCmdQueue();
@@ -651,7 +640,6 @@ virtual IOOptionBits getState( void ) const;
 	virtual struct ipw_rx_queue *darwin_iwi2200::ipw_rx_queue_alloc(struct ipw_priv *priv);
 	virtual int ipw_queue_tx_hcmd(struct ipw_priv *priv, int hcmd, void *buf,
 			     int len, int sync);
-	virtual int ipw_net_is_queue_full(struct net_device *dev, int pri);
 	virtual int ipw_queue_space(const struct clx2_queue *q);
 	virtual int ipw_queue_tx_reclaim(struct ipw_priv *priv,
 				struct clx2_tx_queue *txq, int qindex);
@@ -808,26 +796,21 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual int ipw_send_cmd_pdu(struct ipw_priv *priv, u8 command, u8 len,
 			    void *data);
 	// add kazu
-	virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
-	virtual void ieee80211_rx_mgt(struct ieee80211_device *ieee, 
+    virtual void ieee80211_rx_mgt(struct ieee80211_device *ieee, 
 									  struct ieee80211_hdr_4addr *header,
 									   struct ieee80211_rx_stats *stats);
 	virtual void ieee80211_process_probe_response(struct ieee80211_device *ieee,
-									struct ieee80211_probe_response *new_beacon,
-									struct ieee80211_rx_stats *stats); // copy from isr_process_probe_response in ipw-0.2
+        struct ieee80211_probe_response *new_beacon,
+        struct ieee80211_rx_stats *stats); // copy from isr_process_probe_response in ipw-0.2
 	virtual int ieee80211_network_init(struct ieee80211_device *ieee,
 	                 struct ieee80211_probe_response *beacon,
 					 struct ieee80211_network *network,
 					 struct ieee80211_rx_stats *stats); 
-          virtual int ieee80211_parse_info_param(struct ieee80211_info_element
+    virtual int ieee80211_parse_info_param(struct ieee80211_info_element
 				      *info_element, u16 length,
 				      struct ieee80211_network *network);
 	virtual int ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
 				       *frame, struct ieee80211_rx_stats *stats);
-	virtual int ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
-									struct net_device *dev, int pri);
-	virtual u8 ipw_find_station(struct ipw_priv *priv, u8 * bssid);
-	virtual int ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb, int pri);
 	virtual int is_beacon(__le16 fc)
 	{
 		return (WLAN_FC_GET_STYPE(le16_to_cpu(fc)) == IEEE80211_STYPE_BEACON);
@@ -946,26 +929,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
 	return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
 }
-/* skb functions */
-#define skb_reserve(skb,len) mbuf_adj(skb, len)
-inline unsigned char *skb_put(mbuf_t m,size_t len)
-{
-	unsigned char *tmp = (unsigned char *)mbuf_datastart(m);
-	IOLog("iwi2200: addr start 0x%08x    len %d before skb_put\n",mbuf_datastart(m),mbuf_len(m)  );
-	mbuf_align_32(m, len);
-	IOLog("iwi2200: addr start 0x%08x    len %d after skb_put\n",mbuf_datastart(m),mbuf_len(m)  );
-	return tmp;
-}
-inline unsigned char *skb_pull(mbuf_t m,size_t len)
-{
-	//size_t *offset;
-	//mbuf_t *location;
-	IOLog("iwi2200: addr start 0x%08x   len %d before skb_pull\n",mbuf_datastart(m),mbuf_len(m)  );
-	mbuf_adj(m,len);
-	IOLog("iwi2200: addr start 0x%08x   len %d after skb_pull\n",mbuf_datastart(m),mbuf_len(m)  );
-	//return  (unsigned char *)mbuf_datastart(m);
-	return (unsigned char *)mbuf_datastart(m) + mbuf_len(m) - len; 
-}
+
 
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
 
@@ -1074,9 +1038,9 @@ inline unsigned char *skb_pull(mbuf_t m,size_t len)
 #define IWI_DEBUG(...) IOLog("iwi2200: " __VA_ARGS__)
 #define IEEE80211_DEBUG_MGMT(...) IWI_DEBUG("(80211_MGMT) "  __VA_ARGS__)
 #define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
-#define IWI_WARNING(...) IWI_DEBUG(" W " __VA_ARGS__)
-#define IWI_ERR(...) IWI_DEBUG(" E " __VA_ARGS__)
-#define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
+
+
+
 
 #endif
 
