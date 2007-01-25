@@ -55,7 +55,8 @@ if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
 
 = about 10.4.8 =
  * Crashed in 10.4.8  when  you set channel in Airpot menu.
-  if open network and cannot use encrpytion , np.
+  if open network and dont use encrpytion , may be worked.
+
  * cannot start network scanning and associating.
    if you display " Failed to send TX_POWER: Already sending a command." in log.
   
@@ -71,7 +72,6 @@ if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
 
  
   
-
 
 
 
