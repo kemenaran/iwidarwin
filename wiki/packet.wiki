@@ -88,6 +88,7 @@ payload of each frame is reduced to 492 bytes.
       SNAP HEADER
 }}}
 = mbuf =
+
 {{{
 struct mbuf {
         struct  m_hdr m_hdr;
@@ -148,6 +149,16 @@ struct  pkthdr {
         SLIST_HEAD(packet_tags, m_tag) tags; /* list of packet tags */
 };
 }}}
+= methods =
+ * allocatePacket
+   allocate packet with *data* sepecified length.
+   packet is the whole of chains.
+ * mbuf_pkthdr_len
+   return length of packet( data of the whole chaines)
+ * mbuf_len 
+   data size of signle mbuf  
+
+
 = function =
 from bsd/sys/kpi_mbuf.h 
    * mbuf_data
