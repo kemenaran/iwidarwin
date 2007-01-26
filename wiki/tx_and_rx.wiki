@@ -1,0 +1,10 @@
+#labels tx,rx,Development
+#caution with implementation about tx and rx
+
+= rx =
+* len of args with *inputPacket* *must* the whole packet size( not mbuf_len ).
+
+= tx = 
+* mbuf receive from *outputPacket* is chains. and first mbuf is packet header of mbuf.
+* must copy all packet date  when store mbuf to queue.
+
