@@ -1078,7 +1078,8 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	 int debug;
 	 int channel;
 	 int mode;
-	int disable2;
+	 int disable2;
+	 int early_up;
 	 u32 ipw_debug_level;
 	 int associate;
 	 int auto_create;

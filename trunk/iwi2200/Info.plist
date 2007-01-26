@@ -40,6 +40,8 @@
 			<integer>1</integer>
 			<key>p_mode</key>
 			<integer>0</integer>
+			<key>use_10_4_8</key>
+			<integer>0</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>

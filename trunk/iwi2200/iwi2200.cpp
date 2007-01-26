@@ -321,30 +321,32 @@ bool darwin_iwi2200::init(OSDictionary *dict)
 
 	
 /* Initialize module parameter values here */
-qos_enable = 1;
-qos_burst_enable = 1;
-qos_no_ack_mask = 0;
-burst_duration_CCK = 0;
-burst_duration_OFDM = 0;
-config = 0;
- cmdlog = 0;
+  qos_enable = 1;
+  qos_burst_enable = 1;
+  qos_no_ack_mask = 0;
+  burst_duration_CCK = 0;
+  burst_duration_OFDM = 0;
+  config = 0;
+  cmdlog = 0;
   debug = 0;
   channel = 0;
   mode = 0;
   disable2=1;
+  early_up=0;
   associate = 1;
   auto_create = 1;
   led = 1;
   bt_coexist = 1;
   hwcrypto = 0;
   roaming = 1;
- antenna = CFG_SYS_ANTENNA_BOTH;
+  antenna = CFG_SYS_ANTENNA_BOTH;
  
   disable2=OSDynamicCast(OSNumber,dict->getObject("p_disable"))->unsigned32BitValue();
   led=OSDynamicCast(OSNumber,dict->getObject("p_led"))->unsigned32BitValue();
   mode=OSDynamicCast(OSNumber,dict->getObject("p_mode"))->unsigned32BitValue();
-
- IWI_DEBUG("disable %d led %d mode %d\n",disable2, led, mode);
+  early_up=OSDynamicCast(OSNumber,dict->getObject("use_10_4_8"))->unsigned32BitValue();
+  
+  IWI_DEBUG("disable %d led %d mode %d\n",disable2, led, mode);
 
  return super::init(dict);
 }
@@ -5160,6 +5162,12 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	
 	//ipw_init_ordinals(priv);
 	//configu(priv);
+	
+	if(early_up > 0){
+	    // use_10_4_8 options is set.
+	    IWI_DEBUG("%s early time ipw_up\n");
+	    ipw_up(priv);
+	}
 	super::enable(fNetif);
 	interface->setPoweredOnByUser(true);
 	//ifnet_set_flags(fifnet, IFF_UP | IFF_RUNNING | IFF_MULTICAST | IFF_BROADCAST | IFF_SIMPLEX , IFF_RUNNING | IFF_MULTICAST | IFF_UP | IFF_BROADCAST | IFF_SIMPLEX);
