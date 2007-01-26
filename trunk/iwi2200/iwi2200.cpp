@@ -7938,17 +7938,27 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 {
 	int offset = (4 - ((int)(mbuf_datastart(m)) & 3)) % 4;    //packet needs to be 4 byte aligned
 	mbuf_t nm;
+	mbuf_t nm2;
+	size_t psize=0;
+	
 	if (offset) { 
-	nm = copyPacket(m, 0);
-	freePacket(m);
+		nm = copyPacket(m, 0);
+		freePacket(m);
 	}
-	else    nm=m;
-
+		else    nm=m;
+		
+	
+	for (nm2 = nm; nm2; nm2 = mbuf_next(nm)){
+		 psize+= mbuf_len(nm2);
+	}
+	IWI_DEBUG(" %s single packet size %d  all %d \n",__FUNCTION__ ,mbuf_len(nm),psize);
+	
 	if (!(ifnet_flags(fifnet) & IFF_RUNNING) || mbuf_len(nm)==0 || nm==NULL)
 	{
-        if (nm!=NULL) freePacket(nm);
-        return kIOReturnOutputDropped;
-    }
+		if (nm!=NULL) freePacket(nm);
+			return kIOReturnOutputDropped;
+	}
+	
 	IWI_DEBUG("call ieee80211_xmit\n");
 	int ret= ieee80211_xmit(nm,priv->net_dev);
 	return ret;
