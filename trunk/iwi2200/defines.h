@@ -951,8 +951,21 @@ typedef unsigned char UInt8;
  
  #define SCAN_ITEM_SIZE 128
  
- 
- 
+#define ETH_P_AARP	0x80F3		/* Appletalk AARP		*/
+#define ETH_P_IPX	0x8137		/* IPX over DIX			*/
+
+ #define FREE_FRAME_THRESHOLD 5
+#define IEEE80211_ERP_PRESENT                  (0x01)
+#define IEEE80211_ERP_USE_PROTECTION           (0x02)
+#define IEEE80211_ERP_BARKER_PREAMBLE_MODE     (0x04)
+#define IPW_SUPPORTED_RATES_IE_LEN         8
+
+
+
+
+
+
+
  
 			 
 
