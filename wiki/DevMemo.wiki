@@ -3,6 +3,7 @@ Development Informations. links for develpment , and specification information
 
 = Specs =
  * [packet skb ,mbuf and ieee80211 data frames]
+ * [tx_and_rx tx and rx].
 
 = link =
  * [https://trac.kismac.de/browser/others/GTDriver/ GTDriver Source Code] GTDriver is prism GT driver for Mac OS X.
