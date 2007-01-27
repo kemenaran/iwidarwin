@@ -1,4 +1,5 @@
 #summary data structure sk_buff and mbuf
+#labels sk_buff,mbuf,structure
 
 = sk_buff =
 
