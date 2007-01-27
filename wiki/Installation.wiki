@@ -71,8 +71,9 @@ if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
 if you report bug, plz send [http://forum.insanelymac.com/index.php?showtopic=36976 forum]
 or Issues of this project. and *must* attached *log message.
 
+and require your iwi version too.
 
-if logmessage is attached, we dont understand point of problem.
+if logmessage is not  attached, we dont understand point of problem.
 == log message ==
  * iwi2200 part of /var/log/system.log  or dmesg ( if overflow logs, system.log)
  * ioreg (not must )
