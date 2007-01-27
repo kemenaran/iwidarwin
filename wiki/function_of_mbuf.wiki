@@ -9,7 +9,10 @@
    return length of packet( data of the whole chaines)
  * mbuf_len 
    data size of signle mbuf  
-
+ * mbuf_leadingspace
+   area length before current pointer.( only single mbuf).
+ * mbuf_trailingspace
+   free area length following current data. (only single mbuf).
 
 = function =
 from bsd/sys/kpi_mbuf.h 
