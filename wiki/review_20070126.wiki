@@ -1,5 +1,5 @@
 #summary this review comment of 20070126 jalavoui's test.
-#labels 20070126,test,review,Development
+#labels Development,test,review,Development
 
 = general =
 == mbuf_len ==
@@ -19,7 +19,7 @@ because i think that wep and encryption support should not support.
 (encryption should support  in future version )
 
  
-= details = 
+= details =
 can see my comment with searching "fix me" in sources.
 
 == ipw_handle_data_packet ==
@@ -67,7 +67,7 @@ should use mbuf_pkthdr_len ?
 
 == ipw_tx_skb ==
 this method is not called,now. but i checked
-* always use?
+ * always use?
 {{{
 @@ -7733,12 +7762,12 @@
         struct ieee80211_hdr_3addrqos *hdr = (struct ieee80211_hdr_3addrqos*)mbu
@@ -86,7 +86,7 @@ f_datastart(txb
 +       struct clx2_tx_queue *txq = &priv->txq[0];
 +#endif
 }}}
-*  mbuf_len issue.
+ *  mbuf_len issue.
 {{{
     @@ -7885,6 +7919,7 @@
                 u16 remaining_bytes = 0;
@@ -109,3 +109,4 @@ f_datastart(txb
  
                                 IWI_DEBUG( "Adding frag %d %d...\n",
 }}}
+
