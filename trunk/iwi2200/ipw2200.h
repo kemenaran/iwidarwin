@@ -723,6 +723,8 @@ struct alive_command_responce {
 } __attribute__ ((packed));
 
 #define IPW_MAX_RATES 12
+#define NETDEV_TX_OK            0
+
 
 struct ipw_rates {
 	u8 num_rates;

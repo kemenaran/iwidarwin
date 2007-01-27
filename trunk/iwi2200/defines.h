@@ -728,8 +728,9 @@ typedef unsigned char UInt8;
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-# define __builtin_expect(x, expected_value) (x)
+#define __builtin_expect(x, expected_value) (x)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
+#define likely(x) __builtin_expect(!!(x), 1)
 
 #define STATUS_HCMD_ACTIVE      (1<<0)	/**< host command in progress */
 
