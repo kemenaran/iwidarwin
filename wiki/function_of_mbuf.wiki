@@ -7,6 +7,9 @@
    packet is the whole of chains.
  * mbuf_pkthdr_len
    return length of packet( data of the whole chaines)
+ * mbuf_pkthdr_setlen
+   set length of packet (data of the whole chaines).
+   if use this function, should chage other mbuf_len of same chains?
  * mbuf_len 
    data size of signle mbuf  
  * mbuf_leadingspace
