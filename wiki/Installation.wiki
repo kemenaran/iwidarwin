@@ -67,15 +67,12 @@ if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
    locations is  tags/iwi2200-0.5-kazu in this project's svn repository.
 
 
+= bug report = 
+if you report bug, plz send [http://forum.insanelymac.com/index.php?showtopic=36976 forum]
+of project issue. and *must* attached *log message.
 
 
-
- 
-  
-
-
-
-
-
-
-
+if logmessage is attached, we dont understand point of problem.
+== log message ==
+ * iwi2200 part of /var/log/system.log  or dmesg ( if overflow logs, system.log)
+ * ioreg (not must )
