@@ -34,6 +34,9 @@ ize
 e chain. 
         mbuf_setlen(rxb->skb, le16_to_cpu(pkt->u.frame.length));
 }}}
+ * sorry it may be no problem. [kazuhisa]
+   AllocatePacket allocate only (single packet) . ( size = 3000 )
+   mbuf_len = muf_pkthdr_len in this conditions.
 
 == ipw_net_hard_start_xmit ==
 {{{
