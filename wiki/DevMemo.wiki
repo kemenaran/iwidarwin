@@ -8,3 +8,6 @@ Development Informations. links for develpment , and specification information
 = link =
  * [https://trac.kismac.de/browser/others/GTDriver/ GTDriver Source Code] GTDriver is prism GT driver for Mac OS X.
  * [http://ipw2200.sf.net/ ipw2200 project] Linux Driver.
+
+= Others = 
+ * [review_20070126 review of 20070126 with merging]
