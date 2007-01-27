@@ -67,7 +67,7 @@ if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
    locations is  tags/iwi2200-0.5-kazu in this project's svn repository.
 
 
-= bug report = 
+= bug report =
 if you report bug, plz send [http://forum.insanelymac.com/index.php?showtopic=36976 forum]
 of project issue. and *must* attached *log message.
 
