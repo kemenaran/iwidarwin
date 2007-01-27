@@ -1,0 +1,111 @@
+#summary this review comment of 20070126 jalavoui's test.
+#labels 20070126,test,review,Development
+
+= general =
+== mbuf_len ==
+  I find following things whe i research about mbuf.
+  I think that mbuf_len may chage mbuf_pkthdr_len in many place.
+  mbuf_len is not packet size of the whole and single mbuf of size. 
+  perhaps mbuf_len return data length of first mbuf.
+== ipw_tx_skb == 
+mbuf directry  is pushed to queue. this may be lacking sevaral information.
+if remove it for test, it is no problem.
+
+== fragmentation ==
+i think that fragmentation is not require ( if wep dont supported )
+i dont research fragmentation 
+because i think that wep and encryption support should not support.
+
+(encryption should support  in future version )
+
+ 
+= details = 
+can see my comment with searching "fix me" in sources.
+
+== ipw_handle_data_packet ==
+ * len argument is mbuf_len(length of single mbuf ..mbuf->m_len)'s
+  this should be mbuf_pkthdr_len ? 
+{{{
+        //skb_reserve(txb->fragments[i], headroom);
++       // fix me: dont data length of single mbuf, should be the whole packet s
+ize
++       //           mbuf_setlen -> mbuf_set_pkghdr_len ?
++       //           but if so, may change skb->m_len in other mbuf with the sam
+e chain. 
+        mbuf_setlen(rxb->skb, le16_to_cpu(pkt->u.frame.length));
+}}}
+
+== ipw_net_hard_start_xmit ==
+{{{
+@@ -7395,9 +7417,13 @@
+                priv->ieee->stats.tx_carrier_errors++;
+                //netif_stop_queue(dev);
+                fTransmitQueue->stop();
++               // fix me:  flush is not requuired?
+                goto fail_unlock;
++       // check after.
++       // fix me : ipw_tx_skb is not require?
++       //            the reason of copyed mbuf at first?
++       //            set a like a frame_length in ipw_tx_skb... 
+        //ret = ipw_tx_skb(priv, txb, pri);
+        struct clx2_tx_queue *txq = &priv->txq[0];
+        struct clx2_queue *q = &txq->q;
+}}}
+
+
+== ieee80211_xmit ==
+should use mbuf_pkthdr_len ?
+
+{{{
+@@ -7513,6 +7540,7 @@
+        //skb_pull(skb, sizeof(struct ethhdr));
+        mbuf_adj(skb, sizeof(struct ethhdr));
+        /* Determine total amount of storage required for TXB packets */
++       // fix me : mbuf_pkthdr_len ?
+        bytes = mbuf_len(skb) + SNAP_SIZE + sizeof(u16);
+}}}
+
+== ipw_tx_skb ==
+this method is not called,now. but i checked
+* always use?
+{{{
+@@ -7733,12 +7762,12 @@
+        struct ieee80211_hdr_3addrqos *hdr = (struct ieee80211_hdr_3addrqos*)mbu
+f_datastart(txb
+->fragments[0]);
+        int i = 0;
+        struct tfd_frame *tfd;
+-//#ifdef CONFIG_IPW2200_QOS
++#ifdef CONFIG_IPW2200_QOS
+        int tx_id = ipw_get_tx_queue_number(priv,pri);
+        struct clx2_tx_queue *txq = &priv->txq[tx_id];
+-//#else
+-//     struct clx2_tx_queue *txq = &priv->txq[0];
+-//#endif
++#else
++       struct clx2_tx_queue *txq = &priv->txq[0];
++#endif
+}}}
+*  mbuf_len issue.
+{{{
+    @@ -7885,6 +7919,7 @@
+                u16 remaining_bytes = 0;
+                int j;
+ 
++               // fix me: check mbuf_len
+                for (j = i; j < txb->nr_frags; j++)
+                        remaining_bytes += mbuf_len(txb->fragments[j]) - hdr_len
+; 
+}}}
+{{{
+   @@ -7895,6 +7930,7 @@
+                if (skb != NULL) {
+                        tfd->u.data.chunk_len[i] = cpu_to_le16(remaining_bytes);
+
+                        for (j = i; j < txb->nr_frags; j++) {
++                               // fix me: mbuf_len
+                                int size = mbuf_len(txb->fragments[j]) - hdr_len
+;
+ 
+                                IWI_DEBUG( "Adding frag %d %d...\n",
+}}}
