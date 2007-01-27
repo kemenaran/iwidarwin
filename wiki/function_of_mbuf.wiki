@@ -1,0 +1,25 @@
+#summary abstraction about function of mbuf
+#labels mbuf,function
+
+= methods =
+ * allocatePacket
+   allocate packet with *data* sepecified length.
+   packet is the whole of chains.
+ * mbuf_pkthdr_len
+   return length of packet( data of the whole chaines)
+ * mbuf_len 
+   data size of signle mbuf  
+
+
+= function =
+from bsd/sys/kpi_mbuf.h 
+   * mbuf_data
+   * mbuf_datastart 
+   * mbuf_setdata
+   * mbuf_align_32
+   * mbuf_data_to_physical
+   * mbuf_get
+   * mbuf_getcluster
+   * mbuf_mclget
+   * mbuf_mclget
+   * etc
