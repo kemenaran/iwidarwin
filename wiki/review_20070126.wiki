@@ -34,7 +34,7 @@ ize
 e chain. 
         mbuf_setlen(rxb->skb, le16_to_cpu(pkt->u.frame.length));
 }}}
- * sorry it may be no problem. [kazuhisa]
+ * sorry it may be no problem. - [xkazu]
    AllocatePacket allocate only (single packet) . ( size = 3000 )
    mbuf_len = muf_pkthdr_len in this conditions.
 
@@ -112,4 +112,3 @@ f_datastart(txb
  
                                 IWI_DEBUG( "Adding frag %d %d...\n",
 }}}
-
