@@ -1026,7 +1026,8 @@ inline unsigned char *skb_pull(mbuf_t m,size_t len)
 	 int debug;
 	 int channel;
 	 int mode;
-	int disable2;
+	 int disable2;
+	 int early_up;
 	 u32 ipw_debug_level;
 	 int associate;
 	 int auto_create;
