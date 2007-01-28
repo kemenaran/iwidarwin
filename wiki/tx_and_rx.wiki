@@ -1,5 +1,5 @@
+#summary caution with implementation about tx and rx
 #labels tx,rx,Development
-#caution with implementation about tx and rx
 
 = rx =
  * len of args with *inputPacket* *must* the whole packet size( not mbuf_len ).
