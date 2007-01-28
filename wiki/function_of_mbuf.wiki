@@ -5,8 +5,12 @@
  * allocatePacket
    allocate packet with *data* sepecified length.
    packet is the whole of chains.
+   first packet has MBUF_PKTHDR.
+   
+
  * mbuf_pkthdr_len
    return length of packet( data of the whole chaines)
+
  * mbuf_pkthdr_setlen
    set length of packet (data of the whole chaines).
    if use this function, should chage other mbuf_len of same chains?
@@ -16,6 +20,66 @@
    area length before current pointer.( only single mbuf).
  * mbuf_trailingspace
    free area length following current data. (only single mbuf).
+
+ * mbuf_prepend
+   reverse data pointer (m_data ) with specified size . 
+   this is the same of *skb_push*
+
+ * mbuf_adj
+   decrese m_len(if MBUF_PKTHDR, with m_pktdr.len ) and increate data pointer(m_data) and  
+   this is the same *skb_pull*. but ( skb_pull is return old data pointer ).
+   if size argument < 0 , this is the same *skb_trim*
+
+ * mbuf_datastart
+   beging point of data. if MBUF_FLAGS != M_EXT, m_dat,
+   if MBUF_FRAGS == M_EXT, m_ext is m_ext.ext_buf ( begining point of extrac buffer )
+ * mbuf_data
+   current data point ( m_data )
+
+ * mbuf_maxlen
+   current mbuf's maxsize.  
+
+ * mbuf_setdata
+   set position of current data pointer and set mbuf->m_len.
+   warning: this function dont think entire packet. 
+    if mbuf_flags(mbuf) is MBUF_PKTHDR|MBUF_EXT, mbuf->m_pkghdr.len is old size.
+        
+
+ * mbuf_align_32
+   move current data pointer to m_datastart + 
+
+
+== wraping skb == 
+
+* skb_reserve 
+{{{
+    void skb_reserve(struct mbuf_t skb, unsigned int len)
+    {
+         void *data = (Uint8*)mbuf_data(skb)+len; 
+         mbuf_setdata(skb,data,mbuf_len(skb));// m_len is not changed.
+    }
+}}}
+* skb_put
+{{{
+    inline void *skb_put(mbuf_t skb, unsigned int len)
+    {
+        
+        void *data=(UInt8*)mbuf_data(skb)+mbuf_len(skb);
+        //mbuf_prepend(&skb,len,1); /* no prepend work */
+        if(mbuf_trailingspace(skb) > len )
+          mbuf_setlen(skb,mbuf_len(skb)+len);
+          
+          if(mbuf_flags(skb) & MBUF_PKTHDR){
+              mbuf_pkthdr_setlen(skb,mbuf_pkthdr_len(skb)+len); 
+          }
+        }
+        return data;
+     }
+
+}}}
+
+
+
 
 = function =
 from bsd/sys/kpi_mbuf.h 
@@ -29,3 +93,4 @@ from bsd/sys/kpi_mbuf.h
    * mbuf_mclget
    * mbuf_mclget
    * etc
+
