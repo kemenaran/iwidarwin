@@ -740,7 +740,7 @@ struct ieee80211_frag_entry {
 	unsigned long first_frag_time;
 	unsigned int seq;
 	unsigned int last_frag;
-	struct sk_buff *skb;
+	mbuf_t skb;
 	u8 src_addr[ETH_ALEN];
 	u8 dst_addr[ETH_ALEN];
 };

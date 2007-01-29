@@ -5,6 +5,76 @@
 #include "defines.h"
 #include "iwieth.h"
 
+#define IWI_DEBUG(...) IOLog("iwi2200: " __VA_ARGS__)
+#define IEEE80211_DEBUG_MGMT(...) IWI_DEBUG("(80211_MGMT) "  __VA_ARGS__)
+#define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
+#define IWI_WARNING(...) IWI_DEBUG(" W " __VA_ARGS__)
+#define IWI_ERR(...) IWI_DEBUG(" E " __VA_ARGS__)
+#define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
+#define IWI_DUMP_MBUF(f, skb, len) \
+    IWI_DEBUG(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
+        f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
+
+inline void skb_reserve(mbuf_t skb, int len)
+{
+        //skb->data += len;
+        //skb->tail += len;
+/*        if (mbuf_len(skb)==0)
+        {
+                void *data=(UInt8*)mbuf_data(skb)+len;
+                mbuf_setdata(skb,data,mbuf_len(skb)+len);
+        } */
+        IWI_DUMP_MBUF(1,skb,len); 
+        void *data = (UInt8*)mbuf_data(skb) + len;
+        IWI_DUMP_MBUF(2,skb,len);
+         mbuf_setdata(skb,data, mbuf_len(skb));// m_len is not changed.
+}
+
+inline void *skb_put(mbuf_t skb, unsigned int len)
+{
+        /*unsigned char *tmp = skb->tail;
+        SKB_LINEAR_ASSERT(skb);
+        skb->tail += len;
+        skb->len  += len;
+        return tmp;*/
+        void *data = (UInt8*)mbuf_data(skb) + mbuf_len(skb);
+        //mbuf_prepend(&skb,len,1); /* no prepend work */
+         IWI_DUMP_MBUF(1,skb,len);  
+	if(mbuf_trailingspace(skb) > len ){
+		mbuf_setlen(skb,mbuf_len(skb)+len);
+		if(mbuf_flags(skb) & MBUF_PKTHDR)
+			mbuf_pkthdr_setlen(skb,mbuf_pkthdr_len(skb)+len); 
+        }
+        IWI_DUMP_MBUF(2,skb,len);  
+        return data;
+}
+
+inline void *skb_push(mbuf_t skb, unsigned int len)
+{
+        /*skb->data -= len;
+        skb->len  += len;
+        if (unlikely(skb->data<skb->head))
+                skb_under_panic(skb, len, current_text_addr());
+        return skb->data;*/
+        /* void *data=(UInt8*)mbuf_data(skb)-len;
+        mbuf_setdata(skb,data,mbuf_len(skb)+len); */
+          IWI_DUMP_MBUF(1,skb,len); 
+	mbuf_prepend(&skb,len,0);
+      IWI_DUMP_MBUF(2,skb,len);
+        return  (UInt8 *)mbuf_data(skb);
+}
+
+inline void *skb_pull(mbuf_t skb, unsigned int len)
+{
+        /*skb->len -= len;
+        BUG_ON(skb->len < skb->data_len);
+        return skb->data += len;*/
+       IWI_DUMP_MBUF(1,skb,len);  
+        mbuf_adj(skb,len);
+        void *data=(UInt8*)mbuf_data(skb);
+           IWI_DUMP_MBUF(2,skb,len);		
+        return data;
+}
 
 
 u8 P802_1H_OUI[P80211_OUI_LEN] = { 0x00, 0x00, 0xf8 };
@@ -693,7 +763,19 @@ virtual IOOptionBits getState( void ) const;
 					u16 priority, struct tfd_data *tfd);
 	virtual int ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 				   struct net_device *dev, int pri);
-	
+          virtual mbuf_t ieee80211_frag_cache_get(struct ieee80211_device *ieee,
+							struct ieee80211_hdr_4addr *hdr);
+	virtual struct ieee80211_frag_entry *ieee80211_frag_cache_find(struct
+					ieee80211_device
+					*ieee,
+					unsigned int seq,
+					unsigned int frag,
+					u8 * src,
+					u8 * dst);
+	virtual int ieee80211_frag_cache_invalidate(struct ieee80211_device *ieee,
+					struct ieee80211_hdr_4addr *hdr);
+	virtual int ieee80211_is_eapol_frame(struct ieee80211_device *ieee,
+						mbuf_t skb);	
 	
 	
 	
