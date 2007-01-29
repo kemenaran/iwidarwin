@@ -5,6 +5,9 @@
 #include "defines.h"
 #include "iwieth.h"
 
+
+// system kernel messages use "darwin_iwi2200: "
+// i'll use "iwi2200: " to separate them from the driver messages
 #define IWI_DEBUG(...) IOLog("iwi2200: " __VA_ARGS__)
 #define IEEE80211_DEBUG_MGMT(...) IWI_DEBUG("(80211_MGMT) "  __VA_ARGS__)
 #define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
@@ -14,6 +17,10 @@
 #define IWI_DUMP_MBUF(f, skb, len) \
     IWI_DEBUG(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
         f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
+
+#define IWI_DEBUG(...) do{ }while(0)
+
+
 
 inline void skb_reserve(mbuf_t skb, int len)
 {
@@ -1204,14 +1211,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	
 };
 
-// system kernel messages use "darwin_iwi2200: "
-// i'll use "iwi2200: " to separate them from the driver messages
-#define IWI_DEBUG(...) IOLog("iwi2200: " __VA_ARGS__)
-#define IEEE80211_DEBUG_MGMT(...) IWI_DEBUG("(80211_MGMT) "  __VA_ARGS__)
-#define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
-#define IWI_WARNING(...) IWI_DEBUG(" W " __VA_ARGS__)
-#define IWI_ERR(...) IWI_DEBUG(" E " __VA_ARGS__)
-#define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
+
 
 
 
