@@ -2243,18 +2243,25 @@ UInt16 darwin_iwi2200::readPromWord(UInt16 *base, UInt8 addr)
 IOReturn darwin_iwi2200::getHardwareAddress( IOEthernetAddress * addr )
 {
 	UInt16 val;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 0);
-	fEnetAddr.bytes[0]=val >> 8;
-	fEnetAddr.bytes[1]=val & 0xff;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 1);
-	fEnetAddr.bytes[2]=val >> 8;
-	fEnetAddr.bytes[3]=val & 0xff;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 2);
-	fEnetAddr.bytes[4]=val >> 8;
-	fEnetAddr.bytes[5]=val & 0xff;
+	IWI_DEBUG_FN(" is called \n");
+#if 0	
+	if (priv->mac_addr) {
+		IWI_DEBUG_FN("return mac address " MAC_FMT "\n",MAC_ARG(priv->mac_addr));
+		memcpy(addr,&(priv->mac_addr),sizeof(*addr));
+	}else{
+#else	
+		val = readPromWord(memBase, IWI_EEPROM_MAC + 0);
+		fEnetAddr.bytes[0]=val >> 8;
+		fEnetAddr.bytes[1]=val & 0xff;
+		val = readPromWord(memBase, IWI_EEPROM_MAC + 1);
+		fEnetAddr.bytes[2]=val >> 8;
+		fEnetAddr.bytes[3]=val & 0xff;
+		val = readPromWord(memBase, IWI_EEPROM_MAC + 2);
+		fEnetAddr.bytes[4]=val >> 8;
+		fEnetAddr.bytes[5]=val & 0xff;
+		memcpy(addr, &fEnetAddr, sizeof(*addr));
+#endif	
 
-	memcpy(addr, &fEnetAddr, sizeof(*addr));
-	
 	return kIOReturnSuccess;
 }
 
@@ -4754,9 +4761,25 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 
 				case IEEE80211_FTYPE_DATA:
 					IWI_DEBUG("IEEE80211_FTYPE_DATA\n");
-					if (unlikely(!network_packet || is_duplicate_packet(priv, header)))
+#if 1		
+					// fix me checking routine is not correct?			
+					if (unlikely(   /*!network_packet  || */is_duplicate_packet(priv, header)))
 					{
-						IWI_DEBUG("Dropping: "
+						
+						IWI_DEBUG("Dropping: dup?(%d) "
+							       MAC_FMT ", "
+							       MAC_FMT ", "
+							       MAC_FMT "\n",
+							       is_duplicate_packet(priv, header),
+							       MAC_ARG(header->
+								       addr1),
+							       MAC_ARG(header->
+								       addr2),
+							       MAC_ARG(header->
+								       addr3));
+						break;
+					}else {
+						IWI_DEBUG("Recieve: "
 							       MAC_FMT ", "
 							       MAC_FMT ", "
 							       MAC_FMT "\n",
@@ -4766,8 +4789,8 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 								       addr2),
 							       MAC_ARG(header->
 								       addr3));
-						break;
 					}
+#endif
 					ipw_handle_data_packet(priv, rxb,&stats);
 
 					break;
@@ -6500,7 +6523,10 @@ void darwin_iwi2200::ipw_link_up(struct ipw_priv *priv)
 	priv->last_seq_num = -1;
 	priv->last_frag_num = -1;
 	priv->last_packet_time = 0;
-	ifaddr_t tt=(ifaddr_t)priv->bssid;
+	
+
+	//ifaddr_t tt=(ifaddr_t)priv->bssid;
+	ifaddr_t tt=(ifaddr_t)priv->mac_addr;
 	setHardwareAddress(&tt, ETHER_ADDR_LEN);
 	//configu(priv);
 	ifnet_set_lladdr(fifnet, tt, ETHER_ADDR_LEN);
@@ -7722,8 +7748,8 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		frag_hdr  = (struct ieee80211_hdr_3addrqos *)skb_put(skb_frag, hdr_len);
 		memcpy(frag_hdr, &header, hdr_len);
 		
-		IWI_DEBUG("src " MAC_FMT "desc " MAC_FMT ,  
-			MAC_ARG(frag_hdr->addr1), MAC_ARG(frag_hdr->addr2) );
+		IWI_DEBUG("src " MAC_FMT "desc " MAC_FMT  " bssid " MAC_FMT "\n" ,  
+			MAC_ARG(frag_hdr->addr2), MAC_ARG(frag_hdr->addr3) , MAC_ARG(frag_hdr->addr1)  );
 		/* If this is not the last fragment, then add the MOREFRAGS
 		 * bit to the frame control */
 		if (i != nr_frags - 1) {
@@ -7746,7 +7772,8 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		
 		IWI_DUMP_MBUF(3,skb,bytes); 
 		IWI_DUMP_MBUF(4,skb_frag,bytes);
-		if ( mbuf_len(skb_frag)  - bytes  < bytes   ) {
+		if ( mbuf_trailingspace(skb_frag) < bytes  ) {
+			IWI_DEBUG("why?\n");
 			goto failed; // kazu test
 		}
 		// FIXME: this routine only copy first mbuf in changes
@@ -7950,7 +7977,7 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 		// fix me: this should be chcked ?
 		
 		
-#if 1		
+#if 0		
 		struct IOPhysicalSegment vector;
 		IOMbufLittleMemoryCursor *_mbufCursor;
 		
@@ -7959,7 +7986,7 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 		int rm = _mbufCursor->getPhysicalSegmentsWithCoalesce(txb->fragments[i], &vector, 1);
 		if (rm!=0 && (mbuf_len(txb->fragments[i]) > hdr_len))
 		{
-		    printf(" pkt_len %d vector.len %d \n",mbuf_pkthdr_len(txb->fragments[i]),vector.length);
+		    IWI_DEBUG(" pkt_len %d vector.len %d \n",mbuf_pkthdr_len(txb->fragments[i]),vector.length);
 		    tfd->u.data.chunk_ptr[i] = vector.location;
 		    tfd->u.data.chunk_len[i] = vector.length; 
 		    //  tfd->u.data.chunk_len[i] = cpu_to_le16(txb->fragments[i]->len - hdr_len); 
@@ -7975,10 +8002,13 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 		for ( mn = txb->fragments[i]; mn; mn = mbuf_next(mn) )
 		{
 			if(  mn = txb->fragments[i] ){
+				IWI_DEBUG("kick only one\n");
 				mbuf_adj(txb->fragments[i],hdr_len);
 				tfd->u.data.chunk_ptr[i] =
 					cpu_to_le32(mbuf_data_to_physical
 					(mbuf_data(txb->fragments[i])));
+				IWI_DEBUG(" pkt_len %d mbuf_len %d \n",
+					mbuf_pkthdr_len(txb->fragments[i]), mbuf_len(txb->fragments[i]) );
 				tfd->u.data.chunk_len[i] = cpu_to_le16(mbuf_pkthdr_len(txb->fragments[i]) );
 				skb_push(txb->fragments[i],hdr_len);
 			}else{
@@ -7991,8 +8021,8 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 				 txb->fragments[i]->data + hdr_len,
 				 txb->fragments[i]->len - hdr_len,
 				 PCI_DMA_TODEVICE));*/
-		tfd->u.data.chunk_len[i] = cpu_to_le16(mbuf_pkthdr_len(txb->fragments[i]) );
-			skb_push(txb->fragments[i],hdr_len);
+		/*tfd->u.data.chunk_len[i] = cpu_to_le16(mbuf_pkthdr_len(txb->fragments[i]) );
+			skb_push(txb->fragments[i],hdr_len); */
 		
 #endif
 		IWI_DEBUG("chunk_len %d\n",tfd->u.data.chunk_len[i]);
