@@ -18,7 +18,7 @@
     IWI_DEBUG(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
         f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
 
-#define IWI_DEBUG(...) do{ }while(0)
+// #define IWI_DEBUG(...) do{ }while(0)
 
 
 
