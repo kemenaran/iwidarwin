@@ -2,19 +2,26 @@
 #labels Featured,Install
 = Introduction =
 this is currently installation documents for iwi2200.
-
+updated fro v6(or v0.6).
 
 = Requirement =
- * Mac OS X 10.4.7( have problemn in 10.4.8)
+ * Mac OS X 10.4.7 or later.
 
 = Steps =
 typing in Terminal in 2-3
 1. go to Terminal.App
 2. extract file 
 type in terminal
+
+zip version
 {{{
-% unzip -l iwi2200.zip
+% unzip -l iwi2200.zip 
 }}}
+tgz version 
+{{{
+% tar zxvf iwi2220.tgz 
+}}}
+
 2. change owner
 {{{
 % sudo chown -R root:wheel iwi2200.kext
@@ -33,18 +40,29 @@ type in terminal
    edit file iwi2200/Contents/Info.plist and change value 1 to 0
 {{{
                         <key>p_disable</key>
-                        <integer>1</integer> <- shuld change
+                        <integer>1</integer> 
 }}}  
 {{{
                         <key>p_disable</key>
-                        <integer>0</integer> <- shuld change
+                        <integer>0</integer> <- should change
 }}}
    and reboot. after reboot, plz load kernel modeul ( 3.)
+5. in 10.4.8 
+   if you dont work, you can set "use_10_4_8" options
+{{{
+                        <key>use_10_4_8</key>
+                        <integer>0</integer> 
+}}}  
+{{{
+                        <key>p_disable</key>
+                        <integer>1</integer> <- should change
+}}}
+
 
 = Warning = 
-* this driver dont work perfectly.
-* working features is from booting to association. cannot send data packet to hardware and upper layer.
-* if display "associated: ***(network nmae)", it work. 
+* this driver work in open network .
+* this driver cannot specified network name. only automatic detection.
+* if u cannot get IP address via dhcp, you set static IP address.
 
 = Bugs = 
 about bug report
@@ -55,17 +73,12 @@ if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
 
 = about 10.4.8 =
  * Crashed in 10.4.8  when  you set channel in Airpot menu.
-  if open network and dont use encrpytion , may be worked.
+  if open network and dont use encrpytion , it worked.
 
- * cannot start network scanning and associating.
+ * cannot start network scanning and associating!
    if you display " Failed to send TX_POWER: Already sending a command." in log.
   
-   it may be work xkazu's unstables version.
-   if you has xcode environment,
-   plz get source code from svn and build it. binaries is not released yet.
-  
-   locations is  tags/iwi2200-0.5-kazu in this project's svn repository.
-
+   it may work in "use_10_4_8" options
 
 = bug report =
 if you report bug, plz send [http://forum.insanelymac.com/index.php?showtopic=36976 forum]
