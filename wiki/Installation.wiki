@@ -58,11 +58,17 @@ tgz version
                         <integer>1</integer> <- should change
 }}}
 
-
+= about setup = 
+ * cannot sepcified network name via Airport menu. only automatic association.
+ * if you cat get ip address after enable from airport menu , it work ( but nothing is displayed in airport menu). 
+ * availably operation in airport menu  is ip address setting and enabling. if another is set , it will not change anything.
+ 
 = Warning = 
-* this driver work in open network .
-* this driver cannot specified network name. only automatic detection.
-* if u cannot get IP address via dhcp, you set static IP address.
+ * this driver only work in open network .
+ * this driver cannot specified network name. only automatic detection.
+ * if u cannot get IP address via dhcp, you set static IP address.
+ * if large file try to send and recieve , it may fail. 
+
 
 = Bugs = 
 about bug report
@@ -85,6 +91,7 @@ if you report bug, plz send [http://forum.insanelymac.com/index.php?showtopic=36
 or Issues of this project. and *must* attached *log message.
 
 and require your iwi version too.
+
 
 if logmessage is not  attached, we dont understand point of problem.
 == log message ==
