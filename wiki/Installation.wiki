@@ -4,6 +4,9 @@
 this is currently installation documents for iwi2200.
 updated fro v6(or v0.6).
 
+== Support Hardware
+ * Intel Pro/wireless 2200BG/2945ABG
+
 = Requirement =
  * Mac OS X 10.4.7 or later.
 
