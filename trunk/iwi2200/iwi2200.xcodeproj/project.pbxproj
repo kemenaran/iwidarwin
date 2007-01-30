@@ -399,7 +399,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LIBRARY_STYLE = DYNAMIC;
-				OTHER_CFLAGS = "-DBSD_BUILD";
+				OTHER_CFLAGS = (
+					"-DBSD_BUILD",
+					"-DIWI_DEBUG_FULL",
+				);
 				OTHER_LDFLAGS = "";
 				PREBINDING = YES;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
@@ -410,7 +413,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LIBRARY_STYLE = DYNAMIC;
-				OTHER_CFLAGS = "-DBSD_BUILD";
+				OTHER_CFLAGS = (
+					"-DBSD_BUILD",
+					"-DIWI_DEBUG_NORMAL",
+				);
 				OTHER_LDFLAGS = "";
 				PREBINDING = YES;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;

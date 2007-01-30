@@ -393,7 +393,7 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 	net_dev=&net_dev2;
 	//memset(&net_dev,0,sizeof(struct ieee80211_device) + sizeof(struct ipw_priv));
 	if (!net_dev) {
-		IWI_DEBUG("Unable to network device.\n");
+		IWI_ERR("Unable to network device.\n");
 		return -1;
 	}
 	
@@ -463,12 +463,12 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 	if (associate)
 		priv->config |= CFG_ASSOCIATE;
 	else
-		IWI_DEBUG("Auto associate disabled.\n");
+		IWI_LOG("Auto associate disabled.\n");
 
 	if (auto_create)
 		priv->config |= CFG_ADHOC_CREATE;
 	else
-		IWI_DEBUG("Auto adhoc creation disabled.\n");
+		IWI_LOG("Auto adhoc creation disabled.\n");
 
 	priv->config &= ~CFG_STATIC_ESSID;
 	priv->essid_len = 0;
@@ -476,13 +476,13 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 
 	if (disable2 && option) {
 		priv->status |= STATUS_RF_KILL_SW;
-		IWI_DEBUG("Radio disabled.\n");
+		IWI_LOG("Radio disabled.\n");
 	}
 
 	if (channel != 0) {
 		priv->config |= CFG_STATIC_CHANNEL;
 		priv->channel = channel;
-		IWI_DEBUG("Bind to static channel %d\n", channel);
+		IWI_LOG("Bind to static channel %d\n", channel);
 		/* TODO: Validate that provided channel is in range */
 	}
 
@@ -520,7 +520,7 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 	if ((fPCIDevice->configRead16(kIOPCIConfigDeviceID) == 0x4223) ||
 	    (fPCIDevice->configRead16(kIOPCIConfigDeviceID) == 0x4224)) {
 		if (option == 1)
-			IWI_DEBUG(": Detected Intel PRO/Wireless 2915ABG Network "
+			IWI_LOG(": Detected Intel PRO/Wireless 2915ABG Network "
 			       "Connection\n");
 		priv->ieee->abg_true = 1;
 		band = IEEE80211_52GHZ_BAND | IEEE80211_24GHZ_BAND;
@@ -530,7 +530,7 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 		priv->ieee->mode = IEEE_A | IEEE_G | IEEE_B;
 	} else {
 		if (option == 1)
-			IWI_DEBUG(
+			IWI_LOG(
 			       ": Detected Intel PRO/Wireless 2200BG Network "
 			       "Connection\n");
 
@@ -565,7 +565,7 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 IOOptionBits darwin_iwi2200::getState( void ) const
 {
 	IOOptionBits r=super::getState();
-	IWI_DEBUG("getState = %x\n",r);
+	IWI_DEBUG_FN("getState = %x\n",r);
 	return r;
 }
 
@@ -576,19 +576,19 @@ bool darwin_iwi2200::start(IOService *provider)
 	do {
 				
 		if ( super::start(provider) == 0) {
-			IWI_DEBUG("%s ERR: super::start failed\n", getName());
+			IWI_ERR("%s super::start failed\n", getName());
 			break;
 		}
 			
 		if ( (fPCIDevice = OSDynamicCast(IOPCIDevice, provider)) == 0) {
-			IWI_DEBUG("%s ERR: fPCIDevice == 0 :(\n", getName());
+			IWI_ERR("%s  fPCIDevice == 0 :(\n", getName());
 			break;
 		}
 
 		fPCIDevice->retain();
 		
 		if (fPCIDevice->open(this) == 0) {
-			IWI_DEBUG("%s ERR: fPCIDevice->open(this) failed\n", getName());
+			IWI_ERR("%s fPCIDevice->open(this) failed\n", getName());
 			break;
 		}
 		
@@ -599,7 +599,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
 			(IOPowerConnection *) getParentEntry(gIOPowerPlane),
 			IOPMLowestState ) != IOPMNoErr) {
-				IWI_DEBUG("%s Power thingi failed\n", getName());
+				IWI_ERR("%s Power thingi failed\n", getName());
 				break;
        		}
 
@@ -614,7 +614,7 @@ bool darwin_iwi2200::start(IOService *provider)
 
   		map = fPCIDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0, kIOMapInhibitCache);
   		if (map == 0) {
-			IWI_DEBUG("%s map is zero\n", getName());
+			IWI_ERR("%s map is zero\n", getName());
 			break;
 		}
 		ioBase = map->getPhysicalAddress();
@@ -637,7 +637,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		
 		fWorkLoop = (IOWorkLoop *) getWorkLoop();
 		if (!fWorkLoop) {
-			IWI_DEBUG("%s ERR: start - getWorkLoop failed\n", getName());
+			IWI_ERR("%s ERR: start - getWorkLoop failed\n", getName());
 			break;
 		}
 	
@@ -646,7 +646,7 @@ bool darwin_iwi2200::start(IOService *provider)
 			provider);
 			
 		if(!fInterruptSrc || (fWorkLoop->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
-			IWI_DEBUG("%s fInterruptSrc error\n", getName());
+			IWI_ERR("%s fInterruptSrc error\n", getName());
 			break;;
 		}
 
@@ -676,7 +676,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		fTransmitQueue = createOutputQueue();
 		if (fTransmitQueue == NULL)
 		{
-			IWI_DEBUG("ERR: getOutputQueue()\n");
+			IWI_ERR("ERR: getOutputQueue()\n");
 			break;
 		}
 		fTransmitQueue->setCapacity(IPW_RX_BUF_SIZE);
@@ -684,7 +684,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		resetDevice((UInt16 *)memBase);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
-			IWI_DEBUG("%s attach failed\n", getName());
+			IWI_ERR("%s attach failed\n", getName());
 			break;
 		}
 		fNetif->registerService();
@@ -1304,7 +1304,7 @@ int darwin_iwi2200::ipw_load(struct ipw_priv *priv)
 	rc = uploadFirmware((u8*)iwi_boot, sizeof(iwi_boot));
 	//rc=uploadFirmware(boot_img, le32_to_cpu(fw->boot_size));
 	if (rc < 0) {
-		IWI_DEBUG("Unable to load boot firmware\n");
+		IWI_ERR("Unable to load boot firmware\n");
 		goto error;
 	}
 
@@ -1315,10 +1315,10 @@ int darwin_iwi2200::ipw_load(struct ipw_priv *priv)
 	rc = ipw_poll_bit( IPW_INTA_RW,
 			  IPW_INTA_BIT_FW_INITIALIZATION_DONE, 500);
 	if (rc < 0) {
-		IWI_DEBUG("device failed to boot initial fw image\n");
+		IWI_ERR("device failed to boot initial fw image\n");
 		//goto error;
 	}
-	IWI_DEBUG("boot firmware ok\n");
+	IWI_LOG("boot firmware ok\n");
 	/* ack fw init done interrupt */
 	ipw_write32(IPW_INTA_RW, IPW_INTA_BIT_FW_INITIALIZATION_DONE);
 
@@ -1343,7 +1343,7 @@ int darwin_iwi2200::ipw_load(struct ipw_priv *priv)
 		
 	//rc = uploadUCode(ucode_img, le32_to_cpu(fw->ucode_size));
 	if(rc < 0) {
-		IWI_DEBUG("%s ucode failed to upload\n", getName());
+		IWI_ERR("%s ucode failed to upload\n", getName());
 		return kIOReturnError;
 	}
 
@@ -1370,7 +1370,7 @@ int darwin_iwi2200::ipw_load(struct ipw_priv *priv)
 		}
 	//rc = uploadFirmware(fw_img, le32_to_cpu(fw->fw_size));
 	if (rc < 0) {
-		IWI_DEBUG("Unable to load firmware\n");
+		IWI_ERR("Unable to load firmware\n");
 		goto error;
 	}
 
@@ -1379,7 +1379,7 @@ int darwin_iwi2200::ipw_load(struct ipw_priv *priv)
 
 	rc = ipw_queue_reset(priv);
 	if (rc < 0) {
-		IWI_DEBUG("Unable to initialize queues\n");
+		IWI_ERR("Unable to initialize queues\n");
 		goto error;
 	}
 	
@@ -1645,10 +1645,10 @@ int darwin_iwi2200::ipw_up(struct ipw_priv *priv)
 			j = 0;
 		}
 		if (ipw_set_geo(priv->ieee, &ipw_geos[j])) {
-			IWI_DEBUG("Could not set geography.");
+			IWI_ERR("Could not set geography.");
 			return 0;
 		}
-		IWI_DEBUG("geography %d = %s\n",j,ipw_geos[j].name);
+		IWI_LOG("geography %d = %s\n",j,ipw_geos[j].name);
 		
 		if (priv->status & STATUS_RF_KILL_SW) {
 			IWI_DEBUG("Radio disabled by module parameter.\n");
@@ -2082,7 +2082,7 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 
 	if (r & IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE)
 	{
-		IWI_DEBUG("PHY_OFF_DONE Restarting\n");
+		IWI_DEBUG_FULL("PHY_OFF_DONE Restarting\n");
 		priv->status |= STATUS_RF_KILL_HW;
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),priv,NULL,true);
@@ -2090,7 +2090,7 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 	}
 	
 	if (r & (IPW_INTA_BIT_FATAL_ERROR | IWI_INTR_PARITY_ERROR)) {
-		IWI_DEBUG("Firmware error detected.  Restarting.\n");
+		IWI_DEBUG_FULL("Firmware error detected.  Restarting.\n");
 		priv->status &= ~STATUS_INIT;
 		priv->status &= ~STATUS_HCMD_ACTIVE;
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
@@ -2100,7 +2100,7 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 
 	if (r & IPW_INTA_BIT_RF_KILL_DONE) {
 	
-		IWI_DEBUG("IPW_INTA_BIT_RF_KILL_DONE\nPress wireless button to turn interface on\n");
+		IWI_DEBUG_FULL("IPW_INTA_BIT_RF_KILL_DONE\nPress wireless button to turn interface on\n");
 		priv->status |= STATUS_RF_KILL_HW;
 		priv->status &= ~STATUS_RF_KILL_SW;
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
@@ -2114,13 +2114,13 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 	}
 
 	if (r & IPW_INTA_BIT_RX_TRANSFER) {
-		IWI_DEBUG("IPW_INTA_BIT_RX_TRANSFER)\n");
+		IWI_DEBUG_FULL("IPW_INTA_BIT_RX_TRANSFER)\n");
 		ipw_rx(priv);
 		ret = IPW_INTA_BIT_RX_TRANSFER;
 	}
 
 	if (r & IPW_INTA_BIT_TX_CMD_QUEUE) {
-		IWI_DEBUG("IPW_INTA_BIT_TX_CMD_QUEUE)\n");
+		IWI_DEBUG_FULL("IPW_INTA_BIT_TX_CMD_QUEUE)\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq_cmd, -1);
 		priv->status &= ~STATUS_HCMD_ACTIVE;
 		//wake_up_interruptible(&priv->wait_command_queue);
@@ -2128,25 +2128,25 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 		//ret = IWI_INTR_CMD_DONE;
 	}
 	if (r & IPW_INTA_BIT_TX_QUEUE_1) {
-		IWI_DEBUG("TX_QUEUE_1\n");
+		IWI_DEBUG_FULL("TX_QUEUE_1\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq[0], 0);
 		ret |= IPW_INTA_BIT_TX_QUEUE_1;
 	}
 
 	if (r & IPW_INTA_BIT_TX_QUEUE_2) {
-		IWI_DEBUG("TX_QUEUE_2\n");
+		IWI_DEBUG_FULL("TX_QUEUE_2\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq[1], 1);
 		ret |= IPW_INTA_BIT_TX_QUEUE_2;
 	}
 
 	if (r & IPW_INTA_BIT_TX_QUEUE_3) {
-		IWI_DEBUG("TX_QUEUE_3\n");
+		IWI_DEBUG_FULL("TX_QUEUE_3\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq[2], 2);
 		ret |= IPW_INTA_BIT_TX_QUEUE_3;
 	}
 
 	if (r & IPW_INTA_BIT_TX_QUEUE_4) {
-		IWI_DEBUG("TX_QUEUE_4\n");
+		IWI_DEBUG_FULL("TX_QUEUE_4\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq[3], 3);
 		ret |= IPW_INTA_BIT_TX_QUEUE_4;
 	}
@@ -2157,17 +2157,17 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 	}
 
 	if (r & IPW_INTA_BIT_BEACON_PERIOD_EXPIRED) {
-		IWI_DEBUG("TX_PERIOD_EXPIRED\n");
+		IWI_DEBUG_FULL("TX_PERIOD_EXPIRED\n");
 		ret |= IPW_INTA_BIT_BEACON_PERIOD_EXPIRED;
 	}
 
 	if (r & IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE) {
-		IWI_DEBUG("IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE\n");
+		IWI_DEBUG_FULL("IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE\n");
 		ret |= IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE;
 	}
 
 	if (r & IPW_INTA_BIT_FW_INITIALIZATION_DONE) {
-		IWI_DEBUG("FW_INITIALIZATION_DONE\n");
+		IWI_DEBUG_FULL("FW_INITIALIZATION_DONE\n");
 		ret |= IPW_INTA_BIT_FW_INITIALIZATION_DONE;
 	}
 
@@ -3726,7 +3726,7 @@ u8 darwin_iwi2200::ipw_qos_current_mode(struct ipw_priv *priv)
 	} else {
 		mode = priv->ieee->mode;
 	}
-	IWI_DEBUG("QoS network/card mode %d \n", mode);
+	IWI_LOG("QoS network/card mode %d \n", mode);
 	return mode;
 }
 
@@ -4347,7 +4347,7 @@ u8 darwin_iwi2200::ipw_add_station(struct ipw_priv *priv, u8 * bssid)
 	if (i == MAX_STATIONS)
 		return IPW_INVALID_STATION;
 
-	IWI_DEBUG("Adding AdHoc station: " MAC_FMT "\n", MAC_ARG(bssid));
+	IWI_LOG("Adding AdHoc station: " MAC_FMT "\n", MAC_ARG(bssid));
 
 	entry.reserved = 0;
 	entry.support_mode = 0;
@@ -4472,7 +4472,7 @@ void darwin_iwi2200::ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 	hdr->frame_ctl = cpu_to_le16(fc);
 	switch (priv->ieee->sec.level) {
 	case SEC_LEVEL_3:
-		IWI_DEBUG("ipw_rebuild_decrypted_skb level3");
+		IWI_DEBUG_FULL("ipw_rebuild_decrypted_skb level3");
 		/* Remove CCMP HDR */
 		memmove(((UInt8*)mbuf_data(skb) + IEEE80211_3ADDR_LEN),
 			((UInt8*)mbuf_data(skb) + IEEE80211_3ADDR_LEN + 8),
@@ -4481,11 +4481,11 @@ void darwin_iwi2200::ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 		mbuf_adj(skb,mbuf_len(skb)-16);
 		break;
 	case SEC_LEVEL_2:
-		IWI_DEBUG("ipw_rebuild_decrypted_skb level2");
+		IWI_DEBUG_FULL("ipw_rebuild_decrypted_skb level2");
 		break;
 	case SEC_LEVEL_1:
 		/* Remove IV */
-		IWI_DEBUG("ipw_rebuild_decrypted_skb level1");
+		IWI_DEBUG_FULL("ipw_rebuild_decrypted_skb level1");
 		memmove(((UInt8*)mbuf_data(skb) + IEEE80211_3ADDR_LEN),
 			((UInt8*)mbuf_data(skb) + IEEE80211_3ADDR_LEN + 4),
 			(size_t)((UInt8*)mbuf_data(skb) - IEEE80211_3ADDR_LEN - 4));
@@ -4493,10 +4493,10 @@ void darwin_iwi2200::ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 		mbuf_adj(skb,mbuf_len(skb)-8);
 		break;
 	case SEC_LEVEL_0:
-		IWI_DEBUG("ipw_rebuild_decrypted_skb level0");
+		IWI_DEBUG_FULL("ipw_rebuild_decrypted_skb level0");
 		break;
 	default:
-		IWI_DEBUG( "Unknow security level %d\n",
+		IWI_DEBUG_FULL( "Unknow security level %d\n",
 		       priv->ieee->sec.level);
 		break;
 	}
@@ -4555,10 +4555,10 @@ void darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 #if 0
 	if( mbuf_flags(rxb->skb) &  MBUF_PKTHDR) {
 		mbuf_pkthdr_setlen(rxb->skb,le16_to_cpu(pkt->u.frame.length));
-		IWI_DEBUG("Pkhdr Rx packet of %d[%d] bytes.\n", mbuf_pkthdr_len(rxb->skb) ,mbuf_len(rxb->skb) );
+		IWI_DEBUG_FULL("Pkhdr Rx packet of %d[%d] bytes.\n", mbuf_pkthdr_len(rxb->skb) ,mbuf_len(rxb->skb) );
 	} else	{
 		mbuf_setlen(rxb->skb, le16_to_cpu(pkt->u.frame.length));
-		IWI_DEBUG("Nkhdr Rx packet of %d bytes.\n", mbuf_len(rxb->skb) );
+		IWI_DEBUG_FULL("Nkhdr Rx packet of %d bytes.\n", mbuf_len(rxb->skb) );
 	}
 #endif	
 	/* HW decrypt will not clear the WEP bit, MIC, PN, etc. */
@@ -4602,7 +4602,7 @@ int darwin_iwi2200::is_duplicate_packet(struct ipw_priv *priv,
 			if (p == &priv->ibss_mac_hash[index]) {
 				(void*)entry = kmalloc(sizeof(*entry), NULL);
 				if (!entry) {
-					IWI_DEBUG
+					IWI_DEBUG_FULL
 					    ("Cannot malloc new mac entry\n");
 					return 0;
 				}
@@ -4672,7 +4672,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 
 		//pci_dma_sync_single_for_cpu(priv->pci_dev, rxb->dma_addr,IPW_RX_BUF_SIZE,PCI_DMA_FROMDEVICE);
 		pkt = (struct ipw_rx_packet *)mbuf_data(rxb->skb);
-		IWI_DEBUG("Packet: type=%02X seq=%02X bits=%02X\n",
+		IWI_DEBUG_FULL("Packet: type=%02X seq=%02X bits=%02X\n",
 			     pkt->header.message_type,
 			     pkt->header.rx_seq_num, pkt->header.control_bits);
 
@@ -4734,13 +4734,13 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 								DEPTH_RSSI);
 				}
 
-				IWI_DEBUG("Frame: len=%u\n",
+				IWI_DEBUG_FULL("Frame: len=%u\n",
 					     le16_to_cpu(pkt->u.frame.length));
 
 				if (le16_to_cpu(pkt->u.frame.length) <
 				    ieee80211_get_hdrlen(le16_to_cpu
 							 (header->frame_ctl))) {
-					IWI_DEBUG
+					IWI_DEBUG_FULL
 					    ("Received packet is too small. "
 					     "Dropping.\n");
 					priv->ieee->stats.rx_errors++;
@@ -4752,7 +4752,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 					(le16_to_cpu(header->frame_ctl))) {
 
 				case IEEE80211_FTYPE_MGMT:
-					IWI_DEBUG("IEEE80211_FTYPE_MGMT\n");
+					IWI_DEBUG_FULL("IEEE80211_FTYPE_MGMT\n");
 					ipw_handle_mgmt_packet(priv, rxb,&stats);
 					break;
 
@@ -4760,7 +4760,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 					break;
 
 				case IEEE80211_FTYPE_DATA:
-					IWI_DEBUG("IEEE80211_FTYPE_DATA\n");
+					IWI_DEBUG_FULL("IEEE80211_FTYPE_DATA\n");
 #if 1		
 					// fix me checking routine is not correct?			
 					if (unlikely(   /*!network_packet  || */is_duplicate_packet(priv, header)))
@@ -4779,7 +4779,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 								       addr3));
 						break;
 					}else {
-						IWI_DEBUG("Recieve: "
+						IWI_DEBUG_FULL("Recieve: "
 							       MAC_FMT ", "
 							       MAC_FMT ", "
 							       MAC_FMT "\n",
@@ -4799,7 +4799,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 			}
 
 		case RX_HOST_NOTIFICATION_TYPE:{
-				IWI_DEBUG
+				IWI_DEBUG_FULL
 				    ("Notification: subtype=%02X flags=%02X size=%d\n",
 				     pkt->u.notification.subtype,
 				     pkt->u.notification.flags,
@@ -5225,7 +5225,7 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	
 	if(early_up > 0){
 	    // use_10_4_8 options is set.
-	    IWI_DEBUG(" early time ipw_up\n");
+	    IWI_LOG(" early time ipw_up in 10.4.8\n");
 	    ipw_up(priv);
 	}
 	super::enable(fNetif);
@@ -5841,7 +5841,7 @@ int darwin_iwi2200::ipw_best_network(struct ipw_priv *priv,
 	ipw_copy_rates(&match->rates, &rates);
 	match->network = network;
 
-	IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' is a viable match.\n",
+	IWI_LOG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' is a viable match.\n",
 			escape_essid((const char*)network->ssid, network->ssid_len),
 			MAC_ARG(network->bssid));
 
@@ -6526,12 +6526,16 @@ void darwin_iwi2200::ipw_link_up(struct ipw_priv *priv)
 	
 
 	//ifaddr_t tt=(ifaddr_t)priv->bssid;
+	
 	ifaddr_t tt=(ifaddr_t)priv->mac_addr;
 	setHardwareAddress(&tt, ETHER_ADDR_LEN);
+	
 	//configu(priv);
+	
 	ifnet_set_lladdr(fifnet, tt, ETHER_ADDR_LEN);
 	enable(fNetif);
 	fTransmitQueue->start();
+	
 	/*netif_carrier_on(priv->net_dev);
 	if (netif_queue_stopped(priv->net_dev)) {
 		IWI_DEBUG("waking queue\n");
@@ -6919,7 +6923,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 {
 	notif->size = le16_to_cpu(notif->size);
 
-	IWI_DEBUG("type = %d (%d bytes)\n", notif->subtype, notif->size);
+	IWI_DEBUG_FULL("type = %d (%d bytes)\n", notif->subtype, notif->size);
 
 	switch (notif->subtype) {
 	case HOST_NOTIFICATION_STATUS_ASSOCIATED:{
@@ -6927,7 +6931,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 
 			switch (assoc->state) {
 			case CMAS_ASSOCIATED:{
-					IWI_DEBUG(						  "associated: '%s' %02x:%02x:%02x:%02x:%02x:%02x \n",
+					IWI_LOG(						  "associated: '%s' %02x:%02x:%02x:%02x:%02x:%02x \n",
 						  escape_essid((const char*)priv->essid,
 							       priv->essid_len),
 						  MAC_ARG(priv->bssid));
@@ -6999,7 +7003,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 						      STATUS_AUTH)) {
 						struct notif_authenticate *auth
 						    = &notif->u.auth;
-						IWI_DEBUG(							  "deauthenticated: '%s' "
+						IWI_LOG(							  "deauthenticated: '%s' "
 							  MAC_FMT
 							  ": (0x%04X) - %s \n",
 							  escape_essid((const char*)priv->
@@ -7021,7 +7025,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 						break;
 					}
 
-					IWI_DEBUG(						  "authenticated: '%s' %02x:%02x:%02x:%02x:%02x:%02x\n",
+					IWI_LOG(						  "authenticated: '%s' %02x:%02x:%02x:%02x:%02x:%02x\n",
 						  escape_essid((const char*)priv->essid,
 							       priv->essid_len),
 						  MAC_ARG(priv->bssid));
@@ -7037,14 +7041,14 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 						    (struct
 						     ieee80211_assoc_response
 						     *)&notif->u.raw;
-						IWI_DEBUG(							  "association failed (0x%04X): %s\n",
+						IWI_LOG(							  "association failed (0x%04X): %s\n",
 							  ntohs(resp->status),
 							  ipw_get_status_code
 							  (ntohs
 							   (resp->status)));
 					}
 
-					IWI_DEBUG(						  "disassociated: '%s' %02x:%02x:%02x:%02x:%02x:%02x \n",
+					IWI_LOG(						  "disassociated: '%s' %02x:%02x:%02x:%02x:%02x:%02x \n",
 						  escape_essid((const char*)priv->essid,
 							       priv->essid_len),
 						  MAC_ARG(priv->bssid));
@@ -7081,7 +7085,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 			struct notif_authenticate *auth = &notif->u.auth;
 			switch (auth->state) {
 			case CMAS_AUTHENTICATED:
-				IWI_DEBUG("AUthenticated: '%s' %02x:%02x:%02x:%02x:%02x:%02x \n",
+				IWI_LOG("AUthenticated: '%s' %02x:%02x:%02x:%02x:%02x:%02x \n",
 					  escape_essid((const char*)priv->essid,
 						       priv->essid_len),
 					  MAC_ARG(priv->bssid));
@@ -7236,10 +7240,10 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 			struct notif_frag_length *x = &notif->u.frag_len;
 
 			if (notif->size == sizeof(*x))
-				IWI_DEBUG("Frag length: %d\n",
+				IWI_DEBUG_FULL("Frag length: %d\n",
 					  le16_to_cpu(x->frag_length));
 			else
-				IWI_DEBUG("Frag length of wrong size %d "
+				IWI_DEBUG_FULL("Frag length of wrong size %d "
 					  "(should be %zd)\n",
 					  notif->size, sizeof(*x));
 			break;
@@ -7250,13 +7254,13 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 			    &notif->u.link_deterioration;
 
 			if (notif->size == sizeof(*x)) {
-				IWI_DEBUG(					  "link deterioration: type %d, cnt %d\n",
+				IWI_DEBUG_FULL(					  "link deterioration: type %d, cnt %d\n",
 					  x->silence_notification_type,
 					  x->silence_count);
 				memcpy(&priv->last_link_deterioration, x,
 				       sizeof(*x));
 			} else {
-				IWI_DEBUG("Link Deterioration of wrong size %d "
+				IWI_DEBUG_FULL("Link Deterioration of wrong size %d "
 					  "(should be %zd)\n",
 					  notif->size, sizeof(*x));
 			}
@@ -7319,20 +7323,20 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 		}
 
 	case HOST_NOTIFICATION_NOISE_STATS:{
-			IWI_DEBUG("HOST_NOTIFICATION_NOISE_STATS\n");
+			IWI_DEBUG_FULL("HOST_NOTIFICATION_NOISE_STATS\n");
 			if (notif->size == sizeof(u32)) {
 				priv->exp_avg_noise =exponential_average(priv->exp_avg_noise,(u8) (le32_to_cpu(notif->u.noise.value) & 0xff),DEPTH_NOISE);
 				break;
 			}
 
-			IWI_DEBUG
+			IWI_DEBUG_FULL
 			    ("Noise stat is wrong size %d (should be %zd)\n",
 			     notif->size, sizeof(u32));
 			break;
 		}
 
 	default:
-		IWI_DEBUG("Unknown notification: "
+		IWI_DEBUG_FULL("Unknown notification: "
 				"subtype=%d,flags=0x%2x,size=%d\n",
 				notif->subtype, notif->flags, notif->size);
 	}
@@ -7461,7 +7465,7 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 	//spin_lock_irqsave(&priv->lock, flags);
 
 	if (!(priv->status & STATUS_ASSOCIATED)) {
-		IWI_DEBUG("Tx attempt while not associated.\n");
+		IWI_ERR("Tx attempt while not associated.\n");
 		priv->ieee->stats.tx_carrier_errors++;
 		//netif_stop_queue(dev);
 		fTransmitQueue->stop();
@@ -7538,7 +7542,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	}*/
 
 	if (unlikely(mbuf_len(skb) < SNAP_SIZE + sizeof(u16))) {
-		IWI_DEBUG( "%s: skb too small (%d).\n",
+		IWI_DEBUG_FULL( "%s: skb too small (%d).\n",
 		       ieee->dev->name, mbuf_len(skb));
 		goto success;
 	}
@@ -7748,7 +7752,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		frag_hdr  = (struct ieee80211_hdr_3addrqos *)skb_put(skb_frag, hdr_len);
 		memcpy(frag_hdr, &header, hdr_len);
 		
-		IWI_DEBUG("src " MAC_FMT "desc " MAC_FMT  " bssid " MAC_FMT "\n" ,  
+		IWI_DEBUG_FULL("src " MAC_FMT "desc " MAC_FMT  " bssid " MAC_FMT "\n" ,  
 			MAC_ARG(frag_hdr->addr2), MAC_ARG(frag_hdr->addr3) , MAC_ARG(frag_hdr->addr1)  );
 		/* If this is not the last fragment, then add the MOREFRAGS
 		 * bit to the frame control */
@@ -7773,7 +7777,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		IWI_DUMP_MBUF(3,skb,bytes); 
 		IWI_DUMP_MBUF(4,skb_frag,bytes);
 		if ( mbuf_trailingspace(skb_frag) < bytes  ) {
-			IWI_DEBUG("why?\n");
+			IWI_DEBUG("freespace is not enough.\n");
 			goto failed; // kazu test
 		}
 		// FIXME: this routine only copy first mbuf in changes
@@ -7834,7 +7838,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
       failed:
 	//spin_unlock_irqrestore(&ieee->lock, flags);
 	//netif_stop_queue(dev);
-	IWI_DEBUG("TX drop?\n");
+	IWI_DEBUG_FULL("TX drop\n");
 	fTransmitQueue->stop();
 	stats->tx_errors++;
 	return kIOReturnOutputDropped;
@@ -7986,7 +7990,7 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 		int rm = _mbufCursor->getPhysicalSegmentsWithCoalesce(txb->fragments[i], &vector, 1);
 		if (rm!=0 && (mbuf_len(txb->fragments[i]) > hdr_len))
 		{
-		    IWI_DEBUG(" pkt_len %d vector.len %d \n",mbuf_pkthdr_len(txb->fragments[i]),vector.length);
+		    IWI_DEBUG_FULL(" pkt_len %d vector.len %d \n",mbuf_pkthdr_len(txb->fragments[i]),vector.length);
 		    tfd->u.data.chunk_ptr[i] = vector.location;
 		    tfd->u.data.chunk_len[i] = vector.length; 
 		    //  tfd->u.data.chunk_len[i] = cpu_to_le16(txb->fragments[i]->len - hdr_len); 
@@ -8002,16 +8006,19 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 		for ( mn = txb->fragments[i]; mn; mn = mbuf_next(mn) )
 		{
 			if(  mn = txb->fragments[i] ){
-				IWI_DEBUG("kick only one\n");
+				IWI_DEBUG_FULL("kick only one\n");
 				mbuf_adj(txb->fragments[i],hdr_len);
 				tfd->u.data.chunk_ptr[i] =
 					cpu_to_le32(mbuf_data_to_physical
 					(mbuf_data(txb->fragments[i])));
-				IWI_DEBUG(" pkt_len %d mbuf_len %d \n",
+				IWI_DEBUG_FULL(" pkt_len %d mbuf_len %d \n",
 					mbuf_pkthdr_len(txb->fragments[i]), mbuf_len(txb->fragments[i]) );
 				tfd->u.data.chunk_len[i] = cpu_to_le16(mbuf_pkthdr_len(txb->fragments[i]) );
 				skb_push(txb->fragments[i],hdr_len);
 			}else{
+				IWI_ERR("BUG: mbuf is not single but chains\n mbuf_len(%d) mbuf_pkthdr_len(%d)\n",
+					mbuf_len(txb->fragments[i]), mbuf_pkthdr_len(txb->fragments[i])
+				);
 				//bcopy( mbuf_data(mn)
 			}
 		}
@@ -8025,7 +8032,7 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 			skb_push(txb->fragments[i],hdr_len); */
 		
 #endif
-		IWI_DEBUG("chunk_len %d\n",tfd->u.data.chunk_len[i]);
+		IWI_DEBUG_FULL("chunk_len %d\n",tfd->u.data.chunk_len[i]);
 	}
 
 	if (i != txb->nr_frags) {
@@ -8100,13 +8107,16 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	}
 		else    nm=m;
 		
-	
+#if 0	
 	for (nm2 = nm; nm2; nm2 = mbuf_next(nm2)){
 		 psize+= mbuf_len(nm2);
 	}
 	
 	IWI_DEBUG(" %s single packet size %d  all %d \n",__FUNCTION__ ,mbuf_len(nm),psize);
-	
+#else
+	if(mbuf_len(nm) != mbuf_pkthdr_len(nm))
+		IWI_ERR("BUG: tx packet is not single mbuf\n");
+#endif	
 	
 	if (!(ifnet_flags(fifnet) & IFF_RUNNING) || mbuf_len(nm)==0 || nm==NULL)
 	{
@@ -8114,7 +8124,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 			return kIOReturnOutputDropped;
 	}
 	
-	IWI_DEBUG("call ieee80211_xmit\n");
+	IWI_DEBUG_FULL("call ieee80211_xmit\n");
 	int  ret  = ieee80211_xmit(nm,priv->net_dev)  ;
 	return ret;
 	//return 0;
@@ -8480,7 +8490,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 	if ((frag != 0) || (fc & IEEE80211_FCTL_MOREFRAGS)) {
 		int flen;
 		mbuf_t frag_skb = ieee80211_frag_cache_get(ieee, hdr);
-		IWI_DEBUG("Rx Fragment received (%u)\n", frag);
+		IWI_DEBUG_FULL("Rx Fragment received (%u)\n", frag);
 
 		if (!frag_skb) {
 			IWI_DEBUG("Rx cannot get skb from fragment "
