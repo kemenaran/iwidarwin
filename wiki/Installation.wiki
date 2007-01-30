@@ -58,7 +58,7 @@ tgz version
                         <integer>1</integer> <- should change
 }}}
 
-= about setup = 
+= about setup =
  * cannot sepcified network name via Airport menu. only automatic association.
  * if you cat get ip address after enable from airport menu , it work ( but nothing is displayed in airport menu). 
  * availably operation in airport menu  is ip address setting and enabling. if another is set , it will not change anything.
