@@ -4,7 +4,7 @@
 this is currently installation documents for iwi2200.
 updated fro v6(or v0.6).
 
-== Support Hardware
+= Support Hardware =
  * Intel Pro/wireless 2200BG/2945ABG
 
 = Requirement =
