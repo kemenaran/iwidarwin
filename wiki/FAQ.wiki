@@ -1,0 +1,17 @@
+#summary Freaquentry Ascked Question
+#labels Featured,FAQ
+
+= F.A.Q =
+when support 3945abg/2100 ?: 
+
+  We dont have its card. we can write test code. but no relese working version forever.
+  we require developer with 2100/3945abg or cards to support it
+
+when WEP , 802.1x,encrption and setting via AirPort menu is suppored? :
+  
+  We caonnot answer it because we must analiyze IO80211Family( this information is closed)
+
+
+
+
+ 
