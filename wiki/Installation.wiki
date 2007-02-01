@@ -4,43 +4,42 @@
 this is currently installation documents for iwi2200.
 updated fro v6(or v0.6).
 
-= Support Hardware =
+== Support Hardware ==
  * Intel Pro/wireless 2200BG/2945ABG
 
-= Requirement =
+== Requirement ==
  * Mac OS X 10.4.7 or later.
 
 = Steps =
 typing in Terminal in 2-3
-1. go to Terminal.App
-2. extract file 
-type in terminal
 
-zip version
+ # go to Terminal.App
+ # extract file 
+  type in terminal
+  zip version
 {{{
 % unzip -l iwi2200.zip 
 }}}
-tgz version 
+  tgz version 
 {{{
 % tar zxvf iwi2220.tgz 
 }}}
-
-2. change owner
+ # change owner
 {{{
 % sudo chown -R root:wheel iwi2200.kext
 }}}
    if you ask password , plz type.
-3. load kernel module
+ # load kernel module
 {{{
   % sudo kextload iwi2200
 }}}
-4. enabling power 
-   press airpot power button?
-   ( I dont know detail , my machine cannot set power button)
+ # enabling power 
+  press airpot power button?
+  ( I dont know detail , my machine cannot set power button)
+  
+  if power is enable, "Radio is disable" display.
    
-   if power is enable, "Radio is disable" display.
-
-   edit file iwi2200/Contents/Info.plist and change value 1 to 0
+  edit file iwi2200/Contents/Info.plist and change value 1 to 0
 {{{
                         <key>p_disable</key>
                         <integer>1</integer> 
@@ -50,7 +49,7 @@ tgz version
                         <integer>0</integer> <- should change
 }}}
    and reboot. after reboot, plz load kernel modeul ( 3.)
-5. in 10.4.8 
+ # in 10.4.8 
    if you dont work, you can set "use_10_4_8" options
 {{{
                         <key>use_10_4_8</key>
@@ -61,26 +60,40 @@ tgz version
                         <integer>1</integer> <- should change
 }}}
 
-= about setup =
+== about setup ==
  * cannot sepcified network name via Airport menu. only automatic association.
  * if you cat get ip address after enable from airport menu , it work ( but nothing is displayed in airport menu). 
  * availably operation in airport menu  is ip address setting and enabling. if another is set , it will not change anything.
  
-= Warning = 
+== Warning == 
  * this driver only work in open network .
  * this driver cannot specified network name. only automatic detection.
  * if u cannot get IP address via dhcp, you set static IP address.
  * if large file try to send and recieve , it may fail. 
 
 
-= Bugs = 
+== Bugs ==
 about bug report
 
-if can use google project, send report to issues.
+if can use google project, send report to [http://code.google.com/p/iwidarwin/issues/list issues].
 if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
+but i may forget report in forums. 
 
+_we recommend to send report to [http://code.google.com/p/iwidarwin/issues/list]_
 
-= about 10.4.8 =
+=== bug report ===
+following information is required in bug reports.
+
+ * version of iwi 
+ * kerne version
+ * Mac OS X version
+ * IO80211Family version
+ * procedure of occuring bug.
+ * iwi message log( /var/log/system.log and dmesg ( if overflow in dmesg, type "grep iwi /var/log/system.log > report.log" and attached "report.log").
+
+if information is lacking , I dont know where is problem. 
+
+== about 10.4.8 ==
  * Crashed in 10.4.8  when  you set channel in Airpot menu.
   if open network and dont use encrpytion , it worked.
 
@@ -89,14 +102,14 @@ if not, send report to [http://forum.insanelymac.com/index.php?showtopic=36976].
   
    it may work in "use_10_4_8" options
 
-= bug report =
-if you report bug, plz send [http://forum.insanelymac.com/index.php?showtopic=36976 forum]
-or Issues of this project. and *must* attached *log message.
-
-and require your iwi version too.
-
-
-if logmessage is not  attached, we dont understand point of problem.
 == log message ==
  * iwi2200 part of /var/log/system.log  or dmesg ( if overflow logs, system.log)
  * ioreg (not must )
+
+= Caution =
+We dont nerver answer about following question .
+and it reduce our motivation. plz understand it.
+
+ * when 3945abg work ?
+ * what *** function support ?
+
