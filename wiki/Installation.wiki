@@ -107,9 +107,10 @@ if information is lacking , I dont know where is problem.
  * ioreg (not must )
 
 = Caution =
-We dont nerver answer about following question .
+We dont never answer about following question .
 and it reduce our motivation. plz understand it.
 
  * when 3945abg work ?
- * what *** function support ?
+ * "***" function support in future version?
+ * when new version release?
 
