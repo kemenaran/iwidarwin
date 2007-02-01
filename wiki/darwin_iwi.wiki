@@ -25,7 +25,7 @@ this is development information to port Intel Wireless Driver  to Darwin and Mac
 = Development Information =
  * [DevMemo Development Information]
 
-= FAQ = 
+= FAQ =
  * [FAQ]
 
 == IRC ==
