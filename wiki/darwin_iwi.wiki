@@ -5,28 +5,30 @@
 
 this is development information to port Intel Wireless Driver  to Darwin and Mac OS X.
 
-= Current support Hardware.=
+== Current support Hardware.=
 
  * 2200BG/2945ABG
 
-= Current dont suport Hardware =
+== Current dont suport Hardware ==
  * 2100
  * 3945ABG
 
-= Requirement =
+== Requirement ==
  * Mac OS X *10.4.7*-
 
 = Installation =
  * [Installation]
 
-= Usage =
+== Usage ==
  * [Usage]
 
 = Development Information =
  * [DevMemo Development Information]
 
+= FAQ = 
+ * [FAQ]
 
-= IRC =
+== IRC ==
 irc.macspeak.net
 
  * #darwin_iwi
