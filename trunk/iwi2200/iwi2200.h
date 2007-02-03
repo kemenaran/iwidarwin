@@ -15,6 +15,7 @@
 #if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
 	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
 #else
+//	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
 	#define IWI_DEBUG(...) do{ }while(0)
 #endif
 

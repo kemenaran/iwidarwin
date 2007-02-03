@@ -707,7 +707,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		
 		registerService();
 		
-		//mutex=IOLockAlloc();
+		mutex=IOLockAlloc();
 	
 		/*lck_grp_attr_t	*ga=lck_grp_attr_alloc_init();
 		lck_grp_t		*gr=lck_grp_alloc_init("mut",ga);
@@ -722,6 +722,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		
 		if (!spin) return false;
 		if (!mutex) return false;*/
+		spin=IOSimpleLockAlloc();
 		//IW_SCAN_TYPE_ACTIVE
 		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_scan),NULL,NULL,false);
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),NULL,NULL,false);
@@ -1663,6 +1664,7 @@ int darwin_iwi2200::ipw_up(struct ipw_priv *priv)
 
 		
 		rc = configu(priv);
+		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 		if (!rc) {
 			IWI_DEBUG("Configured device on count %d\n", pl);
 			/* If configure to try and auto-associate, kick
@@ -1687,8 +1689,10 @@ int darwin_iwi2200::ipw_up(struct ipw_priv *priv)
 IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
 {
 	//if ((priv->status & STATUS_ASSOCIATED)) return -1;
+	
+	
 	IWI_DEBUG("ifconfig down\n");
-	switch ((ifnet_flags(fifnet) & IFF_UP) && (ifnet_flags(fifnet) & IFF_RUNNING))
+	switch ((fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING))
 	{
 	case true:
 		IWI_DEBUG("ifconfig going down\n");
@@ -1697,6 +1701,7 @@ IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
 		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
 		fNetif->setLinkState(kIO80211NetworkLinkDown);
 		
+		//fNetif->syncSIOCSIFFLAGS( /*IONetworkController * */this);
 		//(if_flags & ~mask) | (new_flags & mask) if mask has IFF_UP if_updown fires up (kpi_interface.c in xnu)
 		ifnet_set_flags(fifnet, 0 , IFF_UP | IFF_RUNNING );
 		
@@ -1731,7 +1736,7 @@ IOReturn darwin_iwi2200::enable( IONetworkInterface * netif )
 		break;
 	default:
 		IWI_DEBUG("ifconfig already up\n");
-		return -1;
+		return kIOReturnExclusiveAccess;
 		break;
 	}
 	
@@ -4307,16 +4312,22 @@ int darwin_iwi2200::is_network_packet(struct ipw_priv *priv,
 
 	case IW_MODE_INFRA:	/* Header: Dest. | BSSID | Source */
 		/* packets from our adapter are dropped (echo) */
-		if (!memcmp(header->addr3, priv->net_dev->dev_addr, ETH_ALEN))
+		if (!memcmp(header->addr3, priv->mac_addr, ETH_ALEN)){
+			IWI_DEBUG("packet from me\n"); 
 			return 0;
+		}
 
 		/* {broad,multi}cast packets to our BSS go through */
-		if (ipw_is_multicast_ether_addr(header->addr1))
+		if (ipw_is_multicast_ether_addr(header->addr1)){
 			return !memcmp(header->addr2, priv->bssid, ETH_ALEN);
-
+		}
 		/* packets to our adapter go through */
-		return !memcmp(header->addr1, priv->net_dev->dev_addr,
-			       ETH_ALEN);
+		if (memcmp(header->addr1, priv->net_dev->dev_addr, ETH_ALEN)) {
+			IWI_DEBUG("who? dst "  MAC_FMT " self " MAC_FMT "\n",
+				MAC_ARG(header->addr1),
+				MAC_ARG(priv->net_dev->dev_addr));
+		}
+		return !memcmp(header->addr1, priv->mac_addr, ETH_ALEN);
 	}
 
 	return 1;
@@ -4763,7 +4774,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 					IWI_DEBUG_FULL("IEEE80211_FTYPE_DATA\n");
 #if 1		
 					// fix me checking routine is not correct?			
-					if (unlikely(   /*!network_packet  || */is_duplicate_packet(priv, header)))
+					if (unlikely( !network_packet  ||is_duplicate_packet(priv, header)))
 					{
 						
 						IWI_DEBUG("Dropping: dup?(%d) "
@@ -4804,7 +4815,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 				     pkt->u.notification.subtype,
 				     pkt->u.notification.flags,
 				     pkt->u.notification.size);
-					notifIntr(priv, &pkt->u.notification);
+				notifIntr(priv, &pkt->u.notification);
 				break;
 			}
 
@@ -4902,20 +4913,57 @@ int darwin_iwi2200::resetTxQueue()
 	rxq.cur=0;
 	return 0;
 }
+void ipw_rx_queue_free(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
+{
+	int i;
 
+	if (!rxq)
+		return;
+
+	for (i = 0; i < RX_QUEUE_SIZE + RX_FREE_BUFFERS; i++) {
+		if (rxq->pool[i].skb != NULL) {
+			//pci_unmap_single(priv->pci_dev, rxq->pool[i].dma_addr,
+			//		 IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
+			//dev_kfree_skb(rxq->pool[i].skb);
+			mbuf_freem_list(rxq->pool[i].skb);
+		}
+	}
+
+	kfree(rxq);
+}
 
 void darwin_iwi2200::free(void)
 {
+
 	IWI_DEBUG("%s Freeing\n", getName());
 	if (fInterruptSrc && fWorkLoop)
 	        fWorkLoop->removeEventSource(fInterruptSrc);
 
+	ipw_down(priv);
+
+	int i;
+	if (priv->rxq) {
+		ipw_rx_queue_free(priv, priv->rxq);
+		priv->rxq = NULL;
+	}
+	ipw_tx_queue_free(priv);
+	
+	// free ieee
+	if (priv->ieee->networks){
+		for (i = 0; i < MAX_NETWORK_COUNT; i++)
+			if (priv->ieee->networks[i].ibss_dfs)
+				kfree(priv->ieee->networks[i].ibss_dfs);
+		kfree(priv->ieee->networks);
+		priv->ieee->networks = NULL;
+	}
+	
+	RELEASE(map);
 	fPCIDevice->close(this);
 	RELEASE(fInterruptSrc);
 	RELEASE(fPCIDevice);
 	RELEASE(map);
 	IOFree(this,sizeof(this));
-	//super::free();
+	super::free();
 }
 
 void darwin_iwi2200::stop(IOService *provider)
@@ -5210,10 +5258,22 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 							 struct apple80211_status_dev_data *dd)
 {
 	char i[4];
-	int n=interface->getUnitNumber();
-	sprintf(i,"en%d",n);
+	if (fNetif == interface) {
+	    IWI_DEBUG("same interface\n");
+	}else {
+	    IWI_DEBUG("not same interface\n");
+	}
+
+	//int n=interface->getUnitNumber();
+	
+	sprintf(i,"%s%d" ,interface->getNamePrefix(), interface->getUnitNumber());
+	
 	IWI_DEBUG("getSTATUS_DEV %s\n",dd->dev_name);
+	
 	ifnet_find_by_name(i,&fifnet);
+	
+	//fifnet = ((IONetworkInterface *)fNetif)->getIfnet();
+	
 	IWI_DEBUG("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	ipw_sw_reset(1);
 	memcpy(&priv->ieee->dev->name,i,sizeof(i)); // can we assign ieee->dev to fifnet??
@@ -6527,15 +6587,15 @@ void darwin_iwi2200::ipw_link_up(struct ipw_priv *priv)
 
 	//ifaddr_t tt=(ifaddr_t)priv->bssid;
 	
-	ifaddr_t tt=(ifaddr_t)priv->mac_addr;
-	setHardwareAddress(&tt, ETHER_ADDR_LEN);
+	//ifaddr_t tt=(ifaddr_t)priv->mac_addr;
+	//setHardwareAddress(&tt, ETHER_ADDR_LEN);
 	
 	//configu(priv);
-	
-	ifnet_set_lladdr(fifnet, tt, ETHER_ADDR_LEN);
+	fNetif->attachToDataLinkLayer(0,0);
+	//ifnet_set_lladdr(fifnet, tt, ETHER_ADDR_LEN);
 	enable(fNetif);
 	fTransmitQueue->start();
-	
+	fTransmitQueue->flush();
 	/*netif_carrier_on(priv->net_dev);
 	if (netif_queue_stopped(priv->net_dev)) {
 		IWI_DEBUG("waking queue\n");
@@ -7460,10 +7520,12 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 	//struct ipw_priv *priv = ieee80211_priv(dev);
 	unsigned long flags;
 	int ret;
+	IOInterruptState	instate;
 
 	IWI_DEBUG("dev->xmit(%d bytes)\n", txb->payload_size);
 	//spin_lock_irqsave(&priv->lock, flags);
-
+	instate = IOSimpleLockLockDisableInterrupt( spin);
+	
 	if (!(priv->status & STATUS_ASSOCIATED)) {
 		IWI_ERR("Tx attempt while not associated.\n");
 		priv->ieee->stats.tx_carrier_errors++;
@@ -7495,11 +7557,13 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 	if (ret == kIOReturnOutputSuccess)//NETDEV_TX_OK)
 		__ipw_led_activity_on(priv);
 	//spin_unlock_irqrestore(&priv->lock, flags);
-
+	IOSimpleLockUnlockEnableInterrupt( spin, instate );
+	
 	return ret;
 
       fail_unlock:
 	//spin_unlock_irqrestore(&priv->lock, flags);
+	IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	return 1;
 }
 
@@ -8102,6 +8166,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	size_t psize=0;
 	
 	if (offset) { 
+		IWI_DEBUG("required copyPacket\n");
 		nm = copyPacket(m, 0);
 		freePacket(m);
 	}
@@ -8114,11 +8179,13 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	
 	IWI_DEBUG(" %s single packet size %d  all %d \n",__FUNCTION__ ,mbuf_len(nm),psize);
 #else
-	if(mbuf_len(nm) != mbuf_pkthdr_len(nm))
-		IWI_ERR("BUG: tx packet is not single mbuf\n");
+	if(mbuf_len(nm) != mbuf_pkthdr_len(nm)){
+		IWI_ERR("BUG: tx packet is not single mbuf mbuf_len(%d) mbuf_pkthdr_len(%d)\n",mbuf_len(nm) , mbuf_pkthdr_len(nm) );
+	}
 #endif	
-	
-	if (!(ifnet_flags(fifnet) & IFF_RUNNING) || mbuf_len(nm)==0 || nm==NULL)
+	//
+	if(!(fNetif->getFlags() & IFF_RUNNING) || mbuf_len(nm)==0 || nm==NULL)
+	//if (!(ifnet_flags(fifnet) & IFF_RUNNING) || mbuf_len(nm)==0 || nm==NULL)
 	{
 		if (nm!=NULL) freePacket(nm);
 			return kIOReturnOutputDropped;
@@ -8628,6 +8695,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 	return 1;
 
       rx_dropped:
+	IWI_DEBUG("rx dropped %d\n",stats->rx_dropped);
 	stats->rx_dropped++;
 
 	/* Returning 0 indicates to caller that we have not handled the SKB--
