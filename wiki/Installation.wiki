@@ -81,6 +81,9 @@ but i may forget report in forums.
 
 _we recommend to send report to [http://code.google.com/p/iwidarwin/issues/list]_
 
+u must test with *debugging version*.
+if normal version, driver dont output sevaral information.
+ 
 === bug report ===
 following information is required in bug reports.
 
@@ -113,4 +116,3 @@ and it reduce our motivation. plz understand it.
  * when 3945abg work ?
  * "***" function support in future version?
  * when new version release?
-
