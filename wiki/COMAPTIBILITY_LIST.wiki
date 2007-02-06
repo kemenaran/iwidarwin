@@ -16,7 +16,7 @@ this information is used by decision build environment for future release.
    work. in use_10_4_8 
 
 === hardware ===
-* 0x4223 ( intel pro wireless/2945abg)
+ * 0x4223 ( intel pro wireless/2945abg)
    work ( in 11b/g/a )
 
 == iwi2200-v5 ==
