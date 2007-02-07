@@ -18,6 +18,8 @@ this information is used by decision build environment for future release.
 === hardware ===
  * 0x4223 ( intel pro wireless/2945abg)
    work ( in 11b/g/a )
+ * 0x4220
+   work (in 11b)
 
 == iwi2200-v5 ==
 no information.
