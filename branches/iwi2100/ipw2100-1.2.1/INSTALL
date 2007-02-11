@@ -1,0 +1,586 @@
+
+Intel PRO/Wireless 2100 driver for Linux in support of:
+
+Intel PRO/Wireless 2100 Network Connection Adapter
+
+Copyright (C) 2003-2006, Intel Corporation
+
+INSTALL
+
+Version: 1.2.1
+Date   : February 22, 2006
+
+
+Index
+-----------------------------------------------
+0.  IMPORTANT INFORMATION BEFORE USING THIS DRIVER
+1.  INSTALLING IN YOUR DISTRIBUTION
+2.  BUILD/INSTALLATION OVERVIEW 
+3.  GETTING THE SOURCE
+4.  KERNEL REQUIREMENTS - 2.6.13+
+5.  KERNEL REQUIREMENTS - Configuration
+6.  SYSFS
+7.  UPGRADING FROM PRIOR VERSIONS
+8.  BUILDING EXTERNAL (outside of the kernel tree)
+9.  BUILDING WITHIN THE KERNEL SOURCE TREE (not supported)
+10. LOADING FIRMWARE VIA HOT-PLUG 
+11. LOADING THE Intel PRO/Wireless 2100 Driver
+12. COMMON TROUBLESHOOTING TIPS
+
+
+
+0.  IMPORTANT INFORMATION BEFORE USING THIS DRIVER
+-----------------------------------------------
+
+Important Notice FOR ALL USERS OR DISTRIBUTORS!!!!
+
+Intel wireless LAN adapters are engineered, manufactured, tested, and
+quality checked to ensure that they meet all necessary local and
+governmental regulatory agency requirements for the regions that they
+are designated and/or marked to ship into. Since wireless LANs are
+generally unlicensed devices that share spectrum with radars,
+satellites, and other licensed and unlicensed devices, it is sometimes
+necessary to dynamically detect, avoid, and limit usage to avoid
+interference with these devices. In many instances Intel is required to
+provide test data to prove regional and local compliance to regional and
+governmental regulations before certification or approval to use the
+product is granted. Intel's wireless LAN's EEPROM, firmware, and
+software driver are designed to carefully control parameters that affect
+radio operation and to ensure electromagnetic compliance (EMC). These
+parameters include, without limitation, RF power, spectrum usage,
+channel scanning, and human exposure.
+
+For these reasons Intel cannot permit any manipulation by third parties
+of the software provided in binary format with the wireless WLAN
+adapters (e.g., the EEPROM and firmware). Furthermore, if you use any
+patches, utilities, or code with the Intel wireless LAN adapters that
+have been manipulated by an unauthorized party (i.e., patches,
+utilities, or code (including open source code modifications) which have
+not been validated by Intel), (i) you will be solely responsible for
+ensuring the regulatory compliance of the products, (ii) Intel will bear
+no liability, under any theory of liability for any issues associated
+with the modified products, including without limitation, claims under
+the warranty and/or issues arising from regulatory non-compliance, and
+(iii) Intel will not provide or be required to assist in providing
+support to any third parties for such modified products.
+
+Note: Many regulatory agencies consider Wireless LAN adapters to be
+modules, and accordingly, condition system-level regulatory approval
+upon receipt and review of test data documenting that the antennas and
+system configuration do not cause the EMC and radio operation to be
+non-compliant.
+
+Intel PRO/Wireless 2100 Network Connection driver available for download
+from SourceForge are provided as a part of a development project.
+Conformance to local regulatory requirements is the responsibility of the
+individual developer. As such, if you are interested in deploying or
+shipping a driver as part of solution intended to be used for purposes
+other than development, please obtain a tested driver from Intel Customer
+Support at:
+
+http://support.intel.com/support/notebook/sb/CS-006408.htm
+
+
+
+
+1.  INSTALLING IN YOUR LINUX DISTRIBUTION
+-----------------------------------------------
+Since each distribution is different, we can not cover all of the steps that
+may be required to install and configure your device for the particular 
+distribution you are using.
+
+Please refer to the documentation for your Linux distribution on issues 
+related to auto-detection and installation of Intel PRO/Wireless 2100
+Network Connection driver within your environment.
+
+
+
+2.  BUILD/INSTALLATION OVERVIEW 
+-----------------------------------------------
+
+Installation of the current Intel PRO/Wireless 2100 Network Connection
+driver involves several steps:
+
+1)  Get the source and firmware.
+
+2)  Check for certain capabilities in your kernel, and rebuild the kernel
+    if necessary.
+
+3)  Remove any old ieee80211 subsystem or Intel PRO/Wireless 2100 Network
+    Connection driver, and remove any kernel configurations relating to them.
+
+4)  Build and install the current ieee80211 module.
+
+5)  Build and install the current Intel PRO/Wireless 2100 Network Connection
+    driver module.
+
+6)  Download and install current firmware for your Intel PRO/Wireless 2100
+    Network Connection driver.
+
+7)  Read README.ipw2100 for helpful information on how to use the
+    Intel PRO/Wireless driver and Intel PRO/Wireless 2100 Network Connection
+    Adapter.
+
+
+
+3.  GETTING THE SOURCE AND FIRMWARE
+-----------------------------------------------
+
+You can get the latest ipw2100 source code tarball from:
+
+	http://ipw2100.sf.net
+
+ipw2100-1.0.4 and earlier versions included the ieee80211 subsystem within
+the Intel PRO/Wireless 2100 Network Connection driver source tree. For
+current versions of the Intel PRO/Wireless 2100 Network Connection driver,
+starting with version 1.0.5, you must obtain an ieee80211 subsystem
+separately from the following site: 
+
+	http://ieee80211.sf.net
+
+Instructions for obtaining firmware can be found at:
+
+	http://ipw2100.sf.net/firmware.php.
+
+You will need to unpack the tarballs. Intel PRO/Wireless 2100 driver and
+ieee80211 subsystem, create subdirectories, but firmware does not create
+subdirectories; you may want to put the firmware tarball in its own
+directory before unpacking.
+
+	% tar xzvf ipw2100-1.2.1.tgz
+	% tar xzvf ieee80211-.tgz
+	% tar xzvf ipw2100-fw-.tgz
+
+
+
+4.  KERNEL REQUIREMENTS - 2.6.13+
+-----------------------------------------------
+
+The Intel PRO/Wireless 2100 Network Connection driver is currently
+maintained only for 2.6.13+ versions of the Linux kernel, restricted in
+part by ieee80211 subsystem's requirement for 2.6.13+ (see INSTALL doc
+in ieee80211 source tree).
+
+Due to time constraints, we can not maintain a 2.4 backport of the driver.  
+
+There is a family of 2.4 backport patches for some earlier versions of the
+Intel PRO/Wireless 2100 Network Connection driver, provided by an external
+maintainer, but these patches are not managed or maintained by the Intel
+PRO/Wireless developers.  For a link to this site, and some other sites
+that may be of interest, please review the following site::
+
+	http://ipw2100.sourceforge.net/#links
+
+
+
+5.  KERNEL REQUIREMENTS - Configuration
+-----------------------------------------------
+
+Your kernel must be configured and compiled to provide certain capabilities
+needed by the ieee80211 subsystem and  Intel PRO/Wireless 2100 Network
+Connection drivers.  
+
+In addition, kernel versions 2.6.14 and later have integrated *old*
+ieee80211 subsystem and old Intel PRO/Wireless 2100 Network Connection
+driver as part of the mainline tree.  If these are compiled into your kernel
+(i.e. not as modules, but as built-in), you will need to reconfigure (using
+n to exclude/disable ieee80211 subsystem and Intel PRO/Wireless 2100
+Network Connection) drivers and rebuild your kernel before proceeding with
+your Intel PRO/Wireless 2100 Network Connection driver upgrade.  See below.
+
+You can verify that your running kernel is configured properly by
+searching the following file for the #define entries described below:
+
+	/lib/modules/`uname -r`/build/include/linux/autoconf.h
+
+If you need to change anything in your kernel configuration (e.g. using
+make menuconfig), make sure that you also rebuild, install, and reboot to
+the new kernel image before proceeding with your Intel PRO/Wireless 2100
+Network Connection driver upgrade.  For help or instructions on configuring 
+and building the kernel, please consult the documentation contained in 
+your distribution.
+
+MAKE SURE THAT THE FOLLOWING CAPABILITIES ARE ENABLED:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define CONFIG_NET_RADIO 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Failure to enable CONFIG_NET_RADIO will result in the Wireless Tools
+(iwconfig, iwlist, etc.) not functioning. In 2.6.x, this is enabled via
+menuconfig:
+
+        Device Drivers ->
+                Networking support ->
+                        Network device support ->
+                                Wireless LAN (non-hamradio) ->
+                                        Wireless LAN drivers (non-hamradio) & WE
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define CONFIG_FW_LOADER 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Intel PRO/Wireless 2100 Network Connection driver loads firmware via the
+Linux firmware hotplug capability (see later section on firmware loading).
+In 2.6.x, this is enabled via menuconfig:
+
+        Device Drivers ->
+                Generic Driver Options ->
+                        Hotplug firmware loading support
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define CONFIG_CRYPTO 1
+#define CONFIG_CRYPTO_ARC4(_MODULE) 1
+#define CONFIG_CRC32(_MODULE) 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Intel PRO/Wireless 2100 Network Connection driver for Linux uses the WEP
+encryption and decryption algorithms provided by the Linux kernel.  To
+use WEP you must enable the crypto library support (CONFIG_CRYPTO) and
+the ARC4 cipher algorithm (CONFIG_CRYPTO_ARC4) as noted below:
+
+        Cryptographic options ->
+                ARC4 cipher algorithm
+
+You also need to enable the CRC32 (CONFIG_CRC32) algorithm as noted below:
+
+        Library routines ->
+                CRC32 functions
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define CONFIG_CRYPTO_MICHAEL_MIC(_MODULE) 1
+#define CONFIG_CRYPTO_AES_586(_MODULE) 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you wish to enable (optional) WPA support, you also need to enable the
+following crypto library modules (in addition to those required for WEP above):
+
+        Cryptographic options ->
+                Michael MIC keyed digest algorithm
+                AES cipher algorithms (i586)
+
+
+
+NOW MAKE SURE THAT THE FOLLOWING CAPABILITIES ARE *NOT* ENABLED!!
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define CONFIG_IEEE80211 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If ieee80211 subsystem driver support is built into your kernel (i.e.,
+in kernel versions 2.6.14 and later), you must de-configure that
+capability and rebuild your kernel before upgrading the  ieee80211
+subsystem and Intel PRO/Wireless 2100 Network Connection drivers. In
+2.6.x, this is *dis*abled via menuconfig (enter n for no):
+
+        Networking ->
+                Networking support (NET [=y]) ->
+                        Generic IEEE 802.11 Networking Stack
+
+NOTE:  If ieee80211 subsystem is supported as a module (this would show up as
+#define CONFIG_IEEE80211_MODULE 1), you do not need to rebuild your kernel,
+but you will need to remove the binary module and relevant include files
+(see UPGRADING FROM PRIOR VERSIONS, below).
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define CONFIG_IPW2100 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If Intel PRO/Wireless 2100 Network Connection driver support is built
+into your kernel (i.e., in kernel versions 2.6.14 and later), you must
+de-configure that capability and rebuild your kernel before upgrading
+ieee80211 subsystem and Intel PRO/Wireless 2100 Network Connection drivers.
+In 2.6.x, this is *dis*abled via menuconfig (enter n for no):
+
+        Device Drivers ->
+                Network device support ->
+                        Network device support (NETDEVICES [=y]) ->
+                                Wireless LAN (non-hamradio) ->
+                                        Intel PRO/Wireless 2100...
+
+NOTE:  If Intel PRO/Wireless 2100 Network Connection driver is supported
+as a module (this would show up as #define CONFIG_IPW2100_MODULE 1), you
+do not need to rebuild your kernel, but you will need to remove the
+binary module and relevant include files (see UPGRADING FROM PRIOR
+VERSIONS, below).
+
+
+
+6.   SYSFS
+-----------------------------------------------
+
+You will also need to have sysfs mounted.  This facility is used to query
+and control the operation of the  Intel PRO/Wireless 2100 Network Connection
+driver (see the README.ipw2100, found in the Intel PRO/Wireless 2100
+Network Connection driver source directory).
+
+You can mount sysfs this by adding an entry to /etc/fstab similar to this:
+
+none            /sys            sysfs   defaults                0       0
+
+If the directory /sys does not already exist, you will need to create it:
+
+	% mkdir /sys
+
+You can then mount the sysfs partition via:
+
+	% mount -a
+
+
+
+7.  UPGRADING FROM PRIOR VERSIONS
+-----------------------------------------------
+
+You may have an old version of the  ieee80211 subsystem and Intel
+PRO/Wireless 2100 Network Connection driver if your Linux distribution
+includes them, or if you have installed an earlier version of the Intel
+PRO/Wireless 2100 Network Connection driver yourself. In addition, kernel
+versions 2.6.14 and later include *old* versions of the Intel
+PRO/Wireless 2100 Network Connection (i.e., version 1.0) driver in the
+mainline source tree.  You should upgrade to a more recent set of drivers.
+
+Before upgrading to a new ieee80211 subsystem and Intel PRO/Wireless 2100
+Network Connection drivers, you should remove old ieee80211 subsystem,
+Intel PRO/Wireless 2100, *and* Intel PRO/Wireless 2100 Network Connection
+driver modules (so modprobe won't find them), as well as any related kernel
+configuration declarations (so that they don't affect the new build). To
+do this most easily, you can use the 'remove-old' script, found in the
+Intel PRO/Wireless 2100 Network Connection driver source directory, as in
+the following example:
+
+	% cd /your/path/to/ipw2100-1.2.1
+	% chmod 755 remove-old   (probably not necessary)
+	% . remove-old   <--- You need to run this as root
+
+Answer *y* to all of questions.
+
+NOTE:  If you have already installed a new version of ieee80211 subsystem,
+this removes it!  Run this *before* installing the new ieee80211module.
+
+
+Since this script may not work thoroughly and reliably for your particular
+distribution, the following is a summary of what you can do manually to check
+and/or complete its work.
+
+1)  Remove any old ieee802.11 and Intel PRO/Wireless 2100 Network Connection
+driver modules from
+    /lib/modules/{VERSION}.  Find them via:
+
+	% for i in ieee80211 ipw2100; do \
+		find /lib/modules/`uname -r` -iname ${i}*; done
+
+    Remove whatever that finds, including directories and .h files (create
+    backup files, unless you're feeling adventurous!).
+
+    Failure to remove old modules may result in unresolved symbols
+    when you try to load your new drivers.
+
+
+2)  Comment out or remove any CONFIG_IEEE80211 or CONFIG_IPW declarations
+    in kernel's autoconf.h.  Find with:
+
+	% for i in IEEE80211 IPW; do \
+            grep CONFIG_${i} \
+            /lib/modules/`uname -r`/build/include/linux/autoconf.h; done
+
+    Use c-style comments (i.e. /* */) to comment out each line that it finds.
+    Use a pair of /* */ for each line separately, instead of trying to comment
+    out a block of several lines with a single pair of /* */.
+    
+
+3)  Comment out or remove any CONFIG_IEEE80211 or CONFIG_IPW declarations
+    in kernel's .config.  Find with:
+
+	% for i in IEEE80211 IPW; do \
+                grep CONFIG_${i} \
+                /lib/modules/`uname -r`/build/.config; done
+
+    Use shell-style comments (i.e. #) to comment out the entries it finds.
+
+    Failure to comment out these lines in steps 2) and 3) may affect the build
+    of your new module; settings in the Intel PRO/Wireless 2100 Network
+    Connection driver Makefile are overridden by settings in the kernel
+    configuration.
+
+
+
+8.  BUILDING EXTERNAL (outside kernel source tree)
+-----------------------------------------------
+
+First, you need to install the ieee80211 modules. You can find the modules
+package and install instructions at http://ieee80211.sourceforge.net
+
+Then, you need to unpack the Intel PRO/Wireless 2100 Network Connection driver
+source code:
+
+	% tar xzvf ipw2100-1.2.1.tgz
+	% cd ipw2100-1.2.1
+
+The driver package contains a Makefile that can be used for building the driver
+outside of the kernel tree.  To build it for the currently running kernel,
+simply type:
+
+	% make  <--- You may need to run this as root
+
+NOTE: If you see any errors during the build process be sure to check the
+Issues section on the http://ipw2100.sf.net website as a patch may be available
+for your specific kernel configuration.  
+
+To build it for a different kernel than the running one, use the KSRC
+parameter:
+
+	% make KSRC=/path/to/kernel
+
+If you wish to install the modules into your currently running kernel you can
+do so via:
+
+	# make install <--- You need to run this as root
+
+If you wish to install the modules into other place, you can do so via:
+
+	# make install KMISC=/path/to/install <--- You need to run this as root
+
+
+The Makefile for versions 1.0.6 and earlier defaults to building with DEBUG
+enabled.  Versions 1.0.7 and later default to no debug.  You can change this
+by editing the Makefile (search for CONFIG_IPW2100_DEBUG), which will also
+influence the Intel PRO/Wireless 2100 Network Connection driver load script
+to load with module parameter debug set to a default value embedded in the
+load script.
+
+
+
+9.  BUILDING WITHIN THE KERNEL SOURCE TREE
+-----------------------------------------------
+
+Starting with Linux kernel version 2.6.14, an old stable version of the
+Intel PRO/Wireless 2100 Network Connection driver is provided in the kernel.
+The Intel PRO/Wireless 2100 Network Connection driver project does not
+currently provide patches or other support for upgrading this driver within
+the kernel tree, and does not provide support for building within earlier
+kernel trees.
+
+
+
+10. LOADING FIRMWARE VIA HOT-PLUG 
+-----------------------------------------------
+
+Before you can load the driver, you need the firmware image.  You can find
+instructions for obtaining the firmware by going to:
+
+	http://ipw2100.sf.net/firmware.php.
+
+Once you have the firmware, unzip the archive.  You should find seven (4)
+files within it:
+
+        LICENSE				A copy of the firmware license
+ipw2100-(version number).fw		Boot strap image
+ipw2100-(version number)-i.fw		Used in IBSS mode
+ipw2100-(version number)-p.fw		Used in monitor mode
+
+You need to place all of these files into the hotplug firmware directory,
+e.g. /usr/lib/hotplug/firmware/  or  /lib/firmware/.  Check the contents
+of the /etc/hotplug/firmware.agent to determine the specific location for your
+distribution. 
+
+If you do not have /etc/hotplug/firmware.agent, then you need to upgrade your
+hotplug scripts to something later than 2003_10_07.  You can obtain the latest
+hotplug scripts via the following link (look for hotplug,
+not firmwarehotplug): 
+
+	http://sourceforge.net/project/showfiles.php?group_id=17679
+
+Also, make sure that your kernel supports the hotplug firmware loader.  See the
+section above, KERNEL REQUIREMENTS -- Configuration, on CONFIG_FW_LOADER .
+
+NOTE:  Loading this firmware image will not affect the Intel PRO/Wireless
+2100 Network Connection driver in any other operating systems you may boot.
+Each OS keeps its own copy of the firmware, and loads its own copy onto the
+hardware each time the OS initializes the card.
+
+
+
+11.  LOADING THE DRIVER
+-----------------------------------------------
+
+IMPORTANT: Before loadingipw2100.ko, the ieee80211 subsystem needs to be
+loaded first. If you've properly installed the ieee80211 subsystem and
+Intel PRO/Wireless 2100 Network Connection driver (and done depmod -a,
+which make install does), the following should load both:
+
+       # modprobe ipw2100  <--- You need to run this as root
+
+If built with DEBUG (default for Intel PRO/Wireless 2100 Network Connection
+driver (versions 1.0.6 and earlier), assuming it's not overridden by kernel
+config file -- see BUILDING EXTERNAL section), the driver can be loaded
+with a debug mode (a bit map of debug options) which you can select from
+running the following script, found in the Intel PRO/Wireless 2100 Network
+Connection driver source tree:
+
+	% . dvals    (shows debug options)
+	% modprobe debug=0x43fff   (this is a good value for a useful debug log)
+                OR
+	% . load debug=0x43fff
+
+The ieee80211 module has a similar debug option. Run idval in the ieee80211
+subsystem source tree to see its debug options.
+
+There are several other useful load-time module parameter options for ipw2100.
+See README.ipw2100, Command Line Parameters section for more information.
+
+The load script, found in the Intel PRO/Wireless 2100 Network Connection
+driver source directory, is an easy way to load the ieee80211 subsystem,
+several of its cryptography modules, and Intel PRO/Wireless 2100 Network
+Connection driver.  It is a bit more complete (it loads some extra
+decryption modules), and automatic, than modprobe Intel PRO/Wireless 2100
+Network Connection driver.  It uses modprobe to load the ieee80211components
+from their installed location, but insmod to load the Intel PRO/Wireless
+2100 Network Connection driver directly from its build directory.
+
+The load script also looks at the Intel PRO/Wireless 2100 Network Connection
+driver Makefile to see if CONFIG_IPW2200_DEBUG is set, and will automatically
+load it with a default debug mode (and you can, of course, edit the load
+script to modify the default debug mode).
+
+       # . load  <--- You need to run this as root
+
+       # . unload  <--- You need to run this as root
+
+
+
+12.  COMMON TROUBLESHOOTING TIPS
+-----------------------------------------------
+
+1.  The following Unknown symbol in module error appears when running the
+load script:
+
+[root@localhost ipw2100-1.0.7-pre10]# . load
+Unloaded: ieee80211 ieee80211_crypt_tkip ieee80211_crypt_ccmp ieee80211_crypt_wep ieee80211_crypt
+insmod: error inserting './ipw2100.ko': -1 Unknown symbol in module
+
+CAUSE:  One or both of the following kernel configuration files may still have
+entries from old installations. Follow the removal instructions in the
+section above entitled UPGRADING FROM PRIOR VERSIONS.
+    /lib/modules/`uname -r`/build/include/linux/autoconf.h
+    /lib/modules/`uname -r`/build/.config
+
+
+2.  The following error appears in the dmesg kernel ring buffer output:
+ipw2100: ipw-2.4-boot.fw load failed: Reason -2
+ipw2100: Unable to load firmware: -2
+ipw2100: failed to register network device
+ipw2100: probe of 0000:02:03.0 failed with error -5
+
+CAUSE: this may be due to any one of the following reasons:
+-  firmware in wrong location or wrong firmware version. Follow the
+   instructions in the section LOADING FIRMWARE VIA HOT-PLUG above.
+-  sysfs may not be mounted. Follow the instructions in the SYSFS section
+   above.
+
+
+3.  The following error appears when compiling the driver.
+make[1]: Entering directory `/usr/src/kernels/2.6.11-1.1369_FC4-i686'
+make[1]: *** No rule to make target `modules'. Stop.
+make[1]: Leaving directory `/usr/src/kernels/2.6.11-1.1369_FC4-i686'
+make: *** [modules] Error 2
+
+CAUSE: make sure that the kernel source is installed on your machine
+

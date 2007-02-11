@@ -1,0 +1,36 @@
+#!/bin/sh
+# Copyright (C) 2004-2005 Intel Corporation
+#
+DRIVER=ipw2100
+
+function do_device()
+{
+    cd $1/device
+    echo -ne "--------------------------------------------------------------------------------\n"
+	echo "Kernel:" `uname -r`
+	echo "Date:  " `date`
+    echo "device: $1"
+
+    ethtool -i $1
+    for i in *; do 
+	if [ -f $i ]; then 
+	    echo -ne "--------------------------------------------------------------------------------\n"
+	echo -en "Name: $i\nValue:"
+	    cat $i
+	echo -en "\n"
+	fi
+    done
+
+    cd -
+}
+
+pushd /sys/class/net > /dev/null
+for i in *; do 
+    if [ -d $i ] && [ -d $i/driver ]; then 
+	if readlink $i/driver | grep -q ${DRIVER}; then
+	    do_device $i
+	fi
+    fi
+done
+popd > /dev/null
+

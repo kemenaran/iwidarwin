@@ -1,0 +1,49 @@
+The following files are provided in the distribution:
+
+Documentation Files
+---------------
+
+CHANGES			Version change history
+FILES			This file
+INSTALL			Installation instructions
+LICENSE			GPL License text
+README.ipw2100		General driver documentation
+GIT_SHA1		Git commit id for bughost.org/repos/ipw-delta
+
+
+Helper Scripts
+---------------
+Some of these files require that the driver be loaded to be 
+useful.
+
+The helper scripts can be executed as:
+
+	% . FILE
+
+For example
+
+	% . dvals
+
+config			Provides information on current driver config state
+dvals			Provides information on debug_level masks for 
+			ipw2100
+idvals			Provides information on debug_level masks for 
+			ieee80211
+ipwinfo			Provides general information about the device
+status			Provides information on current driver status
+verify_wifi_hw		Look for ipw device from the system pci bus
+
+load			Loads the ipw2100 module and required dependencies
+restart			Script to stress test loading/unloading
+unload			Unloads the ipw2100 module and dependencies
+
+remove-old		Remove old ieee80211 header files installed in the
+			current system. Try it if driver fails to compile.
+
+
+Source Files
+---------------
+
+Makefile
+ipw2100.c
+ipw2100.h
