@@ -1,0 +1,28 @@
+#summary this is *rules* for svn commiting. and this explain svn directory structure.
+#labels Development,Phase-Implementation,svn,rules
+
+this is draft of rules written by kazu.
+
+
+== Directories ==
+* braches/
+  this is used on release. meaning of release is puting to Downloads.
+  brachedes'tree should not merge new features.
+  
+  * naming rules 
+    iwi2200-{version}-{braches-name} 
+
+* tags/
+  this tree is used on snapshot of trunk.
+  if many feature is added and driver will be unstable,
+  svn cp trunk to tags.
+
+* trunk/
+  this is unstable tree. normaly commiter should use this when commiter edit and add new feature.
+  there are 3 trees( iwi2100 iwi2200 iwi3945).
+
+  
+== Commiting Rules
+ * log message must be written when commiter commit.
+ * log message must be understandable for all commiter.
+ * current trunk is compilable when  commit.
