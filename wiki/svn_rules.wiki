@@ -3,7 +3,6 @@
 
 this is draft of rules written by kazu.
 
-
 == Directories ==
 * braches/
   this is used on release. meaning of release is puting to Downloads.
@@ -22,7 +21,9 @@ this is draft of rules written by kazu.
   there are 3 trees( iwi2100 iwi2200 iwi3945).
 
   
-== Commiting Rules
+== Commiting Rules ==
  * log message must be written when commiter commit.
  * log message must be understandable for all commiter.
  * current trunk is compilable when  commit.
+ * if happen conflict on commiting, commiter must not *remove and add* and must fixed it by hand ( it is common rules in cvs and svn )
+  
