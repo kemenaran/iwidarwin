@@ -320,34 +320,34 @@ bool darwin_iwi2200::init(OSDictionary *dict)
 {
 
 	
-/* Initialize module parameter values here */
-  qos_enable = 1;
-  qos_burst_enable = 1;
-  qos_no_ack_mask = 0;
-  burst_duration_CCK = 0;
-  burst_duration_OFDM = 0;
-  config = 0;
-  cmdlog = 0;
-  debug = 0;
-  channel = 0;
-  mode = 0;
-  disable2=1;
-  early_up=0;
-  associate = 1;
-  auto_create = 1;
-  led = 1;
-  bt_coexist = 1;
-  hwcrypto = 0;
-  roaming = 1;
-  antenna = CFG_SYS_ANTENNA_BOTH;
- 
-  disable2=OSDynamicCast(OSNumber,dict->getObject("p_disable"))->unsigned32BitValue();
-  led=OSDynamicCast(OSNumber,dict->getObject("p_led"))->unsigned32BitValue();
-  mode=OSDynamicCast(OSNumber,dict->getObject("p_mode"))->unsigned32BitValue();
-  early_up=OSDynamicCast(OSNumber,dict->getObject("use_10_4_8"))->unsigned32BitValue();
-  
-  IWI_DEBUG("disable %d led %d mode %d earlyup %d\n",disable2, led, mode,early_up);
-  return super::init(dict);
+	/* Initialize module parameter values here */
+	qos_enable = 1;
+	qos_burst_enable = 1;
+	qos_no_ack_mask = 0;
+	burst_duration_CCK = 0;
+	burst_duration_OFDM = 0;
+	config = 0;
+	cmdlog = 0;
+	debug = 0;
+	channel = 0;
+	mode = 0;
+	disable2=1;
+	early_up=0;
+	associate = 1;
+	auto_create = 1;
+	led = 1;
+	bt_coexist = 1;
+	hwcrypto = 0;
+	roaming = 1;
+	antenna = CFG_SYS_ANTENNA_BOTH;
+	
+	disable2=OSDynamicCast(OSNumber,dict->getObject("p_disable"))->unsigned32BitValue();
+	led=OSDynamicCast(OSNumber,dict->getObject("p_led"))->unsigned32BitValue();
+	mode=OSDynamicCast(OSNumber,dict->getObject("p_mode"))->unsigned32BitValue();
+	//early_up=OSDynamicCast(OSNumber,dict->getObject("use_10_4_8"))->unsigned32BitValue();
+	
+	IWI_DEBUG("disable %d led %d mode %d\n",disable2, led, mode);
+	return super::init(dict);
 }
 
 void darwin_iwi2200::ipw_qos_init(struct ipw_priv *priv, int enable,
@@ -5262,6 +5262,7 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	    IWI_DEBUG("same interface\n");
 	}else {
 	    IWI_DEBUG("not same interface\n");
+	    return -1;
 	}
 
 	//int n=interface->getUnitNumber();
@@ -5277,7 +5278,8 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	IWI_DEBUG("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	ipw_sw_reset(1);
 	memcpy(&priv->ieee->dev->name,i,sizeof(i)); // can we assign ieee->dev to fifnet??
-
+	
+#if 0
 	ipw_load(priv);
 	
 	//ipw_init_ordinals(priv);
@@ -5288,11 +5290,13 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	    IWI_LOG(" early time ipw_up in 10.4.8\n");
 	    ipw_up(priv);
 	}
+#endif	 
 	super::enable(fNetif);
 	interface->setPoweredOnByUser(true);
 	//ifnet_set_flags(fifnet, IFF_UP | IFF_RUNNING | IFF_MULTICAST | IFF_BROADCAST | IFF_SIMPLEX , IFF_RUNNING | IFF_MULTICAST | IFF_UP | IFF_BROADCAST | IFF_SIMPLEX);
 	//setLinkStatus(kIONetworkLinkActive, mediumTable[MEDIUM_TYPE_AUTO]);
 	//ipw_link_up(priv);
+	ipw_up(priv); // this should be called by default. after boot the association gives invalid ip address
 	return 0;
 }
 
