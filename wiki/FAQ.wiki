@@ -2,16 +2,28 @@
 #labels Featured,FAQ
 
 = F.A.Q =
-when support 3945abg/2100 ?: 
+==When will ipw3945abg/2100 be supported?==
 
   We dont have its card. we can write test code. but no relese working version forever.
   we require developer with 2100/3945abg or cards to support it
 
-when WEP , 802.1x,encrption and setting via AirPort menu is suppored? :
+==when WEP , 802.1x,encrption and setting via AirPort menu is suppored?==
   
   We caonnot answer it because we must analiyze IO80211Family( this information is closed)
 
+==Do i need to update my version of os x to 10.4.8 to even try this driver?==
+  Nope, the iwi3945 driver requires Apple80211.framework and IO80211.kext from 10.4.7
 
 
+==How do I create log's to help development of the drivers?==
+  # go to Terminal.App
+  {{{
+  % sudo -s
+  % cd ~/Desktop
+  % dmesg > dmesg.txt
+  % cat /var/log/system.log > system.txt
+  % ioreg -w 0 > ioreg.txt
+  }}}
+  # Now you have 3 log files; dmesg.txt, system.txt and ioreg.txt you can find them on the desktop
 
- 
+
