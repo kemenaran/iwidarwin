@@ -28,6 +28,10 @@ this is draft of rules written by kazu.
  * if happen conflict on commiting, commiter must not *remove and add* and must fixed it by hand ( it is common rules in cvs and svn )
   
 
+== svn https commit setup ==
+ when using a svn client add the line "https://iwidarwin.googlecode.com/svn" to the client preferences settings.
+without this commit to https fails (the default is http).
+
 
 == about issues == 
  * issues is written in single feature.
