@@ -11,7 +11,7 @@ updated fro v6(or v0.6).
  * Mac OS X 10.4.7 or later.
 
 = Steps =
-typing in Terminal in 2-3
+Steps 2-3 are typed into Terminal
 
  # go to Terminal.App
  # extract file 
@@ -84,14 +84,14 @@ _we recommend to send report to [http://code.google.com/p/iwidarwin/issues/list]
 u must test with *debugging version*.
 if normal version, driver dont output sevaral information.
  
-=== bug report ===
-following information is required in bug reports.
+=== Bug report ===
+The following information is required in bug reports.
 
- * version of iwi 
- * kerne version
+ * Version of iwi 
+ * Kernel version
  * Mac OS X version
  * IO80211Family version
- * procedure of occuring bug.
+ * Procedure of occuring bug.
  * iwi message log( /var/log/system.log and dmesg ( if overflow in dmesg, type "grep iwi /var/log/system.log > report.log" and attached "report.log").
 
 if information is lacking , I dont know where is problem. 
