@@ -1,0 +1,7 @@
+000000000180643f00000000000b4615 14e90d8adcde7c37b3a310e592e84c03 ffffffffffffffffffffffffffffffff 820744 /var/root/svn/branches/iwi3945/build/iwi3945.build/Debug/iwi3945.build/Objects-normal/i386/iwi3945.o
+594a467c3700c2acb19f5ced7aaefbc4 df65f81c2ad0675a1058530cef7ce4c0 ffffffffffffffffffffffffffffffff 102 /var/root/svn/branches/iwi3945/build/Debug/iwi3945.kext
+d08e2ef1cfc3c73cd3e3459ea90e745b 00de0a1d98e249fd6ba25b255f71c626 ffffffffffffffffffffffffffffffff 826788 /var/root/svn/branches/iwi3945/build/Debug/iwi3945.kext/Contents/MacOS/iwi3945
+0000000045d21a4c0000000000000181 c467237b129ddf346040557b3bed7fa9 ffffffffffffffffffffffffffffffff 2260 /var/root/svn/branches/iwi3945/build/iwi3945.build/Debug/iwi3945.build/Objects-normal/i386/iwi3945_info.o
+00000000000000000000000000000000 3759d504edbb886826375a191d36bd0e ffffffffffffffffffffffffffffffff 202 /var/root/svn/branches/iwi3945/build/Debug/iwi3945.kext/Contents/Resources/English.lproj/InfoPlist.strings
+35cbc1c6fc1f61fa4dfd4ba09d21e9bc 8b8876527185a5ff621453ef0cc61d0b ffffffffffffffffffffffffffffffff 1920 /var/root/svn/branches/iwi3945/build/Debug/iwi3945.kext/Contents/Info.plist
+0000000045cf926b000000000000077f 35cbc1c6b9d0f3914dfd4ba09d21eec3 ffffffffffffffffffffffffffffffff 1922 /var/root/svn/branches/iwi3945/build/iwi3945.build/Debug/iwi3945.build/Preprocessed-Info.plist
