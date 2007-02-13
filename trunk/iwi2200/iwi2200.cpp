@@ -3627,16 +3627,14 @@ bool darwin_iwi2200::configureInterface(IONetworkInterface * netif)
 int darwin_iwi2200::configu(struct ipw_priv *priv)
 {
 	int rc;
-	UInt8 Addr[6];
 	
 	if (ipw_set_tx_power(priv))	goto error;
 
 	/* initialize adapter address */
-	memcpy(Addr, &priv->eeprom[EEPROM_MAC_ADDRESS], 6);
 	memcpy(priv->mac_addr, &priv->eeprom[EEPROM_MAC_ADDRESS], 6);
 
 	IWI_DEBUG("Setting MAC address to %6D\n",priv->mac_addr,":");
-	ipw_send_cmd_pdu(priv, IPW_CMD_ADAPTER_ADDRESS, ETH_ALEN, &Addr);
+	ipw_send_cmd_pdu(priv, IPW_CMD_ADAPTER_ADDRESS, ETH_ALEN, priv->mac_addr);
 	//rc = sendCommand(IWI_CMD_SET_MAC_ADDRESS, Addr,6, 1);
 	//if (rc != 0)		return rc;
 
