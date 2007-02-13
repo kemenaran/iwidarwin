@@ -240,7 +240,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd /private/var/root/svn/branches/iwi2200-0.7\n#cd \"$SRCROOT\"\n\nchown -R root:wheel build/Debug/iwi2200.kext\n\nrm -rf /System/Library/Extensions/iwi2200.kext\n\ncp -rf build/Debug/iwi2200.kext /System/Library/Extensions\n\nrm -rf /private/var/root/iwi2200.pkg\n\n# build only if no .dmg exists\nif [ -e /private/var/root/iwi2200.dmg ] ; then\n\texit 0\nfi\n\nrm -f /private/var/root/iwi2200.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p /private/var/root/iwi2200.pkg -proj iwi2200.pmproj\n\nhdiutil create -format UDZO -srcfolder /private/var/root/iwi2200.pkg /private/var/root/iwi2200.dmg\n\nsleep 1\n\nrm -rf /private/var/root/iwi2200.pkg\n";
+			shellScript = "cd /private/var/root/svn/trunk/iwi2200-0.7\n#cd \"$SRCROOT\"\n\nchown -R root:wheel build/Debug/iwi2200.kext\n\nrm -rf /System/Library/Extensions/iwi2200.kext\n\ncp -rf build/Debug/iwi2200.kext /System/Library/Extensions\n\nrm -rf /private/var/root/iwi2200.pkg\n\n# build only if no .dmg exists\nif [ -e /private/var/root/iwi2200.dmg ] ; then\n\texit 0\nfi\n\nrm -f /private/var/root/iwi2200.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p /private/var/root/iwi2200.pkg -proj iwi2200.pmproj\n\nhdiutil create -format UDZO -srcfolder /private/var/root/iwi2200.pkg /private/var/root/iwi2200.dmg\n\nsleep 1\n\nrm -rf /private/var/root/iwi2200.pkg\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
