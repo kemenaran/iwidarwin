@@ -1,7 +1,7 @@
 #summary method of iwi kext
 #labels Featured,Install
 = Introduction =
-this is currently installation documents for iwi2200.
+This is currently installation documents for iwi2200.
 updated fro v6(or v0.6).
 
 == Support Hardware ==
@@ -28,7 +28,7 @@ typing in Terminal in 2-3
 {{{
 % sudo chown -R root:wheel iwi2200.kext
 }}}
-   if you ask password , plz type.
+   If you are asked for a password, enter your password.
  # load kernel module
 {{{
   % sudo kextload iwi2200
@@ -96,7 +96,7 @@ following information is required in bug reports.
 
 if information is lacking , I dont know where is problem. 
 
-== about 10.4.8 ==
+== About 10.4.8 ==
  * Crashed in 10.4.8  when  you set channel in Airpot menu.
   if open network and dont use encrpytion , it worked.
 
@@ -105,7 +105,7 @@ if information is lacking , I dont know where is problem.
   
    it may work in "use_10_4_8" options
 
-== log message ==
+== Log message ==
  * iwi2200 part of /var/log/system.log  or dmesg ( if overflow logs, system.log)
  * ioreg (not must )
 
