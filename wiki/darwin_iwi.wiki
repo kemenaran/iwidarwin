@@ -3,9 +3,9 @@
 
 = Introduction =
 
-this is development information to port Intel Wireless Driver  to Darwin and Mac OS X.
+This is development information to port Intel Wireless Driver  to Darwin and Mac OS X.
 
-== Current support Hardware.=
+== Current support Hardware.==
 
  * 2200BG/2945ABG
 
