@@ -26,4 +26,12 @@
   }}}
   # Now you have 3 log files; dmesg.txt, system.txt and ioreg.txt you can find them on the desktop
 
-
+==How can I uninstall iwi3945?==
+  # go to Terminal.App
+  {{{
+  % sudo -s
+  % rm /System/Library/Extensions/iwi3945.kext
+  % rm /System/Library/Extensions.*
+  % kextcache -k /System/Library/Extensions
+  }}}
+  # iwi3945 is now uninstalled
