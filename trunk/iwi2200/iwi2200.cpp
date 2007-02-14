@@ -338,7 +338,7 @@ bool darwin_iwi2200::init(OSDictionary *dict)
 	led = 1;
 	bt_coexist = 1;
 	hwcrypto = 0;
-	roaming = 1;
+	roaming = 0; // roaming is dont work correctly.
 	antenna = CFG_SYS_ANTENNA_BOTH;
 	
 	disable2=OSDynamicCast(OSNumber,dict->getObject("p_disable"))->unsigned32BitValue();
@@ -2187,7 +2187,14 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 		IWI_DEBUG_FULL("FW_INITIALIZATION_DONE\n");
 		ret |= IPW_INTA_BIT_FW_INITIALIZATION_DONE;
 	}
-
+	// 
+	if( (ret & 
+		( IPW_INTA_BIT_TX_QUEUE_1 | IPW_INTA_BIT_TX_QUEUE_2 | IPW_INTA_BIT_TX_QUEUE_3  | IPW_INTA_BIT_TX_QUEUE_4) ) 
+	    && (fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING) )
+	{
+		 IWI_DEBUG("fTrasmitQueue->service()\n");
+		 fTransmitQueue->service();
+	}
 
 	//ipw_enable_interrupts(priv);
 	
@@ -4434,7 +4441,7 @@ void darwin_iwi2200::ipw_handle_mgmt_packet(struct ipw_priv *priv,
 		//ifnet_input(fifnet, skb, (const struct ifnet_stat_increment_param*)stats);
 		fNetif->inputPacket(skb,mbuf_len(skb),IONetworkInterface::kInputOptionQueuePacket);
 		// fix me: fushInputQueue is called in interruptOccured with check?
-		fNetif->flushInputQueue();
+		//fNetif->flushInputQueue();
 		rxb->skb = NULL;
 		
 	}
@@ -4524,10 +4531,12 @@ void darwin_iwi2200::ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 	}
 }
 
-void darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
+bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 				   struct ipw_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_stats *stats)
 {
+	bool                doFlushQueue = false;
+	
 	struct ieee80211_hdr_4addr *hdr;
 	struct ipw_rx_packet *pkt = (struct ipw_rx_packet *)(mbuf_data(rxb->skb));
 
@@ -4545,13 +4554,13 @@ void darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 		priv->ieee->stats.rx_errors++;
 		priv->wstats.discard.misc++;
 		IWI_DEBUG("Corruption detected! Oh no!\n");
-		return;
+		return false;
 	} //else if (unlikely(!netif_running(priv->net_dev))) {
 		else if (!(ifnet_flags(fifnet) & IFF_RUNNING)) {
 		priv->ieee->stats.rx_dropped++;
 		priv->wstats.discard.misc++;
 		IWI_DEBUG("Dropping packet while interface is not up.\n");
-		return;
+		return false;
 	}
 
 	/* Advance skb->data to the start of the actual payload */
@@ -4593,9 +4602,11 @@ void darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	if (!ieee80211_rx(priv->ieee, rxb->skb, stats))
 		priv->ieee->stats.rx_errors++;
 	else {			/* ieee80211_rx succeeded, so it now owns the SKB */
+		doFlushQueue = true;
 		rxb->skb = NULL;
 		__ipw_led_activity_on(priv);
 	}
+	return doFlushQueue;
 }
 
 int darwin_iwi2200::is_duplicate_packet(struct ipw_priv *priv,
@@ -4679,6 +4690,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 	struct ieee80211_hdr_4addr *header;
 	u32 r, w, i;
 	u8 network_packet;
+	bool doFlushQueue = false;
 
 	r = ipw_read32( IPW_RX_READ_INDEX);
 	w = ipw_read32( IPW_RX_WRITE_INDEX);
@@ -4715,7 +4727,6 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 					    IEEE80211_52GHZ_BAND;
 				stats.len = le16_to_cpu(pkt->u.frame.length);
 
-
 				if (stats.rssi != 0)
 					stats.mask |= IEEE80211_STATMASK_RSSI;
 				if (stats.signal != 0)
@@ -4730,7 +4741,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 				if (priv->ieee->iw_mode == IW_MODE_MONITOR) {
 
 					//ipw_handle_data_packet_monitor(priv,rxb,&stats);
-					ipw_handle_data_packet(priv, rxb,&stats);
+					doFlushQueue = ipw_handle_data_packet(priv, rxb,&stats);
 					break;
 				}
 				//mbuf_align_32(rxb->skb,IPW_RX_FRAME_SIZE);
@@ -4813,7 +4824,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 								       addr3));
 					}
 #endif
-					ipw_handle_data_packet(priv, rxb,&stats);
+					doFlushQueue = ipw_handle_data_packet(priv, rxb,&stats);
 
 					break;
 				}
@@ -4851,7 +4862,11 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 
 		i = (i + 1) % RX_QUEUE_SIZE;
 	}
-
+	// if called ipw_handle_data_packet and queued, flushInputQueue()
+	if(doFlushQueue){
+		IWI_DEBUG("flushing Input Queue\n");
+		fNetif->flushInputQueue();
+	}
 	/* Backtrack one entry */
 	priv->rxq->processed = (i ? i : RX_QUEUE_SIZE) - 1;
 
@@ -8714,7 +8729,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		//skb->dev = dev;
 		//skb->ip_summed = CHECKSUM_NONE;	/* 802.11 crc not sufficient */
 		fNetif->inputPacket(skb,mbuf_len(skb),IONetworkInterface::kInputOptionQueuePacket);
-		fNetif->flushInputQueue();
+		//fNetif->flushInputQueue();
 		//if (netif_rx(skb) == NET_RX_DROP) {
 			/* netif_rx always succeeds, but it might drop
 			 * the packet.  If it drops the packet, we log that

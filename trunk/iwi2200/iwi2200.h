@@ -10,17 +10,19 @@
 // i'll use "iwi2200: " to separate them from the driver messages
 
 // add prefix "iwi2200"
+#define IWI_DEBUG_NORMAL
+
 #define IWI_LOG(...) IOLog("iwi2200: " __VA_ARGS__)
 
 #if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
 	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
 #else
-//	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
-	#define IWI_DEBUG(...) do{ }while(0)
+	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
+//	#define IWI_DEBUG(...) do{ }while(0)
 #endif
 
 #if defined(IWI_DEBUG_FULL)
-	#define IWI_DEBUG_FULL(...) IWI_DEBUG(...)
+	#define IWI_DEBUG_FULL(...) IWI_DEBUG(__VA_ARGS__)
 #else
           #define IWI_DEBUG_FULL(...) do{ }while(0)
 #endif
@@ -36,10 +38,13 @@
 #define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
 
 
+#define IWI_DUMP_MBUF(...) do{ }while(0)
+
+/*
 #define IWI_DUMP_MBUF(f, skb, len) \
     IWI_DEBUG_FULL(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
         f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
-
+*/
 
 inline void skb_reserve(mbuf_t skb, int len)
 {
@@ -304,7 +309,7 @@ __div(unsigned long long n, unsigned int base)
 ({		\
 	uint64_t m;		\
 	clock_get_uptime(&m);		\
-	__div(m , 1000000);		\
+	__div(m , 1000000)*5;		\
 })
 
 inline unsigned int jiffies_to_msecs(const unsigned long j)
@@ -1007,7 +1012,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual void ipw_write_direct(struct ipw_priv *priv, u32 addr, void *buf,
 			     int num);
 	virtual void ipw_adhoc_check(void *data);
-	virtual void ipw_handle_data_packet(struct ipw_priv *priv,
+	virtual bool ipw_handle_data_packet(struct ipw_priv *priv,
 				   struct ipw_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_stats *stats);
 	virtual void __ipw_led_activity_on(struct ipw_priv *priv);
