@@ -361,6 +361,7 @@ struct clx2_queue {
 	u32 reg_w;		     /**< 'write' reg (queue head), addr in domain 1 */
 	u32 reg_r;		     /**< 'read' reg (queue tail), addr in domain 1 */
 	dma_addr_t dma_addr;		/**< physical addr for BD's */
+	IOBufferMemoryDescriptor *memD; 
 	int low_mark;		       /**< low watermark, resume queue if free space more than this */
 	int high_mark;		       /**< high watermark, stop queue if free space less than this */
 } __attribute__ ((packed));

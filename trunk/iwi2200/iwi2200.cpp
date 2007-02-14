@@ -963,7 +963,9 @@ void darwin_iwi2200::ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_que
 			//dev_kfree_skb(rxq->pool[i].skb);
 			//rxq->pool[i].dma_addr=NULL;
 			//mbuf_freem_list(rxq->pool[i].skb);
+			freePacket(rxq->pool[i].skb);
 			rxq->pool[i].skb = NULL;
+			rxq->pool[i].dma_addr=NULL;
 		}
 		list_add_tail(&rxq->pool[i].list, &rxq->rx_used);
 	}
@@ -1023,10 +1025,12 @@ void darwin_iwi2200::ieee80211_txb_free(struct ieee80211_txb *txb)
 		if (txb->fragments[i]) 
 		{
 			mbuf_freem_list(txb->fragments[i]);
-			//txb->fragments[i]=NULL;
+			freePacket(txb->fragments[i]);
+			txb->fragments[i]=NULL;
+			
 		}
 	kfree(txb);
-	//txb=NULL;
+	txb=NULL;
 }
 
 void darwin_iwi2200::ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_queue *txq)
@@ -1045,8 +1049,12 @@ void darwin_iwi2200::ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_que
 
 	/* free buffers belonging to queue itself */
 	//pci_free_consistent(dev, sizeof(txq->bd[0]) * q->n_bd, txq->bd, q->dma_addr);
+	
+	q->memD->release();
+	q->dma_addr=NULL;
+	
 	kfree(txq->txb);
-	//txq->txb=NULL;
+	txq->txb=NULL;
 	/* 0 fill whole structure */
 	memset(txq, 0, sizeof(*txq));
 }
@@ -1101,12 +1109,16 @@ int darwin_iwi2200::ipw_queue_tx_init(struct ipw_priv *priv,
 	}
 
 	//q->bd = pci_alloc_consistent(dev, sizeof(q->bd[0]) * count, &q->q.dma_addr);
-	MemoryDmaAlloc(sizeof(q->bd[0]) * count, &q->q.dma_addr, &q->bd);
+	q->q.memD = MemoryDmaAlloc(sizeof(q->bd[0]) * count, &q->q.dma_addr, &q->bd);
+	q->q.memD->prepare();
+	
 	if (!q->bd) {
 		IWI_DEBUG("pci_alloc_consistent(%zd) failed\n",
 			  sizeof(q->bd[0]) * count);
+		
+		q->q.memD->release();
 		kfree(q->txb);
-		//q->txb = NULL;
+		q->txb = NULL;
 		return -ENOMEM;
 	}
 
@@ -1317,7 +1329,7 @@ int darwin_iwi2200::ipw_load(struct ipw_priv *priv)
 			  IPW_INTA_BIT_FW_INITIALIZATION_DONE, 500);
 	if (rc < 0) {
 		IWI_ERR("device failed to boot initial fw image\n");
-		//goto error;
+		goto error;
 	}
 	IWI_LOG("boot firmware ok\n");
 	/* ack fw init done interrupt */
@@ -4829,8 +4841,8 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		 * fail to Rx correctly */
 		if (rxb->skb != NULL) {
 			//dev_kfree_skb_any(rxb->skb);
-			mbuf_freem_list(rxb->skb);
-			//rxb->skb = NULL;
+			freePacket(rxb->skb);
+			rxb->skb = NULL;
 		}
 
 		//pci_unmap_single(priv->pci_dev, rxb->dma_addr, IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
@@ -7475,12 +7487,16 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 	if (unlikely(i != nr_frags)) {
 		while (i >= 0)
 		{
-			mbuf_freem_list(txb->fragments[i--]);
+			i--;
+			if (txb->fragments[i]!=NULL){
+				freePacket(txb->fragments[i]);
+				 txb->fragments[i]=NULL;
+			}
 			//txb->fragments[i--]=NULL;
 		//	dev_kfree_skb_any(txb->fragments[i--]);
 		}
 		kfree(txb);
-		//txb=NULL;
+		txb=NULL;
 		return NULL;
 	}
 	return txb;
@@ -7701,13 +7717,15 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		if (res < 0) {
 			IWI_DEBUG("msdu encryption failed\n");
 			//dev_kfree_skb_any(skb_new);
-			mbuf_freem_list(skb);
-			//skb_new=NULL;
+			//mbuf_freem_list(skb);
+			if (skb_new!=NULL) freePacket(skb_new);
+			skb_new=NULL;
 			goto failed;
 		}
 		//dev_kfree_skb_any(skb);
-		mbuf_freem_list(skb);
-		//skb=NULL;
+		 if (skb!=NULL) freePacket(skb);
+		skb=NULL;
+		
 		skb = skb_new;
 		bytes += crypt->ops->extra_msdu_prefix_len +
 		    crypt->ops->extra_msdu_postfix_len;
@@ -7883,8 +7901,12 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
       success:
 	//spin_unlock_irqrestore(&ieee->lock, flags);
 	//dev_kfree_skb_any(skb);
-	mbuf_freem_list(skb);
 	//skb=NULL;
+	if (skb!=NULL) 
+	{
+	     freePacket(skb);
+               skb=NULL;
+	}
 	if (txb) {
 		//int ret = ipw_tx_skb(priv,txb, priority);
 		// test comment out.
@@ -7907,6 +7929,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//netif_stop_queue(dev);
 	IWI_DEBUG_FULL("TX drop\n");
 	fTransmitQueue->stop();
+	 fTransmitQueue->flush();
 	stats->tx_errors++;
 	return kIOReturnOutputDropped;
 }
@@ -8129,8 +8152,12 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 				
 			}
 			//dev_kfree_skb_any(txb->fragments[i]);
-			//mbuf_freem_list(txb->fragments[i]);
-			//txb->fragments[i]=NULL;
+			 if (txb->fragments[i]!=NULL)
+			 {
+				 freePacket(txb->fragments[i]);
+				 txb->fragments[i]=NULL;
+			 }
+			
 			txb->fragments[i] = skb;
 			tfd->u.data.chunk_ptr[i] = cpu_to_le32(mbuf_data_to_physical(mbuf_data(skb)));
 			   /* cpu_to_le32(
@@ -8234,7 +8261,7 @@ struct ieee80211_frag_entry *darwin_iwi2200::ieee80211_frag_cache_find(struct
 					     "seq=%u last_frag=%u\n",
 					     entry->seq, entry->last_frag);
 			//dev_kfree_skb_any(entry->skb);
-			mbuf_freem_list(entry->skb);
+			freePacket(entry->skb);
 			entry->skb = NULL;
 		}
 
@@ -8276,8 +8303,10 @@ mbuf_t darwin_iwi2200::ieee80211_frag_cache_get(struct ieee80211_device *ieee,
 			ieee->frag_next_idx = 0;
 
 		if (entry->skb != NULL)
-			mbuf_freem_list(entry->skb);
-
+		{
+			freePacket(entry->skb);
+			entry->skb = NULL;
+		}
 		entry->first_frag_time = jiffies;
 		entry->seq = seq;
 		entry->last_frag = frag;
@@ -8593,8 +8622,10 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 			       flen);
 		}
 		//dev_kfree_skb_any(skb);
-		mbuf_freem_list(skb);
-		//skb = NULL;
+		if (skb != NULL) {
+			freePacket(skb);
+		}
+		skb = NULL;
 
 		if (fc & IEEE80211_FCTL_MOREFRAGS) {
 			// more fragments expected - leave the skb in fragment
