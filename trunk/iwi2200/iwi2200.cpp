@@ -4403,12 +4403,12 @@ void darwin_iwi2200::ipw_handle_mgmt_packet(struct ipw_priv *priv,
 
 		/* Set the size of the skb to the size of the full
 		 * ipw header and 802.11 frame */
-		//skb_put(skb, le16_to_cpu(pkt->u.frame.length) +	IPW_RX_FRAME_SIZE);
+		skb_put(skb, le16_to_cpu(pkt->u.frame.length) +	IPW_RX_FRAME_SIZE);
 		/* Advance past the ipw packet header to the 802.11 frame */
-		//skb_pull(skb, IPW_RX_FRAME_SIZE);
+		skb_pull(skb, IPW_RX_FRAME_SIZE);
 
 		/* Push the ieee80211_rx_stats before the 802.11 frame */
-		//memcpy(skb_push(skb, sizeof(*stats)), stats, sizeof(*stats));
+		memcpy(skb_push(skb, sizeof(*stats)), stats, sizeof(*stats));
 
 		//skb->dev = priv->ieee->dev;
 
@@ -4421,6 +4421,7 @@ void darwin_iwi2200::ipw_handle_mgmt_packet(struct ipw_priv *priv,
 		netif_rx(skb);*/
 		//ifnet_input(fifnet, skb, (const struct ifnet_stat_increment_param*)stats);
 		fNetif->inputPacket(skb,mbuf_len(skb),IONetworkInterface::kInputOptionQueuePacket);
+		// fix me: fushInputQueue is called in interruptOccured with check?
 		fNetif->flushInputQueue();
 		rxb->skb = NULL;
 		
@@ -10073,7 +10074,11 @@ int darwin_iwi2200::ipw_handle_beacon(struct net_device *dev,
 
 	return 0;
 }
-
+void darwin_iwi2200::freePacket(mbuf_t m, IOOptionBits options)
+{
+	if( m != NULL && mbuf_len(m) != 0 && mbuf_type(m) != MBUF_TYPE_FREE )
+		super::freePacket(m,options);
+}
 void darwin_iwi2200::update_network(struct ieee80211_network *dst,
 				  struct ieee80211_network *src)
 {

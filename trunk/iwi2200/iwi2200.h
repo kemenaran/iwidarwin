@@ -41,7 +41,6 @@
         f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
 
 
-
 inline void skb_reserve(mbuf_t skb, int len)
 {
         //skb->data += len;
@@ -1074,7 +1073,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual struct ieee80211_txb *ieee80211_alloc_txb(int nr_frags, int txb_size,
 						 int headroom, int gfp_mask);
 	virtual int ipw_is_qos_active(struct net_device *dev, mbuf_t skb);
-	
+	virtual void freePacket(mbuf_t  m,  IOOptionBits options = 0); 
 	
 	
 
