@@ -109,6 +109,30 @@ if information is lacking , I dont know where is problem.
  * iwi2200 part of /var/log/system.log  or dmesg ( if overflow logs, system.log)
  * ioreg (not must )
 
+== Options ==
+there are following driver options.
+
+=== p_mode ===
+this is set station mode.
+ * p_mode=1
+   station is ad-hoc mode.
+ * p_mode=0
+   this is defaults. this is infrastructure mode( this is the mode to connect to AP).  
+
+=== p_led ===
+this is enabling of LED.
+you can set 0 or 1.
+
+=== p_disable ===
+this is enabling automaticaly enabling of wireless power.
+ * p_disable=1
+   wireless adaptor is not enable automaticaly so must enabling airport interface.
+ * p_disable=0
+   wireless adapotr is enable automatically in loading modules.
+   this should be set in Mac OS X> 10.4.8.
+
+
+
 = Caution =
 We dont never answer about following question .
 and it reduce our motivation. plz understand it.
