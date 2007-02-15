@@ -6,19 +6,20 @@
 #include "iwieth.h"
 
 
-// system kernel messages use "darwin_iwi2200: "
-// i'll use "iwi2200: " to separate them from the driver messages
+//#define IWI_NOLOG
+//#define IWI_DEBUG_NORMAL
+//#define IWI_DEBUG_FULL
 
-// add prefix "iwi2200"
-#define IWI_DEBUG_NORMAL
-
-#define IWI_LOG(...) IOLog("iwi2200: " __VA_ARGS__)
+#if defined(IWI_NOLOG)
+	#define IWI_LOG(...) do{ }while(0)
+#else
+	#define IWI_LOG(...) printk("iwi2200: " __VA_ARGS__)
+#endif
 
 #if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
 	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
 #else
-	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
-//	#define IWI_DEBUG(...) do{ }while(0)
+	#define IWI_DEBUG(...) do{ }while(0)
 #endif
 
 #if defined(IWI_DEBUG_FULL)
@@ -309,7 +310,7 @@ __div(unsigned long long n, unsigned int base)
 ({		\
 	uint64_t m;		\
 	clock_get_uptime(&m);		\
-	__div(m , 1000000)*5;		\
+	__div(m , 10000000)*5;		\
 })
 
 inline unsigned int jiffies_to_msecs(const unsigned long j)
@@ -1231,7 +1232,9 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int burst_duration_CCK;
 	int burst_duration_OFDM;
 	ifnet_t fifnet;
-
+	int countnonet;
+	struct ieee80211_network nonets[20];
+	UInt32 countb;
 	
 };
 
