@@ -10097,7 +10097,8 @@ int darwin_iwi2200::ipw_handle_beacon(struct net_device *dev,
 }
 void darwin_iwi2200::freePacket(mbuf_t m, IOOptionBits options)
 {
-	if( m != NULL && mbuf_len(m) != 0 && mbuf_type(m) != MBUF_TYPE_FREE )
+	if( m != NULL)
+	if (mbuf_len(m) != 0 && mbuf_type(m) != MBUF_TYPE_FREE )
 		super::freePacket(m,options);
 }
 void darwin_iwi2200::update_network(struct ieee80211_network *dst,
