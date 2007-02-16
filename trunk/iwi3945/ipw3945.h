@@ -46,6 +46,8 @@ typedef void irqreturn_t;
 #define CONFIG_SOFTWARE_SUSPEND2_BUILTIN
 #endif
 
+
+
 /* Debug and printf string expansion helpers for printing bitfields */
 #define BIT_FMT8 "%c%c%c%c-%c%c%c%c"
 #define BIT_FMT16 BIT_FMT8 ":" BIT_FMT8
@@ -1691,7 +1693,7 @@ struct ipw_rx_packet {
 
 struct ipw_rx_mem_buffer {
 	dma_addr_t dma_addr;
-	struct sk_buff *skb;
+	mbuf_t skb;
 	struct list_head list;
 };				/* Not transferred over network, so not  __attribute__ ((packed)) */
 
@@ -1891,7 +1893,7 @@ struct fw_image_desc {
 	void *v_addr;
 	dma_addr_t p_addr;
 	u32 len;
-	u32 actual_len;
+//	u32 actual_len;
 };
 
 struct ipw_tpt_entry {
@@ -2056,213 +2058,8 @@ struct ipw_rt_hdr {
  *   memory usage in struct work_struct
  */
 
-#define IPW_INIT_WORK				INIT_WORK
-#define IPW_INIT_DELAYED_WORK			INIT_DELAYED_WORK
-#define IPW_DELAYED_DATA(_ptr, _type, _m)	container_of(_ptr, _type, _m.work)
-typedef struct delayed_work delayed_work_t;
-
-struct ipw_priv {
-	/* ieee device used by generic ieee processing code */
-	struct ieee80211_device *ieee;
-
-	//struct iw_public_data wireless_data;
-
-	/* temporary frame storage list */
-	struct list_head free_frames;
-	int frames_count;
-
-	/* spectrum measurement report caching */
-	struct ipw_spectrum_notification measure_report;
-
-	/* driver <-> daemon command, response, and communication queue */
-	spinlock_t daemon_lock;
-	wait_queue_head_t wait_daemon_out_queue;
-	struct list_head daemon_in_list;
-	struct list_head daemon_out_list;
-	struct list_head daemon_free_list;
-	/* return code for synchronous driver -> daemon commands */
-	s32 daemon_cmd_rc;
-	/* daemon driven work queue */
-	//delayed_work_t daemon_cmd_work;
-	//struct workqueue_struct *daemonqueue;
-	//struct work_struct daemon_tx_status_sync;
-	wait_queue_head_t wait_daemon_cmd_done;
-	/* daemon cmd queue flushing indicator */
-	u16 daemon_tx_sequence;
-	u8 daemon_tx_rate;
-	u32 daemon_tx_status;
-	unsigned long daemon_last_status;
-	int daemon_flushing;
-
-	/* Scan related variables */
-	u8 scan_flags;
-	unsigned long last_scan_jiffies;
-	unsigned long scan_start;
-	unsigned long scan_pass_start;
-	unsigned long scan_start_tsf;
-	int scan_passes;
-	int scan_bands_remaining;
-	int scan_bands;
-#if WIRELESS_EXT > 17
-	int one_direct_scan;
-	u8 direct_ssid_len;
-	u8 direct_ssid[IW_ESSID_MAX_SIZE];
-#endif
-
-	/* spinlock */
-	spinlock_t lock;
-	//struct mutex mutex;
-
-	/* basic pci-network driver stuff */
-	struct pci_dev *pci_dev;
-	struct net_device *net_dev;
-
-#ifdef CONFIG_IPW3945_PROMISCUOUS
-	/* Promiscuous mode */
-	struct ipw_prom_priv *prom_priv;
-	struct net_device *prom_net_dev;
-#endif
-
-	/* pci hardware address support */
-	void __iomem *hw_base;
-	unsigned long hw_len;
-
-	struct fw_image_desc ucode_code;
-	struct fw_image_desc ucode_data;
-	struct ipw_shared_t *shared_virt;
-	dma_addr_t shared_phys;
-	struct ipw_rxon_time_cmd rxon_timing;
-	struct daemon_rx_config rxon;
-	struct ipw_alive_resp card_alive;
-
-	/* LED related variables */
-	struct ipw_activity_blink activity;
-	unsigned long led_packets;
-	int led_state;
-
-	u32 rates_mask;
-	u16 active_rate;
-	u16 active_rate_basic;
-
-	/* Rate scaling data */
-	struct ipw_rate_scale_mgr rate_scale_mgr;
-	s8 data_retry_limit;
-	u8 retry_rate;
-
-	wait_queue_head_t wait_command_queue;
-
-	struct timer_list roaming_wdt;
-	struct timer_list disassociate_wdt;
-
-	int activity_timer_active;
-
-	/* Cached microcode data */
-	const struct firmware *ucode_raw;
-
-	/* Rx and Tx DMA processing queues */
-	struct ipw_rx_queue *rxq;
-	struct ipw_tx_queue txq[6];
-	u32 status;
-	u32 config;
-	u32 capability;
-
-	u32 port_type;
-	u32 missed_beacon_threshold;
-	u32 roaming_threshold;
-
-	struct ipw_power_mgr power_data;
-
-	enum ipw_auth_sequence auth_state;
-
-	struct ipw_frame *assoc_sequence_frame;
-	struct ipw_associate assoc_request;
-	struct ieee80211_network *assoc_network;
-	int association_retries;
-
-	struct ipw_notif_statistics statistics;
-
-	/* context information */
-	u8 essid[IW_ESSID_MAX_SIZE];
-	u8 essid_len;
-	u8 nick[IW_ESSID_MAX_SIZE];
-
-	u8 channel;
-	u32 power_mode;
-	u32 antenna;
-	u8 bssid[ETH_ALEN];
-	u16 rts_threshold;
-	u8 mac_addr[ETH_ALEN];
-	u8 num_stations;
-	struct ipw_station_entry stations[NUM_OF_STATIONS];
-	u8 netdev_registered;
-	int is_abg;
-
-	u32 notif_missed_beacons;
-
-	/* Wireless statistics */
-	unsigned long last_rx_jiffies;
-	u32 last_beacon_time;
-	u64 last_tsf;
-	u8 last_rx_rssi;
-	u16 last_noise;
-	struct average average_missed_beacons;
-	struct average average_rssi;
-	struct average average_noise;
-
-	/* Statistics and counters normalized with each association */
-	u32 last_missed_beacons;
-	u32 last_tx_packets;
-	u32 last_rx_packets;
-	u32 last_tx_failures;
-	u32 last_rx_err;
-	u32 last_rate;
-
-	u32 missed_adhoc_beacons;
-	u32 missed_beacons;
-	unsigned long rx_packets;
-	unsigned long tx_packets;
-	unsigned long long rx_bytes;
-	unsigned long long tx_bytes;
-	u32 quality;
-
-	/* Duplicate packet detection */
-	u16 last_seq_num;
-	u16 last_frag_num;
-	unsigned long last_packet_time;
-	struct list_head ibss_mac_hash[IPW_IBSS_MAC_HASH_SIZE];
-
-	/* eeprom */
-	u8 eeprom[EEPROM_IMAGE_SIZE];	/* 1024 bytes of eeprom */
-
-	struct iw_statistics wstats;
-
-	/* Driver and iwconfig driven work queue */
 
 
-	
-
-#define IPW_DEFAULT_TX_POWER 0x0F
-	s8 user_txpower_limit;
-	s8 actual_txpower_limit;
-	s8 max_channel_txpower_limit;
-
-#ifdef CONFIG_PM
-	u32 pm_state[16];
-#endif
-
-	/* Used to pass the current INTA value from ISR to Tasklet */
-	u32 isr_inta;
-
-#ifdef CONFIG_IPW3945_QOS
-	/* QoS */
-	struct ipw_qos_info qos_data;
-	struct work_struct qos_activate;
-	/*********************************/
-#endif
-
-	/* debugging info */
-	u32 framecnt_to_us;
-};				/*ipw_priv */
 
 /* debug macros */
 
@@ -2485,5 +2282,343 @@ struct ipw_fixed_rate {
 #define IPW_RATE_SCALE_MIN_FAILURE_TH       8
 #define IPW_RATE_SCALE_MIN_SUCCESS_TH       8
 #define IPW_RATE_SCALE_DECREASE_TH       1920
+
+/* *regulatory* channel data from eeprom, one for each channel */
+struct ipw_eeprom_channel {
+	u8 flags;		/* flags copied from EEPROM */
+	s8 max_power_avg;	/* max power (dBm) on this chnl, limit 31 */
+} __attribute__ ((packed));
+
+/*
+ * Mapping of a Tx power level, at factory calibration temperature,
+ *   to a radio/DSP gain table index.
+ * One for each of 5 "sample" power levels in each band.
+ * v_det is measured at the factory, using the 3945's built-in power amplifier
+ *   (PA) output voltage detector.  This same detector is used during Tx of long
+ *   packets in normal operation to provide feedback as to proper output level.
+ * Data copied from EEPROM.
+ */
+struct ipw_eeprom_txpower_sample {
+	u8 gain_index;		/* index into power (gain) setup table ... */
+	s8 power;		/* ... for this pwr level for this chnl group */
+	u16 v_det;		/* PA output voltage */
+} __attribute__ ((packed));
+
+/*
+ * Mappings of Tx power levels -> nominal radio/DSP gain table indexes.
+ * One for each channel group (a.k.a. "band") (1 for BG, 4 for A).
+ * Tx power setup code interpolates between the 5 "sample" power levels
+ *    to determine the nominal setup for a requested power level.
+ * Data copied from EEPROM.
+ * DO NOT ALTER THIS STRUCTURE!!!
+ */
+struct ipw_eeprom_txpower_group {
+	struct ipw_eeprom_txpower_sample samples[5];	/* 5 power levels */
+	s32 a, b, c, d, e;	/* coefficients for voltage->power formula */
+	s32 Fa, Fb, Fc, Fd, Fe;	/* these modify coeffs based on frequency */
+	s8 saturation_power;	/* highest power possible by h/w in this band */
+	u8 group_channel;	/* "representative" channel # in this band */
+	s16 temperature;	/* h/w temperature at factory calib this band */
+} __attribute__ ((packed));
+
+/*
+ * Temperature-based Tx-power compensation data, not band-specific.
+ * These coefficients are use to modify a/b/c/d/e coeffs based on
+ *   difference between current temperature and factory calib temperature.
+ * Data copied from EEPROM.
+ */
+struct ipw_eeprom_temperature_corr {
+	s32 Ta;
+	s32 Tb;
+	s32 Tc;
+	s32 Td;
+	s32 Te;
+} __attribute__ ((packed));
+
+struct ipw_eeprom {
+	u8 reserved0[42];
+#define EEPROM_MAC_ADDRESS                  (2*0x15)	/* 6  bytes */
+	u8 mac_address[6];	/* abs.ofs: 42 */
+	u8 reserved1[58];
+#define EEPROM_BOARD_REVISION               (2*0x35)	/* 2  bytes */
+	u16 board_revision;	/* abs.ofs: 106 */
+	u8 reserved2[11];
+#define EEPROM_BOARD_PBA_NUMBER             (2*0x3B+1)	/* 9  bytes */
+	u8 board_pba_number[9];	/* abs.ofs: 119 */
+	u8 reserved3[8];
+#define EEPROM_VERSION                      (2*0x44)	/* 2  bytes */
+	u16 version;		/* abs.ofs: 136 */
+#define EEPROM_SKU_CAP                      (2*0x45)	/* 1  bytes */
+	u8 sku_cap;		/* abs.ofs: 138 */
+#define EEPROM_LEDS_MODE                    (2*0x45+1)	/* 1  bytes */
+	u8 leds_mode;		/* abs.ofs: 139 */
+	u8 reserved4[4];
+#define EEPROM_LEDS_TIME_INTERVAL           (2*0x48)	/* 2  bytes */
+	u16 leds_time_interval;	/* abs.ofs: 144 */
+#define EEPROM_LEDS_OFF_TIME                (2*0x49)	/* 1  bytes */
+	u8 leds_off_time;	/* abs.ofs: 146 */
+#define EEPROM_LEDS_ON_TIME                 (2*0x49+1)	/* 1  bytes */
+	u8 leds_on_time;	/* abs.ofs: 147 */
+#define EEPROM_ALMGOR_M_VERSION             (2*0x4A)	/* 1  bytes */
+	u8 almgor_m_version;	/* abs.ofs: 148 */
+#define EEPROM_ANTENNA_SWITCH_TYPE          (2*0x4A+1)	/* 1  bytes */
+	u8 antenna_switch_type;	/* abs.ofs: 149 */
+	u8 reserved5[42];
+#define EEPROM_REGULATORY_SKU_ID            (2*0x60)	/* 4  bytes */
+	u8 sku_id[4];		/* abs.ofs: 192 */
+#define EEPROM_REGULATORY_BAND_1            (2*0x62)	/* 2  bytes */
+	u16 band_1_count;	/* abs.ofs: 196 */
+#define EEPROM_REGULATORY_BAND_1_CHANNELS   (2*0x63)	/* 28 bytes */
+	struct ipw_eeprom_channel band_1_channels[14];	/* abs.ofs: 196 */
+#define EEPROM_REGULATORY_BAND_2            (2*0x71)	/* 2  bytes */
+	u16 band_2_count;	/* abs.ofs: 226 */
+#define EEPROM_REGULATORY_BAND_2_CHANNELS   (2*0x72)	/* 26 bytes */
+	struct ipw_eeprom_channel band_2_channels[13];	/* abs.ofs: 228 */
+#define EEPROM_REGULATORY_BAND_3            (2*0x7F)	/* 2  bytes */
+	u16 band_3_count;	/* abs.ofs: 254 */
+#define EEPROM_REGULATORY_BAND_3_CHANNELS   (2*0x80)	/* 24 bytes */
+	struct ipw_eeprom_channel band_3_channels[12];	/* abs.ofs: 256 */
+#define EEPROM_REGULATORY_BAND_4            (2*0x8C)	/* 2  bytes */
+	u16 band_4_count;	/* abs.ofs: 280 */
+#define EEPROM_REGULATORY_BAND_4_CHANNELS   (2*0x8D)	/* 22 bytes */
+	struct ipw_eeprom_channel band_4_channels[11];	/* abs.ofs: 282 */
+#define EEPROM_REGULATORY_BAND_5            (2*0x98)	/* 2  bytes */
+	u16 band_5_count;	/* abs.ofs: 304 */
+#define EEPROM_REGULATORY_BAND_5_CHANNELS   (2*0x99)	/* 12 bytes */
+	struct ipw_eeprom_channel band_5_channels[6];	/* abs.ofs: 306 */
+	u8 reserved6[194];
+#define EEPROM_TXPOWER_CALIB_GROUP0 0x200
+#define EEPROM_TXPOWER_CALIB_GROUP1 0x240
+#define EEPROM_TXPOWER_CALIB_GROUP2 0x280
+#define EEPROM_TXPOWER_CALIB_GROUP3 0x2c0
+#define EEPROM_TXPOWER_CALIB_GROUP4 0x300
+#define IPW_NUM_TX_CALIB_GROUPS 5
+	struct ipw_eeprom_txpower_group groups[IPW_NUM_TX_CALIB_GROUPS];	/* abs.ofs: 512 */
+#define EEPROM_CALIB_TEMPERATURE_CORRECT 0x340
+	struct ipw_eeprom_temperature_corr corrections;	/* abs.ofs: 832 */
+	u8 reserved7[172];	/* fill out to full 1024 byte block */
+
+} __attribute__ ((packed));
+
+/* EEPROM field values */
+
+/* EEPROM field lengths */
+#define EEPROM_BOARD_PBA_NUMBER_LENTGH                  11
+
+/* EEPROM field lengths */
+#define EEPROM_BOARD_PBA_NUMBER_LENTGH                  11
+#define EEPROM_REGULATORY_SKU_ID_LENGTH                 4
+#define EEPROM_REGULATORY_BAND1_CHANNELS_LENGTH         14
+#define EEPROM_REGULATORY_BAND2_CHANNELS_LENGTH         13
+#define EEPROM_REGULATORY_BAND3_CHANNELS_LENGTH         12
+#define EEPROM_REGULATORY_BAND4_CHANNELS_LENGTH         11
+#define EEPROM_REGULATORY_BAND5_CHANNELS_LENGTH         6
+#define EEPROM_REGULATORY_CHANNELS_LENGTH ( \
+EEPROM_REGULATORY_BAND1_CHANNELS_LENGTH         +\
+EEPROM_REGULATORY_BAND2_CHANNELS_LENGTH         +\
+EEPROM_REGULATORY_BAND3_CHANNELS_LENGTH         +\
+EEPROM_REGULATORY_BAND4_CHANNELS_LENGTH         +\
+EEPROM_REGULATORY_BAND5_CHANNELS_LENGTH)
+
+#define EEPROM_REGULATORY_NUMBER_OF_BANDS               5
+
+/* SKU Capabilities */
+#define EEPROM_SKU_CAP_SW_RF_KILL_ENABLE                (1 << 0)
+#define EEPROM_SKU_CAP_HW_RF_KILL_ENABLE                (1 << 1)
+#define EEPROM_SKU_CAP_OP_MODE_MRC                      (1 << 7)
+
+struct ipw_priv {
+	/* ieee device used by generic ieee processing code */
+	struct ieee80211_device *ieee;
+	struct ipw_eeprom eeprom;
+	//struct iw_public_data wireless_data;
+
+	/* temporary frame storage list */
+	struct list_head free_frames;
+	int frames_count;
+
+	/* spectrum measurement report caching */
+	struct ipw_spectrum_notification measure_report;
+
+	/* driver <-> daemon command, response, and communication queue */
+	spinlock_t daemon_lock;
+	wait_queue_head_t wait_daemon_out_queue;
+	struct list_head daemon_in_list;
+	struct list_head daemon_out_list;
+	struct list_head daemon_free_list;
+	/* return code for synchronous driver -> daemon commands */
+	/* daemon driven work queue */
+	/* daemon cmd queue flushing indicator */
+
+	/* Scan related variables */
+	u8 scan_flags;
+	unsigned long last_scan_jiffies;
+	unsigned long scan_start;
+	unsigned long scan_pass_start;
+	unsigned long scan_start_tsf;
+	int scan_passes;
+	int scan_bands_remaining;
+	int scan_bands;
+#if WIRELESS_EXT > 17
+	int one_direct_scan;
+	u8 direct_ssid_len;
+	u8 direct_ssid[IW_ESSID_MAX_SIZE];
+#endif
+
+	/* spinlock */
+	spinlock_t lock;
+
+	/* basic pci-network driver stuff */
+	struct pci_dev *pci_dev;
+	struct net_device *net_dev;
+
+#ifdef CONFIG_IPW3945_PROMISCUOUS
+	/* Promiscuous mode */
+	struct ipw_prom_priv *prom_priv;
+	struct net_device *prom_net_dev;
+#endif
+
+	/* pci hardware address support */
+	void __iomem *hw_base;
+	unsigned long hw_len;
+
+	struct fw_image_desc ucode_code;
+	struct fw_image_desc ucode_data;
+	struct fw_image_desc ucode_boot;
+	struct fw_image_desc ucode_boot_data;
+	
+	struct ipw_shared_t *shared_virt;
+	dma_addr_t shared_phys;
+	struct ipw_rxon_time_cmd rxon_timing;
+	struct daemon_rx_config rxon;
+	struct ipw_alive_resp card_alive;
+
+	/* LED related variables */
+	struct ipw_activity_blink activity;
+	unsigned long led_packets;
+	int led_state;
+
+	u32 rates_mask;
+	u16 active_rate;
+	u16 active_rate_basic;
+
+	/* Rate scaling data */
+	struct ipw_rate_scale_mgr rate_scale_mgr;
+	s8 data_retry_limit;
+	u8 retry_rate;
+
+	wait_queue_head_t wait_command_queue;
+
+	struct timer_list roaming_wdt;
+	struct timer_list disassociate_wdt;
+
+	int activity_timer_active;
+
+	/* Cached microcode data */
+	const struct firmware *ucode_raw;
+
+	/* Rx and Tx DMA processing queues */
+	struct ipw_rx_queue *rxq;
+	struct ipw_tx_queue txq[6];
+	u32 status;
+	u32 config;
+	u32 capability;
+
+	u32 port_type;
+	u32 missed_beacon_threshold;
+	u32 roaming_threshold;
+
+	struct ipw_power_mgr power_data;
+
+	enum ipw_auth_sequence auth_state;
+
+	struct ipw_frame *assoc_sequence_frame;
+	struct ipw_associate assoc_request;
+	struct ieee80211_network *assoc_network;
+	int association_retries;
+
+	struct ipw_notif_statistics statistics;
+
+	/* context information */
+	u8 essid[IW_ESSID_MAX_SIZE];
+	u8 essid_len;
+	u8 nick[IW_ESSID_MAX_SIZE];
+
+	u8 channel;
+	u32 power_mode;
+	u32 antenna;
+	u8 bssid[ETH_ALEN];
+	u16 rts_threshold;
+	u8 mac_addr[ETH_ALEN];
+	u8 num_stations;
+	struct ipw_station_entry stations[NUM_OF_STATIONS];
+	u8 netdev_registered;
+	int is_abg;
+
+	u32 notif_missed_beacons;
+
+	/* Wireless statistics */
+	unsigned long last_rx_jiffies;
+	u32 last_beacon_time;
+	u64 last_tsf;
+	u8 last_rx_rssi;
+	u16 last_noise;
+	struct average average_missed_beacons;
+	struct average average_rssi;
+	struct average average_noise;
+
+	/* Statistics and counters normalized with each association */
+	u32 last_missed_beacons;
+	u32 last_tx_packets;
+	u32 last_rx_packets;
+	u32 last_tx_failures;
+	u32 last_rx_err;
+	u32 last_rate;
+
+	u32 missed_adhoc_beacons;
+	u32 missed_beacons;
+	unsigned long rx_packets;
+	unsigned long tx_packets;
+	unsigned long long rx_bytes;
+	unsigned long long tx_bytes;
+	u32 quality;
+
+	/* Duplicate packet detection */
+	u16 last_seq_num;
+	u16 last_frag_num;
+	unsigned long last_packet_time;
+	struct list_head ibss_mac_hash[IPW_IBSS_MAC_HASH_SIZE];
+
+	/* eeprom */
+	//u8 eeprom[EEPROM_IMAGE_SIZE];	/* 1024 bytes of eeprom */
+
+	struct iw_statistics wstats;
+
+	/* Driver and iwconfig driven work queue */
+
+
+
+#define IPW_DEFAULT_TX_POWER 0x0F
+	s8 user_txpower_limit;
+	s8 actual_txpower_limit;
+	s8 max_channel_txpower_limit;
+
+#ifdef CONFIG_PM
+	u32 pm_state[16];
+#endif
+
+	/* Used to pass the current INTA value from ISR to Tasklet */
+	u32 isr_inta;
+
+#ifdef CONFIG_IPW3945_QOS
+	/* QoS */
+	struct ipw_qos_info qos_data;
+	struct work_struct qos_activate;
+	/*********************************/
+#endif
+
+	/* debugging info */
+	u32 framecnt_to_us;
+};				/*ipw_priv */
 
 #endif				/* __ipw3945_h__ */

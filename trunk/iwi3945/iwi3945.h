@@ -11,11 +11,13 @@ static const char ipw_modes[] = {
 
 struct ipw_ucode {
 	u32 ver;
-	u32 inst_size;
-	u32 data_size;
-	u32 boot_size;
-	u8 data[0];
+	u32 inst_size;		// size of runtime instructions
+	u32 data_size;		// size of runtime data
+	u32 boot_size;		// size of bootstrap instructions
+	u32 boot_data_size;	// size of bootstrap data
+	u8 data[0];		// data appears in same order as "size" elements
 };
+
 
 #define ipw_set_bits_mask_restricted_reg(priv, reg, bits, mask) \
 __ipw_set_bits_mask_restricted_reg(__LINE__, priv, reg, bits, mask)
@@ -647,7 +649,9 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual u32 ipw_get_max_rate(struct ipw_priv *priv);
 	virtual void ipw_gather_stats(struct ipw_priv *priv);
 	virtual void average_add(struct average *avg, s16 val);
-	virtual int ipw_load_ucode(struct ipw_priv *priv);
+	virtual int ipw_load_ucode(struct ipw_priv *priv,
+			  struct fw_image_desc *desc,
+			  u32 mem_size, dma_addr_t dst_addr);
 	virtual void ipw_clear_stations_table(struct ipw_priv *priv);
 	virtual void ipw_nic_start(struct ipw_priv *priv);
 	virtual int ipw_card_show_info(struct ipw_priv *priv);
@@ -657,12 +661,21 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 				 u8 * image_code,
 				 size_t image_len_code,
 				 u8 * image_data, size_t image_len_data);
-	
-	
-	
-	
-	
-	
+	virtual int ipw_read_ucode(struct ipw_priv *priv);
+	virtual int ipw_setup_bootstrap(struct ipw_priv *priv);
+	virtual int ipw_verify_bootstrap(struct ipw_priv *priv);
+	virtual int ipw3945_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max);
+	virtual struct ipw_rx_queue *ipw_rx_queue_alloc(struct ipw_priv *priv);
+	virtual void ipw_rx_queue_reset(struct ipw_priv *priv,
+				      struct ipw_rx_queue *rxq);
+	virtual void ipw_rx_queue_replenish(struct ipw_priv *priv);				  
+	virtual int ipw_rx_queue_restock(struct ipw_priv *priv);
+	virtual int ipw_rx_queue_update_write_ptr(struct ipw_priv *priv,
+					 struct ipw_rx_queue *q);
+	virtual int ipw_rx_queue_space(struct ipw_rx_queue *q);				  
+	virtual void ipw_bg_alive_start();												  
+	virtual int ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq);																  				  
+					  
 	
 	// statistics
     IONetworkStats		*netStats;
@@ -699,7 +712,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	IOOutputQueue *				fTransmitQueue;	// ???
 	UInt16 *					memBase;
 	UInt32						event;
-	u8 eeprom[0x100];
+	//u8 eeprom[0x100];
 	
 	
 	IOMemoryMap	*				map;			// io memory map

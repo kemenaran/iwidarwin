@@ -508,7 +508,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	} else
 		priv->channel = 1;
 
-	//err = ipw_read_ucode(priv);
+	ipw_read_ucode(priv);
 
 
 	priv->rates_mask = IEEE80211_DEFAULT_RATES_MASK |
@@ -522,29 +522,141 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	priv->actual_txpower_limit = IPW_DEFAULT_TX_POWER;
 	priv->ieee->perfect_rssi = -20;
 	priv->ieee->worst_rssi = -95;
-	// allocate ucode buffers
-	priv->ucode_code.actual_len = ALM_RTC_INST_SIZE;
-	priv->ucode_data.actual_len = ALM_RTC_DATA_SIZE;
-	MemoryDmaAlloc(priv->ucode_code.actual_len, &(priv->ucode_code.p_addr), &(priv->ucode_code.v_addr));
-	MemoryDmaAlloc(priv->ucode_data.actual_len, &(priv->ucode_data.p_addr), &(priv->ucode_data.v_addr));
-	MemoryDmaAlloc(sizeof(struct ipw_shared_t), &(priv->shared_phys), &(priv->shared_virt));
-	/*priv->ucode_code.v_addr =
-	    pci_alloc_consistent(priv->pci_dev,
-				 priv->ucode_code.actual_len,
-				 &(priv->ucode_code.p_addr));
-	priv->ucode_data.v_addr =
-	    pci_alloc_consistent(priv->pci_dev,
-				 priv->ucode_data.actual_len,
-				 &(priv->ucode_data.p_addr));
-	priv->shared_virt =
-	    pci_alloc_consistent(priv->pci_dev,
-				 sizeof(struct ipw_shared_t),
-				 &priv->shared_phys);
-	}*/
+
 	IOLog("Waiting for ipw3945d to request INIT.\n");
 
 	return 0;
 	
+}
+
+int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
+{
+	struct ipw_ucode *ucode;
+	int rc = 0;
+	const struct firmware *ucode_raw;
+	const char *name = "iwlwifi-3945.ucode";	/* firmware file name */
+	u8 *src;
+	size_t len;
+
+	/* data from ucode file:  header followed by uCode images */
+	(void*)ucode = (void*)ipw;//ucode_raw->data;
+
+	IOLog("f/w package hdr ucode version = 0x%x\n", ucode->ver);
+	IOLog("f/w package hdr runtime inst size = %u\n",
+		       ucode->inst_size);
+	IOLog("f/w package hdr runtime data size = %u\n",
+		       ucode->data_size);
+	IOLog("f/w package hdr boot inst size = %u\n",
+		       ucode->boot_size);
+	IOLog("f/w package hdr boot data size = %u\n",
+		       ucode->boot_data_size);
+
+	/* verify size of file vs. image size info in file's header */
+	if (ucode_raw->size < sizeof(*ucode) +
+	    ucode->inst_size + ucode->data_size +
+	    ucode->boot_size + ucode->boot_data_size) {
+		IOLog("uCode file size %d too small\n",
+			       (int)ucode_raw->size);
+		rc = -EINVAL;
+		//goto err_release;
+	}
+
+	/* verify that uCode images will fit in card's SRAM */
+	if (ucode->inst_size > ALM_RTC_INST_SIZE) {
+		 IOLog("uCode instr len %d too large to fit in card\n",
+			       (int)ucode->inst_size);
+		rc = -EINVAL;
+		//goto err_release;
+	}
+
+	if (ucode->data_size > ALM_RTC_DATA_SIZE) {
+		IOLog("uCode data len %d too large to fit in card\n",
+			       (int)ucode->data_size);
+		rc = -EINVAL;
+		//goto err_release;
+	}
+
+	if (ucode->boot_size > ALM_RTC_INST_SIZE) {
+		IOLog
+		    ("uCode boot instr len %d too large to fit in card\n",
+		     (int)ucode->boot_size);
+		rc = -EINVAL;
+		//goto err_release;
+	}
+
+	if (ucode->boot_data_size > ALM_RTC_DATA_SIZE) {
+		IOLog
+		    ("uCode boot data len %d too large to fit in card\n",
+		     (int)ucode->boot_data_size);
+		rc = -EINVAL;
+		//goto err_release;
+	}
+
+	/* allocate ucode buffers for card's bus-master loading */
+	priv->ucode_code.len = ucode->inst_size;
+	MemoryDmaAlloc(priv->ucode_code.len, &(priv->ucode_code.p_addr), &(priv->ucode_code.v_addr));
+	
+	priv->ucode_data.len = ucode->data_size;
+	MemoryDmaAlloc(priv->ucode_data.len, &(priv->ucode_data.p_addr), &(priv->ucode_data.v_addr));
+	
+
+	priv->ucode_boot.len = ucode->boot_size;
+	MemoryDmaAlloc(priv->ucode_boot.len, &(priv->ucode_boot.p_addr), &(priv->ucode_boot.v_addr));
+
+
+	priv->ucode_boot_data.len = ucode->boot_data_size;
+	MemoryDmaAlloc(priv->ucode_boot_data.len, &(priv->ucode_boot_data.p_addr), &(priv->ucode_boot_data.v_addr));
+
+
+	if (!priv->ucode_code.v_addr || !priv->ucode_data.v_addr
+	    || !priv->ucode_boot.v_addr || !priv->ucode_boot_data.v_addr) {
+		IOLog("failed to allocate pci memory\n");
+		rc = -ENOMEM;
+		goto err_pci_alloc;
+	}
+
+	/* Copy images into buffers for card's bus-master reads ... */
+
+	/* runtime instructions (first block of data in file) */
+	src = &ucode->data[0];
+	len = priv->ucode_code.len;
+	IOLog("Copying (but not loading) uCode instr len %d\n",
+		       (int)len);
+	memcpy(priv->ucode_code.v_addr, src, len);
+
+	/* runtime data (2nd block) */
+	src = &ucode->data[ucode->inst_size];
+	len = priv->ucode_data.len;
+	IOLog("Copying (but not loading) uCode data len %d\n",
+		       (int)len);
+	memcpy(priv->ucode_data.v_addr, src, len);
+
+	/* bootstrap instructions (3rd block) */
+	src = &ucode->data[ucode->inst_size + ucode->data_size];
+	len = priv->ucode_boot.len;
+	IOLog("Copying (but not loading) boot instr len %d\n",
+		       (int)len);
+	memcpy(priv->ucode_boot.v_addr, src, len);
+
+	/* bootstrap data (4th block) */
+	src = &ucode->data[ucode->inst_size + ucode->data_size
+			   + ucode->boot_size];
+	len = priv->ucode_boot_data.len;
+	IOLog("Copying (but not loading) boot data len %d\n",
+		       (int)len);
+	memcpy(priv->ucode_boot_data.v_addr, src, len);
+
+	//release_firmware(ucode_raw);
+	return 0;
+
+      err_pci_alloc:
+	//ipw_dealloc_ucode_pci(priv);
+
+      err_release:
+//	release_firmware(ucode_raw);
+
+      error:
+	return rc;
 }
 
 IOOptionBits darwin_iwi3945::getState( void ) const
@@ -1042,7 +1154,7 @@ int darwin_iwi3945::ipw_copy_ucode_images(struct ipw_priv *priv,
 				 size_t image_len_code,
 				 u8 * image_data, size_t image_len_data)
 {
-	int rc;
+/*	int rc;
 
 	if ((image_len_code > priv->ucode_code.actual_len) ||
 	    (image_len_data > priv->ucode_data.actual_len)) {
@@ -1069,7 +1181,7 @@ int darwin_iwi3945::ipw_copy_ucode_images(struct ipw_priv *priv,
 				 priv->ucode_data.len);
 	_ipw_release_restricted_access(priv);
 
-	return 0;
+	return 0;*/
 }
 
 void darwin_iwi3945::_ipw_release_restricted_access(struct ipw_priv
@@ -1293,47 +1405,86 @@ int darwin_iwi3945::ipw_poll_restricted_bit(struct ipw_priv *priv,
 	return -ETIMEDOUT;
 }
 
-int darwin_iwi3945::ipw_load_ucode(struct ipw_priv *priv)
+int darwin_iwi3945::ipw_load_ucode(struct ipw_priv *priv,
+			  struct fw_image_desc *desc,
+			  u32 mem_size, dma_addr_t dst_addr)
 {
-	struct ipw_ucode *ucode;
-	int rc = 0;
+	dma_addr_t phy_addr = 0;
+	u32 len = 0;
+	u32 count = 0;
+	u32 pad;
+	struct tfd_frame tfd;
+	u32 tx_config = 0;
+	int rc;
 
-	//if (!priv->ucode_raw) return -1;
+	memset(&tfd, 0, sizeof(struct tfd_frame));
 
-	//ucode = (struct ipw_ucode*)priv->ucode_raw->data;
+	phy_addr = desc->p_addr;
+	len = desc->len;
 
-	(void*)ucode =(void*)ipw;
-	
-	rc = ipw_copy_ucode_images(priv, &ucode->data[0],
-				   ucode->inst_size,
-				   &ucode->data[ucode->inst_size],
-				   ucode->data_size);
+	if (mem_size < len) {
+		IOLog("invalid image size, too big %d %d\n", mem_size, len);
+		//return -EINVAL;
+	}
+
+	while (len > 0) {
+		if (ALM_TB_MAX_BYTES_COUNT < len) {
+			attach_buffer_to_tfd_frame( &tfd, phy_addr,
+						   ALM_TB_MAX_BYTES_COUNT);
+			len -= ALM_TB_MAX_BYTES_COUNT;
+			phy_addr += ALM_TB_MAX_BYTES_COUNT;
+		} else {
+			attach_buffer_to_tfd_frame( &tfd, phy_addr, len);
+			break;
+		}
+	}
+
+	pad = U32_PAD(len);
+	count = TFD_CTL_COUNT_GET(tfd.control_flags);
+	tfd.control_flags = TFD_CTL_COUNT_SET(count) | TFD_CTL_PAD_SET(pad);
+
+	rc = ipw_grab_restricted_access(priv);
 	if (rc)
-		goto error;
+		return rc;
 
-	rc = ipw_download_ucode_base(priv,
-				     &ucode->data[ucode->inst_size +
-						  ucode->data_size],
-				     ucode->boot_size);
-	if (rc)
-		goto error;
+	_ipw_write_restricted(priv, FH_TCSR_CONFIG(ALM_FH_SRVC_CHNL),
+			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_PAUSE);
+	ipw_write_buffer_restricted(priv,
+				    ALM_FH_TFDB_CHNL_BUF_CTRL_REG
+				    (ALM_FH_SRVC_CHNL),
+				    sizeof(struct tfd_frame), (u32 *) & tfd);
+	_ipw_write_restricted(priv, HBUS_TARG_MEM_WADDR, dst_addr);
+	_ipw_write_restricted(priv, FH_TCSR_CREDIT(ALM_FH_SRVC_CHNL),
+			     0x000FFFFF);
+	_ipw_write_restricted(priv,
+			     FH_TCSR_BUFF_STTS(ALM_FH_SRVC_CHNL),
+			     ALM_FH_TCSR_CHNL_TX_BUF_STS_REG_VAL_TFDB_VALID
+			     | ALM_FH_TCSR_CHNL_TX_BUF_STS_REG_BIT_TFDB_WPTR);
 
-	rc = ipw_download_ucode(priv, 
-		&(priv->ucode_code),
-				ALM_RTC_INST_SIZE, RTC_INST_LOWER_BOUND);
-	if (rc)
-		goto error;
+	tx_config = ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_ENABLE |
+	    ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CREDIT_DISABLE_VAL |
+	    ALM_FH_TCSR_TX_CONFIG_REG_VAL_MSG_MODE_DRIVER;
 
-	rc = ipw_download_ucode(priv, 
-	 &(priv->ucode_data),
-				ALM_RTC_DATA_SIZE, RTC_DATA_LOWER_BOUND);
-	if (rc)
-		goto error;
+	_ipw_write_restricted(priv, FH_TCSR_CONFIG(ALM_FH_SRVC_CHNL), tx_config);
 
-	return 0;
+	rc = ipw_poll_restricted_bit(priv, FH_TSSR_TX_STATUS,
+				     ALM_FH_TSSR_TX_STATUS_REG_MSK_CHNL_IDLE
+				     (ALM_FH_SRVC_CHNL), 1000);
+	if (rc < 0) {
+		IOLog("3945ABG card ucode DOWNLOAD FAILED \n");
+		//goto done;
+	}
 
-      error:
+	rc = 0;
+
+	IOLog("3945ABG card ucode download is good \n");
+
+	_ipw_write_restricted(priv, FH_TCSR_CREDIT(ALM_FH_SRVC_CHNL), 0x0);
+
+      done:
+	_ipw_release_restricted_access(priv);
 	return rc;
+
 }
 
 void darwin_iwi3945::ipw_clear_stations_table(struct ipw_priv *priv)
@@ -1359,56 +1510,29 @@ void darwin_iwi3945::ipw_nic_start(struct ipw_priv *priv)
 int darwin_iwi3945::ipw_query_eeprom(struct ipw_priv *priv, u32 offset,
 			    u32 len, u8 * buf)
 {
-	if (EEPROM_IMAGE_SIZE < (offset + len))
+/*	if (EEPROM_IMAGE_SIZE < (offset + len))
 		return -1;
 
 	memcpy(buf, &(priv->eeprom[offset]), len);
 
-	return 0;
+	return 0;*/
 }
 
 int darwin_iwi3945::ipw_card_show_info(struct ipw_priv *priv)
 {
-	u8 strPbaNumber[32] = {
-		0
-	};
-	u16 hwVersion = 0;
-	int rc = 0;
-	u8 val;
-	memset(strPbaNumber, 0, 32);
-	rc = ipw_query_eeprom(priv, EEPROM_BOARD_REVISION,
-			      sizeof(u16), (u8 *) & hwVersion);
-	if (rc) {
-		IOLog("failed to read EEPROM_BOARD_REVISION\n");
-		return rc;
-	}
 	IOLog("3945ABG HW Version %u.%u.%u\n",
-		       ((hwVersion >> 8) & 0x0F),
-		       ((hwVersion >> 8) >> 4), (hwVersion & 0x00FF));
-	rc = ipw_query_eeprom(priv, EEPROM_BOARD_PBA_NUMBER,
-			      EEPROM_BOARD_PBA_NUMBER_LENTGH, strPbaNumber);
-	if (rc) {
-		IOLog("failed to read EEPROM_BOARD_PBA_NUMBER\n");
-		return rc;
-	}
-	IOLog("3945ABG PBA Number %.16s\n", strPbaNumber);
-	rc = ipw_query_eeprom(priv, 0x94, sizeof(u8), (u8 *) & val);
-	if (rc) {
-		IOLog("failed to read EEPROM 0x94\n");
-		return rc;
-	}
+		       ((priv->eeprom.board_revision >> 8) & 0x0F),
+		       ((priv->eeprom.board_revision >> 8) >> 4),
+		       (priv->eeprom.board_revision & 0x00FF));
 
-	IOLog("eeprom value at byte 0x94 is 0x%02X\n", val);
+	IOLog("3945ABG PBA Number %.*s\n",
+		       (int)sizeof(priv->eeprom.board_pba_number),
+		       priv->eeprom.board_pba_number);
 
-	rc = ipw_query_eeprom(priv, EEPROM_ANTENNA_SWITCH_TYPE,
-			      sizeof(u8), (u8 *) & val);
-	if (rc) {
-		IOLog("failed to read EEPROM_ANTENNA_SWITCH_TYPE\n");
-		return rc;
-	}
-	IOLog("EEPROM_ANTENNA_SWITCH_TYPE is 0x%02X\n", val);
+	IOLog("EEPROM_ANTENNA_SWITCH_TYPE is 0x%02X\n",
+		       priv->eeprom.antenna_switch_type);
 
-	return 0;
+
 }
 
 #define PCI_LINK_CTRL      0x0F0
@@ -1464,26 +1588,31 @@ void darwin_iwi3945::__ipw_set_bits_restricted_reg(u32 line, struct ipw_priv
 
 int darwin_iwi3945::ipw_eeprom_init_sram(struct ipw_priv *priv)
 {
-	u16 *e = (u16 *) priv->eeprom;
+	u16 *e = (u16 *) & priv->eeprom;
 	u32 r;
 	int to;
-	u32 gp = ipw_read32(CSR_EEPROM_GP);
-	u16 sz = EEPROM_IMAGE_SIZE;
+	u32 gp = ipw_read32( CSR_EEPROM_GP);
+	u16 sz = sizeof(priv->eeprom);
 	int rc;
 	u16 addr;
 
+	if (sizeof(priv->eeprom) != 1024) {
+		IOLog("EEPROM structure size incorrect!\n");
+		//return -EINVAL;
+	}
+
 	if ((gp & 0x00000007) == 0x00000000) {
 		IOLog("EEPROM not found, EEPROM_GP=0x%08x", gp);
-		return -ENOENT;
+		//return -ENOENT;
 	}
 
 	ipw_clear_bit( CSR_EEPROM_GP, 0x00000180);
 	for (addr = 0, r = 0; addr < sz; addr += 2) {
 		ipw_write32( CSR_EEPROM_REG, addr << 1);
 		ipw_clear_bit( CSR_EEPROM_REG, 0x00000002);
-		rc = ipw_grab_restricted_access(priv);
-		if (rc)
-			return rc;
+		ipw_grab_restricted_access(priv);
+		//if (rc)
+		//	return rc;
 
 		for (to = 0; to < 10; to++) {
 			r = _ipw_read_restricted(priv, CSR_EEPROM_REG);
@@ -1496,7 +1625,7 @@ int darwin_iwi3945::ipw_eeprom_init_sram(struct ipw_priv *priv)
 
 		if (!(r & 1)) {
 			IOLog("Time out reading EEPROM[%d]", addr);
-			return -ETIMEDOUT;
+			//return -ETIMEDOUT;
 		}
 
 		e[addr / 2] = r >> 16;
@@ -1656,10 +1785,56 @@ void darwin_iwi3945::__ipw_set_bits_mask_restricted_reg(u32 line, struct ipw_pri
 	_ipw_set_bits_mask_restricted_reg(priv, reg, bits, mask);
 }
 
+int darwin_iwi3945::ipw3945_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
+{
+	int rc = 0;
+	unsigned long flags;
+
+	//return 0;
+	//spin_lock_irqsave(&priv->lock, flags);
+	rc = ipw_grab_restricted_access(priv);
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}*/
+
+	if (!pwr_max) {
+		u32 val;
+		//rc = pci_read_config_dword(priv->pci_dev, 0x0C8, &val);
+		val=fPCIDevice->configRead32(0x0C8);
+		if (val & PCI_CFG_PMC_PME_FROM_D3COLD_SUPPORT) {
+			ipw_set_bits_mask_restricted_reg(priv,
+							 ALM_APMG_PS_CTL,
+							 APMG_PS_CTRL_REG_VAL_POWER_SRC_VAUX,
+							 ~APMG_PS_CTRL_REG_MSK_POWER_SRC);
+			_ipw_release_restricted_access(priv);
+
+			ipw_poll_bit( CSR_GPIO_IN,
+//				     CSR_GPIO_IN_VAL_VAUX_PWR_SRC,
+				     CSR_GPIO_IN_BIT_AUX_POWER, 5000);
+		} else
+			_ipw_release_restricted_access(priv);
+
+	} else {
+		ipw_set_bits_mask_restricted_reg(priv,
+						 ALM_APMG_PS_CTL,
+						 APMG_PS_CTRL_REG_VAL_POWER_SRC_VMAIN,
+						 ~APMG_PS_CTRL_REG_MSK_POWER_SRC);
+
+		_ipw_release_restricted_access(priv);
+		ipw_poll_bit( CSR_GPIO_IN,
+		// CSR_GPIO_IN_VAL_VMAIN_PWR_SRC
+		 CSR_GPIO_IN_BIT_AUX_POWER, 5000);	//uS
+	}
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return rc;
+}
+
+
 int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 {
-	u8 rev_id, sku_cap, card_ver;
-	u16 board_ver = 0;
+	u8 rev_id;
 	int rc;
 	unsigned long flags;
 
@@ -1667,7 +1842,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	ipw_rate_scale_init_handle(priv, IPW_RATE_SCALE_MAX_WINDOW);
 
 	//spin_lock_irqsave(&priv->lock, flags);
-	ipw_set_bit(CSR_ANA_PLL_CFG, (1 << 24));
+	ipw_set_bit( CSR_ANA_PLL_CFG, (1 << 24));
 	ipw_set_bit( CSR_GIO_CHICKEN_BITS,
 		    CSR_GIO_CHICKEN_BITS_REG_BIT_L1A_NO_L0S_RX);
 
@@ -1682,10 +1857,10 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	}
 
 	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
-		//spin_unlock_irqrestore(&priv->lock, flags);
-		//return rc;
-	}
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}*/
 	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
 				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -1695,13 +1870,11 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	_ipw_release_restricted_access(priv);
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
-	// Determine HW type 
+	/* Determine HW type */
 	rev_id= fPCIDevice->configRead16(kIOPCIConfigRevisionID);
-	//rc = pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &rev_id);
-
 	IOLog("HW Revision ID = 0x%X\n", rev_id);
 
-	ipw_nic_set_pwr_src(priv, 1);
+	ipw3945_nic_set_pwr_src(priv, 1);
 	//spin_lock_irqsave(&priv->lock, flags);
 
 	if (rev_id & PCI_CFG_REV_ID_BIT_RTP)
@@ -1717,14 +1890,14 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	}
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
+
 	/* Initialize the EEPROM */
 	rc = ipw_eeprom_init_sram(priv);
 	//if (rc)
 	//	return rc;
 
 	//spin_lock_irqsave(&priv->lock, flags);
-	ipw_query_eeprom(priv, EEPROM_SKU_CAP, sizeof(u8), &sku_cap);
-	if (EEPROM_SKU_CAP_OP_MODE_MRC == sku_cap) {
+	if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
 		IOLog("SKU OP mode is mrc\n");
 		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_SKU_MRC);
@@ -1732,67 +1905,318 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		IOLog("SKU OP mode is basic\n");
 	}
 
-	ipw_query_eeprom(priv, EEPROM_BOARD_REVISION, sizeof(u16),
-			 (u8 *) & board_ver);
-	if ((board_ver & 0xF0) == 0xD0) {
-		IOLog("3945ABG revision is 0x%X\n", board_ver);
+	if ((priv->eeprom.board_revision & 0xF0) == 0xD0) {
+		IOLog("3945ABG revision is 0x%X\n",
+			       priv->eeprom.board_revision);
 		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
 	} else {
-		IOLog("3945ABG revision is 0x%X\n", board_ver);
+		IOLog("3945ABG revision is 0x%X\n",
+			       priv->eeprom.board_revision);
 		ipw_clear_bit( CSR_HW_IF_CONFIG_REG,
 			      CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
 	}
 
-	ipw_query_eeprom(priv, EEPROM_ALMGOR_M_VERSION, sizeof(u8),
-			 (u8 *) & card_ver);
-	if (card_ver <= 1) {
+	if (priv->eeprom.almgor_m_version <= 1) {
 		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_A);
-		IOLog("Card M type A version is 0x%X\n", card_ver);
+		IOLog("Card M type A version is 0x%X\n",
+			       priv->eeprom.almgor_m_version);
 	} else {
-		IOLog("Card M type B version is 0x%X\n", card_ver);
+		IOLog("Card M type B version is 0x%X\n",
+			       priv->eeprom.almgor_m_version);
 		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_B);
 	}
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
+	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
+		priv->capability |= CAP_RF_SW_KILL;
+	else
+		priv->capability &= ~CAP_RF_SW_KILL;
+
+	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
+		priv->capability |= CAP_RF_HW_KILL;
+	else
+		priv->capability &= ~CAP_RF_HW_KILL;
+
+	switch (priv->capability & (CAP_RF_HW_KILL | CAP_RF_SW_KILL)) {
+	case CAP_RF_HW_KILL:
+		IOLog("HW RF KILL supported in EEPROM.\n");
+		break;
+	case CAP_RF_SW_KILL:
+		IOLog("SW RF KILL supported in EEPROM.\n");
+		break;
+	case (CAP_RF_HW_KILL | CAP_RF_SW_KILL):
+		IOLog("HW & HW RF KILL supported in EEPROM.\n");
+		break;
+	default:
+		IOLog("NO RF KILL supported in EEPROM.\n");
+		break;
+	}
+
 	/* Allocate the RX queue, or reset if it is already allocated */
-/*	if (!priv->rxq)
+	if (!priv->rxq)
 		priv->rxq = ipw_rx_queue_alloc(priv);
 	else
 		ipw_rx_queue_reset(priv, priv->rxq);
 
 	if (!priv->rxq) {
 		IOLog("Unable to initialize Rx queue\n");
-		return -ENOMEM;
+		//return -ENOMEM;
 	}
 	ipw_rx_queue_replenish(priv);
 
 	ipw_rx_init(priv, priv->rxq);
 
-	//spin_lock_irqsave(&priv->lock, flags);
+//	spin_lock_irqsave(&priv->lock, flags);
+
+/*
+ * Look at using this instead :::
+	priv->rxq->need_update = 1;
+	ipw_rx_queue_update_write_ptr(priv, priv->rxq);
+*/
+
 	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
-		//spin_unlock_irqrestore(&priv->lock, flags);
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}
+	}*/
 	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), priv->rxq->write & ~7);
 	_ipw_release_restricted_access(priv);
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
-	rc = ipw_queue_reset(priv);
-	if (rc)
-		return rc;
-*/
-	rc = ipw_rf_eeprom_ready(priv);
+	//rc = ipw_queue_reset(priv);
 	//if (rc)
 	//	return rc;
 
 	priv->status |= STATUS_INIT;
 
 	return 0;
+
+}
+
+int darwin_iwi3945::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
+{
+	int rc;
+	unsigned long flags;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	rc = ipw_grab_restricted_access(priv);
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}*/
+
+	_ipw_write_restricted(priv, FH_RCSR_RBD_BASE(0), rxq->dma_addr);
+	_ipw_write_restricted(priv, FH_RCSR_RPTR_ADDR(0),
+			     priv->shared_phys +
+			     offsetof(struct ipw_shared_t, rx_read_ptr[0]));
+	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), 0);
+	_ipw_write_restricted(priv, FH_RCSR_CONFIG(0),
+			     ALM_FH_RCSR_RX_CONFIG_REG_VAL_DMA_CHNL_EN_ENABLE
+			     |
+			     ALM_FH_RCSR_RX_CONFIG_REG_VAL_RDRBD_EN_ENABLE
+			     |
+			     ALM_FH_RCSR_RX_CONFIG_REG_BIT_WR_STTS_EN
+			     |
+			     ALM_FH_RCSR_RX_CONFIG_REG_VAL_MAX_FRAG_SIZE_128
+			     | (RX_QUEUE_SIZE_LOG <<
+				ALM_FH_RCSR_RX_CONFIG_REG_POS_RBDC_SIZE)
+			     |
+			     ALM_FH_RCSR_RX_CONFIG_REG_VAL_IRQ_DEST_INT_HOST
+			     | (1 << ALM_FH_RCSR_RX_CONFIG_REG_POS_IRQ_RBTH)
+			     | ALM_FH_RCSR_RX_CONFIG_REG_VAL_MSG_MODE_FH);
+
+	/* fake read to flush all prev I/O */
+	_ipw_read_restricted(priv, FH_RSSR_CTRL);
+
+	_ipw_release_restricted_access(priv);
+
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
+
+int darwin_iwi3945::ipw_rx_queue_space(struct ipw_rx_queue *q)
+{
+	int s = q->read - q->write;
+	if (s <= 0)
+		s += RX_QUEUE_SIZE;
+	s -= 2;			// keep some buffer to not confuse full and empty queue
+	if (s < 0)
+		s = 0;
+	return s;
+}
+
+int darwin_iwi3945::ipw_rx_queue_update_write_ptr(struct ipw_priv *priv,
+					 struct ipw_rx_queue *q)
+{
+	u32 reg = 0;
+	int rc = 0;
+	unsigned long flags;
+
+	//spin_lock_irqsave(&q->lock, flags);
+
+	if (q->need_update == 0)
+		goto exit_unlock;
+
+	if (priv->status & STATUS_POWER_PMI) {
+		reg = ipw_read32(CSR_UCODE_DRV_GP1);
+
+		if (reg & CSR_UCODE_DRV_GP1_BIT_MAC_SLEEP) {
+			ipw_set_bit( CSR_GP_CNTRL,
+				    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+			goto exit_unlock;
+		}
+
+		rc = ipw_grab_restricted_access(priv);
+		if (rc)
+			goto exit_unlock;
+
+		_ipw_write_restricted(priv, FH_RCSR_WPTR(0), q->write & ~0x7);
+		_ipw_release_restricted_access(priv);
+	} else {
+		ipw_write32( FH_RCSR_WPTR(0), q->write & ~0x7);
+	}
+
+	q->need_update = 0;
+
+      exit_unlock:
+	//spin_unlock_irqrestore(&q->lock, flags);
+	return rc;
+}
+
+int darwin_iwi3945::ipw_rx_queue_restock(struct ipw_priv *priv)
+{
+	struct ipw_rx_queue *rxq = priv->rxq;
+	struct list_head *element;
+	struct ipw_rx_mem_buffer *rxb;
+	unsigned long flags;
+	int write;
+	int counter = 0;
+	int rc;
+
+	//spin_lock_irqsave(&rxq->lock, flags);
+	write = rxq->write & ~0x7;
+	while ((ipw_rx_queue_space(rxq) > 0) && (rxq->free_count)) {
+		element = rxq->rx_free.next;
+		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
+		list_del(element);
+
+		((u32 *) rxq->bd)[rxq->write] = (u32) rxb->dma_addr;
+
+		rxq->queue[rxq->write] = rxb;
+		rxq->write = (rxq->write + 1) % RX_QUEUE_SIZE;
+		rxq->free_count--;
+		counter++;
+	}
+	//spin_unlock_irqrestore(&rxq->lock, flags);
+	/* If the pre-allocated buffer pool is dropping low, schedule to
+	 * refill it */
+	if (rxq->free_count <= RX_LOW_WATERMARK) {
+		//queue_work(priv->workqueue, &priv->rx_replenish);
+	}
+
+	counter = ipw_rx_queue_space(rxq);
+	/* If we've added more space for the firmware to place data, tell it */
+	if ((write != (rxq->write & ~0x7))
+	    || (rxq->write - rxq->read > 7) || (-rxq->write + rxq->read > 7) ) {
+		//spin_lock_irqsave(&rxq->lock, flags);
+		rxq->need_update = 1;
+		//spin_unlock_irqrestore(&rxq->lock, flags);
+		rc = ipw_rx_queue_update_write_ptr(priv, rxq);
+		if (rc) {
+			return rc;
+		}
+	}
+
+	return 0;
+}
+
+void darwin_iwi3945::ipw_rx_queue_replenish(struct ipw_priv *priv)
+{
+	struct ipw_rx_queue *rxq = priv->rxq;
+	struct list_head *element;
+	struct ipw_rx_mem_buffer *rxb;
+	unsigned long flags;
+	//spin_lock_irqsave(&rxq->lock, flags);
+	while (!list_empty(&rxq->rx_used)) {
+		element = rxq->rx_used.next;
+		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
+		//rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
+		rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
+		if (!rxb->skb) {
+			IOLog(
+			       "%s: Can not allocate SKB buffers.\n",
+			       priv->net_dev->name);
+			/* We don't reschedule replenish work here -- we will
+			 * call the restock method and if it still needs
+			 * more buffers it will schedule replenish */
+			break;
+		}
+		list_del(element);
+		rxb->dma_addr = mbuf_data_to_physical(mbuf_data(rxb->skb));
+		list_add_tail(&rxb->list, &rxq->rx_free);
+		rxq->free_count++;
+	}
+	//spin_unlock_irqrestore(&rxq->lock, flags);
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	ipw_rx_queue_restock(priv);
+	//spin_unlock_irqrestore(&priv->lock, flags);
+}
+
+void darwin_iwi3945::ipw_rx_queue_reset(struct ipw_priv *priv,
+				      struct ipw_rx_queue *rxq)
+{
+	unsigned long flags;
+	int i;
+	//spin_lock_irqsave(&rxq->lock, flags);
+	INIT_LIST_HEAD(&rxq->rx_free);
+	INIT_LIST_HEAD(&rxq->rx_used);
+	/* Fill the rx_used queue with _all_ of the Rx buffers */
+	for (i = 0; i < RX_FREE_BUFFERS + RX_QUEUE_SIZE; i++) {
+		/* In the reset function, these buffers may have been allocated
+		 * to an SKB, so we need to unmap and free potential storage */
+		if (rxq->pool[i].skb != NULL) {
+			rxq->pool[i].dma_addr=NULL;
+			freePacket(rxq->pool[i].skb);
+			rxq->pool[i].skb = NULL;
+		}
+		list_add_tail(&rxq->pool[i].list, &rxq->rx_used);
+	}
+
+	/* Set us so that we have processed and used all buffers, but have
+	 * not restocked the Rx queue with fresh buffers */
+	rxq->read = rxq->write = 0;
+	rxq->free_count = 0;
+	//spin_unlock_irqrestore(&rxq->lock, flags);
+}
+
+struct ipw_rx_queue *darwin_iwi3945::ipw_rx_queue_alloc(struct ipw_priv *priv)
+{
+	struct ipw_rx_queue *rxq;
+	struct pci_dev *dev = priv->pci_dev;
+	int i;
+	rxq = (struct ipw_rx_queue *)kmalloc(sizeof(*rxq), GFP_ATOMIC);
+	memset(rxq, 0, sizeof(*rxq));
+
+	//spin_lock_init(&rxq->lock);
+	INIT_LIST_HEAD(&rxq->rx_free);
+	INIT_LIST_HEAD(&rxq->rx_used);
+	//rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr);
+	MemoryDmaAlloc(4 * RX_QUEUE_SIZE, &rxq->dma_addr, &rxq->bd);
+	/* Fill the rx_used queue with _all_ of the Rx buffers */
+	for (i = 0; i < RX_FREE_BUFFERS + RX_QUEUE_SIZE; i++)
+		list_add_tail(&rxq->pool[i].list, &rxq->rx_used);
+	/* Set us so that we have processed and used all buffers, but have
+	 * not restocked the Rx queue with fresh buffers */
+	rxq->read = rxq->write = 0;
+	rxq->free_count = 0;
+	rxq->need_update = 0;
+	return rxq;
 }
 
 int darwin_iwi3945::ipw_rf_eeprom_ready(struct ipw_priv *priv)
@@ -1835,46 +2259,164 @@ int darwin_iwi3945::ipw_rf_eeprom_ready(struct ipw_priv *priv)
 	return 0;
 }
 
+int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
+{
+	u32 *image;
+	u32 len, val;
+	int rc1;
+	int rc2 = 0;
+	u32 errcnt;
+
+	len = priv->ucode_boot_data.len;
+	image = (u32 *) priv->ucode_boot_data.v_addr;
+
+	IOLog("bootstrap data image size is %u\n", len);
+
+	rc1 = ipw_grab_restricted_access(priv);
+	//if (rc1)
+	//	return rc1;
+
+	/* read from card's data memory to verify */
+	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_DATA_LOWER_BOUND);
+
+	for (errcnt = 0; len > 0; len -= sizeof(u32), image++) {
+		/* read data comes through single port, auto-incr addr */
+		val = _ipw_read_restricted(priv, HBUS_TARG_MEM_RDAT);
+		if (val != *image) {
+			IOLog("bootstrap DATA section is invalid at offset "
+				  "0x%x\n", priv->ucode_boot_data.len - len);
+			rc2 = -EIO;
+			errcnt++;
+			if (errcnt >= 20)
+				break;
+		}
+	}
+
+	_ipw_release_restricted_access(priv);
+
+	if (!errcnt)
+		IOLog("bootstrap image in DATA memory is good\n");
+
+	/* check instruction image */
+	len = priv->ucode_boot.len;
+	image = (u32 *) priv->ucode_boot.v_addr;
+
+	IOLog("bootstrap instruction image size is %u\n", len);
+
+	rc1 = ipw_grab_restricted_access(priv);
+	if (rc1)
+		return rc1;
+
+	/* read from card's instruction memory to verify */
+	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
+
+	for (errcnt = 0; len > 0; len -= sizeof(u32), image++) {
+		/* read data comes through single port, auto-incr addr */
+		val = _ipw_read_restricted(priv, HBUS_TARG_MEM_RDAT);
+		if (val != *image) {
+			IOLog("bootstrap INST section is invalid at offset "
+				  "0x%x\n", priv->ucode_boot.len - len);
+			rc2 = -EIO;
+			errcnt++;
+			if (errcnt >= 20)
+				break;
+		}
+	}
+
+	_ipw_release_restricted_access(priv);
+
+	if (!errcnt)
+		IOLog
+		    ("bootstrap image in INSTRUCTION memory is good\n");
+
+	return rc2;
+}
+
 int darwin_iwi3945::ipw_verify_ucode(struct ipw_priv *priv)
 {
 	u32 *image;
 	u32 len, val;
-	int rc;
+	int rc = 0;
+	u32 errcnt;
+
+	/* Since data memory has already been modified by running uCode,
+	 * we can't really verify the data image, but we'll show its size. */
+	IOLog("ucode data image size is %u\n", priv->ucode_data.len);
+
+	/* read from instruction memory to verify instruction image */
+	image = (u32*)priv->ucode_code.v_addr;
+	len = priv->ucode_code.len;
+
+	IOLog("ucode inst image size is %u\n", len);
 
 	rc = ipw_grab_restricted_access(priv);
 	if (rc)
 		return rc;
 
-	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_DATA_LOWER_BOUND);
-
-	for (image = (u32*)priv->ucode_data.v_addr, len =
-	     priv->ucode_data.len; len > 0; len -= sizeof(u32), image++) {
-		val = _ipw_read_restricted(priv, HBUS_TARG_MEM_RDAT);
-		if (val != *image) {
-			IOLog("uCode INST section is invalid at "
-				  "offset %u\n", len);
-			rc = -EIO;
-			goto done;
-		}
-	}
-
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
 
-	for (image = (u32*)priv->ucode_code.v_addr, len =
-	     priv->ucode_code.len; len > 0; len -= sizeof(u32), image++) {
+	errcnt = 0;
+	for (; len > 0; len -= sizeof(u32), image++) {
+		/* read data comes through single port, auto-incr addr */
 		val = _ipw_read_restricted(priv, HBUS_TARG_MEM_RDAT);
 		if (val != *image) {
 			IOLog("uCode INST section is invalid at "
-				  "offset %u\n", len);
+				  "offset 0x%x, is 0x%x, s/b 0x%x\n",
+				  priv->ucode_code.len - len, val, *image);
 			rc = -EIO;
-			goto done;
+			errcnt++;
+			if (errcnt >= 20)
+				break;
 		}
 	}
 
-	IOLog("ucode image is good\n");
-
-      done:
 	_ipw_release_restricted_access(priv);
+
+	if (!errcnt)
+		IOLog
+		    ("runtime ucode image in INSTRUCTION memory is good\n");
+
+	return rc;
+
+}
+
+int darwin_iwi3945::ipw_setup_bootstrap(struct ipw_priv *priv)
+{
+	int rc = 0;
+
+	/* Load bootstrap uCode data into card via card's TFD DMA channel */
+	rc = ipw_load_ucode(priv, &(priv->ucode_boot_data),
+			    ALM_RTC_DATA_SIZE, RTC_DATA_LOWER_BOUND);
+//	if (rc)
+//		goto error;
+
+	/* Load bootstrap uCode instructions, same way */
+	rc = ipw_load_ucode(priv, &(priv->ucode_boot),
+			    ALM_RTC_INST_SIZE, RTC_INST_LOWER_BOUND);
+//	if (rc)
+//		goto error;
+
+	/* verify bootstrap in-place in DATA and INSTRUCTION SRAM */
+	ipw_verify_bootstrap(priv);
+
+	/* tell bootstrap uCode where to find the runtime uCode in host DRAM */
+	rc = ipw_grab_restricted_access(priv);
+//	if (rc)
+//		goto error;
+
+	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_PTR_REG,
+				 priv->ucode_code.p_addr);
+	_ipw_write_restricted_reg(priv, BSM_DRAM_DATA_PTR_REG,
+				 priv->ucode_data.p_addr);
+	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_BYTECOUNT_REG,
+				 priv->ucode_code.len);
+	_ipw_write_restricted_reg(priv, BSM_DRAM_DATA_BYTECOUNT_REG,
+				 priv->ucode_data.len);
+	_ipw_release_restricted_access(priv);
+
+	return 0;
+
+      error:
 	return rc;
 }
 
@@ -1882,6 +2424,7 @@ int darwin_iwi3945::ipw_verify_ucode(struct ipw_priv *priv)
 
 int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 {
+			
 	int rc, i;
 
 	if (priv->status & STATUS_EXIT_PENDING) {
@@ -1900,7 +2443,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	rc = ipw_nic_init(priv);
 	if (rc) {
 		IOLog("Unable to int nic\n");
-		//return rc;
+		return rc;
 	}
 
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
@@ -1914,27 +2457,30 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 
 	for (i = 0; i < MAX_HW_RESTARTS; i++) {
-		/* Load the microcode, firmware, and eeprom.
-		 * Also start the clocks. */
-		rc = ipw_load_ucode(priv);
-		if (rc) {
-			IOLog("Unable to load firmware: %d\n", rc);
-			continue;
-		}
 
 		ipw_clear_stations_table(priv);
 
-		ipw_verify_ucode(priv);
+		rc = ipw_setup_bootstrap(priv);
+		if (rc) {
+			IOLog("Unable to set up bootstrap uCode: %d\n", rc);
+		//	continue;
+		}
+
+		/* start card; bootstrap will load runtime ucode */
 		ipw_nic_start(priv);
+
 		ipw_card_show_info(priv);
 
-		if (!(priv->config & CFG_CUSTOM_MAC)) {
+		//if (!(priv->config & CFG_CUSTOM_MAC)) {
 			//eeprom_parse_mac(priv, priv->mac_addr);
-			ipw_query_eeprom(priv, EEPROM_MAC_ADDRESS, 6, priv->mac_addr);
+			memcpy(priv->mac_addr, priv->eeprom.mac_address, 6);
 			IOLog("MAC address: " MAC_FMT "\n",
 				       MAC_ARG(priv->mac_addr));
-		}
+		//}
+
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
+		//memcpy(priv->ieee->perm_addr, priv->mac_addr, ETH_ALEN);
+
 		return 0;
 	}
 
@@ -3355,10 +3901,471 @@ int darwin_iwi3945::resetRxQueue()
 	return 0;
 }
 
+void darwin_iwi3945::ipw_bg_alive_start()
+{
+	//struct ipw_priv *priv =
+	  //  container_of(work, struct ipw_priv, alive_start.work);
+	int rc = 0;
+	int thermal_spin = 0;
+
+	if (priv->status & STATUS_EXIT_PENDING)
+		return;
+
+	//mutex_lock(&priv->mutex);
+	if (priv->card_alive.is_valid != 1) {
+		/* We had an error bringing up the hardware, so take it
+		 * all the way back down so we can try again */
+		IOLog("Alive failed.\n");
+		//ipw_down(priv);
+		//mutex_unlock(&priv->mutex);
+		//return;
+	}
+
+	/* bootstrap uCode has loaded runtime uCode ... verify inst image */
+	if (ipw_verify_ucode(priv)) {
+		/* Runtime instruction load was bad;
+		 * take it all the way back down so we can try again */
+		IOLog("Bad runtime uCode load.\n");
+		//ipw_down(priv);
+		//mutex_unlock(&priv->mutex);
+		//return;
+	}
+
+	/* After the ALIVE response, we can processed host commands */
+	priv->status |= STATUS_ALIVE;
+
+	IOLog("Alive received.\n");
+
+	ipw_clear_stations_table(priv);
+
+	if (!(priv->status & STATUS_RF_KILL_MASK)) {
+		/* if rfkill is not on, then
+		 * wait for thermal sensor in adapter to kick in */
+		while (ipw_read32(CSR_UCODE_DRV_GP2)== 0) {
+			thermal_spin++;
+			udelay(10);
+		}
+		if (thermal_spin)
+			IOLog("Thermal calibration took %dus\n",
+				       thermal_spin * 10);
+	}
+
+//	rc = ipw_init_channel_map(priv);
+	if (rc) {
+		IOLog("initializing regulatory failed: %d\n", rc);
+		//mutex_unlock(&priv->mutex);
+		return;
+	}
+
+//	ipw_init_geos(priv);
+
+	if (!priv->netdev_registered) {
+	//	mutex_unlock(&priv->mutex);
+	//	ieee80211_rate_control_register(&priv->rate_control);
+
+		//rc = ieee80211_register_hw(priv->ieee);
+		if (rc) {
+			IOLog("Failed to register network "
+				  "device (error %d)\n", rc);
+			return;
+		}
+
+	//	module_put(THIS_MODULE);
+
+	//	mutex_lock(&priv->mutex);
+		priv->netdev_registered = 1;
+
+		//ipw_reset_channel_flag(priv);
+	}
+
+	memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
+
+	priv->rates_mask = IEEE80211_DEFAULT_RATES_MASK;
+	//ipw_set_supported_rates_mask(priv, priv->rates_mask);
+
+	//ipw_set_rate(priv);
+
+	//ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
+
+/*
+ * ipw_qos_activate(priv, NULL);
+ */
+	//ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
+
+	/* Initialize our rx_config data */
+//	ipw_connection_init_rx_config(priv);
+	//memcpy(priv->staging_rxon.node_addr, priv->net_dev->dev_addr, ETH_ALEN);
+
+	/* Configure BT coexistence */
+//	ipw_send_bt_config(priv);
+
+	/* Configure the adapter for unassociated operation */
+	//ipw_commit_rxon(priv);
+
+	/* Add the broadcast address so we can send probe requests */
+	//ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
+	//ipw_init_rate_scaling(priv);
+
+	/* At this point, the NIC is initialized and operational */
+	priv->notif_missed_beacons = 0;
+	priv->status |= STATUS_READY;
+
+//	ipw_update_link_led(priv);
+
+//	reg_txpower_periodic(priv);
+
+	//mutex_unlock(&priv->mutex);
+}
 
 void darwin_iwi3945::RxQueueIntr()
 {
-	
+	struct ipw_rx_mem_buffer *rxb;
+	struct ipw_rx_packet *pkt;
+	u32 r, i;
+	int pkt_from_hardware;
+
+	r = 0;//priv->shared_virt->rx_read_ptr[0];
+	i = priv->rxq->read;
+	while (i != r) {
+		rxb = priv->rxq->queue[i];
+		if (rxb == NULL) return;
+		priv->rxq->queue[i] = NULL;
+
+		pkt = (struct ipw_rx_packet *)mbuf_data(rxb->skb);
+
+		/* If this frame wasn't received then it is a response from
+		 * a host request */
+		pkt_from_hardware = !(pkt->hdr.sequence & SEQ_RX_FRAME);
+
+		/* Don't report replies covered by debug messages below ...
+		 * switch statement for readability ... compiler may optimize.
+		 * Hack at will to see/not-see what you want in logs. */
+		switch (pkt->hdr.cmd) {
+		case REPLY_DAEMON_1:
+		case REPLY_DAEMON_2:
+		case REPLY_DAEMON_3:
+		case REPLY_DAEMON_4:
+		case SCAN_START_NOTIFICATION:
+		case SCAN_RESULTS_NOTIFICATION:
+		case SCAN_COMPLETE_NOTIFICATION:
+		case REPLY_STATISTICS_CMD:
+		case STATISTICS_NOTIFICATION:
+		case REPLY_RX:
+		case REPLY_ALIVE:
+		case REPLY_ADD_STA:
+		case REPLY_ERROR:
+			break;
+		default:
+			IOLog
+			    ("Received %s command (#%x), seq:0x%04X, "
+			     "flags=0x%02X, len = %d\n","",
+	//		     get_cmd_string(pkt->hdr.cmd),
+			     pkt->hdr.cmd, pkt->hdr.sequence,
+			     pkt->hdr.flags, le16_to_cpu(pkt->len));
+		}
+
+		switch (pkt->hdr.cmd) {
+		case REPLY_RX:	/* 802.11 frame */
+			//ipw_handle_reply_rx(priv, rxb);
+			break;
+
+		case REPLY_ALIVE:{
+				memcpy(&priv->card_alive,
+				       &pkt->u.alive_frame,
+				       sizeof(struct ipw_alive_resp));
+
+				IOLog
+				    ("Alive ucode status 0x%08X revision "
+				     "0x%01X 0x%01X\n",
+				     priv->card_alive.is_valid,
+				     priv->card_alive.ver_type,
+				     priv->card_alive.ver_subtype);
+				/* We delay the ALIVE response by 5ms to
+				 * give the HW RF Kill time to activate... */
+				if (priv->card_alive.is_valid == UCODE_VALID_OK)
+					ipw_bg_alive_start();
+					/*queue_delayed_work(priv->workqueue,
+							   &priv->alive_start,
+							   msecs_to_jiffies(5));*/
+				else
+					IOLog
+					    ("uCode did not respond OK.\n");
+				break;
+			}
+
+		case REPLY_ADD_STA:{
+				IOLog
+				    ("Received REPLY_ADD_STA: 0x%02X\n",
+				     pkt->u.status);
+				break;
+			}
+
+		case REPLY_ERROR:{
+				u32 err_type = pkt->u.err_resp.enumErrorType;
+				u8 cmd_id = pkt->u.err_resp.currentCmdID;
+				u16 seq = pkt->u.err_resp.erroneousCmdSeqNum;
+				u32 ser = pkt->u.err_resp.errorService;
+				IOLog("Error Reply type 0x%08X "
+					  "cmd %s (0x%02X) "
+					  "seq 0x%04X ser 0x%08X\n",
+					  err_type,"",
+					//  get_cmd_string(cmd_id),
+					  cmd_id, seq, ser);
+				break;
+			}
+		case REPLY_TX:
+			//ipw_handle_reply_tx(priv, &pkt->u.tx_resp,
+			//		    pkt->hdr.sequence);
+			break;
+
+		case CHANNEL_SWITCH_NOTIFICATION:{
+				struct ipw_csa_notification *csa =
+				    &(pkt->u.csa_notif);
+				IOLog
+				    ("CSA notif: channel %d, status %d\n",
+				     csa->channel, csa->status);
+				priv->channel = csa->channel;
+				/*priv->assoc_network =
+				    ieee80211_move_network_channel
+				    (priv->ieee, priv->assoc_network,
+				     csa->channel);*/
+				break;
+			}
+
+		case SPECTRUM_MEASURE_NOTIFICATION:{
+				struct ipw_spectrum_notification
+				*report = &(pkt->u.spectrum_notif);
+
+				if (!report->state) {
+					IOLog(						  "Spectrum Measure Notification: "
+						  "Start\n");
+					break;
+				}
+
+				memcpy(&priv->measure_report, report,
+				       sizeof(*report));
+				//queue_delayed_work(priv->workqueue,
+				//		   &priv->report_work, 0);
+				break;
+			}
+
+		case QUIET_NOTIFICATION:
+			IOLog("UNHANDLED - Quiet Notification.\n");
+			break;
+
+		case MEASURE_ABORT_NOTIFICATION:
+			IOLog
+			    ("UNHANDLED - Measure Abort Notification.\n");
+			break;
+
+		case RADAR_NOTIFICATION:
+			IOLog("UNHANDLED - Radar Notification.\n");
+			break;
+
+		case PM_SLEEP_NOTIFICATION:{
+#ifdef CONFIG_IPW3945_DEBUG
+				struct ipw_sleep_notification *sleep =
+				    &(pkt->u.sleep_notif);
+				IPW_DEBUG_RX
+				    ("sleep mode: %d, src: %d\n",
+				     sleep->pm_sleep_mode,
+				     sleep->pm_wakeup_src);
+#endif
+				break;
+			}
+
+		case PM_DEBUG_STATISTIC_NOTIFIC:
+			IOLog
+			    ("Dumping %d bytes of unhandled "
+			     "notification for %s:\n",
+			     le16_to_cpu(pkt->len),"");
+			    // get_cmd_string(pkt->hdr.cmd));
+			//printk_buf(IPW_DL_RADIO, pkt->u.raw,
+			//	   le16_to_cpu(pkt->len));
+			break;
+
+		case BEACON_NOTIFICATION:{
+#ifdef CONFIG_IPW3945_DEBUG
+				struct BeaconNtfSpecifics *beacon =
+				    &(pkt->u.beacon_status);
+				IPW_DEBUG_INFO
+				    ("beacon status %x retries %d iss %d "
+				     "tsf %d %d rate %d\n",
+				     beacon->bconNotifHdr.status,
+				     beacon->bconNotifHdr.
+				     failure_frame,
+				     beacon->ibssMgrStatus,
+				     beacon->highTSF, beacon->lowTSF,
+				     beacon->bconNotifHdr.rate);
+#endif
+			}
+			break;
+
+		case REPLY_STATISTICS_CMD:
+		case STATISTICS_NOTIFICATION:
+			IOLog
+			    ("Statistics notification received (%zd vs %d).\n",
+			     sizeof(priv->statistics), pkt->len);
+			memcpy(&priv->statistics, pkt->u.raw,
+			       sizeof(priv->statistics));
+			break;
+
+		case WHO_IS_AWAKE_NOTIFICATION:
+			IOLog("Notification from the card \n");
+			break;
+
+		case SCAN_REQUEST_NOTIFICATION:{
+#ifdef CONFIG_IPW3945_DEBUG
+				struct ipw_scanreq_notification *notif
+				    =
+				    (struct ipw_scanreq_notification
+				     *)pkt->u.raw;
+				IPW_DEBUG_RX
+				    ("Scan request status = 0x%x\n",
+				     notif->status);
+#endif
+				break;
+			}
+
+		case SCAN_START_NOTIFICATION:{
+				struct ipw_scanstart_notification
+				*notif =
+				    (struct ipw_scanstart_notification
+				     *)pkt->u.raw;
+				priv->scan_start_tsf = notif->tsf_low;
+				IOLog("Scan start: "
+					       "%d [802.11%s] "
+					       "(TSF: 0x%08X:%08X) - %d (beacon timer %u)\n",
+					       notif->channel,
+					       notif->
+					       band ? "bg" : "a",
+					       notif->tsf_high,
+					       notif->tsf_low,
+					       notif->status,
+					       notif->beacon_timer);
+				break;
+			}
+
+		case SCAN_RESULTS_NOTIFICATION:{
+#ifdef CONFIG_IPW3945_DEBUG
+				struct ipw_scanresults_notification
+				*notif = (struct ipw_scanresults_notification *)
+				    pkt->u.raw;
+
+				IPW_DEBUG_SCAN("Scan ch.res: "
+					       "%d [802.11%s] "
+					       "(TSF: 0x%08X:%08X) - %d "
+					       "elapsed=%lu usec (%dms since last)\n",
+					       notif->channel,
+					       notif->
+					       band ? "bg" : "a",
+					       notif->tsf_high,
+					       notif->tsf_low,
+					       notif->statistics[0],
+					       notif->tsf_low -
+					       priv->scan_start_tsf,
+					       jiffies_to_msecs
+					       (elapsed_jiffies
+						(priv->
+						 last_scan_jiffies, jiffies)));
+#endif
+				priv->last_scan_jiffies = jiffies;
+				break;
+			}
+
+		case SCAN_COMPLETE_NOTIFICATION:{
+				struct ipw_scancomplete_notification
+				*scan_notif =
+				    (struct ipw_scancomplete_notification *)
+				    pkt->u.raw;
+				IOLog
+				    ("Scan complete: %d channels "
+				     "(TSF 0x%08X:%08X) - %d\n",
+				     scan_notif->scanned_channels,
+				     scan_notif->tsf_low,
+				     scan_notif->tsf_high, scan_notif->status);
+
+				//ipw_scan_completed(priv,
+				//		   scan_notif->status == 1);
+				break;
+			}
+
+		case CARD_STATE_NOTIFICATION:{
+				u32 flags =
+				    le32_to_cpu(pkt->u.card_state_notif.flags);
+				u32 status = priv->status;
+				IOLog
+				    ("Card state received: "
+				     "HW:%s SW:%s\n",
+				     (flags & HW_CARD_DISABLED) ?
+				     "Off" : "On",
+				     (flags & SW_CARD_DISABLED) ? "Off" : "On");
+
+				if (flags & HW_CARD_DISABLED) {
+					ipw_write32(
+						    CSR_UCODE_DRV_GP1_SET,
+						    CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+
+					priv->status |= STATUS_RF_KILL_HW;
+				} else
+					priv->status &= ~STATUS_RF_KILL_HW;
+
+				if (flags & SW_CARD_DISABLED)
+					priv->status |= STATUS_RF_KILL_SW;
+				else
+					priv->status &= ~STATUS_RF_KILL_SW;
+
+				priv->status &=
+				    ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+
+			//	ipw_scan_cancel(priv);
+
+				if (((status & STATUS_RF_KILL_HW) !=
+				     (priv->status & STATUS_RF_KILL_HW))
+				    || ((status & STATUS_RF_KILL_SW)
+					!= (priv->status & STATUS_RF_KILL_SW))) {
+
+					//queue_delayed_work(priv->workqueue,
+					//		   &priv->rf_kill, 0);
+				};// else
+					//wake_up_interruptible(&priv->
+					//		      wait_command_queue);
+
+				break;
+			}
+		default:
+			break;
+		}
+
+		if (pkt_from_hardware) {
+			/* Invoke any callbacks, transfer the skb to
+			 * caller, and fire off the (possibly) blocking
+			 * ipw_send_cmd() via as we reclaim the queue... */
+			/*if (rxb && rxb->skb)
+				ipw_tx_complete(priv, rxb);
+			else
+				IOLog("Claim null rxb?\n");*/
+		}
+
+		/* For now we just don't re-use anything.  We can tweak this
+		 * later to try and re-use notification packets and SKBs that
+		 * fail to Rx correctly */
+		if (rxb->skb != NULL) {
+			//dev_kfree_skb_any(rxb->skb);
+			freePacket(rxb->skb);
+			rxb->skb = NULL;
+		}
+		rxb->dma_addr=NULL;
+		//pci_unmap_single(priv->pci_dev, rxb->dma_addr,
+		//		 IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
+		list_add_tail(&rxb->list, &priv->rxq->rx_used);
+		i = (i + 1) % RX_QUEUE_SIZE;
+	}
+
+	/* Backtrack one entry */
+	priv->rxq->read = i;
+	ipw_rx_queue_restock(priv);
+
 }
 
 
@@ -3543,34 +4550,6 @@ darwin_iwi3945::eeprom_read_UInt16(UInt8 addr)
 void
 darwin_iwi3945::cacheEEPROM(struct ipw_priv *priv)
 {
-	int i;
-	u16 *eeprom = (u16 *) priv->eeprom;
-
-
-	/* read entire contents of eeprom into private buffer */
-	for (i = 0; i < 128; i++)
-		eeprom[i] = le16_to_cpu(eeprom_read_UInt16( (u8) i));
-
-	/*
-	   If the data looks correct, then copy it to our private
-	   copy.  Otherwise let the firmware know to perform the operation
-	   on its own.
-	 */
-	if (priv->eeprom[EEPROM_VERSION] != 0) {
-		IOLog("Writing EEPROM data into SRAM\n");
-
-		/* write the eeprom data to sram */
-		for (i = 0; i < IPW_EEPROM_IMAGE_SIZE; i++)
-			_ipw_write8(memBase, IPW_EEPROM_DATA + i, priv->eeprom[i]);
-
-		/* Do not load eeprom data on fatal error or suspend */
-		ipw_write32( IPW_EEPROM_LOAD_DISABLE, 0);
-	} else {
-		IOLog("Enabling FW initializationg of SRAM\n");
-
-		/* Load eeprom data on fatal error or suspend */
-		ipw_write32(IPW_EEPROM_LOAD_DISABLE, 1);
-	}	
 }
 
 
