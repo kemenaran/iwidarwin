@@ -7502,11 +7502,11 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 	//struct ipw_priv *priv = ieee80211_priv(dev);
 	unsigned long flags;
 	int ret;
-	IOInterruptState	instate;
+	//IOInterruptState	instate;
 
 	IWI_DEBUG("dev->xmit(%d bytes)\n", txb->payload_size);
 	//spin_lock_irqsave(&priv->lock, flags);
-	instate = IOSimpleLockLockDisableInterrupt( spin);
+	//instate = IOSimpleLockLockDisableInterrupt( spin);
 	
 	if (!(priv->status & STATUS_ASSOCIATED)) {
 		IWI_ERR("Tx attempt while not associated.\n");
@@ -7539,13 +7539,13 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 	if (ret == kIOReturnOutputSuccess)//NETDEV_TX_OK)
 		__ipw_led_activity_on(priv);
 	//spin_unlock_irqrestore(&priv->lock, flags);
-	IOSimpleLockUnlockEnableInterrupt( spin, instate );
+	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	
 	return ret;
 
       fail_unlock:
 	//spin_unlock_irqrestore(&priv->lock, flags);
-	IOSimpleLockUnlockEnableInterrupt( spin, instate );
+	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	return 1;
 }
 
@@ -7676,7 +7676,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		memcpy(skb_put(skb_new, mbuf_len(skb)), mbuf_data(skb), mbuf_len(skb));
 		//memcpy(((UInt8*)mbuf_data(skb_new)+mbuf_len(skb)), mbuf_data(skb), mbuf_len(skb));
 		IWI_DEBUG("TODO: msdu encryption\n");
-		res = 0;//crypt->ops->encrypt_msdu(skb_new, hdr_len, crypt->priv);
+		res = -1;//crypt->ops->encrypt_msdu(skb_new, hdr_len, crypt->priv);
 		if (res < 0) {
 			IWI_DEBUG("msdu encryption failed\n");
 			//dev_kfree_skb_any(skb_new);
