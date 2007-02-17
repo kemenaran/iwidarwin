@@ -1224,7 +1224,8 @@ struct ieee80211_network {
 	/* Ensure null-terminated for any debug msgs */
 	u8 ssid[IW_ESSID_MAX_SIZE + 1];
 	u8 ssid_len;
-
+	int exclude;
+	
 	struct ieee80211_qos_data qos_data;
 
 	/* These are network statistics */
