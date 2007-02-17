@@ -5719,7 +5719,7 @@ int darwin_iwi2200::ipw_best_network(struct ipw_priv *priv,
 				"restart card to include.\n",
 				escape_essid((const char*)network->ssid, network->ssid_len),
 				MAC_ARG(network->bssid));
-				return 0;
+				//return 0;
 			}
 		}
 	}
@@ -5993,8 +5993,8 @@ int darwin_iwi2200::ipw_associate(ipw_priv *data)
 				"restart card to include.\n",
 				escape_essid((const char*)network->ssid, network->ssid_len),
 				MAC_ARG(network->bssid));
-				ipw_scan(priv,0);
-				return 0;
+				//ipw_scan(priv,0);
+				//return 0;
 			}
 		}
 	}
@@ -6630,7 +6630,7 @@ void darwin_iwi2200::ipw_gather_stats(struct ipw_priv *priv)
 	if (priv->ieee->iw_mode == IW_MODE_INFRA && priv->assoc_network)
 	if (priv->assoc_network->exclude==1)
 	{
-		int i,p=-1,ok=0;
+		/*int i,p=-1,ok=0;
 		for (i=0;i<20;i++) 
 		{
 			if (nonets[i].bssid)
@@ -6641,7 +6641,7 @@ void darwin_iwi2200::ipw_gather_stats(struct ipw_priv *priv)
 		priv->assoc_network->exclude=0;
 		fNetif->setLinkState(kIO80211NetworkLinkDown);
 		ipw_disassociate(priv);
-		return;
+		return;*/
 	}
 	
 	/* Update the statistics */
