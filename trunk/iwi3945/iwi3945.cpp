@@ -2293,7 +2293,7 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 	}
 
 	_ipw_release_restricted_access(priv);
-
+	errcnt=0;
 	if (!errcnt)
 		IOLog("bootstrap image in DATA memory is good\n");
 
@@ -2304,8 +2304,8 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 	IOLog("bootstrap instruction image size is %u\n", len);
 
 	rc1 = ipw_grab_restricted_access(priv);
-	if (rc1)
-		return rc1;
+	//if (rc1)
+	//	return rc1;
 
 	/* read from card's instruction memory to verify */
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
@@ -2324,7 +2324,7 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 	}
 
 	_ipw_release_restricted_access(priv);
-
+	errcnt=0;
 	if (!errcnt)
 		IOLog
 		    ("bootstrap image in INSTRUCTION memory is good\n");
@@ -2894,18 +2894,11 @@ UInt16 darwin_iwi3945::readPromWord(UInt16 *base, UInt8 addr)
 
 IOReturn darwin_iwi3945::getHardwareAddress( IOEthernetAddress * addr )
 {
-	UInt16 val;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 0);
-	fEnetAddr.bytes[0]=val >> 8;
-	fEnetAddr.bytes[1]=val & 0xff;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 1);
-	fEnetAddr.bytes[2]=val >> 8;
-	fEnetAddr.bytes[3]=val & 0xff;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 2);
-	fEnetAddr.bytes[4]=val >> 8;
-	fEnetAddr.bytes[5]=val & 0xff;
-
-	memcpy(addr, &fEnetAddr, sizeof(*addr));
+	if (priv)
+	{
+		memcpy(addr->bytes, priv->eeprom.mac_address, 6);
+	}
+	IOLog("getHardwareAddress: " MAC_FMT "\n", MAC_ARG(addr->bytes));
 	
 	return kIOReturnSuccess;
 }
