@@ -408,7 +408,9 @@ virtual IOOptionBits getState( void ) const;
 	virtual UInt32 inline ipw_read32(UInt32 offset);
 	virtual void inline ipw_set_bit(UInt32 reg, UInt32 mask);
 	virtual void inline ipw_clear_bit(UInt32 reg, UInt32 mask);
-	virtual int ipw_poll_bit(UInt32 reg, UInt32 mask, int timeout);
+	virtual int ipw_poll_bit(struct ipw_priv *priv, u32 addr,
+			u32 bits, u32 mask, int timeout);
+
 	
 	/* EEPROM functions */
 	virtual void cacheEEPROM(struct ipw_priv *priv);

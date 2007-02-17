@@ -907,51 +907,12 @@ const OSString * darwin_iwi3945::newModelString( void ) const
 
 int darwin_iwi3945::ipw_stop_nic()
 {
-	int rc = 0;
 
-	/* stop */
-	ipw_write32(IPW_RESET_REG, IPW_RESET_REG_STOP_MASTER);
-
-	rc = ipw_poll_bit(IPW_RESET_REG,
-			  IPW_RESET_REG_MASTER_DISABLED, 500);
-	if (rc < 0) {
-		IOLog("wait for reg master disabled failed after 500ms\n");
-		return rc;
-	}
-
-	ipw_set_bit(IPW_RESET_REG, CBD_RESET_REG_PRINCETON_RESET);
-
-	return rc;
 }
 
 int darwin_iwi3945::ipw_init_nic()
 {
-	int rc;
 
-	/* reset */
-	/*prvHwInitNic */
-	/* set "initialization complete" bit to move adapter to D0 state */
-	ipw_set_bit(IPW_GP_CNTRL_RW, IPW_GP_CNTRL_BIT_INIT_DONE);
-
-	/* low-level PLL activation */
-	ipw_write32(IPW_READ_INT_REGISTER,
-		    IPW_BIT_INT_HOST_SRAM_READ_INT_REGISTER);
-
-	/* wait for clock stabilization */
-	rc = ipw_poll_bit(IPW_GP_CNTRL_RW,
-			  IPW_GP_CNTRL_BIT_CLOCK_READY, 250);
-	if (rc < 0)
-		IOLog("FAILED wait for clock stablization\n");
-
-	/* assert SW reset */
-	ipw_set_bit(IPW_RESET_REG, IPW_RESET_REG_SW_RESET);
-
-	udelay(10);
-
-	/* set "initialization complete" bit to move adapter to D0 state */
-	ipw_set_bit(IPW_GP_CNTRL_RW, IPW_GP_CNTRL_BIT_INIT_DONE);
-
-	return 0;
 }
 
 int darwin_iwi3945::ipw_reset_nic(struct ipw_priv *priv)
@@ -1116,21 +1077,24 @@ void darwin_iwi3945::ipw_init_ordinals(struct ipw_priv *priv)
 
 int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 {
-	int rc;
-	ipw_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
-	// BUG: check CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN
-	rc = ipw_poll_bit( CSR_GP_CNTRL,
-	//		  CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN,
-			  (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY | CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 4000);
-	if (rc < 0) {
-		IOLog("MAC is in deep sleep!\n");
-//              ipw_set_bit(priv, CSR_RESET, CSR_RESET_REG_FLAG_FORCE_NMI);
-		//return -EIO;
-	}
+	//if (priv->is_3945) {
+		int rc;
+		ipw_set_bit( CSR_GP_CNTRL,
+			    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+		rc = ipw_poll_bit( priv,CSR_GP_CNTRL,
+				  CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN,
+				  (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
+				   CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
+		if (rc < 0) {
+			IOLog("MAC is in deep sleep!\n");
+			//return -EIO;
+		}
+	//}
 
 	priv->status |= STATUS_RESTRICTED;
 
 	return 0;
+
 }
 
 void darwin_iwi3945::_ipw_write_restricted(struct ipw_priv *priv,
@@ -1736,44 +1700,7 @@ int darwin_iwi3945::ipw_rate_scale_init_handle(struct ipw_priv *priv, s32 window
 
 int darwin_iwi3945::ipw_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 {
-	int rc = 0;
-	unsigned long flags;
 
-	//return 0;
-	//spin_lock_irqsave(&priv->lock, flags);
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
-		//spin_unlock_irqrestore(&priv->lock, flags);
-		return rc;
-	}
-
-	if (!pwr_max) {
-		u32 val;
-		//rc = pci_read_config_dword(priv->pci_dev, 0x0C8, &val);
-		val=fPCIDevice->configRead32(0x0C8);
-		rc=0;
-		if (val & PCI_CFG_PMC_PME_FROM_D3COLD_SUPPORT) {
-			ipw_set_bits_mask_restricted_reg(priv,
-							 ALM_APMG_PS_CTL,
-							 APMG_PS_CTRL_REG_VAL_POWER_SRC_VAUX,
-							 ~APMG_PS_CTRL_REG_MSK_POWER_SRC);
-			_ipw_release_restricted_access(priv);
-
-			ipw_poll_bit( CSR_GPIO_IN, CSR_GPIO_IN_VAL_VAUX_PWR_SRC | CSR_GPIO_IN_BIT_AUX_POWER, 5000);	//uS
-		}
-
-	} else {
-		ipw_set_bits_mask_restricted_reg(priv,
-						 ALM_APMG_PS_CTL,
-						 APMG_PS_CTRL_REG_VAL_POWER_SRC_VMAIN,
-						 ~APMG_PS_CTRL_REG_MSK_POWER_SRC);
-
-		_ipw_release_restricted_access(priv);
-		ipw_poll_bit( CSR_GPIO_IN, CSR_GPIO_IN_VAL_VMAIN_PWR_SRC | CSR_GPIO_IN_BIT_AUX_POWER, 5000);	//uS
-	}
-	//spin_unlock_irqrestore(&priv->lock, flags);
-
-	return rc;
 }
 
 void darwin_iwi3945::__ipw_set_bits_mask_restricted_reg(u32 line, struct ipw_priv
@@ -1809,8 +1736,8 @@ int darwin_iwi3945::ipw3945_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 							 ~APMG_PS_CTRL_REG_MSK_POWER_SRC);
 			_ipw_release_restricted_access(priv);
 
-			ipw_poll_bit( CSR_GPIO_IN,
-//				     CSR_GPIO_IN_VAL_VAUX_PWR_SRC,
+			ipw_poll_bit( priv,CSR_GPIO_IN,
+				     CSR_GPIO_IN_VAL_VAUX_PWR_SRC,
 				     CSR_GPIO_IN_BIT_AUX_POWER, 5000);
 		} else
 			_ipw_release_restricted_access(priv);
@@ -1822,9 +1749,7 @@ int darwin_iwi3945::ipw3945_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 						 ~APMG_PS_CTRL_REG_MSK_POWER_SRC);
 
 		_ipw_release_restricted_access(priv);
-		ipw_poll_bit( CSR_GPIO_IN,
-		// CSR_GPIO_IN_VAL_VMAIN_PWR_SRC
-		 CSR_GPIO_IN_BIT_AUX_POWER, 5000);	//uS
+		ipw_poll_bit(priv, CSR_GPIO_IN, CSR_GPIO_IN_VAL_VMAIN_PWR_SRC, CSR_GPIO_IN_BIT_AUX_POWER, 5000);	//uS
 	}
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
@@ -1847,8 +1772,8 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		    CSR_GIO_CHICKEN_BITS_REG_BIT_L1A_NO_L0S_RX);
 
 	ipw_set_bit( CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
-	rc = ipw_poll_bit( CSR_GP_CNTRL,
-//			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
+	rc = ipw_poll_bit( priv,CSR_GP_CNTRL,
+			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
 	if (rc < 0) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
@@ -2999,22 +2924,6 @@ void darwin_iwi3945::ipw_write_reg16(UInt32 reg, UInt16 value)
 
 int darwin_iwi3945::ipw_stop_master()
 {
-	int rc;
-
-	/* stop master. typical delay - 0 */
-	ipw_set_bit( IPW_RESET_REG, IPW_RESET_REG_STOP_MASTER);
-
-	/* timeout is in msec, polled in 10-msec quanta */
-	rc = ipw_poll_bit( IPW_RESET_REG,
-			  IPW_RESET_REG_MASTER_DISABLED, 100);
-	if (rc < 0) {
-		IOLog("wait for stop master failed after 100ms\n");
-		return -1;
-	}
-
-	//IOLog("stop master %dms\n", rc);
-
-	return rc;
 }
 
 void darwin_iwi3945::ipw_arc_release()
@@ -4557,18 +4466,21 @@ darwin_iwi3945::read_reg_UInt32(UInt32 reg)
 }
 
 int
-darwin_iwi3945::ipw_poll_bit(UInt32 reg, UInt32 mask, int timeout)
+darwin_iwi3945::ipw_poll_bit(struct ipw_priv *priv, u32 addr,
+			u32 bits, u32 mask, int timeout)
 {
-		int i = 0;
+	int i = 0;
 
 	do {
-		if ((ipw_read32(reg) & mask) == mask)
+		if ((_ipw_read32(memBase,addr) & mask) == (bits & mask))
 			return i;
 		mdelay(10);
 		i += 10;
 	} while (i < timeout);
 
-	return -ETIME;}
+	return -ETIMEDOUT;
+	
+}
 
 
 
