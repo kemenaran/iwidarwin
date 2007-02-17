@@ -321,8 +321,8 @@ bool darwin_iwi2200::init(OSDictionary *dict)
 
 	
 	/* Initialize module parameter values here */
-	qos_enable = 1;
-	qos_burst_enable = 1;
+	qos_enable = 0;
+	qos_burst_enable = 0;
 	qos_no_ack_mask = 0;
 	burst_duration_CCK = 0;
 	burst_duration_OFDM = 0;
@@ -487,7 +487,7 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 	}
 
 
-	ipw_qos_init(priv, qos_enable, qos_burst_enable, burst_duration_CCK, burst_duration_OFDM);
+	if (qos_enable) ipw_qos_init(priv, qos_enable, qos_burst_enable, burst_duration_CCK, burst_duration_OFDM);
 			 
 	switch (mode) {
 	case 1:
@@ -3722,7 +3722,7 @@ int darwin_iwi2200::configu(struct ipw_priv *priv)
 	}
 	
 	IWI_DEBUG("QoS: call ipw_qos_activate\n");
-	ipw_qos_activate(priv, NULL);
+	if (qos_enable) ipw_qos_activate(priv, NULL);
 
 	UInt32 data;
 	data = 0x12345678;
@@ -4585,17 +4585,32 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	}
 
 	/* Advance skb->data to the start of the actual payload */
-	skb_reserve(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
+	//skb_reserve(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
 	//mbuf_setlen(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
 	/* Set the size of the skb to the size of the frame */
-	skb_put(rxb->skb, le16_to_cpu(pkt->u.frame.length));
+	//skb_put(rxb->skb, le16_to_cpu(pkt->u.frame.length));
 	
+	mbuf_setdata(rxb->skb, 
+	                      (UInt8*)mbuf_data(rxb->skb) + offsetof(struct ipw_rx_packet, u.frame.data),
+			  pkt->u.frame.length);
+
+	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
+			mbuf_pkthdr_setlen(rxb->skb,
+				 pkt->u.frame.length);
+				
+	//mbuf_setlen(rxb->skb,   mbuf_len(rxb->skb)+ le16_to_cpu(pkt->u.frame.length));
+	
+	//mbuf_adj(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
+	//mbuf_setlen(rxb->skb, le16_to_cpu(pkt->u.frame.length));
+	//if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
+	//	mbuf_pkthdr_setlen(rxb->skb, le16_to_cpu(pkt->u.frame.length));
+
 	/* HW decrypt will not clear the WEP bit, MIC, PN, etc. */
-	hdr = (struct ieee80211_hdr_4addr *)mbuf_data(rxb->skb);
+	/*hdr = (struct ieee80211_hdr_4addr *)mbuf_data(rxb->skb);
 	if (priv->ieee->iw_mode != IW_MODE_MONITOR &&
 	    (ipw_is_multicast_ether_addr(hdr->addr1) ?
 	     !priv->ieee->host_mc_decrypt : !priv->ieee->host_decrypt))
-		ipw_rebuild_decrypted_skb(priv, rxb->skb);
+		ipw_rebuild_decrypted_skb(priv, rxb->skb);*/
 
 	if (!ieee80211_rx(priv->ieee, rxb->skb, stats))
 		priv->ieee->stats.rx_errors++;
@@ -6323,7 +6338,7 @@ int darwin_iwi2200::ipw_associate_network(struct ipw_priv *priv,
 
 	priv->assoc_network = network;
 
-	ipw_qos_association(priv, network);
+	if (qos_enable) ipw_qos_association(priv, network);
 
 	err = ipw_send_associate(priv, &priv->assoc_request);
 	if (err) {
@@ -7634,6 +7649,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	}
 	hdr_len = IEEE80211_3ADDR_LEN;
 
+	if (qos_enable)
 	if (ieee->is_qos_active && ipw_is_qos_active(dev, skb)) {
 		fc |= IEEE80211_STYPE_QOS_DATA;
 		hdr_len += 2;
@@ -8010,6 +8026,7 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 		tfd->u.data.tx_flags |= DCT_FLAG_NO_WEP;
 
 //#ifdef CONFIG_IPW2200_QOS
+	if (qos_enable)
 	if (fc & IEEE80211_STYPE_QOS_DATA)
 		ipw_qos_set_tx_queue_command(priv, pri, &(tfd->u.data));
 //#endif				/* CONFIG_IPW2200_QOS */
@@ -8462,41 +8479,31 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		return 1;
 	}
 
-	can_be_decrypted = (is_multicast_ether_addr(hdr->addr1) ||
+	/*can_be_decrypted = (is_multicast_ether_addr(hdr->addr1) ||
 			    is_broadcast_ether_addr(hdr->addr2)) ?
 	    ieee->host_mc_decrypt : ieee->host_decrypt;
 
 	if (can_be_decrypted) {
 		int idx = 0;
 		if (mbuf_len(skb) >= hdrlen + 3) {
-			/* Top two-bits of byte 3 are the key index */
 			idx = ((UInt8*)(mbuf_data(skb)))[hdrlen + 3] >> 6;
 		}
 
-		/* ieee->crypt[] is WEP_KEY (4) in length.  Given that idx
-		 * is only allowed 2-bits of storage, no value of idx can
-		 * be provided via above code that would result in idx
-		 * being out of range */
+
 		crypt = ieee->crypt[idx];
 
-		/* allow NULL decrypt to indicate an station specific override
-		 * for default encryption */
 		if (crypt && (crypt->ops == NULL ||
 			      crypt->ops->decrypt_mpdu == NULL))
 			crypt = NULL;
 
 		if (!crypt && (fc & IEEE80211_FCTL_PROTECTED)) {
-			/* This seems to be triggered by some (multicast?)
-			 * frames from other than current BSS, so just drop the
-			 * frames silently instead of filling system log with
-			 * these reports. */
 			IWI_DEBUG("Decryption failed (not set)"
 					     " (SA=" MAC_FMT ")\n",
 					     MAC_ARG(hdr->addr2));
 			ieee->ieee_stats.rx_discards_undecryptable++;
 			goto rx_dropped;
 		}
-	}
+	}*/
 #ifdef NOT_YET
 	if (type != WLAN_FC_TYPE_DATA) {
 		if (type == WLAN_FC_TYPE_MGMT && stype == WLAN_FC_STYPE_AUTH &&
@@ -8549,7 +8556,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 	/* Nullfunc frames may have PS-bit set, so they must be passed to
 	 * hostap_handle_sta_rx() before being dropped here. */
 
-	stype &= ~IEEE80211_STYPE_QOS_DATA;
+	/*stype &= ~IEEE80211_STYPE_QOS_DATA;
 
 	if (stype != IEEE80211_STYPE_DATA &&
 	    stype != IEEE80211_STYPE_DATA_CFACK &&
@@ -8561,20 +8568,20 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 					     "subtype=0x%02x, len=%d)\n",
 					     type, stype, mbuf_len(skb));
 		goto rx_dropped;
-	}
+	}*/
 
 	/* skb: hdr + (possibly fragmented, possibly encrypted) payload */
 
-	if ((fc & IEEE80211_FCTL_PROTECTED) && can_be_decrypted /* &&
-	    (keyidx = ieee80211_rx_frame_decrypt(ieee, skb, crypt)) < 0 */ )
-		goto rx_dropped;
+	//if ((fc & IEEE80211_FCTL_PROTECTED) && can_be_decrypted /* &&
+	  //  (keyidx = ieee80211_rx_frame_decrypt(ieee, skb, crypt)) < 0 */ )
+		//goto rx_dropped;
 
-	hdr = (struct ieee80211_hdr_4addr *)mbuf_data(skb);
+	//hdr = (struct ieee80211_hdr_4addr *)mbuf_data(skb);
 
 	// skb: hdr + (possibly fragmented) plaintext payload 
 	// PR: FIXME: hostap has additional conditions in the "if" below:
 	// ieee->host_decrypt && (fc & IEEE80211_FCTL_PROTECTED) &&
-	if ((frag != 0) || (fc & IEEE80211_FCTL_MOREFRAGS)) {
+	/*if ((frag != 0) || (fc & IEEE80211_FCTL_MOREFRAGS)) {
 		int flen;
 		mbuf_t frag_skb = ieee80211_frag_cache_get(ieee, hdr);
 		IWI_DEBUG_FULL("Rx Fragment received (%u)\n", frag);
@@ -8591,13 +8598,13 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		if (frag != 0)
 			flen -= hdrlen;
 
-		/*if (frag_skb->tail + flen > frag_skb->end) {
-			IWI_DEBUG( "%s: host decrypted and "
-			       "reassembled frame did not fit skb\n",
-			       dev->name);
-			ieee80211_frag_cache_invalidate(ieee, hdr);
-			goto rx_dropped;
-		}*/
+		//if (frag_skb->tail + flen > frag_skb->end) {
+		//	IWI_DEBUG( "%s: host decrypted and "
+		//	       "reassembled frame did not fit skb\n",
+		//	       dev->name);
+		//	ieee80211_frag_cache_invalidate(ieee, hdr);
+		//	goto rx_dropped;
+		//}
 
 		if (frag == 0) {
 			// copy first fragment (including full headers) into
@@ -8627,15 +8634,15 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		skb = frag_skb;
 		hdr = (struct ieee80211_hdr_4addr *)(mbuf_data(skb));
 		ieee80211_frag_cache_invalidate(ieee, hdr);
-	}
+	}*/
 
 	// skb: hdr + (possible reassembled) full MSDU payload; possibly still
 	 // encrypted/authenticated 
-	if ((fc & IEEE80211_FCTL_PROTECTED) && can_be_decrypted /*&&
-	    ieee80211_rx_frame_decrypt_msdu(ieee, skb, keyidx, crypt)*/   )
-		goto rx_dropped;
+	//if ((fc & IEEE80211_FCTL_PROTECTED) && can_be_decrypted /*&&
+	  //  ieee80211_rx_frame_decrypt_msdu(ieee, skb, keyidx, crypt)*/   )
+		//goto rx_dropped;
 
-	hdr = (struct ieee80211_hdr_4addr *)(mbuf_data(skb));
+	/*hdr = (struct ieee80211_hdr_4addr *)(mbuf_data(skb));
 	if (crypt && !(fc & IEEE80211_FCTL_PROTECTED) && !ieee->open_wep) {
 		if (		
 			   ieee80211_is_eapol_frame(ieee, skb)) {
@@ -8656,7 +8663,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 				     " (drop_unencrypted=1)\n",
 				     MAC_ARG(hdr->addr2));
 		goto rx_dropped;
-	}
+	}*/
 
 	/* skb: hdr + (possible reassembled) full plaintext payload */
 
@@ -8844,6 +8851,7 @@ int darwin_iwi2200::ipw_handle_assoc_response(struct net_device *dev,
 				     struct ieee80211_network *network)
 {
 	//struct ipw_priv *priv = ieee80211_priv(dev);
+	if (qos_enable)
 	ipw_qos_association_resp(priv, network);
 	return 0;
 }
@@ -9514,6 +9522,7 @@ int darwin_iwi2200::ieee80211_parse_info_param(struct ieee80211_info_element
 			IEEE80211_DEBUG_MGMT("MFIE_TYPE_GENERIC: %d bytes\n",
 					     info_element->len);
 						 
+			if (qos_enable)
 			if (!ieee80211_parse_qos_info_param_IE(info_element,
 							       network))
 				break;
@@ -10078,6 +10087,7 @@ int darwin_iwi2200::ipw_handle_probe_response(struct net_device *dev,
 	int active_network = ((priv->status & STATUS_ASSOCIATED) &&
 			      (network == priv->assoc_network));
 
+	if (qos_enable)
 	ipw_qos_handle_probe_response(priv, active_network, network);
 
 	return 0;
@@ -10091,6 +10101,7 @@ int darwin_iwi2200::ipw_handle_beacon(struct net_device *dev,
 	int active_network = ((priv->status & STATUS_ASSOCIATED) &&
 			      (network == priv->assoc_network));
 
+	if (qos_enable)
 	ipw_qos_handle_probe_response(priv, active_network, network);
 
 	return 0;

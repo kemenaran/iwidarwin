@@ -13,7 +13,7 @@
 #if defined(IWI_NOLOG)
 	#define IWI_LOG(...) do{ }while(0)
 #else
-	#define IWI_LOG(...) printk("iwi2200: " __VA_ARGS__)
+	#define IWI_LOG(...) printf("iwi2200: " __VA_ARGS__)
 #endif
 
 #if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
