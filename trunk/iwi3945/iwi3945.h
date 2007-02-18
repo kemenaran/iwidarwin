@@ -4,6 +4,41 @@
 
 #include "defines.h"
 
+//#define IWI_NOLOG
+#define IWI_DEBUG_NORMAL
+//#define IWI_DEBUG_FULL
+
+#if defined(IWI_NOLOG)
+	#define IWI_LOG(...) do{ }while(0)
+#else
+	#define IWI_LOG(...) printf("iwi3945: " __VA_ARGS__)
+#endif
+
+#if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
+	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
+#else
+	#define IWI_DEBUG(...) do{ }while(0)
+#endif
+
+#if defined(IWI_DEBUG_FULL)
+	#define IWI_DEBUG_FULL(...) IWI_DEBUG(__VA_ARGS__)
+#else
+          #define IWI_DEBUG_FULL(...) do{ }while(0)
+#endif
+
+
+#define IEEE80211_DEBUG_MGMT(...) IWI_DEBUG("(80211_MGMT) "  __VA_ARGS__)
+#define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
+
+
+#define IWI_WARNING(...) IWI_LOG(" W " __VA_ARGS__)
+#define IWI_ERR(...) IWI_LOG(" E " __VA_ARGS__)
+
+#define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
+
+
+#define IWI_DUMP_MBUF(...) do{ }while(0)
+
 
 static const char ipw_modes[] = {
 	'a', 'b', 'g', '?'
@@ -521,8 +556,9 @@ virtual IOOptionBits getState( void ) const;
 						      u32 bits, u32 mask);
 	virtual int ipw_rf_eeprom_ready(struct ipw_priv *priv);
 	virtual int ipw_verify_ucode(struct ipw_priv *priv);
-	
-	
+	virtual void ipw_irq_handle_error(struct ipw_priv *priv);
+	virtual int ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
+					  struct ipw_rx_queue *q);
 	
 	
 	

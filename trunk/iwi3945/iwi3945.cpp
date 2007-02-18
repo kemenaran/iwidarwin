@@ -754,7 +754,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		// is enabled immediately.
 		fInterruptSrc->enable();
 
-		if(!initCmdQueue())
+		/*if(!initCmdQueue())
 		{
 			IOLog("CmdQueue alloc error\n");
 			break;
@@ -768,9 +768,9 @@ bool darwin_iwi3945::start(IOService *provider)
 		{
 			IOLog("TxQueue alloc error\n");
 			break;
-		}
+		}*/
 		
-		resetDevice((UInt16 *)memBase);
+		//resetDevice((UInt16 *)memBase);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -2623,7 +2623,11 @@ inline void darwin_iwi3945::ipw_disable_interrupts(struct ipw_priv *priv)
 	if (!(priv->status & STATUS_INT_ENABLED))
 		return;
 	priv->status &= ~STATUS_INT_ENABLED;
-	ipw_write32( IPW_INTA_MASK_R, ~IPW_INTA_MASK_ALL);
+	ipw_write32(CSR_INT_MASK, 0x00000000);
+	ipw_write32(CSR_INT, CSR_INI_SET_MASK);
+	ipw_write32( CSR_FH_INT_STATUS, 0xff);
+	ipw_write32( CSR_FH_INT_STATUS, 0x00070000);
+
 }
 
 void darwin_iwi3945::ipw_down(struct ipw_priv *priv)
@@ -2668,96 +2672,157 @@ void darwin_iwi3945::interruptOccurred(OSObject * owner,
 	self->handleInterrupt();
 }
 
+void darwin_iwi3945::ipw_irq_handle_error(struct ipw_priv *priv)
+{
+	/* Set the FW error flag -- cleared on ipw_down */
+	priv->status |= STATUS_FW_ERROR;
+
+	/* Cancel currently queued command. */
+	priv->status &= ~STATUS_HCMD_ACTIVE;
+
+	/*if (ipw_debug_level & IPW_DL_FW_ERRORS) {
+		ipw_dump_nic_error_log(priv);
+		ipw_dump_nic_event_log(priv);
+		ipw_print_rx_config_cmd(&priv->active_rxon);
+	}*/
+
+	//wake_up_interruptible(&priv->wait_command_queue);
+
+	/* Keep the restart process from trying to send host
+	 * commands by clearing the INIT status bit */
+	priv->status &= ~STATUS_READY;
+	if (!(priv->status & STATUS_EXIT_PENDING)) {
+		IOLog( "Restarting adapter due to uCode error.\n");
+			  ipw_down(priv);
+		//queue_work(priv->workqueue, &priv->down);
+	}
+}
+
+int darwin_iwi3945::ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
+					  struct ipw_rx_queue *q)
+{
+	u32 reg = 0;
+	int rc = 0;
+	unsigned long flags;
+
+	//spin_lock_irqsave(&q->lock, flags);
+
+	if (q->need_update == 0)
+		goto exit_unlock;
+
+	if (priv->status & STATUS_POWER_PMI) {
+		reg = ipw_read32(CSR_UCODE_DRV_GP1);
+
+		if (reg & CSR_UCODE_DRV_GP1_BIT_MAC_SLEEP) {
+			ipw_set_bit( CSR_GP_CNTRL,
+				    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+			goto exit_unlock;
+		}
+
+		rc = ipw_grab_restricted_access(priv);
+		if (rc)
+			goto exit_unlock;
+
+		_ipw_write_restricted(priv, FH_RCSR_WPTR(0), q->write & ~0x7);
+		_ipw_release_restricted_access(priv);
+	} else {
+		ipw_write32( FH_RCSR_WPTR(0), q->write & ~0x7);
+	}
+
+	q->need_update = 0;
+
+      exit_unlock:
+	//spin_unlock_irqrestore(&q->lock, flags);
+	return rc;
+}
+
 UInt32 darwin_iwi3945::handleInterrupt(void)
 {
-	UInt32 r,inta_mask;
-	UInt32 ret=true;
-	int flags;
+	u32 inta, inta_mask, handled = 0;
+	unsigned long flags;
 
-	r = ipw_read32(IPW_INTA_RW);
-	inta_mask = ipw_read32(IPW_INTA_MASK_R);
-	r &= (IPW_INTA_MASK_ALL & inta_mask);
-	
-	//if ((r = CSR_READ_4(memBase, IWI_CSR_INTR)) == 0 || r == 0xffffffff) {
-		//IWI_UNLOCK(memBase);
-	//	return false;
-	//}
-	//IOLog("%s: GotInterrupt: 0x%8x\t (", getName(), r);
+	//spin_lock_irqsave(&priv->lock, flags);
 
-	/* disable interrupts */
-	CSR_WRITE_4(memBase, IWI_CSR_INTR_MASK, 0);
+	inta = ipw_read32( CSR_INT);
+	inta_mask = ipw_read32( CSR_INT_MASK);
+	ipw_write32( CSR_INT, inta);
+	inta &= (CSR_INI_SET_MASK & inta_mask);
 
-	/*if (r == 0) {
-		IOLog("IPW_INTA_NONE.  Restarting.\n");
-		priv->status &= ~STATUS_INIT;
-		priv->status &= ~STATUS_HCMD_ACTIVE;
-		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adapter_restart),priv,2,true);
-		ret |= IPW_INTA_BIT_FATAL_ERROR;
-	}*/
-	
-	if (r & IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE)
-	{
-		IOLog("PHY_OFF_DONE Restarting\n");
-		priv->status |= STATUS_RF_KILL_HW;
-		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adapter_restart),priv,NULL,true);
-		ret |= IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE;
-	}
-	
-	if (r & (IPW_INTA_BIT_FATAL_ERROR | IWI_INTR_PARITY_ERROR)) {
-		IOLog("Firmware error detected.  Restarting.\n");
-		priv->status &= ~STATUS_INIT;
-		priv->status &= ~STATUS_HCMD_ACTIVE;
-		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adapter_restart),priv,NULL,true);
-		ret |= IPW_INTA_BIT_FATAL_ERROR;
+	/* Add any cached INTA values that need to be handled */
+	inta |= priv->isr_inta;
+
+	if (inta & BIT_INT_ERR) {
+		IOLog("Microcode HW error detected.  Restarting.\n");
+
+		/* tell the device to stop sending interrupts */
+		ipw_disable_interrupts(priv);
+
+		ipw_irq_handle_error(priv);
+
+		handled |= BIT_INT_ERR;
+
+		//spin_unlock_irqrestore(&priv->lock, flags);
+
+		return 0;
 	}
 
-	if (r & IPW_INTA_BIT_FW_INITIALIZATION_DONE) {
-			IOLog("IPW_INTA_BIT_FW_INITIALIZATION_DONE)\n"
-			"%s: Interrupt::Firmware successfully loaded and initialized\n", getName());
-			ret = IWI_INTR_FW_INITED;
-	}
-	if (r & IPW_INTA_BIT_RF_KILL_DONE) {
-		IOLog("IPW_INTA_BIT_RF_KILL_DONE\nPress wireless button to turn interface on\n");
-		priv->status |= STATUS_RF_KILL_HW;
-		priv->status &= ~STATUS_RF_KILL_SW;
-		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		fNetif->setLinkState(kIO80211NetworkLinkDown);
-		queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan));
-		ipw_led_link_down(priv);
-		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
-		ret |= IPW_INTA_BIT_RF_KILL_DONE;
+	if (inta & BIT_INT_SWERROR) {
+		IOLog("Microcode SW error detected.  Restarting 0x%X.\n",
+			  inta);
+		ipw_irq_handle_error(priv);
+		handled |= BIT_INT_SWERROR;
 	}
 
-	if (r & IPW_INTA_BIT_RX_TRANSFER) {
-		IOLog("IPW_INTA_BIT_RX_TRANSFER)\n");
+	if (inta & BIT_INT_WAKEUP) {
+		IOLog("Wakeup interrupt\n");
+		//ipw_tx_queue_update_write_ptr
+		ipw3945_rx_queue_update_wr_ptr(priv, priv->rxq);
+		/*ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[0]);
+		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[1]);
+		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[2]);
+		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[3]);
+		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[4]);
+		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[5]);*/
+
+		handled |= BIT_INT_WAKEUP;
+	}
+
+	if (inta & BIT_INT_ALIVE) {
+		IOLog("Alive interrupt\n");
+		//TODO test if works
+		//ipw_bg_alive_start();
+		handled |= BIT_INT_ALIVE;
+	}
+
+	/* handle all the justifications for the interrupt */
+	if (inta & BIT_INT_RX) {
+		IOLog("Rx interrupt\n");
+		//ipw_rx_handle(priv);
 		RxQueueIntr();
-	//	iwi_rx_intr(sc);
-		ret = IPW_INTA_BIT_RX_TRANSFER;
+		handled |= BIT_INT_RX;
 	}
 
-	if (r & IPW_INTA_BIT_TX_CMD_QUEUE) {
-		IOLog("IPW_INTA_BIT_TX_CMD_QUEUE)\n");
-		//rc = ipw_queue_tx_reclaim(priv, &priv->txq_cmd, -1);
-		priv->status &= ~STATUS_HCMD_ACTIVE;
-		ret |= IPW_INTA_BIT_TX_CMD_QUEUE;
-		//ret = IWI_INTR_CMD_DONE;
+	if (inta & BIT_INT_TX) {
+		IOLog("Command completed.\n");
+		ipw_write32( CSR_FH_INT_STATUS, (1 << 6));
+		if (!ipw_grab_restricted_access(priv)) {
+			_ipw_write_restricted(priv,
+					     FH_TCSR_CREDIT
+					     (ALM_FH_SRVC_CHNL), 0x0);
+			_ipw_release_restricted_access(priv);
+		}
+
+		handled |= BIT_INT_TX;
 	}
 
-	if (r & IWI_INTR_TX1_DONE) {
-		IOLog("IWI_INTR_TX1_DONE)\n");
-		ret = IWI_INTR_TX1_DONE;
-	//	iwi_tx_intr(sc);
+	if (handled != inta) {
+		IOLog("Unhandled INTA bits 0x%08x\n", inta & ~handled);
 	}
-	/* acknowledge interrupts */
-	CSR_WRITE_4(memBase, IWI_CSR_INTR, r);
 
-	/* re-enable interrupts */
-	CSR_WRITE_4(memBase, IWI_CSR_INTR_MASK, IPW_INTA_MASK_ALL);
+	/* enable all interrupts */
+	ipw_enable_interrupts(priv);
 
-	return ret;
+	//spin_unlock_irqrestore(&priv->lock, flags);
 }
 
 
@@ -2819,11 +2884,20 @@ UInt16 darwin_iwi3945::readPromWord(UInt16 *base, UInt8 addr)
 
 IOReturn darwin_iwi3945::getHardwareAddress( IOEthernetAddress * addr )
 {
+	UInt16 val;
+	if (fEnetAddr.bytes[0]==0 && fEnetAddr.bytes[1]==0 && fEnetAddr.bytes[2]==0
+	&& fEnetAddr.bytes[3]==0 && fEnetAddr.bytes[4]==0 && fEnetAddr.bytes[5]==0)
+	{
+		memcpy(fEnetAddr.bytes, priv->eeprom.mac_address, ETH_ALEN);
+	}
+	memcpy(addr, &fEnetAddr, sizeof(*addr));
 	if (priv)
 	{
-		memcpy(addr->bytes, priv->eeprom.mac_address, 6);
+		memcpy(priv->mac_addr, &fEnetAddr.bytes, ETH_ALEN);
+		memcpy(priv->net_dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+		memcpy(priv->ieee->dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+		IOLog("getHardwareAddress " MAC_FMT "\n",MAC_ARG(priv->mac_addr));
 	}
-	IOLog("getHardwareAddress: " MAC_FMT "\n", MAC_ARG(addr->bytes));
 	
 	return kIOReturnSuccess;
 }
