@@ -1979,12 +1979,12 @@ void darwin_iwi2200::ipw_deinit(struct ipw_priv *priv)
 
 	if (priv->status & STATUS_SCANNING) {
 		IWI_DEBUG("Aborting scan during shutdown.\n");
-		fNetif->setLinkState(kIO80211NetworkLinkDown);
 		ipw_abort_scan(priv);
 	}
 
 	if (priv->status & STATUS_ASSOCIATED) {
 		IWI_DEBUG("Disassociating during shutdown.\n");
+		fNetif->setLinkState(kIO80211NetworkLinkDown);
 		ipw_disassociate(priv);
 	}
 
@@ -2046,7 +2046,7 @@ void darwin_iwi2200::ipw_down(struct ipw_priv *priv)
 	/* Clear all bits but the RF Kill */
 	priv->status &= STATUS_RF_KILL_MASK | STATUS_EXIT_PENDING;
 	fTransmitQueue->stop();
-	fNetif->setLinkState(kIO80211NetworkLinkDown);
+	//fNetif->setLinkState(kIO80211NetworkLinkDown);
 	//netif_stop_queue(priv->net_dev);
 
 	ipw_stop_nic();
