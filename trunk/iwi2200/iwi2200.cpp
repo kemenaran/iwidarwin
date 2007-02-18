@@ -4597,7 +4597,15 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(rxb->skb,
 				 pkt->u.frame.length);
-				
+	// this function check if mbuf_len , mbuf_pkthdr_len, pkt->u.frame.length.
+        // if mbuf_len = 0, we must add routine of mbuf_setlen. 		
+        IWI_DEBUG("dump rx packet size mbuf_len = %d," 
+          "mbuf_pkthdr_len %d , rx frame size %d. "
+          "mbuf_next is %s\n", mbuf_len(rxb->skb), 
+                               mbuf_pkthdr_len(rxb->skb),
+                               le16_to_cpu(pkt->u.frame.length),
+		  	       mbuf_next(rxb->skb) ? "exist"  : "nothing");		
+
 	//mbuf_setlen(rxb->skb,   mbuf_len(rxb->skb)+ le16_to_cpu(pkt->u.frame.length));
 	
 	//mbuf_adj(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
