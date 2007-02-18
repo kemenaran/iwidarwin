@@ -442,6 +442,16 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 	priv->ieee = ieee;
 
 	priv->net_dev = net_dev;
+	
+	// if getHarwareAddress is called, put macaddress priv->mac_addr
+	for (i=0;i<6;i++){
+		if(fEnetAddr.bytes[i] == 0      ) continue;
+		memcpy(priv->mac_addr, &fEnetAddr.bytes, ETH_ALEN);
+		memcpy(priv->net_dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+		memcpy(priv->ieee->dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+		break;
+	}
+	
 	//priv->pci_dev = pdev;
 	for (i = 0; i < IPW_IBSS_MAC_HASH_SIZE; i++)
 		INIT_LIST_HEAD(&priv->ibss_mac_hash[i]);
