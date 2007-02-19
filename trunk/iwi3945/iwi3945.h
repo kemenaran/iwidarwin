@@ -559,7 +559,7 @@ virtual IOOptionBits getState( void ) const;
 	virtual void ipw_irq_handle_error(struct ipw_priv *priv);
 	virtual int ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
 					  struct ipw_rx_queue *q);
-	
+	virtual void freePacket(mbuf_t m, IOOptionBits options=0);
 	
 	
 	
@@ -713,7 +713,20 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual int ipw_rx_queue_space(struct ipw_rx_queue *q);				  
 	virtual void ipw_bg_alive_start();												  
 	virtual int ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq);																  				  
-					  
+	virtual int ipw_queue_reset(struct ipw_priv *priv);
+	virtual void ipw_queue_tx_free(struct ipw_priv *priv, struct ipw_tx_queue *txq);
+	virtual void ipw_tx_queue_free(struct ipw_priv *priv);				  
+	virtual int ipw_queue_inc_wrap(int index, int n_bd);								  
+	virtual void ipw_queue_tx_free_tfd(struct ipw_priv *priv,
+				  struct ipw_tx_queue *txq);												  				  
+	virtual void ieee80211_txb_free(struct ieee80211_txb *txb);
+	virtual int ipw_tx_reset(struct ipw_priv *priv);
+	virtual int ipw_queue_tx_init(struct ipw_priv *priv,
+			     struct ipw_tx_queue *q, int count, u32 id);
+	virtual int ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
+			  int count, int size, u32 id);
+	
+	
 	
 	// statistics
     IONetworkStats		*netStats;
@@ -818,7 +831,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	u16 rts_threshold;
 	struct list_head network_list;
 	struct list_head network_free_list;
-	thread_call_t tlink[9];
+	thread_call_t tlink[20];
 	ipw_priv *priv;
 	ieee80211_device ieee2;
 	ipw_priv priv2;

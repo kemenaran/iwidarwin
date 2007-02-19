@@ -819,6 +819,10 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan_check),NULL,NULL,false);
 		queue_te(5,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_associate),NULL,NULL,false);
 		queue_te(6,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_gather_stats),NULL,NULL,false);
+		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rx_queue_replenish),NULL,NULL,false);
+		//queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adhoc_check),NULL,NULL,false);
+		//queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_qos_activate),NULL,NULL,false);
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_led_activity_off),NULL,NULL,false);
 		
 		pl=1;
 		return true;			// end start successfully
@@ -1015,38 +1019,34 @@ void darwin_iwi3945::ipw_remove_current_network(struct ipw_priv *priv)
 
 void darwin_iwi3945::ipw_rf_kill(ipw_priv *priv)
 {
-	//struct ipw_priv *priv = adapter;
-	unsigned long flags;
+	//struct ipw_priv *priv = container_of(work, struct ipw_priv, rf_kill);
 
-	//IOSimpleLockLock(spin);
-	//flags=IOSimpleLockLockDisableInterrupt(spin);
-	if (rf_kill_active(priv)) {
-		//IOLog("RF Kill active, rescheduling GPIO check\n");
-		//IODelay(5000*1000);
-		//ipw_rf_kill();
-		//queue_td(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_led_link_on));
-		//ipw_led_link_down();
-		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
-		goto exit_unlock;
-	}
+	//wake_up_interruptible(&priv->wait_command_queue);
 
-	/* RF Kill is now disabled, so bring the device back up */
+	if (priv->status & STATUS_EXIT_PENDING)
+		return;
+
+	//mutex_lock(&priv->mutex);
 
 	if (!(priv->status & STATUS_RF_KILL_MASK)) {
-		IOLog("HW RF Kill no longer active, restarting "
-				  "device\n");
+			IOLog("HW RF Kill no longer active, restarting "
+			  "device\n");
+		if (!(priv->status & STATUS_EXIT_PENDING))
+			ipw_down(priv);
+	} else {
+		priv->led_state = IPW_LED_LINK_RADIOOFF;
 
-		/* we can not do an adapter restart while inside an irq lock */
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adapter_restart),priv,NULL,true);
-	} else
-		IOLog("HW RF Kill deactivated.  SW RF Kill still "
-				  "enabled\n");
-
-      exit_unlock:
-	//IOSimpleLockUnlock(spin);
-	//IOSimpleLockUnlockEnableInterrupt(spin,flags);
-
-	return;
+		if (!(priv->status & STATUS_RF_KILL_HW))
+			IOLog
+			    ("Can not turn radio back on - "
+			     "disabled by SW switch\n");
+		else
+			IOLog
+			    ("Radio Frequency Kill Switch is On:\n"
+			     "Kill switch must be turned off for "
+			     "wireless networking to work.\n");
+	}
+	//mutex_unlock(&priv->mutex);
 }
 
 int darwin_iwi3945::ipw_set_geo(struct ieee80211_device *ieee,
@@ -1796,7 +1796,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	/* Determine HW type */
-	rev_id= fPCIDevice->configRead16(kIOPCIConfigRevisionID);
+	rev_id= fPCIDevice->configRead8(kIOPCIConfigRevisionID);
 	IOLog("HW Revision ID = 0x%X\n", rev_id);
 
 	ipw3945_nic_set_pwr_src(priv, 1);
@@ -1912,7 +1912,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
-	//rc = ipw_queue_reset(priv);
+	rc = ipw_queue_reset(priv);
 	//if (rc)
 	//	return rc;
 
@@ -1920,6 +1920,305 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 
 	return 0;
 
+}
+
+int darwin_iwi3945::ipw_queue_inc_wrap(int index, int n_bd)
+{
+	return (++index == n_bd) ? 0 : index;
+}
+
+void darwin_iwi3945::ipw_queue_tx_free_tfd(struct ipw_priv *priv,
+				  struct ipw_tx_queue *txq)
+{
+	struct tfd_frame *bd = &txq->bd[txq->q.last_used];
+	//struct pci_dev *dev = priv->pci_dev;
+	int i;
+	int counter = 0;
+	/* classify bd */
+	if (txq->q.id == CMD_QUEUE_NUM)
+		/* nothing to cleanup after for host commands */
+		return;
+
+	/* sanity check */
+	counter = TFD_CTL_COUNT_GET(le32_to_cpu(bd->control_flags));
+	if (counter > NUM_TFD_CHUNKS) {
+		IOLog("Too many chunks: %i\n", counter);
+		/** @todo issue fatal error, it is quite serious situation */
+		return;
+	}
+
+	/* unmap chunks if any */
+
+	for (i = 1; i < counter; i++) {
+		//pci_unmap_single(dev, le32_to_cpu(bd->pa[i].addr),
+		//		 le16_to_cpu(bd->pa[i].len), PCI_DMA_TODEVICE);
+				 bd->pa[i].addr=NULL;
+		if (txq->txb[txq->q.last_used]) {
+			mbuf_t skb =
+			    txq->txb[txq->q.last_used]->fragments[0];
+			struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)mbuf_data(skb);
+			priv->tx_bytes += mbuf_len(skb) -
+			    ieee80211_get_hdrlen(hdr->frame_ctl);
+			ieee80211_txb_free(txq->txb[txq->q.last_used]);
+			txq->txb[txq->q.last_used] = NULL;
+		}
+	}
+}
+
+void darwin_iwi3945::ieee80211_txb_free(struct ieee80211_txb *txb)
+{
+	int i;
+	if (unlikely(!txb))
+		return;
+	for (i = 0; i < txb->nr_frags; i++)
+		if (txb->fragments[i]) 
+		{
+			mbuf_freem_list(txb->fragments[i]);
+			freePacket(txb->fragments[i]);
+			txb->fragments[i]=NULL;
+			
+		}
+	kfree(txb);
+	txb=NULL;
+}
+
+void darwin_iwi3945::ipw_queue_tx_free(struct ipw_priv *priv, struct ipw_tx_queue *txq)
+{
+	struct ipw_queue *q = &txq->q;
+	//struct pci_dev *dev = priv->pci_dev;
+	int len;
+
+	if (q->n_bd == 0)
+		return;
+	/* first, empty all BD's */
+	for (; q->first_empty != q->last_used;
+	     q->last_used = ipw_queue_inc_wrap(q->last_used, q->n_bd)) {
+		ipw_queue_tx_free_tfd(priv, txq);
+	}
+
+	len = (sizeof(txq->cmd[0]) * q->n_window) + DAEMON_MAX_SCAN_SIZE;
+	//pci_free_consistent(dev, len, txq->cmd, txq->dma_addr_cmd);
+	txq->dma_addr_cmd=NULL;
+
+	/* free buffers belonging to queue itself */
+	//pci_free_consistent(dev, sizeof(txq->bd[0]) * q->n_bd,
+	//		    txq->bd, q->dma_addr);
+
+	q->dma_addr=NULL;
+	kfree(txq->txb);
+
+	/* 0 fill whole structure */
+	memset(txq, 0, sizeof(*txq));
+}
+
+/**
+ * Destroy all DMA queues and structures
+ *
+ * @param priv
+ */
+void darwin_iwi3945::ipw_tx_queue_free(struct ipw_priv *priv)
+{
+
+	/* Tx queues */
+	ipw_queue_tx_free(priv, &priv->txq[0]);
+	ipw_queue_tx_free(priv, &priv->txq[1]);
+	ipw_queue_tx_free(priv, &priv->txq[2]);
+	ipw_queue_tx_free(priv, &priv->txq[3]);
+	ipw_queue_tx_free(priv, &priv->txq[4]);
+	ipw_queue_tx_free(priv, &priv->txq[5]);
+}
+
+int darwin_iwi3945::ipw_tx_reset(struct ipw_priv *priv)
+{
+	int rc;
+	unsigned long flags;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	rc = ipw_grab_restricted_access(priv);
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}*/
+
+	_ipw_write_restricted_reg(priv, SCD_MODE_REG, 0x2);	// bypass mode
+	_ipw_write_restricted_reg(priv, SCD_ARASTAT_REG, 0x01);	// RA 0 is active
+	_ipw_write_restricted_reg(priv, SCD_TXFACT_REG, 0x3f);	// all 6 fifo are active
+	_ipw_write_restricted_reg(priv, SCD_SBYP_MODE_1_REG, 0x010000);
+	_ipw_write_restricted_reg(priv, SCD_SBYP_MODE_2_REG, 0x030002);
+	_ipw_write_restricted_reg(priv, SCD_TXF4MF_REG, 0x000004);
+	_ipw_write_restricted_reg(priv, SCD_TXF5MF_REG, 0x000005);
+
+	_ipw_write_restricted(priv, FH_TSSR_CBB_BASE, priv->shared_phys);
+
+	_ipw_write_restricted(priv,
+			     FH_TSSR_MSG_CONFIG,
+			     ALM_FH_TSSR_TX_MSG_CONFIG_REG_VAL_SNOOP_RD_TXPD_ON
+			     |
+			     ALM_FH_TSSR_TX_MSG_CONFIG_REG_VAL_ORDER_RD_TXPD_ON
+			     |
+			     ALM_FH_TSSR_TX_MSG_CONFIG_REG_VAL_MAX_FRAG_SIZE_128B
+			     |
+			     ALM_FH_TSSR_TX_MSG_CONFIG_REG_VAL_SNOOP_RD_TFD_ON
+			     |
+			     ALM_FH_TSSR_TX_MSG_CONFIG_REG_VAL_ORDER_RD_CBB_ON
+			     |
+			     ALM_FH_TSSR_TX_MSG_CONFIG_REG_VAL_ORDER_RSP_WAIT_TH
+			     | ALM_FH_TSSR_TX_MSG_CONFIG_REG_VAL_RSP_WAIT_TH);
+
+	_ipw_release_restricted_access(priv);
+
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
+
+int darwin_iwi3945::ipw_queue_tx_init(struct ipw_priv *priv,
+			     struct ipw_tx_queue *q, int count, u32 id)
+{
+	struct pci_dev *dev = priv->pci_dev;
+	int len;
+
+	(void*)q->txb = kmalloc(sizeof(q->txb[0]) * TFD_QUEUE_SIZE_MAX, GFP_ATOMIC);
+	if (!q->txb) {
+		IOLog("kmalloc for auxilary BD structures failed\n");
+		return -ENOMEM;
+	}
+
+	MemoryDmaAlloc(sizeof(q->bd[0]) *
+				 TFD_QUEUE_SIZE_MAX, &(q->q.dma_addr), &(q->bd));
+
+	   // pci_alloc_consistent(dev,
+		//		 sizeof(q->bd[0]) *
+		//		 TFD_QUEUE_SIZE_MAX, &q->q.dma_addr);
+	if (!q->bd) {
+		IOLog("pci_alloc_consistent(%zd) failed\n",
+			  sizeof(q->bd[0]) * count);
+		kfree(q->txb);
+		q->txb = NULL;
+		return -ENOMEM;
+	}
+
+	/* alocate command space + one big command for scan since scan
+	 * command is very huge the system will not have two scan at the
+	 * same time */
+	len = (sizeof(struct ipw_cmd) * count) + DAEMON_MAX_SCAN_SIZE;
+	//q->cmd = pci_alloc_consistent(dev, len, &q->dma_addr_cmd);
+	MemoryDmaAlloc(len, &(q->dma_addr_cmd), &(q->cmd));
+	if (!q->cmd) {
+		IOLog("pci_alloc_consistent(%zd) failed\n",
+			  sizeof(q->cmd[0]) * count);
+		kfree(q->txb);
+		q->txb = NULL;
+		q->q.dma_addr=NULL;
+		//pci_free_consistent(dev,
+		//		    sizeof(q->bd[0]) *
+		//		    TFD_QUEUE_SIZE_MAX, q->bd, q->q.dma_addr);
+
+		return -ENOMEM;
+	}
+
+	q->need_update = 0;
+	ipw_queue_init(priv, &q->q, TFD_QUEUE_SIZE_MAX, count, id);
+	return 0;
+}
+
+int darwin_iwi3945::ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
+			  int count, int size, u32 id)
+{
+	int rc;
+	unsigned long flags;
+
+	q->n_bd = count;
+	q->n_window = size;
+	q->id = id;
+
+	q->low_mark = q->n_window / 4;
+	if (q->low_mark < 4)
+		q->low_mark = 4;
+
+	q->high_mark = q->n_window / 8;
+	if (q->high_mark < 2)
+		q->high_mark = 2;
+
+	q->first_empty = q->last_used = 0;
+	priv->shared_virt->tx_base_ptr[id] = (u32) q->dma_addr;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	rc = ipw_grab_restricted_access(priv);
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}*/
+	_ipw_write_restricted(priv, FH_CBCC_CTRL(id), 0);
+	_ipw_write_restricted(priv, FH_CBCC_BASE(id), 0);
+
+	_ipw_write_restricted(priv, FH_TCSR_CONFIG(id),
+			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_CIRQ_RTC_NOINT
+			     |
+			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_MSG_MODE_TXF
+			     |
+			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_CIRQ_HOST_IFTFD
+			     |
+			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CREDIT_ENABLE_VAL
+			     | ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_ENABLE);
+	_ipw_release_restricted_access(priv);
+
+	ipw_read32( FH_TSSR_CBB_BASE);	/* fake read to flush all prev. writes */
+
+	//spin_unlock_irqrestore(&priv->lock, flags);
+	return 0;
+}
+
+int darwin_iwi3945::ipw_queue_reset(struct ipw_priv *priv)
+{
+	int rc = 0;
+
+	ipw_tx_queue_free(priv);
+
+	/* Tx CMD queue */
+	ipw_tx_reset(priv);
+
+	/* Tx queue(s) */
+	rc = ipw_queue_tx_init(priv, &priv->txq[0], TFD_TX_CMD_SLOTS, 0);
+	if (rc) {
+		IOLog("Tx 0 queue init failed\n");
+		goto error;
+	}
+
+	rc = ipw_queue_tx_init(priv, &priv->txq[1], TFD_TX_CMD_SLOTS, 1);
+	if (rc) {
+		IOLog("Tx 1 queue init failed\n");
+		goto error;
+	}
+	rc = ipw_queue_tx_init(priv, &priv->txq[2], TFD_TX_CMD_SLOTS, 2);
+	if (rc) {
+		IOLog("Tx 2 queue init failed\n");
+		goto error;
+	}
+	rc = ipw_queue_tx_init(priv, &priv->txq[3], TFD_TX_CMD_SLOTS, 3);
+	if (rc) {
+		IOLog("Tx 3 queue init failed\n");
+		goto error;
+	}
+
+	rc = ipw_queue_tx_init(priv, &priv->txq[4], TFD_CMD_SLOTS,
+			       CMD_QUEUE_NUM);
+	if (rc) {
+		IOLog("Tx Cmd queue init failed\n");
+		goto error;
+	}
+
+	rc = ipw_queue_tx_init(priv, &priv->txq[5], TFD_TX_CMD_SLOTS, 5);
+	if (rc) {
+		IOLog("Tx service queue init failed\n");
+		goto error;
+	}
+
+	return rc;
+
+      error:
+	ipw_tx_queue_free(priv);
+	return rc;
 }
 
 int darwin_iwi3945::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
@@ -2041,6 +2340,7 @@ int darwin_iwi3945::ipw_rx_queue_restock(struct ipw_priv *priv)
 	/* If the pre-allocated buffer pool is dropping low, schedule to
 	 * refill it */
 	if (rxq->free_count <= RX_LOW_WATERMARK) {
+		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rx_queue_replenish),priv,NULL,true);
 		//queue_work(priv->workqueue, &priv->rx_replenish);
 	}
 
@@ -2118,6 +2418,13 @@ void darwin_iwi3945::ipw_rx_queue_reset(struct ipw_priv *priv,
 	rxq->read = rxq->write = 0;
 	rxq->free_count = 0;
 	//spin_unlock_irqrestore(&rxq->lock, flags);
+}
+
+void darwin_iwi3945::freePacket(mbuf_t m, IOOptionBits options)
+{
+	if( m != NULL)
+	if (mbuf_len(m) != 0 && mbuf_type(m) != MBUF_TYPE_FREE )
+		super::freePacket(m,options);
 }
 
 struct ipw_rx_queue *darwin_iwi3945::ipw_rx_queue_alloc(struct ipw_priv *priv)
@@ -3999,8 +4306,8 @@ void darwin_iwi3945::RxQueueIntr()
 	struct ipw_rx_packet *pkt;
 	u32 r, i;
 	int pkt_from_hardware;
-
-	r = 0;//priv->shared_virt->rx_read_ptr[0];
+	//TODO: check r is ok
+	r = ((struct ipw_shared_t *)memBase)->rx_read_ptr[0];//priv->shared_virt->rx_read_ptr[0];
 	i = priv->rxq->read;
 	while (i != r) {
 		rxb = priv->rxq->queue[i];
@@ -4300,7 +4607,7 @@ void darwin_iwi3945::RxQueueIntr()
 				     (priv->status & STATUS_RF_KILL_HW))
 				    || ((status & STATUS_RF_KILL_SW)
 					!= (priv->status & STATUS_RF_KILL_SW))) {
-
+					queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,0,true);
 					//queue_delayed_work(priv->workqueue,
 					//		   &priv->rf_kill, 0);
 				};// else
@@ -4366,7 +4673,9 @@ int darwin_iwi3945::resetTxQueue()
 
 void darwin_iwi3945::free(void)
 {
-	IOLog("%s Freeing\n", getName());
+	IOLog("todo: Freeing\n");
+	return;
+	
 	if (pl==0)
 	{
 		stop(NULL);
