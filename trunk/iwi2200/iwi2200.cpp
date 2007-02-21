@@ -8726,10 +8726,12 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		//memset(skb->cb, 0, sizeof(skb->cb));
 		//skb->dev = dev;
 		//skb->ip_summed = CHECKSUM_NONE;	/* 802.11 crc not sufficient */
-		if( mbuf_flags(skb) & MBUF_PKTHDR)
+		if( mbuf_flags(skb) & MBUF_PKTHDR){
 			fNetif->inputPacket(skb,mbuf_pkthdr_len(skb),IONetworkInterface::kInputOptionQueuePacket);
-		else
+		}else{
+			IWI_ERR("E Rx packet has not pkt hdr\n");
 			fNetif->inputPacket(skb,mbuf_len(skb),IONetworkInterface::kInputOptionQueuePacket);
+		}
 		//if (netif_rx(skb) == NET_RX_DROP) {
 			/* netif_rx always succeeds, but it might drop
 			 * the packet.  If it drops the packet, we log that
