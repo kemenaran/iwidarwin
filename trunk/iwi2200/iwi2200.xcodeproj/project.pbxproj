@@ -126,7 +126,7 @@
 				6139335C0B5AF5BE00F0B6D4 /* ipwstats.c */,
 			);
 			name = "ipw2200-1.2.0";
-			path = "/var/root/2200/ipw2200-1.2.0";
+			path = "/var/root/ipw2200-1.2.0";
 			sourceTree = "<absolute>";
 		};
 		613933570B5AF5BE00F0B6D4 /* in-tree */ = {
@@ -240,7 +240,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#cd /private/var/root/svn/trunk/iwi2200\n#cd \"$SRCROOT\"\n\nchown -R root:wheel build/Debug/iwi2200.kext\n\nrm -rf /System/Library/Extensions/iwi2200.kext\n\ncp -rf build/Debug/iwi2200.kext /System/Library/Extensions\n\nrm -rf iwi2200.pkg\n\n# build only if no .dmg exists\nif [ -e iwi2200.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi2200.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi2200.pkg -proj iwi2200.pmproj\n\nhdiutil create -format UDZO -srcfolder iwi2200.pkg iwi2200.dmg\n\nsleep 1\n\nrm -rf iwi2200.pkg\n";
+			shellScript = "cd $SRCROOT\n\n#sudo chown -R root:wheel $BUILT_PRODUCTS_DIR/iwi2200.kext\n\n#rm -rf /System/Library/Extensions/iwi2200.kext\nrm -rf build/active\nmkdir -p build/active\ncp -rf $BUILT_PRODUCTS_DIR/iwi2200.kext build/active/.\nchown -R root:wheel build/active\n#rm -rf /private/var/root/iwi2200.pkg\n\n# build only if no .dmg exists\n#if [ -e /private/var/root/iwi2200.dmg ] ; then\n#\texit 0\n#fi\n\nrm -f $SRCROOT/iwi2200.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p $SRCROOT/iwi2200.pkg -proj iwi2200.pmproj\n\nsudo /usr/bin/hdiutil create -format UDZO -srcfolder $SRCROOT/iwi2200.pkg $SRCROOT/iwi2200.dmg\n\nsleep 1\n\nrm -rf $SRCROOT/iwi2200.pkg\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
