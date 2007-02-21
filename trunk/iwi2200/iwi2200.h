@@ -33,8 +33,15 @@
 #define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
 
 
-#define IWI_WARNING(...) IWI_LOG(" W " __VA_ARGS__)
-#define IWI_ERR(...) IWI_LOG(" E " __VA_ARGS__)
+#if defined(IWI_DEBUG_NORMAL)
+	#define IWI_WARNING(...) IWI_LOG(" W " __VA_ARGS__)
+	#define IWI_ERR(...) IWI_LOG(" E " __VA_ARGS__)
+#else
+	#define IWI_WARNING(...) do{ }while(0)
+	#define IWI_ERR(...) do{ }while(0)
+#endif
+
+
 
 #define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
 
@@ -1235,6 +1242,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int countnonet;
 	struct ieee80211_network nonets[20];
 	UInt32 countb;
+	int showip;
 	
 };
 
