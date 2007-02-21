@@ -1040,7 +1040,7 @@ struct ieee80211_txb {
 	u8 reserved;
 	__le16 frag_size;
 	__le16 payload_size;
-	struct sk_buff *fragments[0];
+	mbuf_t fragments[0];
 };
 
 /* SWEEP TABLE ENTRIES NUMBER */

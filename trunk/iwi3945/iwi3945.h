@@ -560,8 +560,9 @@ virtual IOOptionBits getState( void ) const;
 	virtual int ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
 					  struct ipw_rx_queue *q);
 	virtual void freePacket(mbuf_t m, IOOptionBits options=0);
-	
-	
+	virtual void ipw_clear_bits_restricted_reg(struct ipw_priv
+					  *priv, u32 reg, u32 mask);
+	virtual void ipw_bg_resume_work();
 	
 	
 	
@@ -725,6 +726,11 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 			     struct ipw_tx_queue *q, int count, u32 id);
 	virtual int ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
 			  int count, int size, u32 id);
+	virtual int ipw_nic_reset(struct ipw_priv *priv);
+	virtual int ipw_nic_stop_master(struct ipw_priv *priv);
+	
+	
+	
 	
 	
 	

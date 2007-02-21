@@ -416,7 +416,14 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 
 	priv->net_dev = net_dev;
 	
-	
+	for (i=0;i<6;i++){
+		if(fEnetAddr.bytes[i] == 0      ) continue;
+		memcpy(priv->mac_addr, &fEnetAddr.bytes, ETH_ALEN);
+		memcpy(priv->net_dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+		memcpy(priv->ieee->dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+		break;
+	}
+		
 	priv->rxq = NULL;
 	priv->antenna = antenna;
 #ifdef CONFIG_IPW3945_DEBUG
@@ -753,24 +760,10 @@ bool darwin_iwi3945::start(IOService *provider)
 		// other devices that are sharing the interrupt line, the event source
 		// is enabled immediately.
 		fInterruptSrc->enable();
-
-		/*if(!initCmdQueue())
-		{
-			IOLog("CmdQueue alloc error\n");
-			break;
-		}
-		if(!initRxQueue())
-		{
-			IOLog("RxQueue alloc error\n");
-			break;
-		}
-		if(!initTxQueue())
-		{
-			IOLog("TxQueue alloc error\n");
-			break;
-		}*/
 		
-		//resetDevice((UInt16 *)memBase);
+		resetDevice((UInt16 *)memBase); //iwi2200 code to fix
+		//ipw_nic_reset(priv);
+		//ipw_bg_resume_work();
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -831,6 +824,58 @@ bool darwin_iwi3945::start(IOService *provider)
 	stop(provider);
 	free();
 	return false;			// end start insuccessfully
+}
+
+void darwin_iwi3945::ipw_bg_resume_work()
+{
+	unsigned long flags;
+
+	//mutex_lock(&priv->mutex);
+
+	/* The following it a temporary work around due to the
+	 * suspend / resume not fully initializing the NIC correctly.
+	 * Without all of the following, resume will not attempt to take
+	 * down the NIC (it shouldn't really need to) and will just try
+	 * and bring the NIC back up.  However that fails during the
+	 * ucode verification process.  This then causes ipw_down to be
+	 * called *after* ipw_nic_init() has succeedded -- which
+	 * then lets the next init sequence succeed.  So, we've
+	 * replicated all of that NIC init code here... */
+
+	ipw_write32( CSR_INT, 0xFFFFFFFF);
+
+	ipw_nic_init(priv);
+
+	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+	ipw_write32( CSR_UCODE_DRV_GP1_CLR,
+		    CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+	ipw_write32( CSR_INT, 0xFFFFFFFF);
+	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+
+	/* tell the device to stop sending interrupts */
+	ipw_disable_interrupts(priv);
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	ipw_clear_bit( CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	if (!ipw_grab_restricted_access(priv)) {
+		_ipw_write_restricted_reg(priv, ALM_APMG_CLK_DIS,
+					 APMG_CLK_REG_VAL_DMA_CLK_RQT);
+		_ipw_release_restricted_access(priv);
+	}
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	udelay(5);
+
+	ipw_nic_reset(priv);
+
+	/* Bring the device back up */
+	priv->status &= ~STATUS_IN_SUSPEND;
+
+	//mutex_unlock(&priv->mutex);
 }
 
 IOReturn darwin_iwi3945::selectMedium(const IONetworkMedium * medium)
@@ -1756,6 +1801,98 @@ int darwin_iwi3945::ipw3945_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 	return rc;
 }
 
+int darwin_iwi3945::ipw_nic_stop_master(struct ipw_priv *priv)
+{
+	int rc = 0;
+	u32 reg_val;
+	unsigned long flags;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+
+	/* set stop master bit */
+	ipw_set_bit( CSR_RESET, CSR_RESET_REG_FLAG_STOP_MASTER);
+
+	reg_val = ipw_read32(CSR_GP_CNTRL);
+
+	if (CSR_GP_CNTRL_REG_FLAG_MAC_POWER_SAVE ==
+	    (reg_val & CSR_GP_CNTRL_REG_MSK_POWER_SAVE_TYPE)) {
+		IOLog
+		    ("Card in power save, master is already stopped\n");
+	} else {
+		rc = ipw_poll_bit(priv,
+				  CSR_RESET,
+				  CSR_RESET_REG_FLAG_MASTER_DISABLED,
+				  CSR_RESET_REG_FLAG_MASTER_DISABLED, 100);
+		/*if (rc < 0) {
+			spin_unlock_irqrestore(&priv->lock, flags);
+			return rc;
+		}*/
+	}
+
+	//spin_unlock_irqrestore(&priv->lock, flags);
+	IOLog("stop master\n");
+
+	return rc;
+}
+
+int darwin_iwi3945::ipw_nic_reset(struct ipw_priv *priv)
+{
+	int rc = 0;
+	unsigned long flags;
+
+	ipw_nic_stop_master(priv);
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	ipw_set_bit( CSR_RESET, CSR_RESET_REG_FLAG_SW_RESET);
+
+	rc = ipw_poll_bit(priv, CSR_GP_CNTRL,
+			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
+			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
+
+	rc = ipw_grab_restricted_access(priv);
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}*/
+
+	_ipw_write_restricted_reg(priv, APMG_CLK_CTRL_REG,
+				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
+
+	udelay(10);
+
+	ipw_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+
+	_ipw_write_restricted_reg(priv, ALM_APMG_LARC_INT_MSK, 0x0);
+	_ipw_write_restricted_reg(priv, ALM_APMG_LARC_INT, 0xFFFFFFFF);
+
+	/* enable DMA */
+	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
+				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
+				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
+	udelay(10);
+
+	ipw_set_bits_restricted_reg(priv, ALM_APMG_PS_CTL,
+				    APMG_PS_CTRL_REG_VAL_ALM_R_RESET_REQ);
+	udelay(5);
+	ipw_clear_bits_restricted_reg(priv, ALM_APMG_PS_CTL,
+				      APMG_PS_CTRL_REG_VAL_ALM_R_RESET_REQ);
+	_ipw_release_restricted_access(priv);
+
+	/* Clear the 'host command active' bit... */
+	priv->status &= ~STATUS_HCMD_ACTIVE;
+
+	//wake_up_interruptible(&priv->wait_command_queue);
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return rc;
+}
+
+void darwin_iwi3945::ipw_clear_bits_restricted_reg(struct ipw_priv
+					  *priv, u32 reg, u32 mask)
+{
+	u32 val = _ipw_read_restricted_reg(priv, reg);
+	_ipw_write_restricted_reg(priv, reg, (val & ~mask));
+}
 
 int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 {
