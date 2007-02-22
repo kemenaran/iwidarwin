@@ -5,24 +5,29 @@
 #include "defines.h"
 #include "iwieth.h"
 
+#define CONFIG_IPW2200_QOS
+// #define TX_QUEUE_CHECK
 
+
+#undef IW_RX_REPLACING
 //#define IWI_NOLOG
 //#define IWI_DEBUG_NORMAL
-//#define IWI_DEBUG_FULL
+//#define IWI_DEBUG_FULL_MODE
 
-#if defined(IWI_NOLOG)
-	#define IWI_LOG(...) do{ }while(0)
-#else
-	#define IWI_LOG(...) printf("iwi2200: " __VA_ARGS__)
-#endif
+#define IWI_LOG(...) IOLog("iwi2200: " __VA_ARGS__)
 
-#if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
-	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
+#if defined(IWI_DEBUG_FULL_MODE) || defined(IWI_DEBUG_NORMAL)
+	#define IWI_DEBUG(fmt,...)IWI_LOG(" %s() " fmt, __FUNCTION__, ##__VA_ARGS__)
+//	#define IWI_DEBUG(fmt,...)  \
+//		do { IWI_LOG(" %s() " fmt, __FUNCTION__, ##__VA_ARGS__); \
+//		      if(priv->status){ IWI_LOG("priv->status 0x010x\n",priv->status); } \
+//		}while(0)
 #else
+//	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
 	#define IWI_DEBUG(...) do{ }while(0)
 #endif
 
-#if defined(IWI_DEBUG_FULL)
+#if defined(IWI_DEBUG_FULL_MODE)
 	#define IWI_DEBUG_FULL(...) IWI_DEBUG(__VA_ARGS__)
 #else
           #define IWI_DEBUG_FULL(...) do{ }while(0)
@@ -33,88 +38,170 @@
 #define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
 
 
-#if defined(IWI_DEBUG_NORMAL)
+//#if defined(IWI_DEBUG_NORMAL)
 	#define IWI_WARNING(...) IWI_LOG(" W " __VA_ARGS__)
 	#define IWI_ERR(...) IWI_LOG(" E " __VA_ARGS__)
+//#else
+//	#define IWI_WARNING(...) do{ }while(0)
+//	#define IWI_ERR(...) do{ }while(0)
+//#endif
+
+
+#define IWI_DEBUG_FN(...) IWI_DEBUG(__VA_ARGS__)
+
+// #define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
+
+
+//#define IWI_DEBUG_STATUS(priv)  IWI_DEBUG("priv->status 0x%08x\n",priv->status)
+#define IWI_DEBUG_STATUS(priv) do{ }while(0)
+
+#define min_t(type,x,y) \
+        ({ type __x = (x); type __y = (y); __x < __y ? __x: __y; })
+		
+inline static int snprint_line(char *buf, size_t count,
+			const u8 * data, u32 len, u32 ofs)
+{
+	int out, i, j, l;
+	char c;
+
+	out = snprintf(buf, count, "%08X", ofs);
+
+	for (l = 0, i = 0; i < 2; i++) {
+		out += snprintf(buf + out, count - out, " ");
+		for (j = 0; j < 8 && l < len; j++, l++)
+			out += snprintf(buf + out, count - out, "%02X ",
+					data[(i * 8 + j)]);
+		for (; j < 8; j++)
+			out += snprintf(buf + out, count - out, "   ");
+	}
+
+	out += snprintf(buf + out, count - out, " ");
+	for (l = 0, i = 0; i < 2; i++) {
+		out += snprintf(buf + out, count - out, " ");
+		for (j = 0; j < 8 && l < len; j++, l++) {
+			c = data[(i * 8 + j)];
+//			if (!isascii(c) || !isprint(c))
+				c = '.';
+
+			out += snprintf(buf + out, count - out, "%c", c);
+		}
+
+		for (; j < 8; j++)
+			out += snprintf(buf + out, count - out, " ");
+	}
+
+	return out;
+}
+
+
+
+inline static int snprintk_buf(u8 * output, size_t size, const u8 * data, size_t len)
+{
+	size_t out = size;
+	u32 ofs = 0;
+	int total = 0;
+
+	while (size && len) {
+		out = snprint_line((char *)output, size, &data[ofs],
+				   min_t(size_t, len, 16U), ofs);
+
+		ofs += 16;
+		output += out;
+		size -= out;
+		len -= min_t(size_t, len, 16U);
+		total += out;
+	}
+	return total;
+}
+
+inline void printk_buf(const u8 * data, u32 len)
+{
+	char line[81];
+	u32 ofs = 0;
+
+	while (len) {
+		snprint_line(line, sizeof(line), &data[ofs],
+			     min(len, 16U), ofs);
+		IWI_LOG("%s\n", line);
+		ofs += 16;
+		len -= min(len, 16U);
+	}
+}
+
+#ifdef IWI_DEBUG_FULL_MODE
+	#define IWI_DEBUG_DUMP(...) printk_buf(__VA_ARGS__)
 #else
-	#define IWI_WARNING(...) do{ }while(0)
-	#define IWI_ERR(...) do{ }while(0)
+	#define IWI_DEBUG_DUMP(...) do{ }while(0)
 #endif
 
-
-
-#define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
-
-
-#define IWI_DUMP_MBUF(...) do{ }while(0)
-
-/*
 #define IWI_DUMP_MBUF(f, skb, len) \
     IWI_DEBUG_FULL(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
         f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
-*/
+
 
 inline void skb_reserve(mbuf_t skb, int len)
 {
-        //skb->data += len;
-        //skb->tail += len;
-/*        if (mbuf_len(skb)==0)
-        {
-                void *data=(UInt8*)mbuf_data(skb)+len;
-                mbuf_setdata(skb,data,mbuf_len(skb)+len);
-        } */
-        IWI_DUMP_MBUF(1,skb,len); 
-        void *data = (UInt8*)mbuf_data(skb) + len;
-        IWI_DUMP_MBUF(2,skb,len);
-         mbuf_setdata(skb,data, mbuf_len(skb));// m_len is not changed.
+	//skb->data += len;
+	//skb->tail += len;
+	/*        if (mbuf_len(skb)==0)
+{
+		void *data=(UInt8*)mbuf_data(skb)+len;
+		mbuf_setdata(skb,data,mbuf_len(skb)+len);
+} */
+	IWI_DUMP_MBUF(1,skb,len); 
+	void *data = (UInt8*)mbuf_data(skb) + len;
+	IWI_DUMP_MBUF(2,skb,len);
+	mbuf_setdata(skb,data, mbuf_len(skb));// m_len is not changed.
 }
 
 inline void *skb_put(mbuf_t skb, unsigned int len)
 {
-        /*unsigned char *tmp = skb->tail;
-        SKB_LINEAR_ASSERT(skb);
-        skb->tail += len;
-        skb->len  += len;
-        return tmp;*/
-        void *data = (UInt8*)mbuf_data(skb) + mbuf_len(skb);
-        //mbuf_prepend(&skb,len,1); /* no prepend work */
-         IWI_DUMP_MBUF(1,skb,len);  
+	/*unsigned char *tmp = skb->tail;
+	SKB_LINEAR_ASSERT(skb);
+	skb->tail += len;
+	skb->len  += len;
+	return tmp;*/
+	void *data = (UInt8*)mbuf_data(skb) + mbuf_len(skb);
+	//mbuf_prepend(&skb,len,1); /* no prepend work */
+	IWI_DUMP_MBUF(1,skb,len);  
 	if(mbuf_trailingspace(skb) > len ){
 		mbuf_setlen(skb,mbuf_len(skb)+len);
 		if(mbuf_flags(skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(skb,mbuf_pkthdr_len(skb)+len); 
-        }
-        IWI_DUMP_MBUF(2,skb,len);  
-        return data;
+	}
+	IWI_DUMP_MBUF(2,skb,len);  
+	return data;
 }
 
 inline void *skb_push(mbuf_t skb, unsigned int len)
 {
-        /*skb->data -= len;
-        skb->len  += len;
-        if (unlikely(skb->data<skb->head))
-                skb_under_panic(skb, len, current_text_addr());
-        return skb->data;*/
-        /* void *data=(UInt8*)mbuf_data(skb)-len;
-        mbuf_setdata(skb,data,mbuf_len(skb)+len); */
-          IWI_DUMP_MBUF(1,skb,len); 
+	/*skb->data -= len;
+	skb->len  += len;
+	if (unlikely(skb->data<skb->head))
+	skb_under_panic(skb, len, current_text_addr());
+	return skb->data;*/
+	/* void *data=(UInt8*)mbuf_data(skb)-len;
+	mbuf_setdata(skb,data,mbuf_len(skb)+len); */
+	IWI_DUMP_MBUF(1,skb,len); 
 	mbuf_prepend(&skb,len,0);
-      IWI_DUMP_MBUF(2,skb,len);
-        return  (UInt8 *)mbuf_data(skb);
+	IWI_DUMP_MBUF(2,skb,len);
+	return  (UInt8 *)mbuf_data(skb);
 }
 
 inline void *skb_pull(mbuf_t skb, unsigned int len)
 {
-        /*skb->len -= len;
-        BUG_ON(skb->len < skb->data_len);
-        return skb->data += len;*/
-       IWI_DUMP_MBUF(1,skb,len);  
-        mbuf_adj(skb,len);
-        void *data=(UInt8*)mbuf_data(skb);
-           IWI_DUMP_MBUF(2,skb,len);		
-        return data;
+	/*skb->len -= len;
+	BUG_ON(skb->len < skb->data_len);
+	return skb->data += len;*/
+	IWI_DUMP_MBUF(1,skb,len);  
+	mbuf_adj(skb,len);
+	void *data=(UInt8*)mbuf_data(skb);
+	IWI_DUMP_MBUF(2,skb,len);		
+	return data;
 }
 
+#define kTransmitQueueCapacity 1024
+//64
 
 u8 P802_1H_OUI[P80211_OUI_LEN] = { 0x00, 0x00, 0xf8 };
 u8 RFC1042_OUI[P80211_OUI_LEN] = { 0x00, 0x00, 0x00 };
@@ -1071,6 +1158,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 				      mbuf_t skb);
 	virtual int ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		 struct ieee80211_rx_stats *rx_stats);
+	virtual mbuf_t mergePacket(mbuf_t m);
 	virtual UInt32 outputPacket(mbuf_t m, void * param);
 	virtual void ieee80211_txb_free(struct ieee80211_txb *txb);
 	virtual u8 ipw_find_station(struct ipw_priv *priv, u8 * bssid);
@@ -1242,7 +1330,9 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int countnonet;
 	struct ieee80211_network nonets[20];
 	UInt32 countb;
+	int test_lock;
 	int showip;
+
 	
 };
 
