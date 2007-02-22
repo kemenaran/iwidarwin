@@ -26,7 +26,7 @@ this is draft of rules written by kazu.
  * log message must be understandable for all commiter.
  * current trunk is compilable when  commit.
  * if happen conflict on commiting, commiter must not *remove and add* and must fixed it by hand ( it is common rules in cvs and svn )
-  
+ * binary package and binary must not commit as basis.
 
 == svn https commit setup ==
  when using a svn client add the line "https://iwidarwin.googlecode.com/svn" to the client preferences settings.
