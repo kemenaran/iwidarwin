@@ -1,3 +1,23 @@
+/* 
+     Intel wireless/Pro 2200bg/2945abg device driver for Darwin.
+	 
+     Copyright(C) 2007  Marco Rodrigues <jalavoui @ gmail. com> 
+			    Kazuhisa TAKEI <kazuhisa @ gmail. com>. All right reserved.
+									
+     This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.
+   
+   this file contain parts from original source at http://prdownloads.sourceforge.net/ipw2200/ipw2200-1.2.1.tgz?download
+
+*/
+
 #include <IOKit/assert.h>
 #include <IOKit/IOTimerEventSource.h>
 #include <IOKit/IODeviceMemory.h>
