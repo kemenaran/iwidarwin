@@ -8317,48 +8317,51 @@ frg:
 	ieee80211_txb_free(txb);
 	return kIOReturnOutputSuccess;//NETDEV_TX_OK;
 }
+
+/* 
+ *  merge mbuf packet chains to single mbuf.
+ *	if source mbuf is single chain,fail to merge, this method return copyed mbuf.
+ * @m: source mbuf.
+ *   
+ * return: merged or copyed mbuf.
+ *
+ */
+
 mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 {
 	mbuf_t nm,nm2;
-//	allocatePacket();
 	if(!mbuf_next(m)){
 		IWI_DEBUG_FULL("this packet dont has mbuf_next, this  is not required copy\n");
 		goto copy_packet;
-		//return copyPacket(m, 0); 
 	}
 	
-	
-	//IWI_WARNING("require to merge chains to one packet len[%d] pkt_len[%d]\n",mbuf_len(m),mbuf_pkthdr_len(m));
-	
+	/* allocate and Initialize New mbuf */
 	nm = allocatePacket(mbuf_pkthdr_len(m));
-	if (mbuf_pkthdr_len(nm) <= 0 ) {
+	if  (mbuf_pkthdr_len(nm) <= 0 ) {
+		/* should not be reached */
 		IWI_WARNING("output packet is not single chain but cannot merge to single\n");
-	}else {
+	} else {
 		mbuf_setlen(nm,0);
 		mbuf_pkthdr_setlen(nm,0);
 	}
 	
-	for (nm2 = m; nm2;  nm2 = mbuf_next(nm2) ) {
-		// memcpy(skb_put(frag_skb, flen), (UInt8*)mbuf_data(skb), flen);
-		memcpy(skb_put(nm, mbuf_len(nm2)) , (UInt8*)mbuf_data(nm2), mbuf_len(nm2));
-		//mbuf_setlen(nm,mbuf_len(nm) + mbuf_len(nm2));
-		//mbuf_pkthdr_setlen(nm,mbuf_pktlen(nm) + mbuf_len(nm2));
-		//FIXME: if freePacket dont free allchains ,freePacket is required.
+	/* merging chains to single mbuf */
+	for (nm2 = m; nm2;  nm2 = mbuf_next(nm2)) {
+		memcpy (skb_put (nm, mbuf_len(nm2)), (UInt8*)mbuf_data(nm2), mbuf_len(nm2));
 	}
-	// check if merged or not.
-	if( mbuf_len(nm) == mbuf_pkthdr_len(m) ){
-		//freePacket(m);
+	
+	/* checking if merged or not. */
+	if( mbuf_len(nm) == mbuf_pkthdr_len(m) ) 
 		return nm;
-	}else {
-		IWI_WARNING("mergePacket is failed: data copy dont work collectly\n");
-		IWI_WARNING("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
+
+	/* merging is not completed. */
+	IWI_WARNING("mergePacket is failed: data copy dont work collectly\n");
+	IWI_WARNING("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
 					mbuf_len(m),mbuf_pkthdr_len(m),
 					mbuf_len(nm),mbuf_pkthdr_len(nm) );
-		freePacket(nm);
-		goto copy_packet;
-		//return copyPacket(m, 0);
-	}
-copy_packet:
+	freePacket(nm);
+
+copy_packet: 
 		return copyPacket(m, 0); 
 }
 UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
@@ -8366,7 +8369,8 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	int offset = (4 - ((int)(mbuf_data(m)) & 3)) % 4;    //packet needs to be 4 byte aligned
 	mbuf_t nm;
 	//mbuf_t nm2;
-	size_t psize=0;
+	size_t psize = 0;
+	int ret = kIOReturnOutputDropped;
 
 	//checking supported packet
 	
@@ -8375,12 +8379,12 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	//drop mbuf is not PKTHDR
 	if (!(mbuf_flags(m) & MBUF_PKTHDR) ){
 		IWI_ERR("BUG: dont support mbuf without pkthdr and dropped \n");
-		goto fail_tx;
+		goto finish;
 	}
 	
 	if(mbuf_type(m) == MBUF_TYPE_FREE){
 		IWI_ERR("BUG: this is freed packet and dropped \n");
-		goto fail_tx;
+		goto finish;
 	}
 	
 #if 0
@@ -8391,14 +8395,12 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	}	
 		else    nm=m;
 #else
-	// nm = m;
 	nm = mergePacket(m);
 #endif
 	if(mbuf_next(nm)){
-		IWI_ERR("BUGS: dont support chains mbuf\n");
+		IWI_ERR("BUG: dont support chains mbuf\n");
 		IWI_ERR("BUG: tx packet is not single mbuf mbuf_len(%d) mbuf_pkthdr_len(%d)\n",mbuf_len(nm) , mbuf_pkthdr_len(nm) );
 		IWI_ERR("BUG: next mbuf size %d\n",mbuf_len(mbuf_next(nm)));
-		//goto fail_tx;
 	}
 	
 #if 0	
@@ -8417,7 +8419,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	//if (!(ifnet_flags(fifnet) & IFF_RUNNING) || mbuf_len(nm)==0 || nm==NULL)
 	{
 		//return kIOReturnOutputDropped;
-		goto fail_tx;
+		goto finish;
 	}
 
 	// if p_mode=0 (bss) and dhcp gives ip=169.254.xxx there's no internet connection
@@ -8447,18 +8449,17 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	}
 #endif		
 	IWI_DEBUG_FULL("call ieee80211_xmit\n");
-	int  ret  = ieee80211_xmit(nm,priv->net_dev);
+	ret  = ieee80211_xmit(nm,priv->net_dev);
+
+finish:	
+	
+	/* free finished packet */
 	freePacket(nm);
-	// original packet must not free on kIOReturnOutputStall
-	if (ret !=  kIOReturnOutputStall) {
+	if (ret !=  kIOReturnOutputStall) { /* original packet should not free on kIOReturnOutputStall */
 		freePacket(m);
 	}
-	return ret;
-fail_tx:
-	freePacket(nm);
-	freePacket(m);
-	return kIOReturnOutputDropped;	
-	//return 0;
+	
+	return ret;	
 }
 
 int darwin_iwi2200::ipw_qos_set_tx_queue_command(struct ipw_priv *priv,
