@@ -2045,12 +2045,12 @@ void darwin_iwi2200::ipw_deinit(struct ipw_priv *priv)
 
 	if (priv->status & STATUS_SCANNING) {
 		IWI_DEBUG("Aborting scan during shutdown.\n");
-		fNetif->setLinkState(kIO80211NetworkLinkDown);
 		ipw_abort_scan(priv);
 	}
 
 	if (priv->status & STATUS_ASSOCIATED) {
 		IWI_DEBUG("Disassociating during shutdown.\n");
+		fNetif->setLinkState(kIO80211NetworkLinkDown);
 		ipw_disassociate(priv);
 	}
 
@@ -4516,6 +4516,8 @@ void darwin_iwi2200::ipw_handle_mgmt_packet(struct ipw_priv *priv,
 				   struct ipw_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_stats *stats)
 {
+	if (priv->status & STATUS_ASSOCIATED) return;
+	
 	mbuf_t skb = rxb->skb;
 	struct ipw_rx_packet *pkt = (struct ipw_rx_packet *)(mbuf_data(skb));
 	//mbuf_prepend(&rxb->skb,IPW_RX_FRAME_SIZE,MBUF_WAITOK);
@@ -5028,6 +5030,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		IWI_DEBUG("flushing Input Queue\n");
 		fNetif->flushInputQueue();
 	}
+	releaseFreePackets();
 	/* Backtrack one entry */
 	priv->rxq->processed = (i ? i : RX_QUEUE_SIZE) - 1;
 
@@ -6749,7 +6752,7 @@ void darwin_iwi2200::ipw_link_up(struct ipw_priv *priv)
 	ipw_reset_stats(priv);
 	/* Ensure the rate is updated immediately */
 	priv->last_rate = ipw_get_current_rate(priv);
-	ipw_gather_stats(priv);
+	//ipw_gather_stats(priv);
 	ipw_led_link_on(priv);
 	//notify_wx_assoc_event(priv);
 
@@ -8471,7 +8474,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	// if p_mode=0 (bss) and dhcp gives ip=169.254.xxx there's no internet connection
 	// the network should be excluded from list to allow other networks to associate
 	// this could also hapen if the link goes down.
-#if 1	
+#if 0	
 	ifaddr_t *addresses;
 	struct sockaddr *out_addr;
 	if (ifnet_get_address_list_family(fifnet, &addresses, AF_INET)==0)
