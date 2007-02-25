@@ -761,7 +761,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		// is enabled immediately.
 		fInterruptSrc->enable();
 		
-		resetDevice((UInt16 *)memBase); //iwi2200 code to fix
+		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		//ipw_nic_reset(priv);
 		//ipw_bg_resume_work();
 		
