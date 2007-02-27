@@ -1265,9 +1265,7 @@ void darwin_iwi2200::ipw_rx_queue_replenish(void *data)
 	while (!list_empty(&rxq->rx_used)) {
 		element = rxq->rx_used.next;
 		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
-		//rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
-		//int rs=mbuf_allocpacket(MBUF_WAITOK, IPW_RX_BUF_SIZE, 0, &rxb->skb);
-		rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
+		rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
 		if (rxb->skb==0) {
 			IWI_DEBUG( "%s: Can not allocate SKB buffers.\n",
 			       priv->net_dev->name);
@@ -4672,6 +4670,7 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	 // if( unlikely((le16_to_cpu(pkt->u.frame.length) + IPW_RX_FRAME_SIZE) > skb_tailroom(rxb->skb))) {
 	 // fix me: may change mbuf_len to mbuf_trailingspace.
 	// IWI_DEBUG_FN(" mbuf_len %d mbuf_trailingspace  %d\n",mbuf_len(rxb->skb),mbuf_trailingspace(rxb->skb));
+#if 0	
 	if (unlikely((le16_to_cpu(pkt->u.frame.length) + IPW_RX_FRAME_SIZE) >
 		     mbuf_len(rxb->skb))) {
           //		     mbuf_trailingspace(rxb->skb))) {
@@ -4686,27 +4685,34 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 		IWI_DEBUG("Dropping packet while interface is not up.\n");
 		return false;
 	}
+#else
+	if (unlikely((le16_to_cpu(pkt->u.frame.length) + IPW_RX_FRAME_SIZE) >
+		     skb_tailroom(rxb->skb))) {
+		priv->ieee->stats.rx_errors++;
+		priv->wstats.discard.misc++;
+		IWI_DEBUG("Corruption detected! Oh no!\n");
+		return false;
+	} else if (!(ifnet_flags(fifnet) & IFF_RUNNING)) {
+		priv->ieee->stats.rx_dropped++;
+		priv->wstats.discard.misc++;
+		IWI_DEBUG("Dropping packet while interface is not up.\n");
+		return false;
+	}
+#endif	
 	IWI_DEBUG("before dump rx packet size mbuf_len = %d,mbuf_pkthdr_len %d , rx frame size %d. cluster size %d"
 		       " mbuf_next is %s\n", mbuf_len(rxb->skb),  
 			                              mbuf_pkthdr_len(rxb->skb),
 						le16_to_cpu(pkt->u.frame.length),
 						mbuf_maxlen(rxb->skb),
 		  		                    mbuf_next(rxb->skb) ? "exist"  : "nothing");
-#if 0	
-	// FIXME: if use skb_reseve and skb_put, require following routine.
-	// inialize data size and packet size in mbuf 	
-	//  because mbuf_len is not correctly size.
-	mbuf_setlen(rxb->skb,0);
-	
-	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
-		mbuf_pkthdr_setlen(rxb->skb,0);
+#if 1	
 	
 	/* Advance skb->data to the start of the actual payload */
-	//skb_reserve(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
+	skb_reserve(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
 	//mbuf_setlen(rxb->skb, offsetof(struct ipw_rx_packet, u.frame.data));
 	/* Set the size of the skb to the size of the frame */
-	//skb_put(rxb->skb, le16_to_cpu(pkt->u.frame.length));
-#endif	
+	skb_put(rxb->skb, le16_to_cpu(pkt->u.frame.length));
+#else	
 	
 
 	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
@@ -4719,7 +4725,7 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(rxb->skb,
 				 pkt->u.frame.length);
-	
+#endif	
 	IWI_DEBUG("dump rx packet size mbuf_len = %d,mbuf_pkthdr_len %d , rx frame size %d. cluster size %d "
 		       " mbuf_next is %s\n", mbuf_len(rxb->skb),  
 			                              mbuf_pkthdr_len(rxb->skb),
@@ -4733,7 +4739,8 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 		priv->ieee->stats.rx_errors++;
 		return doFlushQueue;
 	}
-#endif								
+#endif	
+							
 #if 0
 	 mbuf_setlen(rxb->skb,le16_to_cpu(pkt->u.frame.length));
 #endif
@@ -7616,7 +7623,7 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 	txb->frag_size = txb_size;
 
 	for (i = 0; i < nr_frags; i++) {
-		txb->fragments[i] = allocatePacket(txb_size + headroom);
+		txb->fragments[i] = alloc_skb(txb_size + headroom,gfp_mask);
 		//__dev_alloc_skb(txb_size + headroom,						    gfp_mask);
 		if (unlikely(!txb->fragments[i])) {
 			i--;
@@ -7624,8 +7631,8 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 		}
 		// default m_len is alocated size in mbuf
 		// must set 0 m_len , pkthdr.len . 
-		mbuf_setlen(txb->fragments[i],0);
-		mbuf_pkthdr_setlen(txb->fragments[i],0);
+		//mbuf_setlen(txb->fragments[i],0);
+		//mbuf_pkthdr_setlen(txb->fragments[i],0);
 
 		skb_reserve(txb->fragments[i], headroom);
 		// fix me: should check later
@@ -7860,7 +7867,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		int res = 0;
 		int len = bytes + hdr_len + crypt->ops->extra_msdu_prefix_len +
 		    crypt->ops->extra_msdu_postfix_len;
-		mbuf_t skb_new = allocatePacket(len);
+		mbuf_t skb_new = alloc_skb(len,0);
 
 		if (unlikely(!skb_new))
 			goto failed;
@@ -8309,8 +8316,7 @@ frg:
 
 		IWI_DEBUG("Trying to reallocate for %d bytes\n",
 		       remaining_bytes);
-		//skb = alloc_skb(remaining_bytes, GFP_ATOMIC);
-		skb=allocatePacket(remaining_bytes);
+		skb = alloc_skb(remaining_bytes, GFP_ATOMIC);
 		if (skb != NULL) {
 			tfd->u.data.chunk_len[i] = cpu_to_le16(remaining_bytes);
 			for (j = i; j < txb->nr_frags; j++) {
@@ -8573,11 +8579,11 @@ mbuf_t darwin_iwi2200::ieee80211_frag_cache_get(struct ieee80211_device *ieee,
 
 	if (frag == 0) {
 		/* Reserve enough space to fit maximum frame length */
-		skb = allocatePacket(ieee->dev->mtu +
+		skb = alloc_skb(ieee->dev->mtu +
 				    sizeof(struct ieee80211_hdr_4addr) +
 				    8 /* LLC */  +
 				    2 /* alignment */  +
-				    8 /* WEP */  + ETH_ALEN /* WDS */ );
+				    8 /* WEP */  + ETH_ALEN /* WDS */ ,0);
 		if (skb == NULL)
 			return NULL;
 
@@ -9416,7 +9422,7 @@ int darwin_iwi2200::ipw_handle_probe_request(struct net_device *dev, struct ieee
 		out_frame->u.frame.frame_ctl = IEEE80211_FTYPE_MGMT |
 		    IEEE80211_STYPE_PROBE_RESP;
 		//ieee80211_tx_frame(priv->ieee, &out_frame->u.frame, 0, len, 0);
-		mbuf_t temp=allocatePacket(len);
+		mbuf_t temp=alloc_skb(len,0);
 		memcpy(temp, &out_frame->u.frame, len);
 		outputPacket(temp,0);
 		
@@ -10544,5 +10550,22 @@ void darwin_iwi2200::update_network(struct ieee80211_network *dst,
 void darwin_iwi2200::getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const {
     constraints->alignStart  = kIOPacketBufferAlign4;	// even word aligned.
     constraints->alignLength = kIOPacketBufferAlign4;	// no restriction.
+}
+
+mbuf_t darwin_iwi2200::alloc_skb(unsigned int size, UInt32 priority)
+{
+	mbuf_t skb;
+	
+	skb = allocatePacket(size);
+	if (skb == 0){ /* fail to allocatePacket */
+		IWI_WARNING("failed to allocatePacket  of size[%d]\n", size);
+		return NULL;
+	}
+	//  m_len is alocated size in default.
+	// but length  is initialized as 0  in linux'skb
+	mbuf_setlen(skb,0);
+	mbuf_pkthdr_setlen(skb,0);
+	
+	return skb;
 }
 
