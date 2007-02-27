@@ -32,7 +32,7 @@
 //#define IWI_NOLOG
 //#define IWI_DEBUG_NORMAL
 //#define IWI_DEBUG_FULL_MODE
-//#define IWI_WARNERR
+#define IWI_WARNERR
 
 #define IWI_LOG(...) IOLog("iwi2200: " __VA_ARGS__)
 
@@ -58,9 +58,9 @@
 #define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
 
 
-#if defined(IWI_DEBUG_NORMAL) || defined(IWI_WARNERR)
-	#define IWI_WARNING(...) IWI_LOG(" W " __VA_ARGS__)
-	#define IWI_ERR(...) IWI_LOG(" E " __VA_ARGS__)
+#if defined(IWI_DEBUG_NORMAL) || defined(IWI_WARNERR) || defined(IWI_DEBUG_FULL_MODE)
+	#define IWI_WARNING(...) IWI_LOG("W " __VA_ARGS__)
+	#define IWI_ERR(...) IWI_LOG("E " __VA_ARGS__)
 #else
 	#define IWI_WARNING(...) do{ }while(0)
 	#define IWI_ERR(...) do{ }while(0)
@@ -158,6 +158,8 @@ inline void printk_buf(const u8 * data, u32 len)
     IWI_DEBUG_FULL(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
         f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
 
+/* linux's skb wrapper */
+#define skb_tailroom(skb) mbuf_trailingspace(skb)
 
 inline void skb_reserve(mbuf_t skb, int len)
 {
@@ -1197,11 +1199,9 @@ virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
 						 int headroom, int gfp_mask);
 	virtual int ipw_is_qos_active(struct net_device *dev, mbuf_t skb);
 	virtual void freePacket(mbuf_t  m,  IOOptionBits options = 0); 
+	/* skb's wrapper */
+	virtual mbuf_t alloc_skb(unsigned int size, UInt32 priority);
 	
-	
-
-
-
 
 
 
@@ -1337,7 +1337,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 };
 
 
-
+#define GFP_ATOMIC 0
 
 
 #endif
