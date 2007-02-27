@@ -2,8 +2,9 @@
      Intel wireless/Pro 2200bg/2945abg device driver for Darwin.
 	 
      Copyright(C) 2007  Marco Rodrigues <jalavoui @ gmail. com> 
-			    Kazuhisa TAKEI <kazuhisa @ gmail. com>. All right reserved.
-									
+			     Kazuhisa TAKEI <kazuhisa @ gmail. com>. All right reserved.
+    
+    									
      This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2, or (at your option)
@@ -56,7 +57,7 @@ extern "C" {
 }
 
 #include "net/ieee80211.h"
-#include "ipw2200.h"
+#include "ipw2200-compat.h"
 
 
 
