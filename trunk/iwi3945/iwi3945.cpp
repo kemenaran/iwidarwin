@@ -415,14 +415,6 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	priv->ieee = ieee;
 
 	priv->net_dev = net_dev;
-	
-	for (i=0;i<6;i++){
-		if(fEnetAddr.bytes[i] == 0      ) continue;
-		memcpy(priv->mac_addr, &fEnetAddr.bytes, ETH_ALEN);
-		memcpy(priv->net_dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
-		memcpy(priv->ieee->dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
-		break;
-	}
 		
 	priv->rxq = NULL;
 	priv->antenna = antenna;
@@ -436,9 +428,9 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 
 	INIT_LIST_HEAD(&priv->free_frames);
 
-	INIT_LIST_HEAD(&priv->daemon_in_list);
-	INIT_LIST_HEAD(&priv->daemon_out_list);
-	INIT_LIST_HEAD(&priv->daemon_free_list);
+	//INIT_LIST_HEAD(&priv->daemon_in_list);
+	//INIT_LIST_HEAD(&priv->daemon_out_list);
+	//INIT_LIST_HEAD(&priv->daemon_free_list);
 
 	memset(&(priv->txq[0]), 0, sizeof(struct ipw_tx_queue) * 6);
 	memset(&priv->card_alive, 0, sizeof(struct ipw_alive_resp));
@@ -483,8 +475,9 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	priv->ieee->modulation = IEEE80211_OFDM_MODULATION |
 	    IEEE80211_CCK_MODULATION;
 
-	u32 pci_id = fPCIDevice->configRead16(kIOPCIConfigDeviceID) | fPCIDevice->configRead16(kIOPCIConfigVendorID);
-
+	u32 pci_id = (deviceID << 16) | vendorID;
+	//fPCIDevice->configRead16(kIOPCIConfigDeviceID) | fPCIDevice->configRead16(kIOPCIConfigVendorID);
+	IWI_LOG("pci_id 0x%08x\n",pci_id);
 	switch (pci_id) {
 	case 0x42221005:	/* 0x4222 0x8086 0x1005 is BG SKU */
 	case 0x42221034:	/* 0x4222 0x8086 0x1034 is BG SKU */
@@ -700,7 +693,7 @@ bool darwin_iwi3945::start(IOService *provider)
         	// Without this, the PCIDevice may be in state 0, and the
         	// PCI config space may be invalid if the machine has been
        		// sleeping.
-		if (fPCIDevice->requestPowerDomainState(kIOPMCapabilitiesMask, 
+		if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
 			(IOPowerConnection *) getParentEntry(gIOPowerPlane),
 			IOPMLowestState ) != IOPMNoErr) {
 				IOLog("%s Power thingi failed\n", getName());
@@ -744,24 +737,24 @@ bool darwin_iwi3945::start(IOService *provider)
 			IOLog("%s ERR: start - getWorkLoop failed\n", getName());
 			break;
 		}
-	
 		fInterruptSrc = IOInterruptEventSource::interruptEventSource(
 			this, (IOInterruptEventAction) &darwin_iwi3945::interruptOccurred,
 			provider);
-			
 		if(!fInterruptSrc || (fWorkLoop->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
 			IOLog("%s fInterruptSrc error\n", getName());
 			break;;
 		}
-
 		// This is important. If the interrupt line is shared with other devices,
 		// then the interrupt vector will be enabled only if all corresponding
 		// interrupt event sources are enabled. To avoid masking interrupts for
 		// other devices that are sharing the interrupt line, the event source
 		// is enabled immediately.
 		fInterruptSrc->enable();
+		mutex=IOLockAlloc();
 		
+		//ipw_sw_reset(1);
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
+		//ipw_nic_init(priv);
 		//ipw_nic_reset(priv);
 		//ipw_bg_resume_work();
 		
@@ -815,13 +808,13 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rx_queue_replenish),NULL,NULL,false);
 		//queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adhoc_check),NULL,NULL,false);
 		//queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_qos_activate),NULL,NULL,false);
-		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_led_activity_off),NULL,NULL,false);
+		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_led_activity_off),NULL,NULL,false);
 		
 		pl=1;
 		return true;			// end start successfully
 	} while (false);
 		
-	stop(provider);
+	//stop(provider);
 	free();
 	return false;			// end start insuccessfully
 }
@@ -831,7 +824,8 @@ void darwin_iwi3945::ipw_bg_resume_work()
 	unsigned long flags;
 
 	//mutex_lock(&priv->mutex);
-
+	IOLockLock(mutex);
+	
 	/* The following it a temporary work around due to the
 	 * suspend / resume not fully initializing the NIC correctly.
 	 * Without all of the following, resume will not attempt to take
@@ -876,6 +870,7 @@ void darwin_iwi3945::ipw_bg_resume_work()
 	priv->status &= ~STATUS_IN_SUSPEND;
 
 	//mutex_unlock(&priv->mutex);
+	IOLockUnlock(mutex);
 }
 
 IOReturn darwin_iwi3945::selectMedium(const IONetworkMedium * medium)
@@ -1901,6 +1896,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	unsigned long flags;
 
 	ipw_power_init_handle(priv);
+	
 	ipw_rate_scale_init_handle(priv, IPW_RATE_SCALE_MAX_WINDOW);
 
 	//spin_lock_irqsave(&priv->lock, flags);
@@ -1955,8 +1951,8 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 
 	/* Initialize the EEPROM */
 	rc = ipw_eeprom_init_sram(priv);
-	//if (rc)
-	//	return rc;
+	if (rc)
+		return rc;
 
 	//spin_lock_irqsave(&priv->lock, flags);
 	if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
@@ -2016,6 +2012,8 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		IOLog("NO RF KILL supported in EEPROM.\n");
 		break;
 	}
+	
+return 0;// TODO check rxq
 
 	/* Allocate the RX queue, or reset if it is already allocated */
 	if (!priv->rxq)
@@ -2212,7 +2210,7 @@ int darwin_iwi3945::ipw_tx_reset(struct ipw_priv *priv)
 int darwin_iwi3945::ipw_queue_tx_init(struct ipw_priv *priv,
 			     struct ipw_tx_queue *q, int count, u32 id)
 {
-	struct pci_dev *dev = priv->pci_dev;
+	//struct pci_dev *dev = priv->pci_dev;
 	int len;
 
 	(void*)q->txb = kmalloc(sizeof(q->txb[0]) * TFD_QUEUE_SIZE_MAX, GFP_ATOMIC);
@@ -2567,7 +2565,7 @@ void darwin_iwi3945::freePacket(mbuf_t m, IOOptionBits options)
 struct ipw_rx_queue *darwin_iwi3945::ipw_rx_queue_alloc(struct ipw_priv *priv)
 {
 	struct ipw_rx_queue *rxq;
-	struct pci_dev *dev = priv->pci_dev;
+	//struct pci_dev *dev = priv->pci_dev;
 	int i;
 	rxq = (struct ipw_rx_queue *)kmalloc(sizeof(*rxq), GFP_ATOMIC);
 	memset(rxq, 0, sizeof(*rxq));
@@ -2811,8 +2809,8 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 	rc = ipw_nic_init(priv);
 	if (rc) {
-		IOLog("Unable to int nic\n");
-		return rc;
+		IOLog("Unable to init nic\n");
+		//return rc;
 	}
 
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
@@ -2845,6 +2843,8 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 			memcpy(priv->mac_addr, priv->eeprom.mac_address, 6);
 			IOLog("MAC address: " MAC_FMT "\n",
 				       MAC_ARG(priv->mac_addr));
+			
+			ifnet_set_lladdr(fifnet, priv->eeprom.mac_address, ETH_ALEN);
 		//}
 
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
@@ -3332,7 +3332,8 @@ IOReturn darwin_iwi3945::getHardwareAddress( IOEthernetAddress * addr )
 	if (fEnetAddr.bytes[0]==0 && fEnetAddr.bytes[1]==0 && fEnetAddr.bytes[2]==0
 	&& fEnetAddr.bytes[3]==0 && fEnetAddr.bytes[4]==0 && fEnetAddr.bytes[5]==0)
 	{
-		memcpy(fEnetAddr.bytes, priv->eeprom.mac_address, ETH_ALEN);
+		if (priv) memcpy(fEnetAddr.bytes, priv->eeprom.mac_address, ETH_ALEN);	
+		IOLog("getHardwareAddress " MAC_FMT "\n",MAC_ARG(fEnetAddr.bytes));	
 	}
 	memcpy(addr, &fEnetAddr, sizeof(*addr));
 	if (priv)
@@ -3340,7 +3341,7 @@ IOReturn darwin_iwi3945::getHardwareAddress( IOEthernetAddress * addr )
 		memcpy(priv->mac_addr, &fEnetAddr.bytes, ETH_ALEN);
 		memcpy(priv->net_dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
 		memcpy(priv->ieee->dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
-		IOLog("getHardwareAddress " MAC_FMT "\n",MAC_ARG(priv->mac_addr));
+		//IOLog("getHardwareAddress " MAC_FMT "\n",MAC_ARG(priv->mac_addr));
 	}
 	
 	return kIOReturnSuccess;
@@ -3394,7 +3395,7 @@ bool darwin_iwi3945::resetDevice(UInt16 *base)
 
 	if(i==100) {
 		IOLog("%s timeout waiting for clock stabilization\n", getName());
-		return false;
+		//return false;
 	}
 
 
@@ -4015,20 +4016,6 @@ bool darwin_iwi3945::configureInterface(IONetworkInterface * netif)
     IOLog("configureInterface\n");
     if (super::configureInterface(netif) == false)
             return false;
-    
-    // Get the generic network statistics structure.
-
-    data = netif->getParameter(kIONetworkStatsKey);
-    if (!data || !(netStats = (IONetworkStats *)data->getBuffer())) {
-            return false;
-    }
-
-    // Get the Ethernet statistics structure.
-
-    data = netif->getParameter(kIOEthernetStatsKey);
-    if (!data || !(etherStats = (IOEthernetStats *)data->getBuffer())) {
-            return false;
-    }
     return true;
 }
 
@@ -5227,12 +5214,6 @@ void darwin_iwi3945::dataLinkLayerAttachComplete( IO80211Interface * interface )
 {
 	IOLog("dataLinkLayerAttachComplete \n");
 	super::dataLinkLayerAttachComplete(interface);
-			fTransmitQueue = getOutputQueue();
-		if (fTransmitQueue == NULL)
-		{
-			IOLog("%s ERR: getOutputQueue()\n", getName());
-			//break;
-		}
 }
 
 

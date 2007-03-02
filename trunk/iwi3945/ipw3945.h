@@ -1914,7 +1914,7 @@ struct ipw_rate_scale_data {
 };
 
 struct ipw_rate_scale_mgr {
-	spinlock_t lock;
+	//spinlock_t lock;
 	struct ipw_rate_scale_data window[NUM_RATES];
 	s32 max_window_size;
 	struct RateScalingCmdSpecifics scale_rate_cmd;
@@ -2441,11 +2441,11 @@ struct ipw_priv {
 	struct ipw_spectrum_notification measure_report;
 
 	/* driver <-> daemon command, response, and communication queue */
-	spinlock_t daemon_lock;
+	/*spinlock_t daemon_lock;
 	wait_queue_head_t wait_daemon_out_queue;
 	struct list_head daemon_in_list;
 	struct list_head daemon_out_list;
-	struct list_head daemon_free_list;
+	struct list_head daemon_free_list;*/
 	/* return code for synchronous driver -> daemon commands */
 	/* daemon driven work queue */
 	/* daemon cmd queue flushing indicator */
@@ -2466,10 +2466,10 @@ struct ipw_priv {
 #endif
 
 	/* spinlock */
-	spinlock_t lock;
+	//spinlock_t lock;
 
 	/* basic pci-network driver stuff */
-	struct pci_dev *pci_dev;
+	//struct pci_dev *pci_dev;
 	struct net_device *net_dev;
 
 #ifdef CONFIG_IPW3945_PROMISCUOUS
@@ -2489,8 +2489,8 @@ struct ipw_priv {
 	
 	struct ipw_shared_t *shared_virt;
 	dma_addr_t shared_phys;
-	struct ipw_rxon_time_cmd rxon_timing;
-	struct daemon_rx_config rxon;
+	//struct ipw_rxon_time_cmd rxon_timing;
+	//struct daemon_rx_config rxon;
 	struct ipw_alive_resp card_alive;
 
 	/* LED related variables */
@@ -2507,10 +2507,10 @@ struct ipw_priv {
 	s8 data_retry_limit;
 	u8 retry_rate;
 
-	wait_queue_head_t wait_command_queue;
+	//wait_queue_head_t wait_command_queue;
 
-	struct timer_list roaming_wdt;
-	struct timer_list disassociate_wdt;
+	//struct timer_list roaming_wdt;
+	//struct timer_list disassociate_wdt;
 
 	int activity_timer_active;
 
@@ -2563,9 +2563,9 @@ struct ipw_priv {
 	u64 last_tsf;
 	u8 last_rx_rssi;
 	u16 last_noise;
-	struct average average_missed_beacons;
-	struct average average_rssi;
-	struct average average_noise;
+//	struct average average_missed_beacons;
+//	struct average average_rssi;
+//	struct average average_noise;
 
 	/* Statistics and counters normalized with each association */
 	u32 last_missed_beacons;
@@ -2613,7 +2613,7 @@ struct ipw_priv {
 #ifdef CONFIG_IPW3945_QOS
 	/* QoS */
 	struct ipw_qos_info qos_data;
-	struct work_struct qos_activate;
+	//struct work_struct qos_activate;
 	/*********************************/
 #endif
 
