@@ -14,6 +14,8 @@
 	#define IWI_LOG(...) printf("iwi3945: " __VA_ARGS__)
 #endif
 
+#define IOLog(...) IWI_LOG(__VA_ARGS__)
+
 #if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
 	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
 #else
@@ -820,7 +822,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int antenna;
 	struct ipw_supported_rates rates;
 	u32 power;
-	lck_mtx_t *mutex;
+	//lck_mtx_t *mutex;
 	IOSimpleLock *spin;
 	u32 freq_band;
 	u32 band;
@@ -848,7 +850,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int burst_duration_CCK;
 	int burst_duration_OFDM;
 	ifnet_t fifnet;
-	
+	IOLock *mutex;
 	
 };
 
