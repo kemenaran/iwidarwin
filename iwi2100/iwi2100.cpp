@@ -9,7 +9,7 @@
 // REQUIRED! This macro defines the class's constructors, destructors,
 // and several other methods I/O Kit requires. Do NOT use super as the
 // second parameter. You must use the literal name of the superclass.
-OSDefineMetaClassAndStructors(darwin_2100, IO80211Controller);
+OSDefineMetaClassAndStructors(darwin_iwi2100, IO80211Controller);
 
 static const struct ipw2100_status_code ipw2100_status_codes[] = {
 	{0x00, "Successful"},
@@ -73,7 +73,7 @@ static const struct ieee80211_geo ipw_geos[] = {
 };
 
 
-bool darwin_2100::init(OSDictionary *dict)
+bool darwin_iwi2100::init(OSDictionary *dict)
 {
 
 	
@@ -107,7 +107,7 @@ config = 0;
 }
 
 
-int darwin_2100::ipw2100_sw_reset(int option)
+int darwin_iwi2100::ipw2100_sw_reset(int option)
 {
 	int err = 0;
 	struct net_device *net_dev;
@@ -197,6 +197,7 @@ int darwin_2100::ipw2100_sw_reset(int option)
 
 	registered = 1;
 
+	ipw2100_initialize_ordinals(priv);
 
 	/* If the RF Kill switch is disabled, go ahead and complete the
 	 * startup sequence */
@@ -223,7 +224,7 @@ int darwin_2100::ipw2100_sw_reset(int option)
 
 }
 
-void darwin_2100::ipw2100_initialize_ordinals(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_initialize_ordinals(struct ipw2100_priv *priv)
 {
 	struct ipw2100_ordinals *ord = &priv->ordinals;
 
@@ -244,7 +245,7 @@ void darwin_2100::ipw2100_initialize_ordinals(struct ipw2100_priv *priv)
 	IOLog("exit\n");
 }
 
-int darwin_2100::ipw2100_get_ordinal(struct ipw2100_priv *priv, u32 ord,
+int darwin_iwi2100::ipw2100_get_ordinal(struct ipw2100_priv *priv, u32 ord,
 			       void *val, u32 * len)
 {
 	struct ipw2100_ordinals *ordinals = &priv->ordinals;
@@ -323,7 +324,7 @@ int darwin_2100::ipw2100_get_ordinal(struct ipw2100_priv *priv, u32 ord,
 	return -EINVAL;
 }
 
-int darwin_2100::ipw2100_wait_for_card_state(struct ipw2100_priv *priv, int state)
+int darwin_iwi2100::ipw2100_wait_for_card_state(struct ipw2100_priv *priv, int state)
 {
 	int i;
 	u32 card_state;
@@ -333,11 +334,11 @@ int darwin_2100::ipw2100_wait_for_card_state(struct ipw2100_priv *priv, int stat
 	for (i = 0; i <= IPW_CARD_DISABLE_COMPLETE_WAIT * 1000; i += 50) {
 		err = ipw2100_get_ordinal(priv, IPW_ORD_CARD_DISABLED,
 					  &card_state, &len);
-		if (err) {
+		/*if (err) {
 			IOLog("Query of CARD_DISABLED ordinal "
 				       "failed.\n");
-			return 0;
-		}
+			//return 0;
+		}*/
 
 		/* We'll break out if either the HW state says it is
 		 * in the state we want, or if HOST_COMPLETE command
@@ -361,7 +362,7 @@ int darwin_2100::ipw2100_wait_for_card_state(struct ipw2100_priv *priv, int stat
 	return -EIO;
 }
 
-int darwin_2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 {
 	struct host_command cmd = {
 		HOST_COMPLETE,
@@ -380,7 +381,7 @@ int darwin_2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 
 	if (rf_kill_active(priv)) {
 		IOLog("Command aborted due to RF kill active.\n");
-		goto fail_up;
+		//goto fail_up;
 	}
 
 	/*err = ipw2100_hw_send_command(priv, &cmd);
@@ -393,7 +394,7 @@ int darwin_2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 	if (err) {
 		IOLog("%s: card not responding to init command.\n",
 			       priv->net_dev->name);
-		goto fail_up;
+		//goto fail_up;
 	}
 
 	if (priv->stop_hang_check) {
@@ -405,14 +406,14 @@ int darwin_2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 	return err;
 }
 
-IOOptionBits darwin_2100::getState( void ) const
+IOOptionBits darwin_iwi2100::getState( void ) const
 {
 	IOOptionBits r=super::getState();
 	IOLog("getState = %x\n",r);
 	return r;
 }
 
-bool darwin_2100::start(IOService *provider)
+bool darwin_iwi2100::start(IOService *provider)
 {
 	UInt16	reg;
 
@@ -439,7 +440,7 @@ bool darwin_2100::start(IOService *provider)
         	// Without this, the PCIDevice may be in state 0, and the
         	// PCI config space may be invalid if the machine has been
        		// sleeping.
-		if (fPCIDevice->requestPowerDomainState(kIOPMCapabilitiesMask, 
+		if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
 			(IOPowerConnection *) getParentEntry(gIOPowerPlane),
 			IOPMLowestState ) != IOPMNoErr) {
 				IOLog("%s Power thingi failed\n", getName());
@@ -483,40 +484,22 @@ bool darwin_2100::start(IOService *provider)
 			IOLog("%s ERR: start - getWorkLoop failed\n", getName());
 			break;
 		}
-	
 		fInterruptSrc = IOInterruptEventSource::interruptEventSource(
-			this, (IOInterruptEventAction) &darwin_2100::interruptOccurred,
+			this, (IOInterruptEventAction) &darwin_iwi2100::interruptOccurred,
 			provider);
-			
 		if(!fInterruptSrc || (fWorkLoop->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
 			IOLog("%s fInterruptSrc error\n", getName());
 			break;;
 		}
-
 		// This is important. If the interrupt line is shared with other devices,
 		// then the interrupt vector will be enabled only if all corresponding
 		// interrupt event sources are enabled. To avoid masking interrupts for
 		// other devices that are sharing the interrupt line, the event source
 		// is enabled immediately.
 		fInterruptSrc->enable();
-
-		if(!initCmdQueue())
-		{
-			IOLog("CmdQueue alloc error\n");
-			break;
-		}
-		if(!initRxQueue())
-		{
-			IOLog("RxQueue alloc error\n");
-			break;
-		}
-		if(!initTxQueue())
-		{
-			IOLog("TxQueue alloc error\n");
-			break;
-		}
 		
-		resetDevice((UInt16 *)memBase);
+		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
+
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -558,24 +541,24 @@ bool darwin_2100::start(IOService *provider)
 		if (!spin) return false;
 		if (!mutex) return false;*/
 		//IW_SCAN_TYPE_ACTIVE
-		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan),NULL,NULL,false);
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_adapter_restart),NULL,NULL,false);
-		queue_te(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_led_link_on),NULL,NULL,false);
-		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_rf_kill),NULL,NULL,false);
-		queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan_check),NULL,NULL,false);
-		queue_te(5,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_associate),NULL,NULL,false);
-		queue_te(6,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_gather_stats),NULL,NULL,false);
+		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan),NULL,NULL,false);
+		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_adapter_restart),NULL,NULL,false);
+		queue_te(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_led_link_on),NULL,NULL,false);
+		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill),NULL,NULL,false);
+		queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan_check),NULL,NULL,false);
+		queue_te(5,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_associate),NULL,NULL,false);
+		queue_te(6,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_gather_stats),NULL,NULL,false);
 		
 		pl=1;
 		return true;			// end start successfully
 	} while (false);
 		
-	stop(provider);
+	//stop(provider);
 	free();
 	return false;			// end start insuccessfully
 }
 
-IOReturn darwin_2100::selectMedium(const IONetworkMedium * medium)
+IOReturn darwin_iwi2100::selectMedium(const IONetworkMedium * medium)
 {
 	bool  r;
 
@@ -599,7 +582,7 @@ IOReturn darwin_2100::selectMedium(const IONetworkMedium * medium)
 	return ( r ? kIOReturnSuccess : kIOReturnIOError );
 }
 
-bool darwin_2100::addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name) {	
+bool darwin_iwi2100::addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name) {	
     IONetworkMedium	* medium;
     bool              ret = false;
     
@@ -613,7 +596,7 @@ bool darwin_2100::addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* na
     return ret;
 }
 
-IOOutputQueue * darwin_2100::createOutputQueue( void )
+IOOutputQueue * darwin_iwi2100::createOutputQueue( void )
 {
 	// An IOGatedOutputQueue will serialize all calls to the driver's
     // outputPacket() function with its work loop. This essentially
@@ -624,14 +607,14 @@ IOOutputQueue * darwin_2100::createOutputQueue( void )
     return IOGatedOutputQueue::withTarget( this, getWorkLoop() );
 }
 
-bool darwin_2100::createWorkLoop( void )
+bool darwin_iwi2100::createWorkLoop( void )
 {
     fWorkLoop = IOWorkLoop::workLoop();
 	
     return ( fWorkLoop != 0 );
 }
 
-IOWorkLoop * darwin_2100::getWorkLoop( void ) const
+IOWorkLoop * darwin_iwi2100::getWorkLoop( void ) const
 {
     // Override IOService::getWorkLoop() method to return the work loop
     // we allocated in createWorkLoop().
@@ -639,18 +622,18 @@ IOWorkLoop * darwin_2100::getWorkLoop( void ) const
 	return fWorkLoop;
 }
 
-const OSString * darwin_2100::newVendorString( void ) const
+const OSString * darwin_iwi2100::newVendorString( void ) const
 {
     return OSString::withCString("Intel");
 }
 
-const OSString * darwin_2100::newModelString( void ) const
+const OSString * darwin_iwi2100::newModelString( void ) const
 {
     const char * model = "2100";
     return OSString::withCString(model);
 }
 
-int darwin_2100::ipw2100_stop_nic()
+int darwin_iwi2100::ipw2100_stop_nic()
 {
 	int rc = 0;
 
@@ -669,7 +652,7 @@ int darwin_2100::ipw2100_stop_nic()
 	return rc;
 }
 
-int darwin_2100::ipw2100_init_nic()
+int darwin_iwi2100::ipw2100_init_nic()
 {
 	int rc;
 
@@ -699,7 +682,7 @@ int darwin_2100::ipw2100_init_nic()
 	return 0;
 }
 
-int darwin_2100::ipw2100_reset_nic(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_reset_nic(struct ipw2100_priv *priv)
 {
 	int rc = 0;
 	unsigned long flags;
@@ -717,7 +700,7 @@ int darwin_2100::ipw2100_reset_nic(struct ipw2100_priv *priv)
 }
 
 
-void darwin_2100::ipw2100_start_nic()
+void darwin_iwi2100::ipw2100_start_nic()
 {
 
 	/* prvHwStartNic  release ARC */
@@ -732,7 +715,7 @@ void darwin_2100::ipw2100_start_nic()
 
 }
 
-inline void darwin_2100::ipw2100_enable_interrupts(struct ipw2100_priv *priv)
+inline void darwin_iwi2100::ipw2100_enable_interrupts(struct ipw2100_priv *priv)
 {
 	if (priv->status & STATUS_INT_ENABLED)
 		return;
@@ -740,12 +723,12 @@ inline void darwin_2100::ipw2100_enable_interrupts(struct ipw2100_priv *priv)
 	ipw2100_write32(IPW_INTA_MASK_R, IPW_INTA_MASK_ALL);
 }
 
-int darwin_2100::ipw2100_load(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_load(struct ipw2100_priv *priv)
 {
 	
 }
 
-int darwin_2100::rf_kill_active(struct ipw2100_priv *priv)
+int darwin_iwi2100::rf_kill_active(struct ipw2100_priv *priv)
 {
 	unsigned short value = 0;
 	u32 reg = 0;
@@ -770,12 +753,12 @@ int darwin_2100::rf_kill_active(struct ipw2100_priv *priv)
 	return (value == 0);
 }
 
-void darwin_2100::ipw2100_adapter_restart(ipw2100_priv *adapter)
+void darwin_iwi2100::ipw2100_adapter_restart(ipw2100_priv *adapter)
 {
 	
 }
 
-void darwin_2100::ipw2100_remove_current_network(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_remove_current_network(struct ipw2100_priv *priv)
 {
 	struct list_head *element, *safe;
 	struct ieee80211_network *network = NULL;
@@ -791,7 +774,7 @@ void darwin_2100::ipw2100_remove_current_network(struct ipw2100_priv *priv)
 	}
 }
 
-void darwin_2100::ipw2100_rf_kill(ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_rf_kill(ipw2100_priv *priv)
 {
 	//struct ipw2100_priv *priv = adapter;
 	unsigned long flags;
@@ -802,9 +785,9 @@ void darwin_2100::ipw2100_rf_kill(ipw2100_priv *priv)
 		//IOLog("RF Kill active, rescheduling GPIO check\n");
 		//IODelay(5000*1000);
 		//ipw2100_rf_kill();
-		//queue_td(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_led_link_on));
+		//queue_td(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_led_link_on));
 		//ipw2100_led_link_down();
-		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_rf_kill),priv,2,true);
+		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill),priv,2,true);
 		goto exit_unlock;
 	}
 
@@ -815,7 +798,7 @@ void darwin_2100::ipw2100_rf_kill(ipw2100_priv *priv)
 				  "device\n");
 
 		/* we can not do an adapter restart while inside an irq lock */
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_adapter_restart),priv,NULL,true);
+		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_adapter_restart),priv,NULL,true);
 	} else
 		IOLog("HW RF Kill deactivated.  SW RF Kill still "
 				  "enabled\n");
@@ -827,7 +810,7 @@ void darwin_2100::ipw2100_rf_kill(ipw2100_priv *priv)
 	return;
 }
 
-int darwin_2100::ipw2100_set_geo(struct ieee80211_device *ieee,
+int darwin_iwi2100::ipw2100_set_geo(struct ieee80211_device *ieee,
 		       const struct ieee80211_geo *geo)
 {
 	memcpy(ieee->geo.name, geo->name, 3);
@@ -841,24 +824,24 @@ int darwin_2100::ipw2100_set_geo(struct ieee80211_device *ieee,
 	return 0;
 }
 
-IOReturn darwin_2100::setPowerState ( unsigned long powerStateOrdinal, IOService* whatDevice )
+IOReturn darwin_iwi2100::setPowerState ( unsigned long powerStateOrdinal, IOService* whatDevice )
 {
 	IOLog("setPowerState to %d\n",powerStateOrdinal);
 	power=powerStateOrdinal;
 	return super::setPowerState(powerStateOrdinal,whatDevice);
 }
 
-void darwin_2100::ipw2100_init_ordinals(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_init_ordinals(struct ipw2100_priv *priv)
 {
 
 }
 
-int darwin_2100::ipw2100_grab_restricted_access(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_grab_restricted_access(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::_ipw_write_restricted(struct ipw2100_priv *priv,
+void darwin_iwi2100::_ipw_write_restricted(struct ipw2100_priv *priv,
 					 u32 reg, u32 value)
 {
 //      _ipw_grab_restricted_access(priv);
@@ -866,13 +849,13 @@ void darwin_2100::_ipw_write_restricted(struct ipw2100_priv *priv,
 //      _ipw_release_restricted_access(priv);
 }
 
-void darwin_2100::_ipw_write_restricted_reg(struct ipw2100_priv *priv,
+void darwin_iwi2100::_ipw_write_restricted_reg(struct ipw2100_priv *priv,
 					     u32 addr, u32 val)
 {
 
 }
 
-int darwin_2100::ipw2100_copy_ucode_images(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_copy_ucode_images(struct ipw2100_priv *priv,
 				 u8 * image_code,
 				 size_t image_len_code,
 				 u8 * image_data, size_t image_len_data)
@@ -880,13 +863,13 @@ int darwin_2100::ipw2100_copy_ucode_images(struct ipw2100_priv *priv,
 	
 }
 
-void darwin_2100::_ipw_release_restricted_access(struct ipw2100_priv
+void darwin_iwi2100::_ipw_release_restricted_access(struct ipw2100_priv
 						  *priv)
 {
 
 }
 
-void darwin_2100::ipw2100_write_restricted_reg_buffer(struct ipw2100_priv
+void darwin_iwi2100::ipw2100_write_restricted_reg_buffer(struct ipw2100_priv
 						   *priv, u32 reg,
 						   u32 len, u8 * values)
 {
@@ -894,24 +877,24 @@ void darwin_2100::ipw2100_write_restricted_reg_buffer(struct ipw2100_priv
 }
 
 
-int darwin_2100::ipw2100_download_ucode_base(struct ipw2100_priv *priv, u8 * image, u32 len)
+int darwin_iwi2100::ipw2100_download_ucode_base(struct ipw2100_priv *priv, u8 * image, u32 len)
 {
 
 }
 
-u32 darwin_2100::_ipw_read_restricted_reg(struct ipw2100_priv *priv, u32 reg)
+u32 darwin_iwi2100::_ipw_read_restricted_reg(struct ipw2100_priv *priv, u32 reg)
 {
 	
 }
 
 
-int darwin_2100::attach_buffer_to_tfd_frame(struct tfd_frame *tfd,
+int darwin_iwi2100::attach_buffer_to_tfd_frame(struct tfd_frame *tfd,
 				      dma_addr_t addr, u16 len)
 {
 	
 }
 
-void darwin_2100::ipw2100_write_buffer_restricted(struct ipw2100_priv *priv,
+void darwin_iwi2100::ipw2100_write_buffer_restricted(struct ipw2100_priv *priv,
 					u32 reg, u32 len, u32 * values)
 {
 	u32 count = sizeof(u32);
@@ -921,103 +904,103 @@ void darwin_2100::ipw2100_write_buffer_restricted(struct ipw2100_priv *priv,
 	}
 }
 
-int darwin_2100::ipw2100_download_ucode(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_download_ucode(struct ipw2100_priv *priv,
 			      struct fw_image_desc *desc,
 			      u32 mem_size, dma_addr_t dst_addr)
 {
 	
 }
 
-int darwin_2100::ipw2100_poll_restricted_bit(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_poll_restricted_bit(struct ipw2100_priv *priv,
 					  u32 addr, u32 mask, int timeout)
 {
 	
 }
 
-int darwin_2100::ipw2100_load_ucode(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_load_ucode(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::ipw2100_clear_stations_table(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_clear_stations_table(struct ipw2100_priv *priv)
 {
 
 	
 }
 
-void darwin_2100::ipw2100_nic_start(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_nic_start(struct ipw2100_priv *priv)
 {
 	
 }
 
-int darwin_2100::ipw2100_query_eeprom(struct ipw2100_priv *priv, u32 offset,
+int darwin_iwi2100::ipw2100_query_eeprom(struct ipw2100_priv *priv, u32 offset,
 			    u32 len, u8 * buf)
 {
 	
 }
 
-int darwin_2100::ipw2100_card_show_info(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_card_show_info(struct ipw2100_priv *priv)
 {
 	
 }
 
 #define PCI_LINK_CTRL      0x0F0
 
-int darwin_2100::ipw2100_power_init_handle(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_power_init_handle(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::__ipw_set_bits_restricted_reg(u32 line, struct ipw2100_priv
+void darwin_iwi2100::__ipw_set_bits_restricted_reg(u32 line, struct ipw2100_priv
 						 *priv, u32 reg, u32 mask)
 {
 	
 }
 
-int darwin_2100::ipw2100_eeprom_init_sram(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_eeprom_init_sram(struct ipw2100_priv *priv)
 {
 	
 }
 
-int darwin_2100::ipw2100_rate_scale_clear_window(struct ipw2100_rate_scale_data
+int darwin_iwi2100::ipw2100_rate_scale_clear_window(struct ipw2100_rate_scale_data
 				       *window)
 {
 
 }
 
-int darwin_2100::ipw2100_rate_scale_init_handle(struct ipw2100_priv *priv, s32 window_size)
+int darwin_iwi2100::ipw2100_rate_scale_init_handle(struct ipw2100_priv *priv, s32 window_size)
 {
 	
 }
 
-int darwin_2100::ipw2100_nic_set_pwr_src(struct ipw2100_priv *priv, int pwr_max)
+int darwin_iwi2100::ipw2100_nic_set_pwr_src(struct ipw2100_priv *priv, int pwr_max)
 {
 	
 }
 
-void darwin_2100::__ipw_set_bits_mask_restricted_reg(u32 line, struct ipw2100_priv
+void darwin_iwi2100::__ipw_set_bits_mask_restricted_reg(u32 line, struct ipw2100_priv
 						      *priv, u32 reg,
 						      u32 bits, u32 mask)
 {
 
 }
 
-int darwin_2100::ipw2100_nic_init(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_nic_init(struct ipw2100_priv *priv)
 {
 	
 }
 
-int darwin_2100::ipw2100_rf_eeprom_ready(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_rf_eeprom_ready(struct ipw2100_priv *priv)
 {
 	
 }
 
-int darwin_2100::ipw2100_verify_ucode(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_verify_ucode(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::ipw2100_reset_fatalerror(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_reset_fatalerror(struct ipw2100_priv *priv)
 {
 	if (!priv->fatal_error)
 		return;
@@ -1027,7 +1010,7 @@ void darwin_2100::ipw2100_reset_fatalerror(struct ipw2100_priv *priv)
 	priv->fatal_error = 0;
 }
 
-void darwin_2100::ipw2100_hw_set_gpio(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_hw_set_gpio(struct ipw2100_priv *priv)
 {
 	u32 reg = 0;
 	/*
@@ -1039,7 +1022,7 @@ void darwin_2100::ipw2100_hw_set_gpio(struct ipw2100_priv *priv)
 	write_register(priv->net_dev, IPW_REG_GPIO, reg);
 }
 
-int darwin_2100::ipw2100_power_cycle_adapter(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_power_cycle_adapter(struct ipw2100_priv *priv)
 {
 	u32 reg;
 	int i;
@@ -1068,7 +1051,7 @@ int darwin_2100::ipw2100_power_cycle_adapter(struct ipw2100_priv *priv)
 	if (!i) {
 		IOLog
 		    ("exit - waited too long for master assert stop\n");
-		return -EIO;
+		//return -EIO;
 	}
 
 	write_register(priv->net_dev, IPW_REG_RESET_REG,
@@ -1084,7 +1067,7 @@ int darwin_2100::ipw2100_power_cycle_adapter(struct ipw2100_priv *priv)
 	return 0;
 }
 
-int darwin_2100::sw_reset_and_clock(struct ipw2100_priv *priv)
+int darwin_iwi2100::sw_reset_and_clock(struct ipw2100_priv *priv)
 {
 	int i;
 	u32 r;
@@ -1132,7 +1115,7 @@ int darwin_2100::sw_reset_and_clock(struct ipw2100_priv *priv)
 	return 0;
 }
 
-int darwin_2100::ipw2100_verify(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_verify(struct ipw2100_priv *priv)
 {
 	u32 data1, data2;
 	u32 address;
@@ -1166,7 +1149,7 @@ int darwin_2100::ipw2100_verify(struct ipw2100_priv *priv)
 	return -EIO;
 }
 
-int darwin_2100::ipw2100_ucode_download(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_ucode_download(struct ipw2100_priv *priv,
 				  struct ipw2100_fw *fw)
 {
 	struct net_device *dev = priv->net_dev;
@@ -1284,7 +1267,7 @@ int darwin_2100::ipw2100_ucode_download(struct ipw2100_priv *priv,
 	return 0;
 }
 
-int darwin_2100::ipw2100_fw_download(struct ipw2100_priv *priv, struct ipw2100_fw *fw)
+int darwin_iwi2100::ipw2100_fw_download(struct ipw2100_priv *priv, struct ipw2100_fw *fw)
 {
 	/* firmware is constructed of N contiguous entries, each entry is
 	 * structured as:
@@ -1324,7 +1307,7 @@ int darwin_2100::ipw2100_fw_download(struct ipw2100_priv *priv, struct ipw2100_f
 	return 0;
 }
 
-int darwin_2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 {
 	u32 address;
 	int err;
@@ -1435,7 +1418,7 @@ int darwin_2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 	return err;
 }
 
-int darwin_2100::ipw2100_start_adapter(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_start_adapter(struct ipw2100_priv *priv)
 {
 	int i;
 	u32 inta, inta_mask, gpio;
@@ -1535,7 +1518,7 @@ int darwin_2100::ipw2100_start_adapter(struct ipw2100_priv *priv)
 	return 0;
 }
 
-int darwin_2100::ipw2100_get_hw_features(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_get_hw_features(struct ipw2100_priv *priv)
 {
 	u32 addr, len;
 	u32 val;
@@ -1552,7 +1535,7 @@ int darwin_2100::ipw2100_get_hw_features(struct ipw2100_priv *priv)
 	}
 
 	IOLog("EEPROM address: %08X\n", addr);
-
+					   
 	/*
 	 * EEPROM version is the byte at offset 0xfd in firmware
 	 * We read 4 bytes, then shift out the byte we actually want */
@@ -1577,7 +1560,7 @@ int darwin_2100::ipw2100_get_hw_features(struct ipw2100_priv *priv)
 	return 0;
 }
 
-int darwin_2100::ipw2100_set_ordinal(struct ipw2100_priv *priv, u32 ord, u32 * val,
+int darwin_iwi2100::ipw2100_set_ordinal(struct ipw2100_priv *priv, u32 ord, u32 * val,
 			       u32 * len)
 {
 	struct ipw2100_ordinals *ordinals = &priv->ordinals;
@@ -1608,7 +1591,7 @@ int darwin_2100::ipw2100_set_ordinal(struct ipw2100_priv *priv, u32 ord, u32 * v
 }
 
 #define MAX_HW_RESTARTS 2
-int darwin_2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
+int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 {
 		unsigned long flags;
 	int rc = 0;
@@ -1650,7 +1633,7 @@ int darwin_2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		//goto exit;
 	}
 
-	ipw2100_initialize_ordinals(priv);
+	//ipw2100_initialize_ordinals(priv);
 
 	/* Determine capabilities of this particular HW configuration */
 	if (ipw2100_get_hw_features(priv)) {
@@ -1724,7 +1707,7 @@ int darwin_2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 
 }
 
-IOReturn darwin_2100::enable( IONetworkInterface * netif ) 
+IOReturn darwin_iwi2100::enable( IONetworkInterface * netif ) 
 {
 	IOLog("ifconfig up\n");
 	switch ((ifnet_flags(fifnet) & IFF_UP) && (ifnet_flags(fifnet) & IFF_RUNNING))
@@ -1747,12 +1730,12 @@ IOReturn darwin_2100::enable( IONetworkInterface * netif )
 	}
 }
 
-inline int darwin_2100::ipw2100_is_init(struct ipw2100_priv *priv)
+inline int darwin_iwi2100::ipw2100_is_init(struct ipw2100_priv *priv)
 {
 	return (priv->status & STATUS_INIT) ? 1 : 0;
 }
 
-u32 darwin_2100::ipw2100_register_toggle(u32 reg)
+u32 darwin_iwi2100::ipw2100_register_toggle(u32 reg)
 {
 	reg &= ~IPW_START_STANDBY;
 	if (reg & IPW_GATE_ODMA)
@@ -1764,12 +1747,12 @@ u32 darwin_2100::ipw2100_register_toggle(u32 reg)
 	return reg;
 }
 
-void darwin_2100::ipw2100_led_activity_off(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_activity_off(struct ipw2100_priv *priv)
 {
 
 }
 
-void darwin_2100::ipw2100_led_link_down(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_link_down(struct ipw2100_priv *priv)
 {
 	ipw2100_led_activity_off(priv);
 	ipw2100_led_link_off(priv);
@@ -1778,27 +1761,27 @@ void darwin_2100::ipw2100_led_link_down(struct ipw2100_priv *priv)
 		ipw2100_led_radio_off(priv);
 }
 
-void darwin_2100::ipw2100_led_link_off(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_link_off(struct ipw2100_priv *priv)
 {
 
 }
 
-void darwin_2100::ipw2100_led_band_off(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_band_off(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::ipw2100_led_shutdown(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_shutdown(struct ipw2100_priv *priv)
 {
 	ipw2100_led_activity_off(priv);
 	ipw2100_led_link_off(priv);
 	ipw2100_led_band_off(priv);
-	queue_td(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_led_link_on));
+	queue_td(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_led_link_on));
 	//cancel_delayed_work(&priv->led_link_off);
 	//cancel_delayed_work(&priv->led_act_off);
 }
 
-void darwin_2100::ipw2100_abort_scan(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_abort_scan(struct ipw2100_priv *priv)
 {
 	int err;
 
@@ -1807,25 +1790,25 @@ void darwin_2100::ipw2100_abort_scan(struct ipw2100_priv *priv)
 		return;
 	}
 	priv->status |= STATUS_SCAN_ABORTING;
-	queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan));
-	queue_td(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan_check));
+	queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan));
+	queue_td(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan_check));
 	err = sendCommand(IPW_CMD_SCAN_ABORT, NULL,0, 0);
 	if (err)
 		IOLog("Request to abort scan failed.\n");
 }
 
-void darwin_2100::ipw2100_send_disassociate(struct ipw2100_priv *priv, int quiet)
+void darwin_iwi2100::ipw2100_send_disassociate(struct ipw2100_priv *priv, int quiet)
 {
 
 }
 
-int darwin_2100::ipw2100_send_associate(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_send_associate(struct ipw2100_priv *priv,
 			      struct ipw2100_associate *associate)
 {
 
 }
 
-int darwin_2100::ipw2100_disassociate(struct ipw2100_priv *data)
+int darwin_iwi2100::ipw2100_disassociate(struct ipw2100_priv *data)
 {
 	struct ipw2100_priv *priv = data;
 	if (!(priv->status & (STATUS_ASSOCIATED | STATUS_ASSOCIATING)))
@@ -1834,7 +1817,7 @@ int darwin_2100::ipw2100_disassociate(struct ipw2100_priv *data)
 	return 1;
 }
 
-void darwin_2100::ipw2100_deinit(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_deinit(struct ipw2100_priv *priv)
 {
 	int i;
 
@@ -1872,7 +1855,7 @@ void darwin_2100::ipw2100_deinit(struct ipw2100_priv *priv)
 }
 
 
-inline void darwin_2100::ipw2100_disable_interrupts(struct ipw2100_priv *priv)
+inline void darwin_iwi2100::ipw2100_disable_interrupts(struct ipw2100_priv *priv)
 {
 	if (!(priv->status & STATUS_INT_ENABLED))
 		return;
@@ -1880,7 +1863,7 @@ inline void darwin_2100::ipw2100_disable_interrupts(struct ipw2100_priv *priv)
 	ipw2100_write32( IPW_INTA_MASK_R, ~IPW_INTA_MASK_ALL);
 }
 
-void darwin_2100::ipw2100_down(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_down(struct ipw2100_priv *priv)
 {
 	int exit_pending = priv->status & STATUS_EXIT_PENDING;
 
@@ -1908,114 +1891,140 @@ void darwin_2100::ipw2100_down(struct ipw2100_priv *priv)
 }
 
 
-void darwin_2100::ipw2100_led_radio_off(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_radio_off(struct ipw2100_priv *priv)
 {
 	ipw2100_led_activity_off(priv);
 	ipw2100_led_link_off(priv);
 }
 
-void darwin_2100::interruptOccurred(OSObject * owner, 
+void darwin_iwi2100::interruptOccurred(OSObject * owner, 
 	//IOInterruptEventSource * src, int /*count*/) 
 	void		*src,  IOService *nub, int source)
 {
-	darwin_2100 *self = OSDynamicCast(darwin_2100, owner); //(darwin_2100 *)owner;
+	darwin_iwi2100 *self = OSDynamicCast(darwin_iwi2100, owner); //(darwin_iwi2100 *)owner;
 	self->handleInterrupt();
 }
 
-UInt32 darwin_2100::handleInterrupt(void)
+UInt32 darwin_iwi2100::handleInterrupt(void)
 {
-	UInt32 r,inta_mask;
-	UInt32 ret=true;
-	int flags;
+	struct net_device *dev = priv->net_dev;
+	unsigned long flags;
+	u32 inta, tmp;
 
-	r = ipw2100_read32(IPW_INTA_RW);
-	inta_mask = ipw2100_read32(IPW_INTA_MASK_R);
-	r &= (IPW_INTA_MASK_ALL & inta_mask);
-	
-	//if ((r = CSR_READ_4(memBase, IWI_CSR_INTR)) == 0 || r == 0xffffffff) {
-		//IWI_UNLOCK(memBase);
-	//	return false;
-	//}
-	//IOLog("%s: GotInterrupt: 0x%8x\t (", getName(), r);
+	//spin_lock_irqsave(&priv->low_lock, flags);
+	ipw2100_disable_interrupts(priv);
 
-	/* disable interrupts */
-	CSR_WRITE_4(memBase, IWI_CSR_INTR_MASK, 0);
+	read_register(dev, IPW_REG_INTA, &inta);
 
-	/*if (r == 0) {
-		IOLog("IPW_INTA_NONE.  Restarting.\n");
-		priv->status &= ~STATUS_INIT;
-		priv->status &= ~STATUS_HCMD_ACTIVE;
-		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_adapter_restart),priv,2,true);
-		ret |= IPW_INTA_BIT_FATAL_ERROR;
-	}*/
-	
-	if (r & IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE)
-	{
-		IOLog("PHY_OFF_DONE Restarting\n");
-		priv->status |= STATUS_RF_KILL_HW;
-		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_adapter_restart),priv,NULL,true);
-		ret |= IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE;
-	}
-	
-	if (r & (IPW_INTA_BIT_FATAL_ERROR | IWI_INTR_PARITY_ERROR)) {
-		IOLog("Firmware error detected.  Restarting.\n");
-		priv->status &= ~STATUS_INIT;
-		priv->status &= ~STATUS_HCMD_ACTIVE;
-		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_adapter_restart),priv,NULL,true);
-		ret |= IPW_INTA_BIT_FATAL_ERROR;
+	IOLog("enter - INTA: 0x%08lX\n",
+		      (unsigned long)inta & IPW_INTERRUPT_MASK);
+
+	priv->in_isr++;
+	priv->interrupts++;
+
+	/* We do not loop and keep polling for more interrupts as this
+	 * is frowned upon and doesn't play nicely with other potentially
+	 * chained IRQs */
+	IOLog("INTA: 0x%08lX\n",
+		      (unsigned long)inta & IPW_INTERRUPT_MASK);
+
+	if (inta & IPW2100_INTA_FATAL_ERROR) {
+		IOLog( 
+		       ": Fatal interrupt. Scheduling firmware restart.\n");
+		priv->inta_other++;
+		write_register(dev, IPW_REG_INTA, IPW2100_INTA_FATAL_ERROR);
+
+		read_nic_dword(dev, IPW_NIC_FATAL_ERROR, &priv->fatal_error);
+		IOLog("%s: Fatal error value: 0x%08X\n",
+			       priv->net_dev->name, priv->fatal_error);
+
+		read_nic_dword(dev, IPW_ERROR_ADDR(priv->fatal_error), &tmp);
+		IOLog("%s: Fatal error address value: 0x%08X\n",
+			       priv->net_dev->name, tmp);
+
+		/* Wake up any sleeping jobs */
+		//schedule_reset(priv);
 	}
 
-	if (r & IPW_INTA_BIT_FW_INITIALIZATION_DONE) {
-			IOLog("IPW_INTA_BIT_FW_INITIALIZATION_DONE)\n"
-			"%s: Interrupt::Firmware successfully loaded and initialized\n", getName());
-			ret = IWI_INTR_FW_INITED;
-	}
-	if (r & IPW_INTA_BIT_RF_KILL_DONE) {
-		IOLog("IPW_INTA_BIT_RF_KILL_DONE\nPress wireless button to turn interface on\n");
-		priv->status |= STATUS_RF_KILL_HW;
-		priv->status &= ~STATUS_RF_KILL_SW;
-		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		fNetif->setLinkState(kIO80211NetworkLinkDown);
-		queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan));
-		ipw2100_led_link_down(priv);
-		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_rf_kill),priv,2,true);
-		ret |= IPW_INTA_BIT_RF_KILL_DONE;
+	if (inta & IPW2100_INTA_PARITY_ERROR) {
+		IOLog( 
+		       ": ***** PARITY ERROR INTERRUPT !!!! \n");
+		priv->inta_other++;
+		write_register(dev, IPW_REG_INTA, IPW2100_INTA_PARITY_ERROR);
 	}
 
-	if (r & IPW_INTA_BIT_RX_TRANSFER) {
-		IOLog("IPW_INTA_BIT_RX_TRANSFER)\n");
-		RxQueueIntr();
-	//	iwi_rx_intr(sc);
-		ret = IPW_INTA_BIT_RX_TRANSFER;
+	if (inta & IPW2100_INTA_RX_TRANSFER) {
+		IOLog("RX interrupt\n");
+
+		priv->rx_interrupts++;
+
+		write_register(dev, IPW_REG_INTA, IPW2100_INTA_RX_TRANSFER);
+
+		//__ipw2100_rx_process(priv);
+		//__ipw2100_tx_complete(priv);
 	}
 
-	if (r & IPW_INTA_BIT_TX_CMD_QUEUE) {
-		IOLog("IPW_INTA_BIT_TX_CMD_QUEUE)\n");
-		//rc = ipw2100_queue_tx_reclaim(priv, &priv->txq_cmd, -1);
-		priv->status &= ~STATUS_HCMD_ACTIVE;
-		ret |= IPW_INTA_BIT_TX_CMD_QUEUE;
-		//ret = IWI_INTR_CMD_DONE;
+	if (inta & IPW2100_INTA_TX_TRANSFER) {
+		IOLog("TX interrupt\n");
+
+		priv->tx_interrupts++;
+
+		write_register(dev, IPW_REG_INTA, IPW2100_INTA_TX_TRANSFER);
+
+		//__ipw2100_tx_complete(priv);
+		//ipw2100_tx_send_commands(priv);
+		//ipw2100_tx_send_data(priv);
 	}
 
-	if (r & IWI_INTR_TX1_DONE) {
-		IOLog("IWI_INTR_TX1_DONE)\n");
-		ret = IWI_INTR_TX1_DONE;
-	//	iwi_tx_intr(sc);
+	if (inta & IPW2100_INTA_TX_COMPLETE) {
+		IOLog("TX complete\n");
+		priv->inta_other++;
+		write_register(dev, IPW_REG_INTA, IPW2100_INTA_TX_COMPLETE);
+
+		//__ipw2100_tx_complete(priv);
 	}
-	/* acknowledge interrupts */
-	CSR_WRITE_4(memBase, IWI_CSR_INTR, r);
 
-	/* re-enable interrupts */
-	CSR_WRITE_4(memBase, IWI_CSR_INTR_MASK, IPW_INTA_MASK_ALL);
+	if (inta & IPW2100_INTA_EVENT_INTERRUPT) {
+		/* ipw2100_handle_event(dev); */
+		priv->inta_other++;
+		write_register(dev, IPW_REG_INTA, IPW2100_INTA_EVENT_INTERRUPT);
+	}
 
-	return ret;
+	if (inta & IPW2100_INTA_FW_INIT_DONE) {
+		IOLog("FW init done interrupt\n");
+		priv->inta_other++;
+
+		read_register(dev, IPW_REG_INTA, &tmp);
+		if (tmp & (IPW2100_INTA_FATAL_ERROR |
+			   IPW2100_INTA_PARITY_ERROR)) {
+			write_register(dev, IPW_REG_INTA,
+				       IPW2100_INTA_FATAL_ERROR |
+				       IPW2100_INTA_PARITY_ERROR);
+		}
+
+		write_register(dev, IPW_REG_INTA, IPW2100_INTA_FW_INIT_DONE);
+	}
+
+	if (inta & IPW2100_INTA_STATUS_CHANGE) {
+		IOLog("Status change interrupt\n");
+		priv->inta_other++;
+		write_register(dev, IPW_REG_INTA, IPW2100_INTA_STATUS_CHANGE);
+	}
+
+	if (inta & IPW2100_INTA_SLAVE_MODE_HOST_COMMAND_DONE) {
+		IOLog("slave host mode interrupt\n");
+		priv->inta_other++;
+		write_register(dev, IPW_REG_INTA,
+			       IPW2100_INTA_SLAVE_MODE_HOST_COMMAND_DONE);
+	}
+
+	priv->in_isr--;
+	ipw2100_enable_interrupts(priv);
+	return 0;
 }
 
 
-UInt16 darwin_2100::readPromWord(UInt16 *base, UInt8 addr)
+UInt16 darwin_iwi2100::readPromWord(UInt16 *base, UInt8 addr)
 {
 	UInt32 tmp;
 	UInt16 val;
@@ -2071,26 +2080,45 @@ UInt16 darwin_2100::readPromWord(UInt16 *base, UInt8 addr)
 }
 
 
-IOReturn darwin_2100::getHardwareAddress( IOEthernetAddress * addr )
+IOReturn darwin_iwi2100::getHardwareAddress( IOEthernetAddress * addr )
 {
 	UInt16 val;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 0);
-	fEnetAddr.bytes[0]=val >> 8;
-	fEnetAddr.bytes[1]=val & 0xff;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 1);
-	fEnetAddr.bytes[2]=val >> 8;
-	fEnetAddr.bytes[3]=val & 0xff;
-	val = readPromWord(memBase, IWI_EEPROM_MAC + 2);
-	fEnetAddr.bytes[4]=val >> 8;
-	fEnetAddr.bytes[5]=val & 0xff;
+	if (fEnetAddr.bytes[0]==0 && fEnetAddr.bytes[1]==0 && fEnetAddr.bytes[2]==0
+	&& fEnetAddr.bytes[3]==0 && fEnetAddr.bytes[4]==0 && fEnetAddr.bytes[5]==0)
+	{
+		if (priv)
+		{
+			u32 length = ETH_ALEN;
+			u8 mac[ETH_ALEN];
 
+			int err;
+
+			err = ipw2100_get_ordinal(priv, IPW_ORD_STAT_ADAPTER_MAC, mac, &length);
+			if (err) {
+				IOLog("MAC address read failed\n");
+				return -EIO;
+			}
+			IOLog("card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
+					   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+			memcpy(fEnetAddr.bytes, mac, ETH_ALEN);
+			ifnet_set_lladdr(fifnet, &fEnetAddr.bytes, ETH_ALEN);
+		}
+	}
 	memcpy(addr, &fEnetAddr, sizeof(*addr));
+	if (priv)
+	{
+		memcpy(priv->mac_addr, &fEnetAddr.bytes, ETH_ALEN);
+		memcpy(priv->net_dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+		memcpy(priv->ieee->dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+		//IOLog("getHardwareAddress " MAC_FMT "\n",MAC_ARG(priv->mac_addr));
+	}
 	
 	return kIOReturnSuccess;
 }
 
 
-void darwin_2100::stopMaster(UInt16 *base) {
+void darwin_iwi2100::stopMaster(UInt16 *base) {
 	UInt32 tmp;
 	int ntries;
 
@@ -2109,14 +2137,14 @@ void darwin_2100::stopMaster(UInt16 *base) {
 	CSR_WRITE_4(base, IWI_CSR_RST, tmp | IWI_RST_PRINCETON_RESET);
 }
 
-void darwin_2100::stopDevice(UInt16 *base)
+void darwin_iwi2100::stopDevice(UInt16 *base)
 {
 	stopMaster(base);
 	
 	CSR_WRITE_4(base, IWI_CSR_RST, IWI_RST_SOFT_RESET);
 }
 
-bool darwin_2100::resetDevice(UInt16 *base) 
+bool darwin_iwi2100::resetDevice(UInt16 *base) 
 {
 	int i;
 	UInt32 tmp;
@@ -2156,7 +2184,7 @@ bool darwin_2100::resetDevice(UInt16 *base)
 }
 
 
-void darwin_2100::ipw2100_write_reg8(UInt32 reg, UInt8 value)
+void darwin_iwi2100::ipw2100_write_reg8(UInt32 reg, UInt8 value)
 {
 	UInt32 aligned_addr = reg & IPW_INDIRECT_ADDR_MASK;	/* dword align */
 	UInt32 dif_len = reg - aligned_addr;
@@ -2165,7 +2193,7 @@ void darwin_2100::ipw2100_write_reg8(UInt32 reg, UInt8 value)
 	_ipw_write8(memBase, IPW_INDIRECT_DATA + dif_len, value);
 }
 
-UInt8 darwin_2100::ipw2100_read_reg8(UInt32 reg)
+UInt8 darwin_iwi2100::ipw2100_read_reg8(UInt32 reg)
 {
 	UInt32 word;
 	_ipw_write32(memBase, IPW_INDIRECT_ADDR, reg & IPW_INDIRECT_ADDR_MASK);
@@ -2173,7 +2201,7 @@ UInt8 darwin_2100::ipw2100_read_reg8(UInt32 reg)
 	return (word >> ((reg & 0x3) * 8)) & 0xff;
 }
 
-void darwin_2100::ipw2100_write_reg16(UInt32 reg, UInt16 value)
+void darwin_iwi2100::ipw2100_write_reg16(UInt32 reg, UInt16 value)
 {
 	UInt32 aligned_addr = reg & IPW_INDIRECT_ADDR_MASK;	/* dword align */
 	UInt32 dif_len = (reg - aligned_addr) & (~0x1ul);
@@ -2183,7 +2211,7 @@ void darwin_2100::ipw2100_write_reg16(UInt32 reg, UInt16 value)
 	
 }
 
-int darwin_2100::ipw2100_stop_master()
+int darwin_iwi2100::ipw2100_stop_master()
 {
 	int rc;
 
@@ -2203,7 +2231,7 @@ int darwin_2100::ipw2100_stop_master()
 	return rc;
 }
 
-void darwin_2100::ipw2100_arc_release()
+void darwin_iwi2100::ipw2100_arc_release()
 {
 	mdelay(5);
 
@@ -2213,36 +2241,36 @@ void darwin_2100::ipw2100_arc_release()
 	mdelay(5);
 }
 
-bool darwin_2100::uploadUCode(const unsigned char * data, UInt16 len)
+bool darwin_iwi2100::uploadUCode(const unsigned char * data, UInt16 len)
 {
 	
 }
 
 
 
-void inline darwin_2100::ipw2100_write32(UInt32 offset, UInt32 data)
+void inline darwin_iwi2100::ipw2100_write32(UInt32 offset, UInt32 data)
 {
 	//OSWriteLittleInt32((void*)memBase, offset, data);
 	_ipw_write32(memBase, offset, data);
 }
 
-UInt32 inline darwin_2100::ipw2100_read32(UInt32 offset)
+UInt32 inline darwin_iwi2100::ipw2100_read32(UInt32 offset)
 {
 	//return OSReadLittleInt32((void*)memBase, offset);
 	return _ipw_read32(memBase,offset);
 }
 
-void inline darwin_2100::ipw2100_clear_bit(UInt32 reg, UInt32 mask)
+void inline darwin_iwi2100::ipw2100_clear_bit(UInt32 reg, UInt32 mask)
 {
 	ipw2100_write32(reg, ipw2100_read32(reg) & ~mask);
 }
 
-void inline darwin_2100::ipw2100_set_bit(UInt32 reg, UInt32 mask)
+void inline darwin_iwi2100::ipw2100_set_bit(UInt32 reg, UInt32 mask)
 {
 	ipw2100_write32(reg, ipw2100_read32(reg) | mask);
 }
 
-int darwin_2100::ipw2100_fw_dma_add_command_block(
+int darwin_iwi2100::ipw2100_fw_dma_add_command_block(
 					UInt32 src_address,
 					UInt32 dest_address,
 					UInt32 length,
@@ -2252,7 +2280,7 @@ int darwin_2100::ipw2100_fw_dma_add_command_block(
 	return 0;
 }
 
-void darwin_2100::ipw2100_zero_memory(UInt32 start, UInt32 count)
+void darwin_iwi2100::ipw2100_zero_memory(UInt32 start, UInt32 count)
 {
 	count >>= 2;
 	if (!count)
@@ -2262,18 +2290,18 @@ void darwin_2100::ipw2100_zero_memory(UInt32 start, UInt32 count)
 		_ipw_write32(memBase,IPW_AUTOINC_DATA, 0);
 }
 
-void darwin_2100::ipw2100_fw_dma_reset_command_blocks()
+void darwin_iwi2100::ipw2100_fw_dma_reset_command_blocks()
 {
 
 }
 
-void darwin_2100::ipw2100_write_reg32( UInt32 reg, UInt32 value)
+void darwin_iwi2100::ipw2100_write_reg32( UInt32 reg, UInt32 value)
 {
 	_ipw_write32(memBase,IPW_INDIRECT_ADDR, reg);
 	_ipw_write32(memBase,IPW_INDIRECT_DATA, value);
 }
 
-int darwin_2100::ipw2100_fw_dma_enable()
+int darwin_iwi2100::ipw2100_fw_dma_enable()
 {				/* start dma engine but no transfers yet */
 
 	ipw2100_fw_dma_reset_command_blocks();
@@ -2281,7 +2309,7 @@ int darwin_2100::ipw2100_fw_dma_enable()
 	return 0;
 }
 
-void darwin_2100::ipw2100_write_indirect(UInt32 addr, UInt8 * buf,
+void darwin_iwi2100::ipw2100_write_indirect(UInt32 addr, UInt8 * buf,
 				int num)
 {
 	UInt32 aligned_addr = addr & IPW_INDIRECT_ADDR_MASK;	/* dword align */
@@ -2316,7 +2344,7 @@ void darwin_2100::ipw2100_write_indirect(UInt32 addr, UInt8 * buf,
 }
 
 
-int darwin_2100::ipw2100_fw_dma_add_buffer(UInt32 src_phys, UInt32 dest_address, UInt32 length)
+int darwin_iwi2100::ipw2100_fw_dma_add_buffer(UInt32 src_phys, UInt32 dest_address, UInt32 length)
 {
 	UInt32 bytes_left = length;
 	UInt32 src_offset = 0;
@@ -2352,20 +2380,20 @@ int darwin_2100::ipw2100_fw_dma_add_buffer(UInt32 src_phys, UInt32 dest_address,
 	return 0;
 }
 
-int darwin_2100::ipw2100_fw_dma_write_command_block(int index,
+int darwin_iwi2100::ipw2100_fw_dma_write_command_block(int index,
 					  struct command_block *cb)
 {
 		return 0;
 
 }
 
-int darwin_2100::ipw2100_fw_dma_kick()
+int darwin_iwi2100::ipw2100_fw_dma_kick()
 {
 	
 	return 0;
 }
 
-UInt32 darwin_2100::ipw2100_read_reg32( UInt32 reg)
+UInt32 darwin_iwi2100::ipw2100_read_reg32( UInt32 reg)
 {
 	UInt32 value;
 
@@ -2375,12 +2403,12 @@ UInt32 darwin_2100::ipw2100_read_reg32( UInt32 reg)
 	return value;
 }
 
-int darwin_2100::ipw2100_fw_dma_command_block_index()
+int darwin_iwi2100::ipw2100_fw_dma_command_block_index()
 {
 
 }
 
-void darwin_2100::ipw2100_fw_dma_dump_command_block()
+void darwin_iwi2100::ipw2100_fw_dma_dump_command_block()
 {
 	UInt32 address;
 	UInt32 register_value = 0;
@@ -2406,29 +2434,29 @@ void darwin_2100::ipw2100_fw_dma_dump_command_block()
 
 }
 
-void darwin_2100::ipw2100_fw_dma_abort()
+void darwin_iwi2100::ipw2100_fw_dma_abort()
 {
 
 }
 
-int darwin_2100::ipw2100_fw_dma_wait()
+int darwin_iwi2100::ipw2100_fw_dma_wait()
 {
 	
 }
 
 
-bool darwin_2100::uploadFirmware(u8 * data, size_t len)
+bool darwin_iwi2100::uploadFirmware(u8 * data, size_t len)
 {	
 	
 }
 
-bool darwin_2100::uploadUCode2(UInt16 *base, const unsigned char *uc, UInt16 size, int offset)
+bool darwin_iwi2100::uploadUCode2(UInt16 *base, const unsigned char *uc, UInt16 size, int offset)
 {
 	
 }
 
 
-bool darwin_2100::uploadFirmware2(UInt16 *base, const unsigned char *fw, UInt32 size, int offset)
+bool darwin_iwi2100::uploadFirmware2(UInt16 *base, const unsigned char *fw, UInt32 size, int offset)
 {	
 	dma_addr_t physAddr, src;
 	UInt8 *virtAddr, *p, *end;
@@ -2534,13 +2562,13 @@ bool darwin_2100::uploadFirmware2(UInt16 *base, const unsigned char *fw, UInt32 
 }
 
 
-int darwin_2100::ipw2100_get_fw(const struct firmware **fw, const char *name)
+int darwin_iwi2100::ipw2100_get_fw(const struct firmware **fw, const char *name)
 {
 		
 }
 
 IOBufferMemoryDescriptor*
-darwin_2100::MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt_add)
+darwin_iwi2100::MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt_add)
 {
 	IOBufferMemoryDescriptor *memBuffer;
 	void *virt_address;
@@ -2588,7 +2616,7 @@ darwin_2100::MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt_ad
 }
 
 
-int darwin_2100::sendCommand(UInt8 type,void *data,UInt8 len,bool async)
+int darwin_iwi2100::sendCommand(UInt8 type,void *data,UInt8 len,bool async)
 {
 
 	
@@ -2622,125 +2650,112 @@ int darwin_2100::sendCommand(UInt8 type,void *data,UInt8 len,bool async)
 	return 0;
 }
 
-const struct ieee80211_geo* darwin_2100::ipw2100_get_geo(struct ieee80211_device *ieee)
+const struct ieee80211_geo* darwin_iwi2100::ipw2100_get_geo(struct ieee80211_device *ieee)
 {
 	return &ieee->geo;
 }
 
-int darwin_2100::ipw2100_set_tx_power(struct ipw2100_priv *priv)
+int darwin_iwi2100::ipw2100_set_tx_power(struct ipw2100_priv *priv)
 {
 
 }
 
-void darwin_2100::init_sys_config(struct ipw2100_sys_config *sys_config)
+void darwin_iwi2100::init_sys_config(struct ipw2100_sys_config *sys_config)
 {
 	
 }
 
-void darwin_2100::ipw2100_add_cck_scan_rates(struct ipw2100_supported_rates *rates,
+void darwin_iwi2100::ipw2100_add_cck_scan_rates(struct ipw2100_supported_rates *rates,
 				   u8 modulation, u32 rate_mask)
 {
 	
 }
 
-void darwin_2100::ipw2100_add_ofdm_scan_rates(struct ipw2100_supported_rates *rates,
+void darwin_iwi2100::ipw2100_add_ofdm_scan_rates(struct ipw2100_supported_rates *rates,
 				    u8 modulation, u32 rate_mask)
 {
 	
 }
 
-int darwin_2100::init_supported_rates(struct ipw2100_priv *priv,
+int darwin_iwi2100::init_supported_rates(struct ipw2100_priv *priv,
 				struct ipw2100_supported_rates *rates)
 {
 	
 }
 
-void darwin_2100::ipw2100_send_tgi_tx_key(struct ipw2100_priv *priv, int type, int index)
+void darwin_iwi2100::ipw2100_send_tgi_tx_key(struct ipw2100_priv *priv, int type, int index)
 {
 
 }
 
-void darwin_2100::ipw2100_send_wep_keys(struct ipw2100_priv *priv, int type)
-{
-	
-}
-
-void darwin_2100::ipw2100_set_hw_decrypt_unicast(struct ipw2100_priv *priv, int level)
+void darwin_iwi2100::ipw2100_send_wep_keys(struct ipw2100_priv *priv, int type)
 {
 	
 }
 
-void darwin_2100::ipw2100_set_hw_decrypt_multicast(struct ipw2100_priv *priv, int level)
+void darwin_iwi2100::ipw2100_set_hw_decrypt_unicast(struct ipw2100_priv *priv, int level)
 {
 	
 }
 
-void darwin_2100::ipw2100_set_hwcrypto_keys(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_set_hw_decrypt_multicast(struct ipw2100_priv *priv, int level)
 {
 	
 }
 
-bool darwin_2100::configureInterface(IONetworkInterface * netif)
+void darwin_iwi2100::ipw2100_set_hwcrypto_keys(struct ipw2100_priv *priv)
+{
+	
+}
+
+bool darwin_iwi2100::configureInterface(IONetworkInterface * netif)
  {
     IONetworkData * data;
     IOLog("configureInterface\n");
     if (super::configureInterface(netif) == false)
             return false;
-    
-    // Get the generic network statistics structure.
 
-    data = netif->getParameter(kIONetworkStatsKey);
-    if (!data || !(netStats = (IONetworkStats *)data->getBuffer())) {
-            return false;
-    }
-
-    // Get the Ethernet statistics structure.
-
-    data = netif->getParameter(kIOEthernetStatsKey);
-    if (!data || !(etherStats = (IOEthernetStats *)data->getBuffer())) {
-            return false;
-    }
     return true;
 }
 
-int darwin_2100::configu(struct ipw2100_priv *priv)
+int darwin_iwi2100::configu(struct ipw2100_priv *priv)
 {
 	
 }
 
-u8 darwin_2100::ipw2100_qos_current_mode(struct ipw2100_priv *priv)
+u8 darwin_iwi2100::ipw2100_qos_current_mode(struct ipw2100_priv *priv)
 {
 	
 }
 
-u32 darwin_2100::ipw2100_qos_get_burst_duration(struct ipw2100_priv *priv)
+u32 darwin_iwi2100::ipw2100_qos_get_burst_duration(struct ipw2100_priv *priv)
 {
 	
 }
 
-int darwin_2100::ipw2100_qos_activate(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_qos_activate(struct ipw2100_priv *priv,
 			    struct ieee80211_qos_data *qos_network_data)
 {
 	
 }
 
-void darwin_2100::ipw2100_led_link_on(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_link_on(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::ipw2100_led_init(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_init(struct ipw2100_priv *priv)
 {
 	
 }
 
 
-void darwin_2100::ipw2100_led_band_on(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_led_band_on(struct ipw2100_priv *priv)
 {
 	
 }
 
-int darwin_2100::ipw2100_channel_to_index(struct ieee80211_device *ieee, u8 channel)
+int darwin_iwi2100::ipw2100_channel_to_index(struct ieee80211_device *ieee, u8 channel)
 {
 	int i;
 
@@ -2761,14 +2776,14 @@ int darwin_2100::ipw2100_channel_to_index(struct ieee80211_device *ieee, u8 chan
 	return -1;
 }
 
-void darwin_2100::ipw2100_add_scan_channels(struct ipw2100_priv *priv,
+void darwin_iwi2100::ipw2100_add_scan_channels(struct ipw2100_priv *priv,
 				  struct ipw2100_scan_request_ext *scan,
 				  int scan_type)
 {
 	
 }
 
-int darwin_2100::ipw2100_scan(struct ipw2100_priv *priv, int type)
+int darwin_iwi2100::ipw2100_scan(struct ipw2100_priv *priv, int type)
 {
 		
 /*	
@@ -2882,7 +2897,7 @@ int darwin_2100::ipw2100_scan(struct ipw2100_priv *priv, int type)
 
 	priv->status |= STATUS_SCANNING;
 	priv->status &= ~STATUS_SCAN_PENDING;
-	queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan_check),priv,5,true);
+	queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan_check),priv,5,true);
 
  
 	  done:
@@ -2890,15 +2905,15 @@ int darwin_2100::ipw2100_scan(struct ipw2100_priv *priv, int type)
 */
 }
 
-void darwin_2100::ipw2100_scan_check(ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_scan_check(ipw2100_priv *priv)
 {
 	if (priv->status & (STATUS_SCANNING | STATUS_SCAN_ABORTING)) {
 		IOLog("Scan completion resetting\n");
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_adapter_restart),priv,NULL,true);
+		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_adapter_restart),priv,NULL,true);
 	}
 }
 
-int darwin_2100::initCmdQueue()
+int darwin_iwi2100::initCmdQueue()
 {
 	cmdq.count=IWI_CMD_RING_COUNT;
 	cmdq.queued=0;
@@ -2914,7 +2929,7 @@ int darwin_2100::initCmdQueue()
 	return true;
 }
 
-int darwin_2100::resetCmdQueue()
+int darwin_iwi2100::resetCmdQueue()
 {
 	cmdq.queued=0;
 	cmdq.cur=0;
@@ -2924,7 +2939,7 @@ int darwin_2100::resetCmdQueue()
 }
 
 
-int darwin_2100::initRxQueue()
+int darwin_iwi2100::initRxQueue()
 {
 	struct iwi_rx_data *data;
 	rxq.count=IWI_RX_RING_COUNT;
@@ -2974,20 +2989,20 @@ int darwin_2100::initRxQueue()
 }
 
 
-int darwin_2100::resetRxQueue()
+int darwin_iwi2100::resetRxQueue()
 {
 	rxq.cur=0;
 	return 0;
 }
 
 
-void darwin_2100::RxQueueIntr()
+void darwin_iwi2100::RxQueueIntr()
 {
 	
 }
 
 
-int darwin_2100::initTxQueue()
+int darwin_iwi2100::initTxQueue()
 {
 	txq.count = IWI_TX_RING_COUNT;
 	txq.queued = 0;
@@ -2999,15 +3014,17 @@ int darwin_2100::initTxQueue()
 	return true;
 }
 
-int darwin_2100::resetTxQueue()
+int darwin_iwi2100::resetTxQueue()
 {
 	rxq.cur=0;
 	return 0;
 }
 
 
-void darwin_2100::free(void)
+void darwin_iwi2100::free(void)
 {
+	IOLog("TODO: free\n");
+	return;
 	IOLog("%s Freeing\n", getName());
 	if (pl==0)
 	{
@@ -3016,7 +3033,7 @@ void darwin_2100::free(void)
 	}
 }
 
-void darwin_2100::stop(IOService *provider)
+void darwin_iwi2100::stop(IOService *provider)
 {
 	CSR_WRITE_4(memBase, IWI_CSR_RST, IWI_RST_SOFT_RESET);
 
@@ -3031,7 +3048,7 @@ void darwin_2100::stop(IOService *provider)
 	if (provider) super::stop(provider);
 }
 
-IOReturn darwin_2100::disable( IONetworkInterface * netif )
+IOReturn darwin_iwi2100::disable( IONetworkInterface * netif )
 {
 	IOLog("ifconfig down\n");
 	switch ((ifnet_flags(fifnet) & IFF_UP) && (ifnet_flags(fifnet) & IFF_RUNNING))
@@ -3059,13 +3076,13 @@ IOReturn darwin_2100::disable( IONetworkInterface * netif )
 }
 
 
-/*const char * darwin_2100::getNamePrefix() const
+/*const char * darwin_iwi2100::getNamePrefix() const
 {
 	return "wlan";
 }*/
 
 void inline
-darwin_2100::eeprom_write_reg(UInt32 data)
+darwin_iwi2100::eeprom_write_reg(UInt32 data)
 {
 	OSWriteLittleInt32((void*)memBase, IPW_INDIRECT_ADDR, FW_MEM_REG_EEPROM_ACCESS);
 	OSWriteLittleInt32((void*)memBase, IPW_INDIRECT_DATA, data);
@@ -3076,7 +3093,7 @@ darwin_2100::eeprom_write_reg(UInt32 data)
 
 /* EEPROM Chip Select */
 void inline
-darwin_2100::eeprom_cs(bool sel)
+darwin_iwi2100::eeprom_cs(bool sel)
 {
 	if (sel)	// Set the CS pin on the EEPROM
 	{
@@ -3101,7 +3118,7 @@ darwin_2100::eeprom_cs(bool sel)
 }
 
 void inline
-darwin_2100::eeprom_write_bit(UInt8 bit)
+darwin_iwi2100::eeprom_write_bit(UInt8 bit)
 {
 	// short way of saying: if bit, then set DI line high, data = 0 otherwise.
 	// Note that because of this implementation we can pass in any value > 0 and
@@ -3115,7 +3132,7 @@ darwin_2100::eeprom_write_bit(UInt8 bit)
 }
 
 void
-darwin_2100::eeprom_op(UInt8 op, UInt8 addr)
+darwin_iwi2100::eeprom_op(UInt8 op, UInt8 addr)
 {
 	int i;
 	
@@ -3134,7 +3151,7 @@ darwin_2100::eeprom_op(UInt8 op, UInt8 addr)
 }
 
 UInt16
-darwin_2100::eeprom_read_UInt16(UInt8 addr)
+darwin_iwi2100::eeprom_read_UInt16(UInt8 addr)
 {
 	int i;
 	u16 r = 0;
@@ -3167,14 +3184,14 @@ darwin_2100::eeprom_read_UInt16(UInt8 addr)
  * FIXME: Can the EEPROM change behind our backs?
  */
 void
-darwin_2100::cacheEEPROM(struct ipw2100_priv *priv)
+darwin_iwi2100::cacheEEPROM(struct ipw2100_priv *priv)
 {
 
 }
 
 
 UInt32
-darwin_2100::read_reg_UInt32(UInt32 reg)
+darwin_iwi2100::read_reg_UInt32(UInt32 reg)
 {
 	UInt32 value;
 	
@@ -3184,7 +3201,7 @@ darwin_2100::read_reg_UInt32(UInt32 reg)
 }
 
 int
-darwin_2100::ipw2100_poll_bit(UInt32 reg, UInt32 mask, int timeout)
+darwin_iwi2100::ipw2100_poll_bit(UInt32 reg, UInt32 mask, int timeout)
 {
 		int i = 0;
 
@@ -3204,7 +3221,7 @@ darwin_2100::ipw2100_poll_bit(UInt32 reg, UInt32 mask, int timeout)
  * from IO80211Controller.
  ******************************************************************************/
 SInt32
-darwin_2100::getSSID(IO80211Interface *interface,
+darwin_iwi2100::getSSID(IO80211Interface *interface,
 						struct apple80211_ssid_data *sd)
 {
 	IOLog("getSSID %s l:%d\n",escape_essid((const char*)sd->ssid_bytes, sd->ssid_len));
@@ -3212,7 +3229,7 @@ darwin_2100::getSSID(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getCHANNEL(IO80211Interface *interface,
+darwin_iwi2100::getCHANNEL(IO80211Interface *interface,
 						  struct apple80211_channel_data *cd)
 {
 	IOLog("getCHANNEL c:%d f:%d\n",cd->channel.channel,cd->channel.flags);
@@ -3220,7 +3237,7 @@ darwin_2100::getCHANNEL(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getBSSID(IO80211Interface *interface,
+darwin_iwi2100::getBSSID(IO80211Interface *interface,
 						struct apple80211_bssid_data *bd)
 {
 	IOLog("getBSSID %s\n",escape_essid((const char*)bd->bssid.octet,sizeof(bd->bssid.octet)));
@@ -3228,7 +3245,7 @@ darwin_2100::getBSSID(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getCARD_CAPABILITIES(IO80211Interface *interface,
+darwin_iwi2100::getCARD_CAPABILITIES(IO80211Interface *interface,
 									  struct apple80211_capability_data *cd)
 {
 	IOLog("getCARD_CAPABILITIES %d\n",sizeof(cd->capabilities));
@@ -3237,7 +3254,7 @@ darwin_2100::getCARD_CAPABILITIES(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getSTATE(IO80211Interface *interface,
+darwin_iwi2100::getSTATE(IO80211Interface *interface,
 						  struct apple80211_state_data *sd)
 {
 	IOLog("getSTATE %d\n",sd->state);
@@ -3245,7 +3262,7 @@ darwin_2100::getSTATE(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getRSSI(IO80211Interface *interface,
+darwin_iwi2100::getRSSI(IO80211Interface *interface,
 					   struct apple80211_rssi_data *rd)
 {
 	IOLog("getRSSI \n");
@@ -3253,7 +3270,7 @@ darwin_2100::getRSSI(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getPOWER(IO80211Interface *interface,
+darwin_iwi2100::getPOWER(IO80211Interface *interface,
 						struct apple80211_power_data *pd)
 {
 	//IOPMprot *p=pm_vars;
@@ -3279,7 +3296,7 @@ darwin_2100::getPOWER(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getSCAN_RESULT(IO80211Interface *interface,
+darwin_iwi2100::getSCAN_RESULT(IO80211Interface *interface,
 							  struct apple80211_scan_result **scan_result)
 {
 	IOLog("getSCAN_RESULT \n");
@@ -3287,7 +3304,7 @@ darwin_2100::getSCAN_RESULT(IO80211Interface *interface,
 }
 
 /*SInt32
-darwin_2100::getASSOCIATE_RESULT(IO80211Interface *interface,
+darwin_iwi2100::getASSOCIATE_RESULT(IO80211Interface *interface,
 								   struct apple80211_assoc_result_data *ard)
 {
 	IOLog("getASSOCIATE_RESULT \n");
@@ -3295,7 +3312,7 @@ darwin_2100::getASSOCIATE_RESULT(IO80211Interface *interface,
 }*/
 
 SInt32
-darwin_2100::getRATE(IO80211Interface *interface,
+darwin_iwi2100::getRATE(IO80211Interface *interface,
 					   struct apple80211_rate_data *rd)
 {
 	IOLog("getRATE %d\n",rd->rate);
@@ -3303,7 +3320,7 @@ darwin_2100::getRATE(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getSTATUS_DEV(IO80211Interface *interface,
+darwin_iwi2100::getSTATUS_DEV(IO80211Interface *interface,
 							 struct apple80211_status_dev_data *dd)
 {
 	char i[4];
@@ -3323,21 +3340,21 @@ darwin_2100::getSTATUS_DEV(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::getRATE_SET(IO80211Interface	*interface,
+darwin_iwi2100::getRATE_SET(IO80211Interface	*interface,
 						   struct apple80211_rate_set_data *rd)
 {
 	IOLog("getRATE_SET %d r0:%d f0:%d\n",rd->num_rates, rd->rates[0].rate,rd->rates[0].flags);
 	return 0;
 }
 
-SInt32	darwin_2100::getASSOCIATION_STATUS( IO80211Interface * interface, struct apple80211_assoc_status_data * asd )
+SInt32	darwin_iwi2100::getASSOCIATION_STATUS( IO80211Interface * interface, struct apple80211_assoc_status_data * asd )
 {
 	IOLog("getASSOCIATION_STATUS %d\n",asd->status);
 	return 0;
 }
 
 SInt32
-darwin_2100::setSCAN_REQ(IO80211Interface *interface,
+darwin_iwi2100::setSCAN_REQ(IO80211Interface *interface,
 						   struct apple80211_scan_data *sd)
 {
 	IOLog("setSCAN_REQ \n");
@@ -3345,7 +3362,7 @@ darwin_2100::setSCAN_REQ(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::setASSOCIATE(IO80211Interface *interface,
+darwin_iwi2100::setASSOCIATE(IO80211Interface *interface,
 							struct apple80211_assoc_data *ad)
 {
 	IOLog("setASSOCIATE \n");
@@ -3353,7 +3370,7 @@ darwin_2100::setASSOCIATE(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::setPOWER(IO80211Interface *interface,
+darwin_iwi2100::setPOWER(IO80211Interface *interface,
 						struct apple80211_power_data *pd)
 {
 	IOLog("setPOWER %d, %d %d %d %d\n",pd->num_radios, pd->power_state[0],pd->power_state[1],pd->power_state[2],pd->power_state[3]);
@@ -3370,7 +3387,7 @@ darwin_2100::setPOWER(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::setCIPHER_KEY(IO80211Interface *interface,
+darwin_iwi2100::setCIPHER_KEY(IO80211Interface *interface,
 							 struct apple80211_key *key)
 {
 	IOLog("setCIPHER_KEY \n");
@@ -3378,7 +3395,7 @@ darwin_2100::setCIPHER_KEY(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::setAUTH_TYPE(IO80211Interface *interface,
+darwin_iwi2100::setAUTH_TYPE(IO80211Interface *interface,
 							struct apple80211_authtype_data *ad)
 {
 	IOLog("setAUTH_TYPE \n");
@@ -3386,14 +3403,14 @@ darwin_2100::setAUTH_TYPE(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::setDISASSOCIATE(IO80211Interface	*interface)
+darwin_iwi2100::setDISASSOCIATE(IO80211Interface	*interface)
 {
 	IOLog("setDISASSOCIATE \n");
 	return 0;
 }
 
 SInt32
-darwin_2100::setSSID(IO80211Interface *interface,
+darwin_iwi2100::setSSID(IO80211Interface *interface,
 					   struct apple80211_ssid_data *sd)
 {
 	IOLog("setSSID \n");
@@ -3401,14 +3418,14 @@ darwin_2100::setSSID(IO80211Interface *interface,
 }
 
 SInt32
-darwin_2100::setAP_MODE(IO80211Interface *interface,
+darwin_iwi2100::setAP_MODE(IO80211Interface *interface,
 						  struct apple80211_apmode_data *ad)
 {
 	IOLog("setAP_MODE \n");
 	return 0;
 }
 
-bool darwin_2100::attachInterfaceWithMacAddress( void * macAddr, 
+bool darwin_iwi2100::attachInterfaceWithMacAddress( void * macAddr, 
 												UInt32 macLen, 
 												IONetworkInterface ** interface, 
 												bool doRegister ,
@@ -3418,20 +3435,14 @@ bool darwin_2100::attachInterfaceWithMacAddress( void * macAddr,
 	return super::attachInterfaceWithMacAddress(macAddr,macLen,interface,doRegister,timeout);
 }												
 												
-void darwin_2100::dataLinkLayerAttachComplete( IO80211Interface * interface )											
+void darwin_iwi2100::dataLinkLayerAttachComplete( IO80211Interface * interface )											
 {
 	IOLog("dataLinkLayerAttachComplete \n");
 	super::dataLinkLayerAttachComplete(interface);
-			fTransmitQueue = getOutputQueue();
-		if (fTransmitQueue == NULL)
-		{
-			IOLog("%s ERR: getOutputQueue()\n", getName());
-			//break;
-		}
 }
 
 
-void darwin_2100::queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start)
+void darwin_iwi2100::queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start)
 {
 	if (tlink[num]) queue_td(num,NULL);
 	//IOLog("queue_te0 %d\n",tlink[num]);
@@ -3451,7 +3462,7 @@ void darwin_2100::queue_te(int num, thread_call_func_t func, thread_call_param_t
 	//IOLog("queue_te result %d\n",r);
 }
 
-void darwin_2100::queue_td(int num , thread_call_func_t func)
+void darwin_iwi2100::queue_td(int num , thread_call_func_t func)
 {
 	//IOLog("queue_td0 %d\n",tlink[num]);
 	int r=1,r1;
@@ -3469,7 +3480,7 @@ void darwin_2100::queue_td(int num , thread_call_func_t func)
 	//IOLog("queue_td1-%d , %d %d\n",num,r,r1);
 }
 
-IOReturn darwin_2100::message( UInt32 type, IOService * provider,
+IOReturn darwin_iwi2100::message( UInt32 type, IOService * provider,
                               void * argument)
 {
 	IOLog("message %8x\n",type);
@@ -3477,7 +3488,7 @@ IOReturn darwin_2100::message( UInt32 type, IOService * provider,
 
 }
 
-int darwin_2100::ipw2100_is_valid_channel(struct ieee80211_device *ieee, u8 channel)
+int darwin_iwi2100::ipw2100_is_valid_channel(struct ieee80211_device *ieee, u8 channel)
 {
 	int i;
 
@@ -3503,7 +3514,7 @@ int darwin_2100::ipw2100_is_valid_channel(struct ieee80211_device *ieee, u8 chan
 	return 0;
 }
 
-void darwin_2100::ipw2100_create_bssid(struct ipw2100_priv *priv, u8 * bssid)
+void darwin_iwi2100::ipw2100_create_bssid(struct ipw2100_priv *priv, u8 * bssid)
 {
 	/* First 3 bytes are manufacturer */
 	bssid[0] = priv->mac_addr[0];
@@ -3518,60 +3529,60 @@ void darwin_2100::ipw2100_create_bssid(struct ipw2100_priv *priv, u8 * bssid)
 	bssid[0] |= 0x02;	/* set local assignment bit (IEEE802) */
 }
 
-void darwin_2100::ipw2100_adhoc_create(struct ipw2100_priv *priv,
+void darwin_iwi2100::ipw2100_adhoc_create(struct ipw2100_priv *priv,
 			     struct ieee80211_network *network)
 {
 	
 }
 
-int darwin_2100::ipw2100_is_rate_in_mask(struct ipw2100_priv *priv, int ieee_mode, u8 rate)
+int darwin_iwi2100::ipw2100_is_rate_in_mask(struct ipw2100_priv *priv, int ieee_mode, u8 rate)
 {
 
 }
 
-int darwin_2100::ipw2100_compatible_rates(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_compatible_rates(struct ipw2100_priv *priv,
 				const struct ieee80211_network *network,
 				struct ipw2100_supported_rates *rates)
 {
 	
 }
 
-void darwin_2100::ipw2100_copy_rates(struct ipw2100_supported_rates *dest,
+void darwin_iwi2100::ipw2100_copy_rates(struct ipw2100_supported_rates *dest,
 			   const struct ipw2100_supported_rates *src)
 {
 	
 }
 
-int darwin_2100::ipw2100_best_network(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_best_network(struct ipw2100_priv *priv,
 			    struct ipw2100_network_match *match,
 			    struct ieee80211_network *network, int roaming)
 {
 	
 }
 
-int darwin_2100::ipw2100_associate(ipw2100_priv *data)
+int darwin_iwi2100::ipw2100_associate(ipw2100_priv *data)
 {
 	
 }
 
-void darwin_2100::ipw2100_set_fixed_rate(struct ipw2100_priv *priv, int mode)
+void darwin_iwi2100::ipw2100_set_fixed_rate(struct ipw2100_priv *priv, int mode)
 {
 	
 }
 
-int darwin_2100::ipw2100_associate_network(struct ipw2100_priv *priv,
+int darwin_iwi2100::ipw2100_associate_network(struct ipw2100_priv *priv,
 				 struct ieee80211_network *network,
 				 struct ipw2100_supported_rates *rates, int roaming)
 {
 
 }
 
-void darwin_2100::ipw2100_reset_stats(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_reset_stats(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::ipw2100_read_indirect(struct ipw2100_priv *priv, u32 addr, u8 * buf,
+void darwin_iwi2100::ipw2100_read_indirect(struct ipw2100_priv *priv, u32 addr, u8 * buf,
 			       int num)
 {
 	u32 aligned_addr = addr & IPW_INDIRECT_ADDR_MASK;	/* dword align */
@@ -3606,32 +3617,32 @@ void darwin_2100::ipw2100_read_indirect(struct ipw2100_priv *priv, u32 addr, u8 
 	}
 }
 
-void darwin_2100::ipw2100_link_up(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_link_up(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::average_add(struct average *avg, s16 val)
+void darwin_iwi2100::average_add(struct average *avg, s16 val)
 {
 	
 }
 
-void darwin_2100::ipw2100_gather_stats(struct ipw2100_priv *priv)
+void darwin_iwi2100::ipw2100_gather_stats(struct ipw2100_priv *priv)
 {
 
 }
 
-u32 darwin_2100::ipw2100_get_max_rate(struct ipw2100_priv *priv)
-{
-	
-}
-
-u32 darwin_2100::ipw2100_get_current_rate(struct ipw2100_priv *priv)
+u32 darwin_iwi2100::ipw2100_get_max_rate(struct ipw2100_priv *priv)
 {
 	
 }
 
-void darwin_2100::ipw2100_link_down(struct ipw2100_priv *priv)
+u32 darwin_iwi2100::ipw2100_get_current_rate(struct ipw2100_priv *priv)
+{
+	
+}
+
+void darwin_iwi2100::ipw2100_link_down(struct ipw2100_priv *priv)
 {
 	ipw2100_led_link_down(priv);
 	fNetif->setLinkState(kIO80211NetworkLinkDown);
@@ -3640,8 +3651,8 @@ void darwin_2100::ipw2100_link_down(struct ipw2100_priv *priv)
 	//notify_wx_assoc_event(priv);
 
 	/* Cancel any queued work ... */
-	queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan));
-	queue_td(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan_check));
+	queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan));
+	queue_td(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan_check));
 	//cancel_delayed_work(&priv->adhoc_check);
 	//cancel_delayed_work(&priv->gather_stats);
 
@@ -3649,11 +3660,11 @@ void darwin_2100::ipw2100_link_down(struct ipw2100_priv *priv)
 
 	if (!(priv->status & STATUS_EXIT_PENDING)) {
 		/* Queue up another scan... */
-		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_2100::ipw2100_scan),priv,3,true);
+		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan),priv,3,true);
 	}
 }
 
-const char* darwin_2100::ipw2100_get_status_code(u16 status)
+const char* darwin_iwi2100::ipw2100_get_status_code(u16 status)
 {
 	int i;
 	for (i = 0; i < ARRAY_SIZE(ipw2100_status_codes); i++)
@@ -3662,7 +3673,7 @@ const char* darwin_2100::ipw2100_get_status_code(u16 status)
 	return "Unknown status value.";
 }
 
-void darwin_2100::notifIntr(struct ipw2100_priv *priv,
+void darwin_iwi2100::notifIntr(struct ipw2100_priv *priv,
 				struct ipw2100_rx_notification *notif)
 {
 	
