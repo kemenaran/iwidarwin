@@ -4,6 +4,44 @@
 
 #include "defines.h"
 
+//#define IWI_NOLOG
+#define IWI_DEBUG_NORMAL
+//#define IWI_DEBUG_FULL
+
+#if defined(IWI_NOLOG)
+	#define IWI_LOG(...) do{ }while(0)
+#else
+	#define IWI_LOG(...) printf("iwi2100: " __VA_ARGS__)
+#endif
+
+#define IOLog(...) IWI_LOG(__VA_ARGS__)
+
+#if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
+	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
+#else
+	#define IWI_DEBUG(...) do{ }while(0)
+#endif
+
+#if defined(IWI_DEBUG_FULL)
+	#define IWI_DEBUG_FULL(...) IWI_DEBUG(__VA_ARGS__)
+#else
+          #define IWI_DEBUG_FULL(...) do{ }while(0)
+#endif
+
+
+#define IEEE80211_DEBUG_MGMT(...) IWI_DEBUG("(80211_MGMT) "  __VA_ARGS__)
+#define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
+
+
+#define IWI_WARNING(...) IWI_LOG(" W " __VA_ARGS__)
+#define IWI_ERR(...) IWI_LOG(" E " __VA_ARGS__)
+
+#define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
+
+
+#define IWI_DUMP_MBUF(...) do{ }while(0)
+
+
 struct symbol_alive_response {
 	u8 cmd_id;
 	u8 seq_num;
@@ -348,9 +386,9 @@ typedef enum {
 } mediumType_t;
 
 
-class darwin_2100 : public IO80211Controller
+class darwin_iwi2100 : public IO80211Controller
 {
-	OSDeclareDefaultStructors(darwin_2100)
+	OSDeclareDefaultStructors(darwin_iwi2100)
 
 public:
 //virtual const char * getNamePrefix() const;
@@ -516,7 +554,7 @@ virtual IOOptionBits getState( void ) const;
 						      u32 bits, u32 mask);
 	virtual int ipw2100_rf_eeprom_ready(struct ipw2100_priv *priv);
 	virtual int ipw2100_verify_ucode(struct ipw2100_priv *priv);
-	virtual int darwin_2100::ipw2100_enable_adapter(struct ipw2100_priv *priv);
+	virtual int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv);
 	
 	
 	
@@ -731,7 +769,7 @@ inline void read_register_word(struct net_device *dev, u32 reg,
 {
 	//*val = readw((void __iomem *)(memBase + reg));
 	*val=OSReadLittleInt16(memBase,reg);
-	IOLog("r: 0x%08X => %04X\n", reg, *val);
+	//IOLog("r: 0x%08X => %04X\n", reg, *val);
 }
 
 inline void read_nic_word(struct net_device *dev, u32 addr, u16 * val)
@@ -752,7 +790,7 @@ inline void write_register_byte(struct net_device *dev, u32 reg, u8 val)
 {
 	//writeb(val, (void __iomem *)(memBase + reg));
 	*((UInt8 *)memBase + reg) = (UInt8)val;
-	IOLog("w: 0x%08X =< %02X\n", reg, val);
+	//IOLog("w: 0x%08X =< %02X\n", reg, val);
 }
 
 inline void write_nic_byte(struct net_device *dev, u32 addr, u8 val)
@@ -773,7 +811,7 @@ inline void write_register_word(struct net_device *dev, u32 reg, u16 val)
 {
 	//writew(val, (void __iomem *)(memBase + reg));
 	OSWriteLittleInt16(memBase,reg,val);
-	IOLog("w: 0x%08X <= %04X\n", reg, val);
+	//IOLog("w: 0x%08X <= %04X\n", reg, val);
 }
 
 inline void write_nic_dword(struct net_device *dev, u32 addr, u32 val)
@@ -787,14 +825,14 @@ inline void read_register(struct net_device *dev, u32 reg, u32 * val)
 {
 	//*val = readl((void __iomem *)(memBase + reg));
 	*val=OSReadLittleInt32(memBase,reg);
-	IOLog("r: 0x%08X => 0x%08X\n", reg, *val);
+	//IOLog("r: 0x%08X => 0x%08X\n", reg, *val);
 }
 
 inline void write_register(struct net_device *dev, u32 reg, u32 val)
 {
 	//writel(val, (void __iomem *)(memBase + reg));
 	OSWriteLittleInt32(memBase,reg,val);
-	IOLog("w: 0x%08X <= 0x%08X\n", reg, val);
+	//IOLog("w: 0x%08X <= 0x%08X\n", reg, val);
 }
 
 inline void read_nic_dword(struct net_device *dev, u32 addr, u32 * val)
@@ -808,7 +846,7 @@ inline void read_register_byte(struct net_device *dev, u32 reg, u8 * val)
 {
 	//*val = readb((void __iomem *)(memBase + reg));
 	*val= (UInt8)*((UInt8 *)memBase + reg);
-	IOLog("r: 0x%08X => %02X\n", reg, *val);
+	//IOLog("r: 0x%08X => %02X\n", reg, *val);
 }
 
 void read_nic_memory(struct net_device *dev, u32 addr, u32 len, u8 * buf)
