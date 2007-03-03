@@ -7,36 +7,41 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		32D94FC60562CBF700B6AF17 /* ipw2200.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A224C3EFF42367911CA2CB7 /* ipw2200.h */; };
+		32D94FC60562CBF700B6AF17 /* iwi2200.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A224C3EFF42367911CA2CB7 /* iwi2200.h */; };
 		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
-		32D94FCA0562CBF700B6AF17 /* ipw2200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1A224C3FFF42367911CA2CB7 /* ipw2200.cpp */; settings = {ATTRIBUTES = (); }; };
+		32D94FCA0562CBF700B6AF17 /* iwi2200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1A224C3FFF42367911CA2CB7 /* iwi2200.cpp */; settings = {ATTRIBUTES = (); }; };
 		4618D8B008D8FD43002CFAD7 /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 4618D8AF08D8FD43002CFAD7 /* defines.h */; };
-		61D25D300B34458D00CAED01 /* ipw2200-compat.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D25D280B34458D00CAED01 /* ipw2200-compat.h */; };
+		61D25D300B34458D00CAED01 /* ipw2200.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D25D280B34458D00CAED01 /* ipw2200.h */; };
 		61D25D310B34458D00CAED01 /* iwieth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D25D290B34458D00CAED01 /* iwieth.cpp */; };
 		61D25D320B34458D00CAED01 /* iwieth.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D25D2A0B34458D00CAED01 /* iwieth.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		089C167EFE841241C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		1A224C3EFF42367911CA2CB7 /* ipw2200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ipw2200.h; sourceTree = "<group>"; };
-		1A224C3FFF42367911CA2CB7 /* ipw2200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ipw2200.cpp; sourceTree = "<group>"; };
+		1A224C3EFF42367911CA2CB7 /* iwi2200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iwi2200.h; sourceTree = "<group>"; };
+		1A224C3FFF42367911CA2CB7 /* iwi2200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = iwi2200.cpp; sourceTree = "<group>"; };
 		32D94FCF0562CBF700B6AF17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
 		4618D8AF08D8FD43002CFAD7 /* defines.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
 		461ABFB908DA1FDA00038347 /* iwi_ucode_bss.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = iwi_ucode_bss.fw.h; path = firmware/iwi_ucode_bss.fw.h; sourceTree = "<group>"; };
 		46A2621208DB64C300672BF2 /* iwi_bss.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = iwi_bss.fw.h; path = firmware/iwi_bss.fw.h; sourceTree = "<group>"; };
 		46C4046708DA674D00D72B2E /* iwi_boot.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = iwi_boot.fw.h; path = firmware/iwi_boot.fw.h; sourceTree = "<group>"; };
+		6139334F0B5AF5BE00F0B6D4 /* compat.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = compat.c; sourceTree = "<group>"; };
+		613933500B5AF5BE00F0B6D4 /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
+		6139335A0B5AF5BE00F0B6D4 /* ipw2200.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ipw2200.c; sourceTree = "<group>"; };
+		6139335B0B5AF5BE00F0B6D4 /* ipw2200.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw2200.h; sourceTree = "<group>"; };
+		6139335C0B5AF5BE00F0B6D4 /* ipwstats.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ipwstats.c; sourceTree = "<group>"; };
 		61B110000B4DB0E9006E6199 /* iwi_ibss.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = iwi_ibss.fw.h; path = firmware/iwi_ibss.fw.h; sourceTree = "<group>"; };
 		61B110010B4DB0E9006E6199 /* iwi_sniffer.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = iwi_sniffer.fw.h; path = firmware/iwi_sniffer.fw.h; sourceTree = "<group>"; };
 		61B110020B4DB0E9006E6199 /* iwi_ucode_ibss.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = iwi_ucode_ibss.fw.h; path = firmware/iwi_ucode_ibss.fw.h; sourceTree = "<group>"; };
 		61B110030B4DB0E9006E6199 /* iwi_ucode_sniffer.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = iwi_ucode_sniffer.fw.h; path = firmware/iwi_ucode_sniffer.fw.h; sourceTree = "<group>"; };
-		61D25D280B34458D00CAED01 /* ipw2200-compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "ipw2200-compat.h"; sourceTree = "<group>"; };
+		61D25D280B34458D00CAED01 /* ipw2200.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw2200.h; sourceTree = "<group>"; };
 		61D25D290B34458D00CAED01 /* iwieth.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = iwieth.cpp; sourceTree = "<group>"; };
 		61D25D2A0B34458D00CAED01 /* iwieth.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwieth.h; sourceTree = "<group>"; };
 		61D25D2C0B34458D00CAED01 /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
 		61D25D2D0B34458D00CAED01 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
 		61D25D2E0B34458D00CAED01 /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
 		61D25D2F0B34458D00CAED01 /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
-		61D25D3D0B3445D500CAED01 /* iwi2200.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwi2200.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		61D25D3D0B3445D500CAED01 /* ipw2200.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ipw2200.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
@@ -51,9 +56,10 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		089C166AFE841209C02AAC07 /* iwi2200 */ = {
+		089C166AFE841209C02AAC07 /* ipw2200 */ = {
 			isa = PBXGroup;
 			children = (
+				6139334D0B5AF5BE00F0B6D4 /* ipw2200-1.2.0 */,
 				61ACDCE70B50387E00DD9416 /* libs */,
 				461ABFB608DA1FB100038347 /* firmware */,
 				247142CAFF3F8F9811CA285C /* Source */,
@@ -61,7 +67,7 @@
 				089C167CFE841241C02AAC07 /* Resources */,
 				19C28FB6FE9D52B211CA2CBB /* Products */,
 			);
-			name = iwi2200;
+			name = ipw2200;
 			sourceTree = "<group>";
 		};
 		089C167CFE841241C02AAC07 /* Resources */ = {
@@ -76,7 +82,7 @@
 		19C28FB6FE9D52B211CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				61D25D3D0B3445D500CAED01 /* iwi2200.kext */,
+				61D25D3D0B3445D500CAED01 /* ipw2200.kext */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -88,9 +94,9 @@
 				61D25D2A0B34458D00CAED01 /* iwieth.h */,
 				61D25D2B0B34458D00CAED01 /* net */,
 				4618D8AF08D8FD43002CFAD7 /* defines.h */,
-				1A224C3FFF42367911CA2CB7 /* ipw2200.cpp */,
-				1A224C3EFF42367911CA2CB7 /* ipw2200.h */,
-				61D25D280B34458D00CAED01 /* ipw2200-compat.h */,
+				1A224C3FFF42367911CA2CB7 /* iwi2200.cpp */,
+				1A224C3EFF42367911CA2CB7 /* iwi2200.h */,
+				61D25D280B34458D00CAED01 /* ipw2200.h */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -107,6 +113,27 @@
 				461ABFB908DA1FDA00038347 /* iwi_ucode_bss.fw.h */,
 			);
 			name = firmware;
+			sourceTree = "<group>";
+		};
+		6139334D0B5AF5BE00F0B6D4 /* ipw2200-1.2.0 */ = {
+			isa = PBXGroup;
+			children = (
+				6139334F0B5AF5BE00F0B6D4 /* compat.c */,
+				613933500B5AF5BE00F0B6D4 /* compat.h */,
+				613933570B5AF5BE00F0B6D4 /* in-tree */,
+				6139335A0B5AF5BE00F0B6D4 /* ipw2200.c */,
+				6139335B0B5AF5BE00F0B6D4 /* ipw2200.h */,
+				6139335C0B5AF5BE00F0B6D4 /* ipwstats.c */,
+			);
+			name = "ipw2200-1.2.0";
+			path = "/var/root/ipw2200-1.2.0";
+			sourceTree = "<absolute>";
+		};
+		613933570B5AF5BE00F0B6D4 /* in-tree */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = "in-tree";
 			sourceTree = "<group>";
 		};
 		61ACDCE70B50387E00DD9416 /* libs */ = {
@@ -134,9 +161,9 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				32D94FC60562CBF700B6AF17 /* ipw2200.h in Headers */,
+				32D94FC60562CBF700B6AF17 /* iwi2200.h in Headers */,
 				4618D8B008D8FD43002CFAD7 /* defines.h in Headers */,
-				61D25D300B34458D00CAED01 /* ipw2200-compat.h in Headers */,
+				61D25D300B34458D00CAED01 /* ipw2200.h in Headers */,
 				61D25D320B34458D00CAED01 /* iwieth.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -144,9 +171,9 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		32D94FC30562CBF700B6AF17 /* ipw2200 */ = {
+		32D94FC30562CBF700B6AF17 /* iwi2200 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4624EDE108C25CE500F266F6 /* Build configuration list for PBXNativeTarget "ipw2200" */;
+			buildConfigurationList = 4624EDE108C25CE500F266F6 /* Build configuration list for PBXNativeTarget "iwi2200" */;
 			buildPhases = (
 				32D94FC50562CBF700B6AF17 /* Headers */,
 				32D94FC70562CBF700B6AF17 /* Resources */,
@@ -159,10 +186,10 @@
 			);
 			dependencies = (
 			);
-			name = ipw2200;
+			name = iwi2200;
 			productInstallPath = "$(SYSTEM_LIBRARY_DIR)/Extensions";
-			productName = iwi2200;
-			productReference = 61D25D3D0B3445D500CAED01 /* iwi2200.kext */;
+			productName = ipw2200;
+			productReference = 61D25D3D0B3445D500CAED01 /* ipw2200.kext */;
 			productType = "com.apple.product-type.kernel-extension.iokit";
 		};
 /* End PBXNativeTarget section */
@@ -172,10 +199,10 @@
 			isa = PBXProject;
 			buildConfigurationList = 4624EDE508C25CE500F266F6 /* Build configuration list for PBXProject "iwi2200" */;
 			hasScannedForEncodings = 1;
-			mainGroup = 089C166AFE841209C02AAC07 /* iwi2200 */;
+			mainGroup = 089C166AFE841209C02AAC07 /* ipw2200 */;
 			projectDirPath = "";
 			targets = (
-				32D94FC30562CBF700B6AF17 /* ipw2200 */,
+				32D94FC30562CBF700B6AF17 /* iwi2200 */,
 			);
 		};
 /* End PBXProject section */
@@ -213,7 +240,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd $SRCROOT\n\n#sudo chown -R root:wheel $BUILT_PRODUCTS_DIR/iwi2200.kext\n\n#rm -rf /System/Library/Extensions/iwi2200.kext\nrm -rf build/active\nmkdir -p build/active\ncp -rf $BUILT_PRODUCTS_DIR/iwi2200.kext build/active/.\necho \"type password\"\n\nchown -R root:wheel build/active\n#rm -rf /private/var/root/iwi2200.pkg\n\n# build only if no .dmg exists\n#if [ -e /private/var/root/iwi2200.dmg ] ; then\n#\texit 0\n#fi\n\nsudo rm -f $SRCROOT/iwi2200.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p $SRCROOT/iwi2200.pkg -proj Packages/iwi2200.pmproj\n\n/usr/bin/hdiutil create -format UDZO -srcfolder $SRCROOT/iwi2200.pkg $SRCROOT/iwi2200.dmg\n\nsleep 1\n\nsudo rm -rf $SRCROOT/iwi2200.pkg\n";
+			shellScript = "cd $SRCROOT\n\n#sudo chown -R root:wheel $BUILT_PRODUCTS_DIR/ipw2200.kext\n\n#rm -rf /System/Library/Extensions/ipw2200.kext\nrm -rf build/active\nmkdir -p build/active\ncp -rf $BUILT_PRODUCTS_DIR/ipw2200.kext build/active/.\n\nchown -R root:wheel build/active\n#rm -rf /private/var/root/ipw2200.pkg\n\n# build only if no .dmg exists\n#if [ -e /private/var/root/ipw2200.dmg ] ; then\n#\texit 0\n#fi\n\nsudo rm -f $SRCROOT/ipw2200.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p $SRCROOT/ipw2200.pkg -proj Packages/ipw2200.pmproj\n\n/usr/bin/hdiutil create -format UDZO -srcfolder $SRCROOT/ipw2200.pkg $SRCROOT/ipw2200.dmg\n\nsleep 1\n\nsudo rm -rf $SRCROOT/ipw2200.pkg\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -222,7 +249,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				32D94FCA0562CBF700B6AF17 /* ipw2200.cpp in Sources */,
+				32D94FCA0562CBF700B6AF17 /* iwi2200.cpp in Sources */,
 				61D25D310B34458D00CAED01 /* iwieth.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -275,7 +302,7 @@
 				LIBRARY_STYLE = DYNAMIC;
 				LINK_WITH_STANDARD_LIBRARIES = YES;
 				MACH_O_TYPE = mh_execute;
-				MODULE_NAME = darwin.iwi2200;
+				MODULE_NAME = ipw2200;
 				MODULE_VERSION = 1.0.0d1;
 				ONLY_LINK_ESSENTIAL_SYMBOLS = NO;
 				OTHER_CFLAGS = "";
@@ -283,7 +310,7 @@
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRELINK_LIBS = "";
-				PRODUCT_NAME = iwi2200;
+				PRODUCT_NAME = ipw2200;
 				STANDARD_C_PLUS_PLUS_LIBRARY_TYPE = dynamic;
 				USER_HEADER_SEARCH_PATHS = "";
 				WRAPPER_EXTENSION = kext;
@@ -315,14 +342,14 @@
 				LIBRARY_STYLE = DYNAMIC;
 				LINK_WITH_STANDARD_LIBRARIES = YES;
 				MACH_O_TYPE = mh_execute;
-				MODULE_NAME = darwin_iwi2200;
+				MODULE_NAME = ipw2200;
 				MODULE_VERSION = 1.0.0d1;
 				ONLY_LINK_ESSENTIAL_SYMBOLS = NO;
 				OTHER_CPLUSPLUSFLAGS = "-w";
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRELINK_LIBS = "";
-				PRODUCT_NAME = iwi2200;
+				PRODUCT_NAME = ipw2200;
 				STANDARD_C_PLUS_PLUS_LIBRARY_TYPE = dynamic;
 				USER_HEADER_SEARCH_PATHS = "";
 				WRAPPER_EXTENSION = kext;
@@ -353,14 +380,14 @@
 				LIBRARY_STYLE = DYNAMIC;
 				LINK_WITH_STANDARD_LIBRARIES = YES;
 				MACH_O_TYPE = mh_execute;
-				MODULE_NAME = darwin_iwi2200;
+				MODULE_NAME = ipw2200;
 				MODULE_VERSION = 1.0.0d1;
 				ONLY_LINK_ESSENTIAL_SYMBOLS = NO;
 				OTHER_CPLUSPLUSFLAGS = "-w";
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRELINK_LIBS = "";
-				PRODUCT_NAME = iwi2200;
+				PRODUCT_NAME = ipw2200;
 				STANDARD_C_PLUS_PLUS_LIBRARY_TYPE = dynamic;
 				USER_HEADER_SEARCH_PATHS = "";
 				WRAPPER_EXTENSION = kext;
@@ -413,7 +440,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4624EDE108C25CE500F266F6 /* Build configuration list for PBXNativeTarget "ipw2200" */ = {
+		4624EDE108C25CE500F266F6 /* Build configuration list for PBXNativeTarget "iwi2200" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4624EDE208C25CE500F266F6 /* Debug */,
