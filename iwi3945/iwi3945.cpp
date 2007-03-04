@@ -539,7 +539,8 @@ int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
 	size_t len;
 
 	/* data from ucode file:  header followed by uCode images */
-	(void*)ucode = (void*)ipw;//ucode_raw->data;
+	(void*)ucode_raw=(void*)ipw;
+	(void*)ucode = (void*)ucode_raw->data;
 
 	IOLog("f/w package hdr ucode version = 0x%x\n", ucode->ver);
 	IOLog("f/w package hdr runtime inst size = %u\n",
@@ -752,9 +753,9 @@ bool darwin_iwi3945::start(IOService *provider)
 		fInterruptSrc->enable();
 		mutex=IOLockAlloc();
 		
-		//ipw_sw_reset(1);
+		ipw_sw_reset(1);
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
-		//ipw_nic_init(priv);
+		ipw_nic_init(priv);
 		//ipw_nic_reset(priv);
 		//ipw_bg_resume_work();
 		
@@ -781,8 +782,6 @@ bool darwin_iwi3945::start(IOService *provider)
 		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
 		
 		registerService();
-		
-		
 	
 		/*lck_grp_attr_t	*ga=lck_grp_attr_alloc_init();
 		lck_grp_t		*gr=lck_grp_alloc_init("mut",ga);
@@ -2844,7 +2843,9 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 			IOLog("MAC address: " MAC_FMT "\n",
 				       MAC_ARG(priv->mac_addr));
 			
-			ifnet_set_lladdr(fifnet, priv->eeprom.mac_address, ETH_ALEN);
+			// TODO removed by patatester, maybe the cause of the incorrect 
+			// mac address association
+			// ifnet_set_lladdr(fifnet, priv->eeprom.mac_address, ETH_ALEN);
 		//}
 
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
