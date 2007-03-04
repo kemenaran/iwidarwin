@@ -5106,7 +5106,7 @@ darwin_iwi3945::getSTATUS_DEV(IO80211Interface *interface,
 	ifnet_find_by_name(i,&fifnet);
 	IOLog("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	//ifnet_set_mtu(fifnet,IPW_RX_BUF_SIZE); //>=IPW_RX_BUF_SIZE
-	ipw_sw_reset(1);
+	//ipw_sw_reset(1);
 	memcpy(&priv->ieee->dev->name,i,sizeof(i));
 
 	super::enable(fNetif);
