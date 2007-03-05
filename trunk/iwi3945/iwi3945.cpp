@@ -533,13 +533,13 @@ int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
 {
 	struct ipw_ucode *ucode;
 	int rc = 0;
-	const struct firmware *ucode_raw;
+	struct firmware *ucode_raw;
 	const char *name = "iwlwifi-3945.ucode";	/* firmware file name */
 	u8 *src;
 	size_t len;
 
 	/* data from ucode file:  header followed by uCode images */
-	(void*)ucode_raw=(void*)ipw;
+	(void*)ucode_raw->data=(void*)ipw;
 	(void*)ucode = (void*)ucode_raw->data;
 
 	IOLog("f/w package hdr ucode version = 0x%x\n", ucode->ver);
