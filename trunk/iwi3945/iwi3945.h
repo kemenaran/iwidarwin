@@ -730,7 +730,8 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 			  int count, int size, u32 id);
 	virtual int ipw_nic_reset(struct ipw_priv *priv);
 	virtual int ipw_nic_stop_master(struct ipw_priv *priv);
-	
+	virtual int ipw_tx_queue_update_write_ptr(struct ipw_priv *priv,
+					 struct ipw_tx_queue *txq, int tx_id);
 	
 	
 	

@@ -101,7 +101,7 @@
 				618A5E1F0B85414E00694B28 /* iwlwifi_hw.h */,
 			);
 			name = origin;
-			path = "../../../3945/iwlwifi-0.0.6/origin";
+			path = "../../../3945/iwlwifi-0.0.10/origin";
 			sourceTree = SOURCE_ROOT;
 		};
 		61B0346E0B59819700286B6C /* firmware */ = {
@@ -122,8 +122,8 @@
 				61B03A540B59C2A900286B6C /* snapshot */,
 			);
 			name = "ipw3945-1.2.0";
-			path = "/var/root/3945/ipw3945-1.2.0";
-			sourceTree = "<absolute>";
+			path = "../../../3945/ipw3945-1.2.0";
+			sourceTree = SOURCE_ROOT;
 		};
 		61B03A470B59C2A900286B6C /* in-tree */ = {
 			isa = PBXGroup;
@@ -236,7 +236,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#cd /private/var/root/svn/trunk/iwi3945\n#cd \"$SRCROOT\"\n\nchown -R root:wheel build/Debug/iwi3945.kext\n\n#rm -rf /System/Library/Extensions/iwi3945.kext\n\n#cp -rf build/Debug/iwi3945.kext /System/Library/Extensions\n\nrm -rf iwi3945.pkg\n\n# build only if no .dmg exists\nif [ -e iwi3945.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi3945.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi3945.pkg -proj iwi3945.pmproj\n\nhdiutil create -format UDZO -srcfolder iwi3945.pkg iwi3945.dmg\n\nsleep 1\n\nrm -rf iwi3945.pkg\n";
+			shellScript = "#cd /private/var/root/svn/trunk/iwi3945\n#cd \"$SRCROOT\"\n\nsudo chown -R root:wheel build/Debug/iwi3945.kext\n\n#rm -rf /System/Library/Extensions/iwi3945.kext\n\ncp -rf build/Debug/iwi3945.kext /System/Library/Extensions\n\nrm -rf iwi3945.pkg\n\n# build only if no .dmg exists\nif [ -e iwi3945.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi3945.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi3945.pkg -proj iwi3945.pmproj\n\nhdiutil create -format UDZO -srcfolder iwi3945.pkg iwi3945.dmg\n\nsleep 1\n\nrm -rf iwi3945.pkg\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
