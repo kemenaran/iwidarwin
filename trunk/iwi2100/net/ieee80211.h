@@ -489,7 +489,7 @@ static const char *escape_essid(const char *essid, u8 essid_len)
 #define IEEE80211_DL_RX            (1<<9)
 #define IEEE80211_DL_QOS           (1<<31)
 
-#define IEEE80211_ERROR(f, a...) printk( "ieee80211: " f, ## a)
+#define IEEE80211_ERROR(f, a...) printk(KERN_ERR "ieee80211: " f, ## a)
 #define IEEE80211_WARNING(f, a...) printk(KERN_WARNING "ieee80211: " f, ## a)
 #define IEEE80211_DEBUG_INFO(f, a...)   IEEE80211_DEBUG(IEEE80211_DL_INFO, f, ## a)
 
@@ -740,7 +740,7 @@ struct ieee80211_frag_entry {
 	unsigned long first_frag_time;
 	unsigned int seq;
 	unsigned int last_frag;
-	struct sk_buff *skb;
+	mbuf_t skb;
 	u8 src_addr[ETH_ALEN];
 	u8 dst_addr[ETH_ALEN];
 };
@@ -1040,7 +1040,8 @@ struct ieee80211_txb {
 	u8 reserved;
 	__le16 frag_size;
 	__le16 payload_size;
-	struct sk_buff *fragments[0];
+	//struct sk_buff *fragments[0];
+	mbuf_t fragments[0];
 };
 
 /* SWEEP TABLE ENTRIES NUMBER */
@@ -1223,7 +1224,7 @@ struct ieee80211_network {
 	/* Ensure null-terminated for any debug msgs */
 	u8 ssid[IW_ESSID_MAX_SIZE + 1];
 	u8 ssid_len;
-
+	int exclude; // ip address filter
 	struct ieee80211_qos_data qos_data;
 
 	/* These are network statistics */
