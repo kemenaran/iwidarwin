@@ -539,8 +539,7 @@ int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
 	size_t len;
 
 	/* data from ucode file:  header followed by uCode images */
-	(void*)ucode_raw->data=(void*)ipw;
-	(void*)ucode = (void*)ucode_raw->data;
+	(void*)ucode = (void*)ipw;
 
 	IOLog("f/w package hdr ucode version = 0x%x\n", ucode->ver);
 	IOLog("f/w package hdr runtime inst size = %u\n",
@@ -553,14 +552,14 @@ int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
 		       ucode->boot_data_size);
 
 	/* verify size of file vs. image size info in file's header */
-	if (ucode_raw->size < sizeof(*ucode) +
+	/*if (ucode_raw->size < sizeof(*ucode) +
 	    ucode->inst_size + ucode->data_size +
 	    ucode->boot_size + ucode->boot_data_size) {
 		IOLog("uCode file size %d too small\n",
 			       (int)ucode_raw->size);
 		rc = -EINVAL;
 		//goto err_release;
-	}
+	}*/
 
 	/* verify that uCode images will fit in card's SRAM */
 	if (ucode->inst_size > ALM_RTC_INST_SIZE) {
@@ -2012,7 +2011,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		break;
 	}
 	
-return 0;// TODO check rxq
+//return 0;// TODO check rxq
 
 	/* Allocate the RX queue, or reset if it is already allocated */
 	if (!priv->rxq)
@@ -2029,12 +2028,6 @@ return 0;// TODO check rxq
 	ipw_rx_init(priv, priv->rxq);
 
 //	spin_lock_irqsave(&priv->lock, flags);
-
-/*
- * Look at using this instead :::
-	priv->rxq->need_update = 1;
-	ipw_rx_queue_update_write_ptr(priv, priv->rxq);
-*/
 
 	rc = ipw_grab_restricted_access(priv);
 	/*if (rc) {
@@ -3181,10 +3174,83 @@ int darwin_iwi3945::ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
 	return rc;
 }
 
+int darwin_iwi3945::ipw_tx_queue_update_write_ptr(struct ipw_priv *priv,
+					 struct ipw_tx_queue *txq, int tx_id)
+{
+	u32 reg = 0;
+	int rc = 0;
+
+	if (txq->need_update == 0)
+		return rc;
+
+	if (priv->status & STATUS_POWER_PMI) {
+		reg = ipw_read32( CSR_UCODE_DRV_GP1);
+
+		if (reg & CSR_UCODE_DRV_GP1_BIT_MAC_SLEEP) {
+			ipw_set_bit( CSR_GP_CNTRL,
+				    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+			return rc;
+		}
+
+		rc = ipw_grab_restricted_access(priv);
+		if (rc)
+			return rc;
+		_ipw_write_restricted(priv, HBUS_TARG_WRPTR,
+				     txq->q.first_empty | (tx_id << 8));
+		_ipw_release_restricted_access(priv);
+	} else {
+		ipw_write32( HBUS_TARG_WRPTR,
+			    txq->q.first_empty | (tx_id << 8));
+	}
+
+	txq->need_update = 0;
+
+	return rc;
+}
+
 UInt32 darwin_iwi3945::handleInterrupt(void)
 {
-	u32 inta, inta_mask, handled = 0;
-	unsigned long flags;
+	u32 inta, inta_mask;
+	if (!priv)
+		return false;
+
+	//spin_lock(&priv->lock);
+	if (!(priv->status & STATUS_INT_ENABLED)) {
+		/* Shared IRQ */
+		return false;
+	}
+
+	inta = ipw_read32( CSR_INT);
+	inta_mask = ipw_read32( CSR_INT_MASK);
+	if (inta == 0xFFFFFFFF) {
+		/* Hardware disappeared */
+		IOLog("IRQ INTA == 0xFFFFFFFF\n");
+		return false;
+	}
+
+	if (!(inta & (CSR_INI_SET_MASK & inta_mask))) {
+		if (inta)
+			ipw_write32( CSR_INT, inta);
+		/* Shared interrupt */
+		return false;
+	}
+
+	/* tell the device to stop sending interrupts */
+
+	IOLog
+	    ("interrupt recieved 0x%08x masked 0x%08x card mask 0x%08x\n",
+	     inta, inta_mask, CSR_INI_SET_MASK);
+
+	priv->status &= ~STATUS_INT_ENABLED;
+	ipw_write32( CSR_INT_MASK, 0x00000000);
+	/* ack current interrupts */
+	ipw_write32( CSR_INT, inta);
+	inta &= (CSR_INI_SET_MASK & inta_mask);
+	/* Cache INTA value for our tasklet */
+	priv->isr_inta = inta;
+	
+	UInt32  handled = 0;
+	//unsigned long flags;
 
 	//spin_lock_irqsave(&priv->lock, flags);
 
@@ -3220,22 +3286,20 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 
 	if (inta & BIT_INT_WAKEUP) {
 		IOLog("Wakeup interrupt\n");
-		//ipw_tx_queue_update_write_ptr
-		ipw3945_rx_queue_update_wr_ptr(priv, priv->rxq);
-		/*ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[0]);
-		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[1]);
-		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[2]);
-		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[3]);
-		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[4]);
-		ipw3945_rx_queue_update_wr_ptr(priv, &priv->txq[5]);*/
+		ipw_rx_queue_update_write_ptr(priv, priv->rxq);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[0], 0);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[1], 1);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[2], 2);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[3], 3);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[4], 4);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[5], 5);
+
 
 		handled |= BIT_INT_WAKEUP;
 	}
 
 	if (inta & BIT_INT_ALIVE) {
 		IOLog("Alive interrupt\n");
-		//TODO test if works
-		//ipw_bg_alive_start();
 		handled |= BIT_INT_ALIVE;
 	}
 
@@ -4449,10 +4513,6 @@ void darwin_iwi3945::RxQueueIntr()
 		 * switch statement for readability ... compiler may optimize.
 		 * Hack at will to see/not-see what you want in logs. */
 		switch (pkt->hdr.cmd) {
-		case REPLY_DAEMON_1:
-		case REPLY_DAEMON_2:
-		case REPLY_DAEMON_3:
-		case REPLY_DAEMON_4:
 		case SCAN_START_NOTIFICATION:
 		case SCAN_RESULTS_NOTIFICATION:
 		case SCAN_COMPLETE_NOTIFICATION:
@@ -4474,6 +4534,7 @@ void darwin_iwi3945::RxQueueIntr()
 
 		switch (pkt->hdr.cmd) {
 		case REPLY_RX:	/* 802.11 frame */
+			IOLog("todo: ipw_handle_reply_rx\n");
 			//ipw_handle_reply_rx(priv, rxb);
 			break;
 
@@ -4522,6 +4583,7 @@ void darwin_iwi3945::RxQueueIntr()
 				break;
 			}
 		case REPLY_TX:
+		IOLog("todo: ipw_handle_reply_tx\n");
 			//ipw_handle_reply_tx(priv, &pkt->u.tx_resp,
 			//		    pkt->hdr.sequence);
 			break;
@@ -4749,10 +4811,13 @@ void darwin_iwi3945::RxQueueIntr()
 			/* Invoke any callbacks, transfer the skb to
 			 * caller, and fire off the (possibly) blocking
 			 * ipw_send_cmd() via as we reclaim the queue... */
-			/*if (rxb && rxb->skb)
-				ipw_tx_complete(priv, rxb);
+			if (rxb && rxb->skb)
+			{
+				//ipw_tx_complete(priv, rxb);
+				IOLog("todo: ipw_tx_complete \n");
+			}
 			else
-				IOLog("Claim null rxb?\n");*/
+				IOLog("Claim null rxb?\n");
 		}
 
 		/* For now we just don't re-use anything.  We can tweak this
