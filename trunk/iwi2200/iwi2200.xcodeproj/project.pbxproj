@@ -144,7 +144,7 @@
 				61DC18E90B9BDD960098549A /* README.ipw2200 */,
 			);
 			name = "ipw2200-1.2.1 copy";
-			path = "../2200/ipw2200-1.2.1 copy";
+			path = "../../../2200/ipw2200-1.2.1 copy";
 			sourceTree = SOURCE_ROOT;
 		};
 		61DC18DF0B9BDD960098549A /* in-tree */ = {
