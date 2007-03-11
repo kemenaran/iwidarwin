@@ -712,10 +712,55 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual int ipw2100_get_hw_features(struct ipw2100_priv *priv);
 	virtual int ipw2100_set_ordinal(struct ipw2100_priv *priv, u32 ord, u32 * val,
 			       u32 * len);			   
+	virtual int ipw2100_hw_send_command(struct ipw2100_priv *priv,
+				   struct host_command *cmd);
+	virtual void ipw2100_tx_send_data(struct ipw2100_priv *priv);
+	virtual void ipw2100_tx_send_commands(struct ipw2100_priv *priv);
+	virtual int ipw2100_queues_allocate(struct ipw2100_priv *priv);
+	virtual int ipw2100_tx_allocate(struct ipw2100_priv *priv);
+	virtual int bd_queue_allocate(struct ipw2100_priv *priv,
+			     struct ipw2100_bd_queue *q, int entries);
+	virtual void bd_queue_free(struct ipw2100_priv *priv, struct ipw2100_bd_queue *q);
+	virtual int ipw2100_rx_allocate(struct ipw2100_priv *priv);
+	virtual int status_queue_allocate(struct ipw2100_priv *priv, int entries);
+	virtual void status_queue_free(struct ipw2100_priv *priv);
+	virtual int ipw2100_alloc_skb(struct ipw2100_priv *priv,
+				    struct ipw2100_rx_packet *packet);
+	virtual int ipw2100_msg_allocate(struct ipw2100_priv *priv);
+	virtual void ipw2100_tx_free(struct ipw2100_priv *priv);
+	virtual void ieee80211_txb_free(struct ieee80211_txb *txb);
+	virtual void ipw2100_rx_free(struct ipw2100_priv *priv);
+	virtual void ipw2100_msg_free(struct ipw2100_priv *priv);
+	virtual void ipw2100_queues_initialize(struct ipw2100_priv *priv);
+	virtual void ipw2100_tx_initialize(struct ipw2100_priv *priv);
+	virtual void bd_queue_initialize(struct ipw2100_priv *priv,
+				struct ipw2100_bd_queue *q, u32 base, u32 size,
+				u32 r, u32 w);
+	virtual void ipw2100_rx_initialize(struct ipw2100_priv *priv);
+	virtual int ipw2100_msg_initialize(struct ipw2100_priv *priv);
+	virtual int ipw2100_set_scan_options(struct ipw2100_priv *priv);
+	virtual int ipw2100_start_scan(struct ipw2100_priv *priv);
+	virtual void freePacket(mbuf_t m, IOOptionBits options=0);
+	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
+	virtual void schedule_reset(struct ipw2100_priv *priv);
+	virtual int ipw_set_geo(struct ieee80211_device *ieee,
+		       const struct ieee80211_geo *geo);
+	virtual int ipw2100_adapter_setup(struct ipw2100_priv *priv);
+	virtual void __ipw2100_rx_process(struct ipw2100_priv *priv);
+	virtual int ipw2100_corruption_check(struct ipw2100_priv *priv, int i);
+	virtual void isr_rx_complete_command(struct ipw2100_priv *priv,
+				    struct ipw2100_cmd_header *cmd);
+	virtual void isr_status_change(struct ipw2100_priv *priv, int status);				
+	virtual void ieee80211_rx_mgt(struct ieee80211_device *ieee, 
+        struct ieee80211_hdr_4addr *header,struct ieee80211_rx_stats *stats);
 	
 	
 	
 	
+	
+	
+
+
 	
 	// statistics
     IONetworkStats		*netStats;

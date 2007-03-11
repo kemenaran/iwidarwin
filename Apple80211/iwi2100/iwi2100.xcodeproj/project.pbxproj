@@ -29,7 +29,7 @@
 		61B63E220B5A921F00B07D04 /* iwi_bss.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi_bss.fw.h; sourceTree = "<group>"; };
 		61B63E230B5A921F00B07D04 /* iwi_ibss.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi_ibss.fw.h; sourceTree = "<group>"; };
 		61B63E240B5A921F00B07D04 /* iwi_mon.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi_mon.fw.h; sourceTree = "<group>"; };
-		61B659B90B5AC1EF00B07D04 /* ipw2100.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = ipw2100.c; path = "../../../2100/ipw2100-1.2.2/ipw2100.c"; sourceTree = SOURCE_ROOT; };
+		61B659B90B5AC1EF00B07D04 /* ipw2100.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = ipw2100.c; path = "../../../../2100/ipw2100-1.2.2/ipw2100.c"; sourceTree = SOURCE_ROOT; };
 		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 

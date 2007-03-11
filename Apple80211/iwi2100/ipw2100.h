@@ -284,7 +284,7 @@ struct ipw2100_rx_packet {
 	struct ipw2100_rx *rxp;
 	dma_addr_t dma_addr;
 	int jiffy_start;
-	struct sk_buff *skb;
+	mbuf_t skb;
 	struct list_head list;
 };
 
