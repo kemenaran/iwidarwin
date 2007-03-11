@@ -478,6 +478,9 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	u32 pci_id = (deviceID << 16) | vendorID;
 	//fPCIDevice->configRead16(kIOPCIConfigDeviceID) | fPCIDevice->configRead16(kIOPCIConfigVendorID);
 	IWI_LOG("pci_id 0x%08x\n",pci_id);
+	
+	//priv->is_3945 = 1;
+	
 	switch (pci_id) {
 	case 0x42221005:	/* 0x4222 0x8086 0x1005 is BG SKU */
 	case 0x42221034:	/* 0x4222 0x8086 0x1034 is BG SKU */
@@ -508,8 +511,10 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	} else
 		priv->channel = 1;
 
+	
 	ipw_read_ucode(priv);
 
+	MemoryDmaAlloc(sizeof(struct ipw_shared_t), &priv->shared_phys, &priv->shared_virt);
 
 	priv->rates_mask = IEEE80211_DEFAULT_RATES_MASK |
 	    (IEEE80211_OFDM_BASIC_RATES_MASK |
@@ -720,7 +725,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		mem = fPCIDevice->getDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
 		
 		memDes->initWithPhysicalAddress(ioBase, map->getLength(), kIODirectionOutIn);
-		
+					 
 		/* We disable the RETRY_TIMEOUT register (0x41) to keep
 		 * PCI Tx retries from interfering with C3 CPU state */
 		reg = fPCIDevice->configRead16(0x40);
@@ -804,9 +809,9 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(5,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_associate),NULL,NULL,false);
 		queue_te(6,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_gather_stats),NULL,NULL,false);
 		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rx_queue_replenish),NULL,NULL,false);
-		//queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adhoc_check),NULL,NULL,false);
-		//queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_qos_activate),NULL,NULL,false);
 		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_led_activity_off),NULL,NULL,false);
+		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_alive_start),NULL,NULL,false);
+		
 		
 		pl=1;
 		return true;			// end start successfully
@@ -2014,6 +2019,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 //return 0;// TODO check rxq
 
 	/* Allocate the RX queue, or reset if it is already allocated */
+	IOLog("Allocate the RX queue\n");
 	if (!priv->rxq)
 		priv->rxq = ipw_rx_queue_alloc(priv);
 	else
@@ -2023,8 +2029,9 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		IOLog("Unable to initialize Rx queue\n");
 		//return -ENOMEM;
 	}
+	IOLog("ipw_rx_queue_replenish\n");
 	ipw_rx_queue_replenish(priv);
-
+	IOLog("ipw_rx_init\n");
 	ipw_rx_init(priv, priv->rxq);
 
 //	spin_lock_irqsave(&priv->lock, flags);
@@ -2038,7 +2045,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	_ipw_release_restricted_access(priv);
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
-
+	IOLog("ipw_queue_reset\n");
 	rc = ipw_queue_reset(priv);
 	//if (rc)
 	//	return rc;
@@ -2268,14 +2275,21 @@ int darwin_iwi3945::ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
 		q->high_mark = 2;
 
 	q->first_empty = q->last_used = 0;
-	priv->shared_virt->tx_base_ptr[id] = (u32) q->dma_addr;
+	
+	
+	struct ipw_shared_t *shared_data =
+	    (struct ipw_shared_t *)priv->shared_virt;
+
+	shared_data->tx_base_ptr[id] = (u32) q->dma_addr;
+
+	q->element_size = sizeof(struct tfd_frame);
 
 	//spin_lock_irqsave(&priv->lock, flags);
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
-		return rc;
-	}*/
+	if (rc) {
+		//spin_unlock_irqrestore(&priv->lock, flags);
+		//return rc;
+	}
 	_ipw_write_restricted(priv, FH_CBCC_CTRL(id), 0);
 	_ipw_write_restricted(priv, FH_CBCC_BASE(id), 0);
 
@@ -2290,10 +2304,11 @@ int darwin_iwi3945::ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
 			     | ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_ENABLE);
 	_ipw_release_restricted_access(priv);
 
-	ipw_read32( FH_TSSR_CBB_BASE);	/* fake read to flush all prev. writes */
+	ipw_read32(FH_TSSR_CBB_BASE);	/* fake read to flush all prev. writes */
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
 	return 0;
+
 }
 
 int darwin_iwi3945::ipw_queue_reset(struct ipw_priv *priv)
@@ -2355,10 +2370,10 @@ int darwin_iwi3945::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 
 	//spin_lock_irqsave(&priv->lock, flags);
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
-		return rc;
-	}*/
+	if (rc) {
+		//spin_unlock_irqrestore(&priv->lock, flags);
+		//return rc;
+	}
 
 	_ipw_write_restricted(priv, FH_RCSR_RBD_BASE(0), rxq->dma_addr);
 	_ipw_write_restricted(priv, FH_RCSR_RPTR_ADDR(0),
@@ -2388,6 +2403,7 @@ int darwin_iwi3945::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	return 0;
+
 }
 
 int darwin_iwi3945::ipw_rx_queue_space(struct ipw_rx_queue *q)
@@ -2441,13 +2457,13 @@ int darwin_iwi3945::ipw_rx_queue_update_write_ptr(struct ipw_priv *priv,
 
 int darwin_iwi3945::ipw_rx_queue_restock(struct ipw_priv *priv)
 {
+		
 	struct ipw_rx_queue *rxq = priv->rxq;
 	struct list_head *element;
 	struct ipw_rx_mem_buffer *rxb;
 	unsigned long flags;
 	int write;
 	int counter = 0;
-	int rc;
 
 	//spin_lock_irqsave(&rxq->lock, flags);
 	write = rxq->write & ~0x7;
@@ -2455,9 +2471,7 @@ int darwin_iwi3945::ipw_rx_queue_restock(struct ipw_priv *priv)
 		element = rxq->rx_free.next;
 		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
 		list_del(element);
-
-		((u32 *) rxq->bd)[rxq->write] = (u32) rxb->dma_addr;
-
+		((u32 *) rxq->bd)[rxq->write] = rxb->dma_addr;
 		rxq->queue[rxq->write] = rxb;
 		rxq->write = (rxq->write + 1) % RX_QUEUE_SIZE;
 		rxq->free_count--;
@@ -2468,23 +2482,21 @@ int darwin_iwi3945::ipw_rx_queue_restock(struct ipw_priv *priv)
 	 * refill it */
 	if (rxq->free_count <= RX_LOW_WATERMARK) {
 		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rx_queue_replenish),priv,NULL,true);
-		//queue_work(priv->workqueue, &priv->rx_replenish);
 	}
 
 	counter = ipw_rx_queue_space(rxq);
 	/* If we've added more space for the firmware to place data, tell it */
 	if ((write != (rxq->write & ~0x7))
-	    || (rxq->write - rxq->read > 7) || (-rxq->write + rxq->read > 7) ) {
+	    || (rxq->write - rxq->read > 7)
+		|| (-rxq->write + rxq->read > 7)) {
 		//spin_lock_irqsave(&rxq->lock, flags);
 		rxq->need_update = 1;
 		//spin_unlock_irqrestore(&rxq->lock, flags);
-		rc = ipw_rx_queue_update_write_ptr(priv, rxq);
-		if (rc) {
-			return rc;
-		}
+		ipw_rx_queue_update_write_ptr(priv, rxq);
 	}
 
 	return 0;
+
 }
 
 void darwin_iwi3945::ipw_rx_queue_replenish(struct ipw_priv *priv)
@@ -2559,7 +2571,7 @@ struct ipw_rx_queue *darwin_iwi3945::ipw_rx_queue_alloc(struct ipw_priv *priv)
 	struct ipw_rx_queue *rxq;
 	//struct pci_dev *dev = priv->pci_dev;
 	int i;
-	rxq = (struct ipw_rx_queue *)kmalloc(sizeof(*rxq), GFP_ATOMIC);
+	(void*)rxq = (void*)kmalloc(sizeof(*rxq), GFP_ATOMIC);
 	memset(rxq, 0, sizeof(*rxq));
 
 	//spin_lock_init(&rxq->lock);
@@ -4161,26 +4173,63 @@ void darwin_iwi3945::ipw_add_scan_channels(struct ipw_priv *priv,
 	
 }
 
+int darwin_iwi3945::ipw_is_ready(struct ipw_priv *priv)
+{
+	/* The adapter is 'ready' if READY and GEO_CONFIGURED bits are
+	 * set but EXIT_PENDING is not */
+	return ((priv->status & (STATUS_READY |
+				 STATUS_GEO_CONFIGURED |
+				 STATUS_EXIT_PENDING)) ==
+		(STATUS_READY | STATUS_GEO_CONFIGURED)) ? 1 : 0;
+}
+
+int darwin_iwi3945::ipw_is_associated(struct ipw_priv *priv)
+{
+	return (priv->active_rxon.filter_flags & RXON_FILTER_ASSOC_MSK) ?
+		1 : 0;
+}
+
 int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 {
-		
-/*	
-	struct ipw_scan_request_ext scan;
-	int err = 0, scan_type;
-	IOLog("scanning...\n");
-	if (!(priv->status & STATUS_INIT) ||
-	    (priv->status & STATUS_EXIT_PENDING))
-		return 0;
 
+	struct ipw_host_cmd cmd;// = {
+		cmd.id = 0x80;//REPLY_SCAN_CMD;
+		cmd.len = sizeof(struct ipw_scan_cmd);
+		cmd.meta.flags = CMD_SIZE_HUGE;
+	//};
+	int rc = 0;
+	struct ipw_scan_cmd *scan;
+	//struct ieee80211_hw_mode *hw_mode = NULL;
+	//struct ieee80211_conf *conf = NULL;
+	u8 direct_mask;
+	int phymode;
 
-	if (priv->status & STATUS_SCANNING) {
-		IOLog("Concurrent scan requested.  Ignoring.\n");
+	//conf = ieee80211_get_hw_conf(priv->ieee);
+
+	if (!ipw_is_ready(priv)) {
+		IOLog("request scan called when driver not ready.\n");
+		return -1;
+	}
+
+	//mutex_lock(&priv->mutex);
+
+	/* This should never be called or scheduled if there is currently
+	 * a scan active in the hardware. */
+	if (priv->status & STATUS_SCAN_HW) {
+		IOLog
+		    ("Multiple concurrent scan requests in parallel. "
+		     "Ignoring second request.\n");
+		rc = -EIO;
+		goto done;
+	}
+
+	if (priv->status & STATUS_EXIT_PENDING) {
+		IOLog("Aborting scan due to device shutdown\n");
 		priv->status |= STATUS_SCAN_PENDING;
 		goto done;
 	}
 
-	if (!(priv->status & STATUS_SCAN_FORCED) &&
-	    priv->status & STATUS_SCAN_ABORTING) {
+	if (priv->status & STATUS_SCAN_ABORTING) {
 		IOLog("Scan request while abort pending.  Queuing.\n");
 		priv->status |= STATUS_SCAN_PENDING;
 		goto done;
@@ -4192,99 +4241,154 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 		goto done;
 	}
 
-	memset(&scan, 0, sizeof(scan));
-	scan.full_scan_index = cpu_to_le32(ieee80211_get_scans(priv->ieee));
-
-	if (type == IW_SCAN_TYPE_PASSIVE) {
-		IOLog("use passive scanning\n");
-		scan_type = IPW_SCAN_PASSIVE_FULL_DWELL_SCAN;
-		scan.dwell_time[IPW_SCAN_PASSIVE_FULL_DWELL_SCAN] =
-		    cpu_to_le16(120);
-		ipw_add_scan_channels(priv, &scan, scan_type);
-		goto send_request;
-	}
-
-	if (priv->config & CFG_SPEED_SCAN)
-		scan.dwell_time[IPW_SCAN_ACTIVE_BROADCAST_SCAN] =
-		    cpu_to_le16(30);
-	else
-		scan.dwell_time[IPW_SCAN_ACTIVE_BROADCAST_SCAN] =
-		    cpu_to_le16(20);
-
-	scan.dwell_time[IPW_SCAN_ACTIVE_BROADCAST_AND_DIRECT_SCAN] =
-	    cpu_to_le16(20);
-
-	scan.dwell_time[IPW_SCAN_PASSIVE_FULL_DWELL_SCAN] = cpu_to_le16(120);
-
-	if (priv->ieee->iw_mode == IW_MODE_MONITOR) {
-		u8 channel;
-		u8 band = 0;
-
-		switch (ipw_is_valid_channel(priv->ieee, priv->channel)) {
-		case IEEE80211_52GHZ_BAND:
-			band = (u8) (IPW_A_MODE << 6) | 1;
-			channel = priv->channel;
-			break;
-
-		case IEEE80211_24GHZ_BAND:
-			band = (u8) (IPW_B_MODE << 6) | 1;
-			channel = priv->channel;
-			break;
-
-		default:
-			band = (u8) (IPW_B_MODE << 6) | 1;
-			channel = 9;
-			break;
-		}
-
-		scan.channels_list[0] = band;
-		scan.channels_list[1] = channel;
-		ipw_set_scan_type(&scan, 1, IPW_SCAN_PASSIVE_FULL_DWELL_SCAN);
-
-
-		scan.dwell_time[IPW_SCAN_PASSIVE_FULL_DWELL_SCAN] =
-		    cpu_to_le16(2000);
-	} else {
-
-		if ((priv->status & STATUS_ROAMING)
-		    || (!(priv->status & STATUS_ASSOCIATED)
-			&& (priv->config & CFG_STATIC_ESSID)
-			&& (le32_to_cpu(scan.full_scan_index) % 2))) {
-			err=sendCommand(IPW_CMD_SSID, &priv->essid,min( priv->essid_len, IW_ESSID_MAX_SIZE), 1);
-			if (err) {
-				IOLog("Attempt to send SSID command "
-					     "failed.\n");
-				goto done;
-			}
-
-			scan_type = IPW_SCAN_ACTIVE_BROADCAST_AND_DIRECT_SCAN;
-		} else
-			scan_type = IPW_SCAN_ACTIVE_BROADCAST_SCAN;
-
-		ipw_add_scan_channels(priv, &scan, scan_type);
-	}
-
-      send_request:
-	  struct ipw_scan_request_ext *rq=&scan;
-	err = sendCommand(IPW_CMD_SCAN_REQUEST_EXT, &rq,sizeof(rq), 1);
-
-	if (err) {
-		IOLog("Sending scan command failed: %08X\n", err);
+	if (!(priv->status & STATUS_READY)) {
+		IOLog("Scan request while uninitialized.  Queuing.\n");
+		priv->status |= STATUS_SCAN_PENDING;
 		goto done;
 	}
 
-	priv->status |= STATUS_SCANNING;
-	priv->status &= ~STATUS_SCAN_PENDING;
-	queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan_check),priv,5,true);
+	if (!priv->scan_bands) {
+		IOLog("Aborting scan due to no requested bands.\n");
+		goto done;
+	}
 
- 
-	  done:
-	return err;
-*/
+	if (!priv->scan) {
+		(void*)priv->scan = (void*)kmalloc(sizeof(struct ipw_scan_cmd) +
+				     IPW_MAX_SCAN_SIZE, GFP_ATOMIC);
+		if (!priv->scan) {
+			rc = -ENOMEM;
+			goto done;
+		}
+	}
+	scan = priv->scan;
+	memset(scan, 0, sizeof(struct ipw_scan_cmd) + IPW_MAX_SCAN_SIZE);
+
+	scan->quiet_plcp_th = IPW_PLCP_QUIET_THRESH;
+	scan->quiet_time = IPW_ACTIVE_QUIET_TIME;
+
+	if (ipw_is_associated(priv)) {
+		u16 interval = 1000U;//conf->beacon_int;
+		u32 extra;
+
+		IOLog("Scanning while associated...\n");
+		scan->suspend_time = 100;
+		scan->max_out_time = 600 * 1024;
+		if (interval) {
+			/*
+			 * suspend time format:
+			 *  0-19: beacon interval in usec (time before exec.)
+			 * 20-23: 0
+			 * 24-31: number of beacons (suspend between channels)
+			 */
+
+			extra = (scan->suspend_time / interval) << 24;
+			scan->suspend_time = 0xFF0FFFFF & (extra |
+							   ((scan->
+							     suspend_time
+							     % interval)
+							    * 1024));
+		}
+	}
+
+	/* We should add the ability for user to lock to PASSIVE ONLY */
+	if (priv->one_direct_scan) {
+		IOLog
+		    ("Kicking off one direct scan for '%s'\n",
+		     escape_essid((const char*)priv->direct_ssid, priv->direct_ssid_len));
+		scan->direct_scan[0].id = WLAN_EID_SSID;
+		scan->direct_scan[0].len = priv->direct_ssid_len;
+		memcpy(scan->direct_scan[0].ssid,
+		       priv->direct_ssid, priv->direct_ssid_len);
+		direct_mask = 1;
+	} else if (!ipw_is_associated(priv)) {
+		scan->direct_scan[0].id = WLAN_EID_SSID;
+		scan->direct_scan[0].len = priv->essid_len;
+		memcpy(scan->direct_scan[0].ssid, priv->essid, priv->essid_len);
+		direct_mask = 1;
+	} else {
+		direct_mask = 0;
+	}
+
+	/* We don't build a direct scan probe request; the uCode will do
+	 * that based on the direct_mask added to each channel entry */
+	/*scan->tx_cmd.len = ipw_fill_probe_req(
+		priv,
+		(struct ieee80211_mgmt *)scan->data,
+		IPW_MAX_SCAN_SIZE - sizeof(scan), 0);*/
+	scan->tx_cmd.tx_flags = TX_CMD_FLG_SEQ_CTL_MSK;
+	//scan->tx_cmd.sta_id = priv->hw_setting.broadcast_id;
+	scan->tx_cmd.u.life_time = TX_CMD_LIFE_TIME_INFINITE;
+
+	/* flags + rate selection */
+
+	switch (priv->scan_bands) {
+	case 2: scan->flags = RXON_FLG_BAND_24G_MSK | RXON_FLG_AUTO_DETECT_MSK;
+		scan->tx_cmd.rate = R_1M;
+		scan->good_CRC_th = 0;
+		//hw_mode = ipw_get_hw_mode(priv, MODE_IEEE80211G);
+		//phymode = MODE_IEEE80211G;
+		break;
+
+	case 1: scan->tx_cmd.rate = R_6M;
+		scan->good_CRC_th = IPW_GOOD_CRC_TH;
+		//hw_mode = ipw_get_hw_mode(priv, MODE_IEEE80211A);
+		//phymode = MODE_IEEE80211A;
+		break;
+
+	default:
+		IOLog("Invalid scan band count\n");
+		goto done;
+	}
+
+	/*if (!hw_mode) {
+		IOLog("Could not obtain hw_mode in scan.  Aborting.\n");
+		goto done;
+	}*/
+
+	//scan->flags |= ipw_get_antenna_flags(priv);
+
+	//if (priv->iw_mode == IEEE80211_IF_TYPE_MNTR)
+	//	scan->filter_flags = RXON_FILTER_PROMISC_MSK;
+
+	if (direct_mask)
+		IOLog
+		    ("Initiating direct scan for %s.\n",
+		     escape_essid((const char*)priv->essid, priv->essid_len));
+	else
+		IOLog("Initiating indirect scan.\n");
+
+//	scan->channel_count = ipw_get_channels_for_scan(
+//		priv, phymode, 1 /* active */ , direct_mask,
+//		(void *)&scan->data[scan->tx_cmd.len]);
+
+	cmd.len += scan->tx_cmd.len +
+	    scan->channel_count * sizeof(struct ipw_scan_channel);
+	cmd.data = scan;
+	scan->len = cmd.len;
+
+	priv->status |= STATUS_SCAN_HW;
+
+	//rc = ipw_send_cmd(priv, &cmd);
+	if (rc)
+		goto done;
+
+	//queue_delayed_work(priv->workqueue, &priv->scan_check,  IPW_SCAN_CHECK_WATCHDOG);
+
+	priv->status &= ~STATUS_SCAN_PENDING;
+
+	goto done;
+
+      done:
+	//if (!rc) ipw_update_link_led(priv);
+
+	return 0;
+	//mutex_unlock(&priv->mutex);
+		
 }
 
 void darwin_iwi3945::ipw_scan_check(ipw_priv *priv)
 {
+	
 	if (priv->status & (STATUS_SCANNING | STATUS_SCAN_ABORTING)) {
 		IOLog("Scan completion resetting\n");
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adapter_restart),priv,NULL,true);
@@ -4489,14 +4593,122 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//mutex_unlock(&priv->mutex);
 }
 
+void darwin_iwi3945::getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const {
+    constraints->alignStart  = kIOPacketBufferAlign4;	// even word aligned.
+    constraints->alignLength = kIOPacketBufferAlign4;	// no restriction.
+}
+
+int darwin_iwi3945::ipw_scan_initiate(struct ipw_priv *priv, unsigned long ms)
+{
+	if (priv->status & STATUS_SCANNING) {
+		IOLog("Scan already in progress.\n");
+		return 0;
+	}
+
+	if (priv->status & STATUS_EXIT_PENDING) {
+		IOLog("Aborting scan due to device shutdown\n");
+		priv->status |= STATUS_SCAN_PENDING;
+		return 0;
+	}
+
+	if (priv->status & STATUS_SCAN_ABORTING) {
+		IOLog("Scan request while abort pending.  Queuing.\n");
+		priv->status |= STATUS_SCAN_PENDING;
+		return 0;
+	}
+
+	if (priv->status & STATUS_RF_KILL_MASK) {
+		IOLog("Aborting scan due to RF Kill activation\n");
+		priv->status |= STATUS_SCAN_PENDING;
+		return 0;
+	}
+
+	if (!(priv->status & STATUS_READY)) {
+		IOLog("Scan request while uninitialized.  Queuing.\n");
+		priv->status |= STATUS_SCAN_PENDING;
+		return 0;
+	}
+
+	IOLog("Setting scan to on\n");
+ 	priv->scan_bands = 2;
+	priv->status |= STATUS_SCANNING;
+	priv->scan_start = jiffies;
+	priv->scan_pass_start = priv->scan_start;
+
+	return ipw_scan_schedule(priv, ms);
+}
+
+int darwin_iwi3945::ipw_scan_schedule(struct ipw_priv *priv, unsigned long ms)
+{
+	if (priv->status & STATUS_SCAN_ABORTING) {
+		IOLog
+		    ("Scan abort in progress.  Deferring scan " "request.\n");
+		priv->status |= STATUS_SCAN_PENDING;
+		return 0;
+	}
+	queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan),priv,3,true);
+	//queue_delayed_work(priv->workqueue,   &priv->request_scan, msecs_to_jiffies(ms));
+
+	return 0;
+}
+
+int darwin_iwi3945::ipw_scan_completed(struct ipw_priv *priv, int success)
+{
+	/* The HW is no longer scanning */
+	priv->status &= ~STATUS_SCAN_HW;
+
+	/* The scan completion notification came in, so kill that timer... */
+	//cancel_delayed_work(&priv->scan_check);
+
+	IOLog("Scan pass on %sGhz\n",
+		       (priv->scan_bands == 2) ? "2.4" : "5.2");
+
+	/* Remove this scanned band from the list
+	 * of pending bands to scan */
+	priv->scan_bands--;
+
+	/* If a request to abort was given, or the scan did not succeed
+	 * then we reset the scan state machine and terminate,
+	 * re-queuing another scan if one has been requested */
+	if (priv->status & STATUS_SCAN_ABORTING) {
+		IOLog("Aborted scan completed.\n");
+		priv->status &= ~STATUS_SCAN_ABORTING;
+	} else {
+		/* If there are more bands on this scan pass reschedule */
+		if (priv->scan_bands > 0)
+			goto reschedule;
+	}
+
+	IOLog("Setting scan to off\n");
+
+	priv->one_direct_scan = 0;
+	priv->status &= ~STATUS_SCANNING;
+
+	//IOLog("Scan took %dms\n",
+	//	       jiffies_to_msecs(elapsed_jiffies
+	//				(priv->scan_start, jiffies)));
+
+	//queue_work(priv->workqueue, &priv->update_link_led);
+
+	if (priv->status & STATUS_SCAN_PENDING)
+		ipw_scan_initiate(priv, 0);
+
+	return 0;
+
+      reschedule:
+	priv->scan_pass_start = jiffies;
+	ipw_scan_schedule(priv, 0);
+
+	return 0;
+}
+
 void darwin_iwi3945::RxQueueIntr()
 {
 	struct ipw_rx_mem_buffer *rxb;
 	struct ipw_rx_packet *pkt;
 	u32 r, i;
 	int pkt_from_hardware;
-	//TODO: check r is ok
-	r = ((struct ipw_shared_t *)memBase)->rx_read_ptr[0];//priv->shared_virt->rx_read_ptr[0];
+	r = priv->shared_virt->rx_read_ptr[0];
 	i = priv->rxq->read;
 	while (i != r) {
 		rxb = priv->rxq->queue[i];
@@ -4552,7 +4764,7 @@ void darwin_iwi3945::RxQueueIntr()
 				/* We delay the ALIVE response by 5ms to
 				 * give the HW RF Kill time to activate... */
 				if (priv->card_alive.is_valid == UCODE_VALID_OK)
-					ipw_bg_alive_start();
+					queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_alive_start),priv,1,true);
 					/*queue_delayed_work(priv->workqueue,
 							   &priv->alive_start,
 							   msecs_to_jiffies(5));*/
@@ -4633,14 +4845,12 @@ void darwin_iwi3945::RxQueueIntr()
 			break;
 
 		case PM_SLEEP_NOTIFICATION:{
-#ifdef CONFIG_IPW3945_DEBUG
 				struct ipw_sleep_notification *sleep =
 				    &(pkt->u.sleep_notif);
-				IPW_DEBUG_RX
+				IOLog
 				    ("sleep mode: %d, src: %d\n",
 				     sleep->pm_sleep_mode,
 				     sleep->pm_wakeup_src);
-#endif
 				break;
 			}
 
@@ -4658,7 +4868,7 @@ void darwin_iwi3945::RxQueueIntr()
 #ifdef CONFIG_IPW3945_DEBUG
 				struct BeaconNtfSpecifics *beacon =
 				    &(pkt->u.beacon_status);
-				IPW_DEBUG_INFO
+				IOLog
 				    ("beacon status %x retries %d iss %d "
 				     "tsf %d %d rate %d\n",
 				     beacon->bconNotifHdr.status,
@@ -4690,7 +4900,7 @@ void darwin_iwi3945::RxQueueIntr()
 				    =
 				    (struct ipw_scanreq_notification
 				     *)pkt->u.raw;
-				IPW_DEBUG_RX
+				IOLog
 				    ("Scan request status = 0x%x\n",
 				     notif->status);
 #endif
@@ -4722,7 +4932,7 @@ void darwin_iwi3945::RxQueueIntr()
 				*notif = (struct ipw_scanresults_notification *)
 				    pkt->u.raw;
 
-				IPW_DEBUG_SCAN("Scan ch.res: "
+				IOLog("Scan ch.res: "
 					       "%d [802.11%s] "
 					       "(TSF: 0x%08X:%08X) - %d "
 					       "elapsed=%lu usec (%dms since last)\n",
@@ -4734,10 +4944,7 @@ void darwin_iwi3945::RxQueueIntr()
 					       notif->statistics[0],
 					       notif->tsf_low -
 					       priv->scan_start_tsf,
-					       jiffies_to_msecs
-					       (elapsed_jiffies
-						(priv->
-						 last_scan_jiffies, jiffies)));
+					       0);
 #endif
 				priv->last_scan_jiffies = jiffies;
 				break;

@@ -7,6 +7,7 @@
 //#define IWI_NOLOG
 #define IWI_DEBUG_NORMAL
 //#define IWI_DEBUG_FULL
+#define CONFIG_IPW3945_DEBUG
 
 #if defined(IWI_NOLOG)
 	#define IWI_LOG(...) do{ }while(0)
@@ -41,6 +42,9 @@
 
 #define IWI_DUMP_MBUF(...) do{ }while(0)
 
+/*
+ * Driver API command-id
+ */
 
 static const char ipw_modes[] = {
 	'a', 'b', 'g', '?'
@@ -732,6 +736,21 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual int ipw_nic_stop_master(struct ipw_priv *priv);
 	virtual int ipw_tx_queue_update_write_ptr(struct ipw_priv *priv,
 					 struct ipw_tx_queue *txq, int tx_id);
+	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
+	virtual int ipw_scan_completed(struct ipw_priv *priv, int success);
+	virtual int ipw_scan_initiate(struct ipw_priv *priv, unsigned long ms);
+	virtual int ipw_scan_schedule(struct ipw_priv *priv, unsigned long ms);
+	virtual int ipw_is_ready(struct ipw_priv *priv);
+	virtual int ipw_is_associated(struct ipw_priv *priv);
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
