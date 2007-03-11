@@ -11,6 +11,87 @@
 // second parameter. You must use the literal name of the superclass.
 OSDefineMetaClassAndStructors(darwin_iwi2100, IO80211Controller);
 
+static const char *frame_types[] = {
+	"COMMAND_STATUS_VAL",
+	"STATUS_CHANGE_VAL",
+	"P80211_DATA_VAL",
+	"P8023_DATA_VAL",
+	"HOST_NOTIFICATION_VAL"
+};
+
+static const char *command_types[] = {
+	"undefined",
+	"unused",		/* HOST_ATTENTION */
+	"HOST_COMPLETE",
+	"unused",		/* SLEEP */
+	"unused",		/* HOST_POWER_DOWN */
+	"unused",
+	"SYSTEM_CONFIG",
+	"unused",		/* SET_IMR */
+	"SSID",
+	"MANDATORY_BSSID",
+	"AUTHENTICATION_TYPE",
+	"ADAPTER_ADDRESS",
+	"PORT_TYPE",
+	"INTERNATIONAL_MODE",
+	"CHANNEL",
+	"RTS_THRESHOLD",
+	"FRAG_THRESHOLD",
+	"POWER_MODE",
+	"TX_RATES",
+	"BASIC_TX_RATES",
+	"WEP_KEY_INFO",
+	"unused",
+	"unused",
+	"unused",
+	"unused",
+	"WEP_KEY_INDEX",
+	"WEP_FLAGS",
+	"ADD_MULTICAST",
+	"CLEAR_ALL_MULTICAST",
+	"BEACON_INTERVAL",
+	"ATIM_WINDOW",
+	"CLEAR_STATISTICS",
+	"undefined",
+	"undefined",
+	"undefined",
+	"undefined",
+	"TX_POWER_INDEX",
+	"undefined",
+	"undefined",
+	"undefined",
+	"undefined",
+	"undefined",
+	"undefined",
+	"BROADCAST_SCAN",
+	"CARD_DISABLE",
+	"PREFERRED_BSSID",
+	"SET_SCAN_OPTIONS",
+	"SCAN_DWELL_TIME",
+	"SWEEP_TABLE",
+	"AP_OR_STATION_TABLE",
+	"GROUP_ORDINALS",
+	"SHORT_RETRY_LIMIT",
+	"LONG_RETRY_LIMIT",
+	"unused",		/* SAVE_CALIBRATION */
+	"unused",		/* RESTORE_CALIBRATION */
+	"undefined",
+	"undefined",
+	"undefined",
+	"HOST_PRE_POWER_DOWN",
+	"unused",		/* HOST_INTERRUPT_COALESCING */
+	"undefined",
+	"CARD_DISABLE_PHY_OFF",
+	"MSDU_TX_RATES" "undefined",
+	"undefined",
+	"SET_STATION_STAT_BITS",
+	"CLEAR_STATIONS_STAT_BITS",
+	"LEAP_ROGUE_MODE",
+	"SET_SECURITY_INFORMATION",
+	"DISASSOCIATION_BSSID",
+	"SET_WPA_ASS_IE"
+};
+
 static const struct ipw2100_status_code ipw2100_status_codes[] = {
 	{0x00, "Successful"},
 	{0x01, "Unspecified failure"},
@@ -106,6 +187,512 @@ config = 0;
  return super::init(dict);
 }
 
+int darwin_iwi2100::bd_queue_allocate(struct ipw2100_priv *priv,
+			     struct ipw2100_bd_queue *q, int entries)
+{
+
+	memset(q, 0, sizeof(struct ipw2100_bd_queue));
+
+	q->entries = entries;
+	q->size = entries * sizeof(struct ipw2100_bd);
+	MemoryDmaAlloc(q->size, &q->nic, &q->drv);
+	//q->drv = pci_alloc_consistent(priv->pci_dev, q->size, &q->nic);
+	if (!q->drv) {
+		IOLog
+		    ("can't allocate shared memory for buffer descriptors\n");
+		return -ENOMEM;
+	}
+	memset(q->drv, 0, q->size);
+
+
+	return 0;
+}
+
+void darwin_iwi2100::bd_queue_free(struct ipw2100_priv *priv, struct ipw2100_bd_queue *q)
+{
+
+	if (!q)
+		return;
+
+	if (q->drv) {
+		//pci_free_consistent(priv->pci_dev, q->size, q->drv, q->nic);
+		q->nic=NULL;
+		q->drv=NULL;
+		q->drv = NULL;
+	}
+
+}
+
+int darwin_iwi2100::ipw2100_tx_allocate(struct ipw2100_priv *priv)
+{
+	int i, j, err = -EINVAL;
+	void *v;
+	dma_addr_t p;
+
+
+	err = bd_queue_allocate(priv, &priv->tx_queue, TX_QUEUE_LENGTH);
+	if (err) {
+		IOLog("%s: failed bd_queue_allocate\n",
+				priv->net_dev->name);
+		return err;
+	}
+
+	priv->tx_buffers =
+	    (struct ipw2100_tx_packet *)kmalloc(TX_PENDED_QUEUE_LENGTH *
+						sizeof(struct
+						       ipw2100_tx_packet),
+						GFP_ATOMIC);
+	if (!priv->tx_buffers) {
+		IOLog( 
+		       ": %s: alloc failed form tx buffers.\n",
+		       priv->net_dev->name);
+		bd_queue_free(priv, &priv->tx_queue);
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < TX_PENDED_QUEUE_LENGTH; i++) {
+	
+		MemoryDmaAlloc(sizeof(struct ipw2100_data_header), &p, &v);
+		/*v = pci_alloc_consistent(priv->pci_dev,
+					 sizeof(struct ipw2100_data_header),
+					 &p);*/
+		if (!v) {
+			IOLog( 
+			       ": %s: PCI alloc failed for tx " "buffers.\n",
+			       priv->net_dev->name);
+			err = -ENOMEM;
+			break;
+		}
+
+		priv->tx_buffers[i].type = DATA;
+		priv->tx_buffers[i].info.d_struct.data =
+		    (struct ipw2100_data_header *)v;
+		priv->tx_buffers[i].info.d_struct.data_phys = p;
+		priv->tx_buffers[i].info.d_struct.txb = NULL;
+	}
+
+	if (i == TX_PENDED_QUEUE_LENGTH)
+		return 0;
+
+	for (j = 0; j < i; j++) {
+		priv->tx_buffers[j].info.d_struct.data=NULL;
+		priv->tx_buffers[j].info.d_struct.
+				    data_phys=NULL;
+		/*pci_free_consistent(priv->pci_dev,
+				    sizeof(struct ipw2100_data_header),
+				    priv->tx_buffers[j].info.d_struct.data,
+				    priv->tx_buffers[j].info.d_struct.
+				    data_phys);*/
+	}
+
+	kfree(priv->tx_buffers);
+	priv->tx_buffers = NULL;
+
+	return err;
+}
+
+int darwin_iwi2100::status_queue_allocate(struct ipw2100_priv *priv, int entries)
+{
+	struct ipw2100_status_queue *q = &priv->status_queue;
+
+
+	q->size = entries * sizeof(struct ipw2100_status);
+	MemoryDmaAlloc(q->size, &q->nic, &q->drv);
+	/*q->drv =
+	    (struct ipw2100_status *)pci_alloc_consistent(priv->pci_dev,
+							  q->size, &q->nic);*/
+	if (!q->drv) {
+		IOLog("Can not allocate status queue.\n");
+		return -ENOMEM;
+	}
+
+	memset(q->drv, 0, q->size);
+
+
+	return 0;
+}
+
+void darwin_iwi2100::status_queue_free(struct ipw2100_priv *priv)
+{
+
+	if (priv->status_queue.drv) {
+		/*pci_free_consistent(priv->pci_dev, priv->status_queue.size,
+				    priv->status_queue.drv,
+				    priv->status_queue.nic);*/
+					priv->status_queue.nic=NULL;
+		priv->status_queue.drv = NULL;
+	}
+
+}
+
+int darwin_iwi2100::ipw2100_alloc_skb(struct ipw2100_priv *priv,
+				    struct ipw2100_rx_packet *packet)
+{
+	packet->skb = allocatePacket(sizeof(struct ipw2100_rx));
+	if (!packet->skb)
+		return -ENOMEM;
+
+	packet->rxp = (struct ipw2100_rx *)mbuf_data(packet->skb);
+	packet->dma_addr = mbuf_data_to_physical(mbuf_data(packet->skb));
+	/*pci_map_single(priv->pci_dev, packet->skb->data,
+					  sizeof(struct ipw2100_rx),
+					  PCI_DMA_FROMDEVICE);*/
+	/* NOTE: pci_map_single does not return an error code, and 0 is a valid
+	 *       dma_addr */
+
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_rx_allocate(struct ipw2100_priv *priv)
+{
+	int i, j, err = -EINVAL;
+
+
+	err = bd_queue_allocate(priv, &priv->rx_queue, RX_QUEUE_LENGTH);
+	if (err) {
+		IOLog("failed bd_queue_allocate\n");
+		return err;
+	}
+
+	err = status_queue_allocate(priv, RX_QUEUE_LENGTH);
+	if (err) {
+		IOLog("failed status_queue_allocate\n");
+		bd_queue_free(priv, &priv->rx_queue);
+		return err;
+	}
+
+	/*
+	 * allocate packets
+	 */
+	priv->rx_buffers = (struct ipw2100_rx_packet *)
+	    kmalloc(RX_QUEUE_LENGTH * sizeof(struct ipw2100_rx_packet),
+		    GFP_KERNEL);
+	if (!priv->rx_buffers) {
+		IOLog("can't allocate rx packet buffer table\n");
+
+		bd_queue_free(priv, &priv->rx_queue);
+
+		status_queue_free(priv);
+
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < RX_QUEUE_LENGTH; i++) {
+		struct ipw2100_rx_packet *packet = &priv->rx_buffers[i];
+
+		err = ipw2100_alloc_skb(priv, packet);
+		if (unlikely(err)) {
+			err = -ENOMEM;
+			break;
+		}
+
+		/* The BD holds the cache aligned address */
+		priv->rx_queue.drv[i].host_addr = packet->dma_addr;
+		priv->rx_queue.drv[i].buf_length = IPW_RX_NIC_BUFFER_LENGTH;
+		priv->status_queue.drv[i].status_fields = 0;
+	}
+
+	if (i == RX_QUEUE_LENGTH)
+		return 0;
+
+	for (j = 0; j < i; j++) {
+		priv->rx_buffers[j].dma_addr=NULL;
+		freePacket(priv->rx_buffers[j].skb);
+		/*pci_unmap_single(priv->pci_dev, priv->rx_buffers[j].dma_addr,
+				 sizeof(struct ipw2100_rx_packet),
+				 PCI_DMA_FROMDEVICE);
+		dev_kfree_skb(priv->rx_buffers[j].skb);*/
+	}
+
+	kfree(priv->rx_buffers);
+	priv->rx_buffers = NULL;
+
+	bd_queue_free(priv, &priv->rx_queue);
+
+	status_queue_free(priv);
+
+	return err;
+}
+
+int darwin_iwi2100::ipw2100_msg_allocate(struct ipw2100_priv *priv)
+{
+	int i, j, err = -EINVAL;
+	void *v;
+	dma_addr_t p;
+
+	priv->msg_buffers =
+	    (struct ipw2100_tx_packet *)kmalloc(IPW_COMMAND_POOL_SIZE *
+						sizeof(struct
+						       ipw2100_tx_packet),
+						GFP_KERNEL);
+	if (!priv->msg_buffers) {
+		IOLog(  ": %s: PCI alloc failed for msg "
+		       "buffers.\n", priv->net_dev->name);
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < IPW_COMMAND_POOL_SIZE; i++) {
+		MemoryDmaAlloc(sizeof(struct ipw2100_cmd_header), &p, &v);
+		/*v = pci_alloc_consistent(priv->pci_dev,
+					 sizeof(struct ipw2100_cmd_header), &p);*/
+		if (!v) {
+			IOLog(  ": "
+			       "%s: PCI alloc failed for msg "
+			       "buffers.\n", priv->net_dev->name);
+			err = -ENOMEM;
+			break;
+		}
+
+		memset(v, 0, sizeof(struct ipw2100_cmd_header));
+
+		priv->msg_buffers[i].type = COMMAND;
+		priv->msg_buffers[i].info.c_struct.cmd =
+		    (struct ipw2100_cmd_header *)v;
+		priv->msg_buffers[i].info.c_struct.cmd_phys = p;
+	}
+
+	if (i == IPW_COMMAND_POOL_SIZE)
+		return 0;
+
+	for (j = 0; j < i; j++) {
+	priv->msg_buffers[j].info.c_struct.cmd=NULL;
+	 priv->msg_buffers[j].info.c_struct.
+				    cmd_phys=NULL;
+		/*pci_free_consistent(priv->pci_dev,
+				    sizeof(struct ipw2100_cmd_header),
+				    priv->msg_buffers[j].info.c_struct.cmd,
+				    priv->msg_buffers[j].info.c_struct.
+				    cmd_phys);*/
+	}
+
+	kfree(priv->msg_buffers);
+	priv->msg_buffers = NULL;
+
+	return err;
+}
+
+void darwin_iwi2100::ieee80211_txb_free(struct ieee80211_txb *txb)
+{
+	int i;
+	if (unlikely(!txb))
+		return;
+	for (i = 0; i < txb->nr_frags; i++)
+		if (txb->fragments[i]) 
+		{
+			freePacket(txb->fragments[i]);
+			txb->fragments[i]=NULL;
+			
+		}
+	kfree(txb);
+	txb=NULL;
+}
+
+void darwin_iwi2100::ipw2100_tx_free(struct ipw2100_priv *priv)
+{
+	int i;
+
+
+	bd_queue_free(priv, &priv->tx_queue);
+
+	if (!priv->tx_buffers)
+		return;
+
+	for (i = 0; i < TX_PENDED_QUEUE_LENGTH; i++) {
+		if (priv->tx_buffers[i].info.d_struct.txb) {
+			ieee80211_txb_free(priv->tx_buffers[i].info.d_struct.
+					   txb);
+			priv->tx_buffers[i].info.d_struct.txb = NULL;
+		}
+		if (priv->tx_buffers[i].info.d_struct.data)
+		{
+			priv->tx_buffers[i].info.d_struct.
+					    data=NULL;
+						priv->tx_buffers[i].info.d_struct.
+					    data_phys=NULL;
+			/*pci_free_consistent(priv->pci_dev,
+					    sizeof(struct ipw2100_data_header),
+					    priv->tx_buffers[i].info.d_struct.
+					    data,
+					    priv->tx_buffers[i].info.d_struct.
+					    data_phys);*/
+		}
+	}
+
+	kfree(priv->tx_buffers);
+	priv->tx_buffers = NULL;
+
+}
+
+void darwin_iwi2100::ipw2100_rx_free(struct ipw2100_priv *priv)
+{
+	int i;
+
+
+	bd_queue_free(priv, &priv->rx_queue);
+	status_queue_free(priv);
+
+	if (!priv->rx_buffers)
+		return;
+
+	for (i = 0; i < RX_QUEUE_LENGTH; i++) {
+		if (priv->rx_buffers[i].rxp) {
+		priv->rx_buffers[i].dma_addr=NULL;
+			/*pci_unmap_single(priv->pci_dev,
+					 priv->rx_buffers[i].dma_addr,
+					 sizeof(struct ipw2100_rx),
+					 PCI_DMA_FROMDEVICE);
+			dev_kfree_skb(priv->rx_buffers[i].skb);*/
+			freePacket(priv->rx_buffers[i].skb);
+		}
+	}
+
+	kfree(priv->rx_buffers);
+	priv->rx_buffers = NULL;
+
+}
+
+void darwin_iwi2100::ipw2100_msg_free(struct ipw2100_priv *priv)
+{
+	int i;
+
+	if (!priv->msg_buffers)
+		return;
+
+	for (i = 0; i < IPW_COMMAND_POOL_SIZE; i++) {
+	priv->msg_buffers[i].info.c_struct.cmd=NULL;
+	priv->msg_buffers[i].info.c_struct.
+				    cmd_phys=NULL;
+		/*pci_free_consistent(priv->pci_dev,
+				    sizeof(struct ipw2100_cmd_header),
+				    priv->msg_buffers[i].info.c_struct.cmd,
+				    priv->msg_buffers[i].info.c_struct.
+				    cmd_phys);*/
+	}
+
+	kfree(priv->msg_buffers);
+	priv->msg_buffers = NULL;
+}
+
+int darwin_iwi2100::ipw2100_queues_allocate(struct ipw2100_priv *priv)
+{
+	if (ipw2100_tx_allocate(priv) ||
+	    ipw2100_rx_allocate(priv) || ipw2100_msg_allocate(priv))
+		goto fail;
+
+	return 0;
+
+      fail:
+	ipw2100_tx_free(priv);
+	ipw2100_rx_free(priv);
+	ipw2100_msg_free(priv);
+	return -ENOMEM;
+}
+
+void darwin_iwi2100::bd_queue_initialize(struct ipw2100_priv *priv,
+				struct ipw2100_bd_queue *q, u32 base, u32 size,
+				u32 r, u32 w)
+{
+
+	IOLog("initializing bd queue at virt=%p, phys=%08x\n", q->drv,
+		       (u32) q->nic);
+
+	write_register(priv->net_dev, base, q->nic);
+	write_register(priv->net_dev, size, q->entries);
+	write_register(priv->net_dev, r, q->oldest);
+	write_register(priv->net_dev, w, q->next);
+
+}
+
+void darwin_iwi2100::ipw2100_tx_initialize(struct ipw2100_priv *priv)
+{
+	int i;
+
+
+	/*
+	 * reinitialize packet info lists
+	 */
+	INIT_LIST_HEAD(&priv->fw_pend_list);
+	INIT_STAT(&priv->fw_pend_stat);
+
+	/*
+	 * reinitialize lists
+	 */
+	INIT_LIST_HEAD(&priv->tx_pend_list);
+	INIT_LIST_HEAD(&priv->tx_free_list);
+	INIT_STAT(&priv->tx_pend_stat);
+	INIT_STAT(&priv->tx_free_stat);
+
+	for (i = 0; i < TX_PENDED_QUEUE_LENGTH; i++) {
+		/* We simply drop any SKBs that have been queued for
+		 * transmit */
+		if (priv->tx_buffers[i].info.d_struct.txb) {
+			ieee80211_txb_free(priv->tx_buffers[i].info.d_struct.
+					   txb);
+			priv->tx_buffers[i].info.d_struct.txb = NULL;
+		}
+
+		list_add_tail(&priv->tx_buffers[i].list, &priv->tx_free_list);
+	}
+
+	SET_STAT(&priv->tx_free_stat, i);
+
+	priv->tx_queue.oldest = 0;
+	priv->tx_queue.available = priv->tx_queue.entries;
+	priv->tx_queue.next = 0;
+	INIT_STAT(&priv->txq_stat);
+	SET_STAT(&priv->txq_stat, priv->tx_queue.available);
+
+	bd_queue_initialize(priv, &priv->tx_queue,
+			    IPW_MEM_HOST_SHARED_TX_QUEUE_BD_BASE,
+			    IPW_MEM_HOST_SHARED_TX_QUEUE_BD_SIZE,
+			    IPW_MEM_HOST_SHARED_TX_QUEUE_READ_INDEX,
+			    IPW_MEM_HOST_SHARED_TX_QUEUE_WRITE_INDEX);
+
+
+}
+
+void darwin_iwi2100::ipw2100_rx_initialize(struct ipw2100_priv *priv)
+{
+
+	priv->rx_queue.oldest = 0;
+	priv->rx_queue.available = priv->rx_queue.entries - 1;
+	priv->rx_queue.next = priv->rx_queue.entries - 1;
+
+	INIT_STAT(&priv->rxq_stat);
+	SET_STAT(&priv->rxq_stat, priv->rx_queue.available);
+
+	bd_queue_initialize(priv, &priv->rx_queue,
+			    IPW_MEM_HOST_SHARED_RX_BD_BASE,
+			    IPW_MEM_HOST_SHARED_RX_BD_SIZE,
+			    IPW_MEM_HOST_SHARED_RX_READ_INDEX,
+			    IPW_MEM_HOST_SHARED_RX_WRITE_INDEX);
+
+	/* set up the status queue */
+	write_register(priv->net_dev, IPW_MEM_HOST_SHARED_RX_STATUS_BASE,
+		       priv->status_queue.nic);
+
+}
+
+int darwin_iwi2100::ipw2100_msg_initialize(struct ipw2100_priv *priv)
+{
+	int i;
+
+	INIT_LIST_HEAD(&priv->msg_free_list);
+	INIT_LIST_HEAD(&priv->msg_pend_list);
+
+	for (i = 0; i < IPW_COMMAND_POOL_SIZE; i++)
+		list_add_tail(&priv->msg_buffers[i].list, &priv->msg_free_list);
+	SET_STAT(&priv->msg_free_stat, i);
+
+	return 0;
+}
+
+void darwin_iwi2100::ipw2100_queues_initialize(struct ipw2100_priv *priv)
+{
+	ipw2100_tx_initialize(priv);
+	ipw2100_rx_initialize(priv);
+	ipw2100_msg_initialize(priv);
+}
 
 int darwin_iwi2100::ipw2100_sw_reset(int option)
 {
@@ -183,15 +770,14 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 	priv->status |= STATUS_INT_ENABLED;
 	ipw2100_disable_interrupts(priv);
 
+	IOLog("ipw2100_queues_allocate.\n");
 	/* Allocate and initialize the Tx/Rx queues and lists */
-	/*if (ipw2100_queues_allocate(priv)) {
-		printk(KERN_WARNING DRV_NAME
+	if (ipw2100_queues_allocate(priv)) {
+		IOLog(
 		       "Error calilng ipw2100_queues_allocate.\n");
-		err = -ENOMEM;
-		goto fail;
 	}
 	ipw2100_queues_initialize(priv);
-*/
+
 
 	IOLog(": Detected Intel PRO/Wireless 2100 Network Connection\n");
 
@@ -208,12 +794,12 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 			       priv->net_dev->name);
 			//ipw2100_hw_stop_adapter(priv);
 			err = -EIO;
-			return err;
+			//return err;
 		}
 
 		/* Start a scan . . . */
-		//ipw2100_set_scan_options(priv);
-		//ipw2100_start_scan(priv);
+		ipw2100_set_scan_options(priv);
+		ipw2100_start_scan(priv);
 	}
 
 
@@ -222,6 +808,98 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 
 	return 0;
 
+}
+
+int darwin_iwi2100::ipw2100_start_scan(struct ipw2100_priv *priv)
+{
+	struct host_command cmd;// = {
+		cmd.host_command = BROADCAST_SCAN;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 4;
+	//};
+	int err;
+
+	IOLog("START_SCAN\n");
+
+	cmd.host_command_parameters[0] = 0;
+
+	/* No scanning if in monitor mode */
+	if (priv->ieee->iw_mode == IW_MODE_MONITOR)
+		return 1;
+
+	if (priv->status & STATUS_SCANNING) {
+		IOLog("Scan requested while already in scan...\n");
+		return 0;
+	}
+
+
+	/* Not clearing here; doing so makes iwlist always return nothing...
+	 *
+	 * We should modify the table logic to use aging tables vs. clearing
+	 * the table on each scan start.
+	 */
+	IOLog("starting scan\n");
+
+	priv->status |= STATUS_SCANNING;
+	err = ipw2100_hw_send_command(priv, &cmd);
+	if (err)
+		priv->status &= ~STATUS_SCANNING;
+
+
+	return err;
+}
+
+void darwin_iwi2100::freePacket(mbuf_t m, IOOptionBits options)
+{
+	//mbuf_t m_next;
+	if( m != NULL){
+		//m_next = mbuf_next(m);
+		if (mbuf_pkthdr_len(m) != 0 && mbuf_type(m) != MBUF_TYPE_FREE )
+			super::freePacket(m,NULL);
+		// checking chains
+		/*if(  m_next != NULL &&
+		     mbuf_len(m_next) != 0  &&  
+		     mbuf_type(m_next) != MBUF_TYPE_FREE ){
+			IWI_WARNING("mbuf is freed. but chains is not freed \n");
+		}*/
+		//if (kDelayFree & kDelayFree) releaseFreePackets();
+	}
+}
+
+void darwin_iwi2100::getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const {
+    constraints->alignStart  = kIOPacketBufferAlign4;	// even word aligned.
+    constraints->alignLength = kIOPacketBufferAlign4;	// no restriction.
+}
+
+int darwin_iwi2100::ipw2100_set_scan_options(struct ipw2100_priv *priv)
+{
+	struct host_command cmd;// = {
+		cmd.host_command = SET_SCAN_OPTIONS;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 8;
+	//};
+	int err;
+
+
+	IOLog("setting scan options\n");
+
+	cmd.host_command_parameters[0] = 0;
+
+	if (!(priv->config & CFG_ASSOCIATE))
+		cmd.host_command_parameters[0] |= IPW_SCAN_NOASSOCIATE;
+	if ((priv->ieee->sec.flags & SEC_ENABLED) && priv->ieee->sec.enabled)
+		cmd.host_command_parameters[0] |= IPW_SCAN_MIXED_CELL;
+	if (priv->config & CFG_PASSIVE_SCAN)
+		cmd.host_command_parameters[0] |= IPW_SCAN_PASSIVE;
+
+	cmd.host_command_parameters[1] = priv->channel_mask;
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+
+	IOLog("SET_SCAN_OPTIONS 0x%04X\n",
+		     cmd.host_command_parameters[0]);
+
+	return err;
 }
 
 void darwin_iwi2100::ipw2100_initialize_ordinals(struct ipw2100_priv *priv)
@@ -242,7 +920,6 @@ void darwin_iwi2100::ipw2100_initialize_ordinals(struct ipw2100_priv *priv)
 
 	IOLog("table 1 size: %d\n", ord->table1_size);
 	IOLog("table 2 size: %d\n", ord->table2_size);
-	IOLog("exit\n");
 }
 
 int darwin_iwi2100::ipw2100_get_ordinal(struct ipw2100_priv *priv, u32 ord,
@@ -362,6 +1039,337 @@ int darwin_iwi2100::ipw2100_wait_for_card_state(struct ipw2100_priv *priv, int s
 	return -EIO;
 }
 
+void darwin_iwi2100::ipw2100_tx_send_commands(struct ipw2100_priv *priv)
+{
+	struct list_head *element;
+	struct ipw2100_tx_packet *packet;
+	struct ipw2100_bd_queue *txq = &priv->tx_queue;
+	struct ipw2100_bd *tbd;
+	int next = txq->next;
+
+	while (!list_empty(&priv->msg_pend_list)) {
+		/* if there isn't enough space in TBD queue, then
+		 * don't stuff a new one in.
+		 * NOTE: 3 are needed as a command will take one,
+		 *       and there is a minimum of 2 that must be
+		 *       maintained between the r and w indexes
+		 */
+		if (txq->available <= 3) {
+			IOLog("no room in tx_queue\n");
+			break;
+		}
+
+		element = priv->msg_pend_list.next;
+		list_del(element);
+		DEC_STAT(&priv->msg_pend_stat);
+
+		packet = list_entry(element, struct ipw2100_tx_packet, list);
+
+		IOLog("using TBD at virt=%p, phys=%p\n",
+			     &txq->drv[txq->next],
+			     (void *)(txq->nic + txq->next *
+				      sizeof(struct ipw2100_bd)));
+
+		packet->index = txq->next;
+
+		tbd = &txq->drv[txq->next];
+
+		/* initialize TBD */
+		tbd->host_addr = packet->info.c_struct.cmd_phys;
+		tbd->buf_length = sizeof(struct ipw2100_cmd_header);
+		/* not marking number of fragments causes problems
+		 * with f/w debug version */
+		tbd->num_fragments = 1;
+		tbd->status.info.field =
+		    IPW_BD_STATUS_TX_FRAME_COMMAND |
+		    IPW_BD_STATUS_TX_INTERRUPT_ENABLE;
+
+		/* update TBD queue counters */
+		txq->next++;
+		txq->next %= txq->entries;
+		txq->available--;
+		DEC_STAT(&priv->txq_stat);
+
+		list_add_tail(element, &priv->fw_pend_list);
+		INC_STAT(&priv->fw_pend_stat);
+	}
+
+	if (txq->next != next) {
+		/* kick off the DMA by notifying firmware the
+		 * write index has moved; make sure TBD stores are sync'd */
+		//wmb();
+		write_register(priv->net_dev,
+			       IPW_MEM_HOST_SHARED_TX_QUEUE_WRITE_INDEX,
+			       txq->next);
+	}
+}
+
+/*
+ * ipw2100_tx_send_data
+ *
+ */
+void darwin_iwi2100::ipw2100_tx_send_data(struct ipw2100_priv *priv)
+{
+	struct list_head *element;
+	struct ipw2100_tx_packet *packet;
+	struct ipw2100_bd_queue *txq = &priv->tx_queue;
+	struct ipw2100_bd *tbd;
+	int next = txq->next;
+	int i = 0;
+	struct ipw2100_data_header *ipw_hdr;
+	struct ieee80211_hdr_3addr *hdr;
+
+	while (!list_empty(&priv->tx_pend_list)) {
+		/* if there isn't enough space in TBD queue, then
+		 * don't stuff a new one in.
+		 * NOTE: 4 are needed as a data will take two,
+		 *       and there is a minimum of 2 that must be
+		 *       maintained between the r and w indexes
+		 */
+		element = priv->tx_pend_list.next;
+		packet = list_entry(element, struct ipw2100_tx_packet, list);
+
+		if (unlikely(1 + packet->info.d_struct.txb->nr_frags >
+			     IPW_MAX_BDS)) {
+			/* TODO: Support merging buffers if more than
+			 * IPW_MAX_BDS are used */
+			IOLog("%s: Maximum BD theshold exceeded.  "
+				       "Increase fragmentation level.\n",
+				       priv->net_dev->name);
+		}
+
+		if (txq->available <= 3 + packet->info.d_struct.txb->nr_frags) {
+			IOLog("no room in tx_queue\n");
+			break;
+		}
+
+		list_del(element);
+		DEC_STAT(&priv->tx_pend_stat);
+
+		tbd = &txq->drv[txq->next];
+
+		packet->index = txq->next;
+
+		ipw_hdr = packet->info.d_struct.data;
+		hdr = (struct ieee80211_hdr_3addr *)mbuf_data(packet->info.d_struct.txb->
+		    fragments[0]);
+
+		if (priv->ieee->iw_mode == IW_MODE_INFRA) {
+			/* To DS: Addr1 = BSSID, Addr2 = SA,
+			   Addr3 = DA */
+			memcpy(ipw_hdr->src_addr, hdr->addr2, ETH_ALEN);
+			memcpy(ipw_hdr->dst_addr, hdr->addr3, ETH_ALEN);
+		} else if (priv->ieee->iw_mode == IW_MODE_ADHOC) {
+			/* not From/To DS: Addr1 = DA, Addr2 = SA,
+			   Addr3 = BSSID */
+			memcpy(ipw_hdr->src_addr, hdr->addr2, ETH_ALEN);
+			memcpy(ipw_hdr->dst_addr, hdr->addr1, ETH_ALEN);
+		}
+
+		ipw_hdr->host_command_reg = SEND;
+		ipw_hdr->host_command_reg1 = 0;
+
+		/* For now we only support host based encryption */
+		ipw_hdr->needs_encryption = 0;
+		ipw_hdr->encrypted = packet->info.d_struct.txb->encrypted;
+		if (packet->info.d_struct.txb->nr_frags > 1)
+			ipw_hdr->fragment_size =
+			    packet->info.d_struct.txb->frag_size -
+			    IEEE80211_3ADDR_LEN;
+		else
+			ipw_hdr->fragment_size = 0;
+
+		tbd->host_addr = packet->info.d_struct.data_phys;
+		tbd->buf_length = sizeof(struct ipw2100_data_header);
+		tbd->num_fragments = 1 + packet->info.d_struct.txb->nr_frags;
+		tbd->status.info.field =
+		    IPW_BD_STATUS_TX_FRAME_802_3 |
+		    IPW_BD_STATUS_TX_FRAME_NOT_LAST_FRAGMENT;
+		txq->next++;
+		txq->next %= txq->entries;
+
+		IOLog("data header tbd TX%d P=%08x L=%d\n",
+			     packet->index, tbd->host_addr, tbd->buf_length);
+//#ifdef CONFIG_IPW2100_DEBUG
+		if (packet->info.d_struct.txb->nr_frags > 1)
+			IOLog("fragment Tx: %d frames\n",
+				       packet->info.d_struct.txb->nr_frags);
+//#endif
+
+		for (i = 0; i < packet->info.d_struct.txb->nr_frags; i++) {
+			tbd = &txq->drv[txq->next];
+			if (i == packet->info.d_struct.txb->nr_frags - 1)
+				tbd->status.info.field =
+				    IPW_BD_STATUS_TX_FRAME_802_3 |
+				    IPW_BD_STATUS_TX_INTERRUPT_ENABLE;
+			else
+				tbd->status.info.field =
+				    IPW_BD_STATUS_TX_FRAME_802_3 |
+				    IPW_BD_STATUS_TX_FRAME_NOT_LAST_FRAGMENT;
+
+			tbd->buf_length = mbuf_len(packet->info.d_struct.txb->
+			    fragments[i]) - IEEE80211_3ADDR_LEN;
+
+			/*tbd->host_addr = pci_map_single(priv->pci_dev,
+							packet->info.d_struct.
+							txb->fragments[i]->
+							data +
+							IEEE80211_3ADDR_LEN,
+							tbd->buf_length,
+							PCI_DMA_TODEVICE);*/
+			tbd->host_addr=(u32)((UInt8*)mbuf_data(packet->info.d_struct.
+							txb->fragments[i])+IEEE80211_3ADDR_LEN);
+			IOLog("data frag tbd TX%d P=%08x L=%d\n",
+				     txq->next, tbd->host_addr,
+				     tbd->buf_length);
+
+			/*pci_dma_sync_single_for_device(priv->pci_dev,
+						       tbd->host_addr,
+						       tbd->buf_length,
+						       PCI_DMA_TODEVICE);*/
+
+			txq->next++;
+			txq->next %= txq->entries;
+		}
+
+		txq->available -= 1 + packet->info.d_struct.txb->nr_frags;
+		SET_STAT(&priv->txq_stat, txq->available);
+
+		list_add_tail(element, &priv->fw_pend_list);
+		INC_STAT(&priv->fw_pend_stat);
+	}
+
+	if (txq->next != next) {
+		/* kick off the DMA by notifying firmware the
+		 * write index has moved; make sure TBD stores are sync'd */
+		write_register(priv->net_dev,
+			       IPW_MEM_HOST_SHARED_TX_QUEUE_WRITE_INDEX,
+			       txq->next);
+	}
+	return;
+}
+
+int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
+				   struct host_command *cmd)
+{
+	struct list_head *element;
+	struct ipw2100_tx_packet *packet;
+	unsigned long flags;
+	int err = 0;
+
+	IOLog("Sending %s command (#%d), %d bytes\n",
+		     command_types[cmd->host_command], cmd->host_command,
+		     cmd->host_command_length);
+
+
+	//spin_lock_irqsave(&priv->low_lock, flags);
+
+	if (priv->fatal_error) {
+		IOLog
+		    ("Attempt to send command while hardware in fatal error condition.\n");
+		err = -EIO;
+		goto fail_unlock;
+	}
+
+	if (!(priv->status & STATUS_RUNNING)) {
+		IOLog
+		    ("Attempt to send command while hardware is not running.\n");
+		err = -EIO;
+		goto fail_unlock;
+	}
+
+	if (priv->status & STATUS_CMD_ACTIVE) {
+		IOLog
+		    ("Attempt to send command while another command is pending.\n");
+		err = -EBUSY;
+		goto fail_unlock;
+	}
+
+	if (list_empty(&priv->msg_free_list)) {
+		IOLog("no available msg buffers\n");
+		goto fail_unlock;
+	}
+
+	priv->status |= STATUS_CMD_ACTIVE;
+	priv->messages_sent++;
+
+	element = priv->msg_free_list.next;
+
+	packet = list_entry(element, struct ipw2100_tx_packet, list);
+	packet->jiffy_start = jiffies;
+
+	/* initialize the firmware command packet */
+	packet->info.c_struct.cmd->host_command_reg = cmd->host_command;
+	packet->info.c_struct.cmd->host_command_reg1 = cmd->host_command1;
+	packet->info.c_struct.cmd->host_command_len_reg =
+	    cmd->host_command_length;
+	packet->info.c_struct.cmd->sequence = cmd->host_command_sequence;
+
+	memcpy(packet->info.c_struct.cmd->host_command_params_reg,
+	       cmd->host_command_parameters,
+	       sizeof(packet->info.c_struct.cmd->host_command_params_reg));
+
+	list_del(element);
+	DEC_STAT(&priv->msg_free_stat);
+
+	list_add_tail(element, &priv->msg_pend_list);
+	INC_STAT(&priv->msg_pend_stat);
+
+	ipw2100_tx_send_commands(priv);
+	ipw2100_tx_send_data(priv);
+
+	//spin_unlock_irqrestore(&priv->low_lock, flags);
+
+	/*
+	 * We must wait for this command to complete before another
+	 * command can be sent...  but if we wait more than 3 seconds
+	 * then there is a problem.
+	 */
+
+	/*err =
+	    wait_event_interruptible_timeout(priv->wait_command_queue,
+					     !(priv->
+					       status & STATUS_CMD_ACTIVE),
+					     HOST_COMPLETE_TIMEOUT);*/
+
+	err=0;
+	while (priv->status & STATUS_CMD_ACTIVE) 
+	{
+		err++;
+		IODelay(HZ);
+		if (err==HZ) break;
+	}
+	if (err == 0) {
+		IOLog("Command completion failed out \n");//;after %dms.\n",
+			      // 1000 * (HOST_COMPLETE_TIMEOUT / HZ));
+		priv->fatal_error = IPW2100_ERR_MSG_TIMEOUT;
+		priv->status &= ~STATUS_CMD_ACTIVE;
+		schedule_reset(priv);
+		return -EIO;
+	}
+
+	if (priv->fatal_error) {
+		IOLog( ": %s: firmware fatal error\n",
+		       priv->net_dev->name);
+		return -EIO;
+	}
+
+	/* !!!!! HACK TEST !!!!!
+	 * When lots of debug trace statements are enabled, the driver
+	 * doesn't seem to have as many firmware restart cycles...
+	 *
+	 * As a test, we're sticking in a 1/100s delay here */
+	//set_current_state(TASK_UNINTERRUPTIBLE);
+	//schedule_timeout(msecs_to_jiffies(10));
+
+	return 0;
+
+      fail_unlock:
+	//spin_unlock_irqrestore(&priv->low_lock, flags);
+
+	return err;
+}
+
 int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 {
 	struct host_command cmd = {
@@ -384,11 +1392,11 @@ int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 		//goto fail_up;
 	}
 
-	/*err = ipw2100_hw_send_command(priv, &cmd);
+	err = ipw2100_hw_send_command(priv, &cmd);
 	if (err) {
 		IOLog("Failed to send HOST_COMPLETE command\n");
-		goto fail_up;
-	}*/
+		//goto fail_up;
+	}
 
 	err = ipw2100_wait_for_card_state(priv, IPW_HW_STATE_ENABLED);
 	if (err) {
@@ -499,7 +1507,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		fInterruptSrc->enable();
 		
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
-
+		ipw2100_sw_reset(1);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -774,20 +1782,50 @@ void darwin_iwi2100::ipw2100_remove_current_network(struct ipw2100_priv *priv)
 	}
 }
 
+void darwin_iwi2100::schedule_reset(struct ipw2100_priv *priv)
+{
+/*	unsigned long now = get_seconds();
+
+
+	if (priv->reset_backoff &&
+	    (now - priv->last_reset > priv->reset_backoff))
+		priv->reset_backoff = 0;
+
+	priv->last_reset = get_seconds();
+
+	if (!(priv->status & STATUS_RESET_PENDING)) {
+		IOLog("%s: Scheduling firmware restart (%ds).\n",
+			       priv->net_dev->name, priv->reset_backoff);
+		netif_carrier_off(priv->net_dev);
+		netif_stop_queue(priv->net_dev);
+		priv->status |= STATUS_RESET_PENDING;
+		if (priv->reset_backoff)
+			queue_delayed_work(priv->workqueue, &priv->reset_work,
+					   priv->reset_backoff * HZ);
+		else
+			queue_delayed_work(priv->workqueue, &priv->reset_work,
+					   0);
+
+		if (priv->reset_backoff < MAX_RESET_BACKOFF)
+			priv->reset_backoff++;
+
+		wake_up_interruptible(&priv->wait_command_queue);
+	} else
+		IOLog("%s: Firmware restart already in progress.\n",
+			       priv->net_dev->name);
+*/
+}
+
 void darwin_iwi2100::ipw2100_rf_kill(ipw2100_priv *priv)
 {
-	//struct ipw2100_priv *priv = adapter;
 	unsigned long flags;
 
-	//IOSimpleLockLock(spin);
-	//flags=IOSimpleLockLockDisableInterrupt(spin);
+	//spin_lock_irqsave(&priv->low_lock, flags);
+
 	if (rf_kill_active(priv)) {
-		//IOLog("RF Kill active, rescheduling GPIO check\n");
-		//IODelay(5000*1000);
-		//ipw2100_rf_kill();
-		//queue_td(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_led_link_on));
-		//ipw2100_led_link_down();
-		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill),priv,2,true);
+		IOLog("RF Kill active, rescheduling GPIO check\n");
+		//if (!priv->stop_rf_kill)
+		//	queue_delayed_work(priv->workqueue, &priv->rf_kill, HZ);
 		goto exit_unlock;
 	}
 
@@ -796,18 +1834,15 @@ void darwin_iwi2100::ipw2100_rf_kill(ipw2100_priv *priv)
 	if (!(priv->status & STATUS_RF_KILL_MASK)) {
 		IOLog("HW RF Kill no longer active, restarting "
 				  "device\n");
-
-		/* we can not do an adapter restart while inside an irq lock */
-		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_adapter_restart),priv,NULL,true);
+		schedule_reset(priv);
 	} else
 		IOLog("HW RF Kill deactivated.  SW RF Kill still "
 				  "enabled\n");
 
       exit_unlock:
-	//IOSimpleLockUnlock(spin);
-	//IOSimpleLockUnlockEnableInterrupt(spin,flags);
-
+	//spin_unlock_irqrestore(&priv->low_lock, flags);
 	return;
+
 }
 
 int darwin_iwi2100::ipw2100_set_geo(struct ieee80211_device *ieee,
@@ -1441,7 +2476,7 @@ int darwin_iwi2100::ipw2100_start_adapter(struct ipw2100_priv *priv)
 
 	/* Clear the Tx, Rx and Msg queues and the r/w indexes
 	 * in the firmware RBD and TBD ring queue */
-	//ipw2100_queues_initialize(priv);
+	ipw2100_queues_initialize(priv);
 
 	ipw2100_hw_set_gpio(priv);
 
@@ -1590,6 +2625,113 @@ int darwin_iwi2100::ipw2100_set_ordinal(struct ipw2100_priv *priv, u32 ord, u32 
 	return -EINVAL;
 }
 
+int darwin_iwi2100::ipw_set_geo(struct ieee80211_device *ieee,
+		       const struct ieee80211_geo *geo)
+{
+	memcpy(ieee->geo.name, geo->name, 3);
+	ieee->geo.name[3] = '\0';
+	ieee->geo.bg_channels = geo->bg_channels;
+	ieee->geo.a_channels = geo->a_channels;
+	memcpy(ieee->geo.bg, geo->bg, geo->bg_channels *
+	       sizeof(struct ieee80211_channel));
+	memcpy(ieee->geo.a, geo->a, ieee->geo.a_channels *
+	       sizeof(struct ieee80211_channel));
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_adapter_setup(struct ipw2100_priv *priv)
+{
+	int err;
+	int batch_mode = 1;
+	u8 *bssid;
+/*
+
+	err = ipw2100_disable_adapter(priv);
+	if (err)
+		return err;
+#ifdef CONFIG_IPW2100_MONITOR
+	if (priv->ieee->iw_mode == IW_MODE_MONITOR) {
+		err = ipw2100_set_channel(priv, priv->channel, batch_mode);
+		if (err)
+			return err;
+
+		IPW_DEBUG_INFO("exit\n");
+
+		return 0;
+	}
+#endif				
+
+	err = ipw2100_read_mac_address(priv);
+	if (err)
+		return -EIO;
+
+	err = ipw2100_set_mac_address(priv, batch_mode);
+	if (err)
+		return err;
+
+	err = ipw2100_set_port_type(priv, priv->ieee->iw_mode, batch_mode);
+	if (err)
+		return err;
+
+	if (priv->ieee->iw_mode == IW_MODE_ADHOC) {
+		err = ipw2100_set_channel(priv, priv->channel, batch_mode);
+		if (err)
+			return err;
+	}
+
+	err = ipw2100_system_config(priv, batch_mode);
+	if (err)
+		return err;
+
+	err = ipw2100_set_tx_rates(priv, priv->tx_rates, batch_mode);
+	if (err)
+		return err;
+
+	err = ipw2100_set_power_mode(priv, IPW_POWER_MODE_CAM);
+	if (err)
+		return err;
+
+	err = ipw2100_set_rts_threshold(priv, priv->rts_threshold);
+	if (err)
+		return err;
+
+	if (priv->config & CFG_STATIC_BSSID)
+		bssid = priv->bssid;
+	else
+		bssid = NULL;
+	err = ipw2100_set_mandatory_bssid(priv, bssid, batch_mode);
+	if (err)
+		return err;
+
+	if (priv->config & CFG_STATIC_ESSID)
+		err = ipw2100_set_essid(priv, priv->essid, priv->essid_len,
+					batch_mode);
+	else
+		err = ipw2100_set_essid(priv, NULL, 0, batch_mode);
+	if (err)
+		return err;
+
+	err = ipw2100_configure_security(priv, batch_mode);
+	if (err)
+		return err;
+
+	if (priv->ieee->iw_mode == IW_MODE_ADHOC) {
+		err =
+		    ipw2100_set_ibss_beacon_interval(priv,
+						     priv->beacon_interval,
+						     batch_mode);
+		if (err)
+			return err;
+
+		err = ipw2100_set_tx_power(priv, priv->tx_power);
+		if (err)
+			return err;
+	}
+
+*/
+	return 0;
+}
+
 #define MAX_HW_RESTARTS 2
 int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 {
@@ -1633,7 +2775,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		//goto exit;
 	}
 
-	//ipw2100_initialize_ordinals(priv);
+	ipw2100_initialize_ordinals(priv);
 
 	/* Determine capabilities of this particular HW configuration */
 	if (ipw2100_get_hw_features(priv)) {
@@ -1645,10 +2787,10 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	}
 
 	/* Initialize the geo */
-	/*if (ieee80211_set_geo(priv->ieee, &ipw_geos[0])) {
+	if (ipw_set_geo(priv->ieee, &ipw_geos[0])) {
 		IOLog( "Could not set geo\n");
-		return 0;
-	}*/
+		//return 0;
+	}
 	priv->ieee->freq_band = IEEE80211_24GHZ_BAND;
 
 	lock = LOCK_NONE;
@@ -1679,12 +2821,12 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 
 	/* Send all of the commands that must be sent prior to
 	 * HOST_COMPLETE */
-	/*if (ipw2100_adapter_setup(priv)) {
+	if (ipw2100_adapter_setup(priv)) {
 		IOLog( ": %s: Failed to start the card.\n",
 		       priv->net_dev->name);
 		rc = 1;
-		goto exit;
-	}*/
+		//goto exit;
+	}
 
 	if (!deferred) {
 		/* Enable the adapter - sends HOST_COMPLETE */
@@ -1698,8 +2840,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		}
 
 		/* Start a scan . . . */
-		//ipw2100_set_scan_options(priv);
-		//ipw2100_start_scan(priv);
+		ipw2100_set_scan_options(priv);
+		ipw2100_start_scan(priv);
 	}
 
       exit:
@@ -1905,6 +3047,204 @@ void darwin_iwi2100::interruptOccurred(OSObject * owner,
 	self->handleInterrupt();
 }
 
+int darwin_iwi2100::ipw2100_corruption_check(struct ipw2100_priv *priv, int i)
+{
+	struct ipw2100_status *status = &priv->status_queue.drv[i];
+	struct ipw2100_rx *u = priv->rx_buffers[i].rxp;
+	u16 frame_type = status->status_fields & STATUS_TYPE_MASK;
+
+	switch (frame_type) {
+	case COMMAND_STATUS_VAL:
+		return (status->frame_size != sizeof(u->rx_data.command));
+	case STATUS_CHANGE_VAL:
+		return (status->frame_size != sizeof(u->rx_data.status));
+	case HOST_NOTIFICATION_VAL:
+		return (status->frame_size < sizeof(u->rx_data.notification));
+	case P80211_DATA_VAL:
+	case P8023_DATA_VAL:
+#ifdef CONFIG_IPW2100_MONITOR
+		return 0;
+#else
+		switch (WLAN_FC_GET_TYPE(u->rx_data.header.frame_ctl)) {
+		case IEEE80211_FTYPE_MGMT:
+		case IEEE80211_FTYPE_CTL:
+			return 0;
+		case IEEE80211_FTYPE_DATA:
+			return (status->frame_size >
+				IPW_MAX_802_11_PAYLOAD_LENGTH);
+		}
+#endif
+	}
+
+	return 1;
+}
+
+void darwin_iwi2100::isr_rx_complete_command(struct ipw2100_priv *priv,
+				    struct ipw2100_cmd_header *cmd)
+{
+	if (cmd->host_command_reg < ARRAY_SIZE(command_types)) {
+		IOLog("Command completed '%s (%d)'\n",
+			     command_types[cmd->host_command_reg],
+			     cmd->host_command_reg);
+	}
+	if (cmd->host_command_reg == HOST_COMPLETE)
+		priv->status |= STATUS_ENABLED;
+
+	if (cmd->host_command_reg == CARD_DISABLE)
+		priv->status &= ~STATUS_ENABLED;
+
+	priv->status &= ~STATUS_CMD_ACTIVE;
+
+	//wake_up_interruptible(&priv->wait_command_queue);
+}
+
+void darwin_iwi2100::isr_status_change(struct ipw2100_priv *priv, int status)
+{
+	int i;
+
+	if (status == IPW_STATE_SCANNING &&
+	    priv->status & STATUS_ASSOCIATED &&
+	    !(priv->status & STATUS_SCANNING)) {
+		IOLog("Scan detected while associated, with "
+			       "no scan request.  Restarting firmware.\n");
+
+		/* Wake up any sleeping jobs */
+		schedule_reset(priv);
+	}
+
+	/*for (i = 0; status_handlers[i].status != -1; i++) {
+		if (status == status_handlers[i].status) {
+			IOLog("Status change: %s\n",
+					status_handlers[i].name);
+			if (status_handlers[i].cb)
+				status_handlers[i].cb(priv, status);
+			priv->wstats.status = status;
+			return;
+		}
+	}*/
+
+	IOLog("unknown status received: %04x\n", status);
+}
+
+void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee, 
+        struct ieee80211_hdr_4addr *header,struct ieee80211_rx_stats *stats)
+{
+
+}
+
+void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
+{
+	struct ipw2100_bd_queue *rxq = &priv->rx_queue;
+	struct ipw2100_status_queue *sq = &priv->status_queue;
+	struct ipw2100_rx_packet *packet;
+	u16 frame_type;
+	u32 r, w, i, s;
+	struct ipw2100_rx *u;
+	struct ieee80211_rx_stats stats;// = {
+		stats.mac_time = jiffies;
+	//};
+
+	read_register(priv->net_dev, IPW_MEM_HOST_SHARED_RX_READ_INDEX, &r);
+	read_register(priv->net_dev, IPW_MEM_HOST_SHARED_RX_WRITE_INDEX, &w);
+
+	if (r >= rxq->entries) {
+		IOLog("exit - bad read index\n");
+		return;
+	}
+
+	i = (rxq->next + 1) % rxq->entries;
+	s = i;
+	while (i != r) {
+		/* IPW_DEBUG_RX("r = %d : w = %d : processing = %d\n",
+		   r, rxq->next, i); */
+
+		packet = &priv->rx_buffers[i];
+
+		/* Sync the DMA for the STATUS buffer so CPU is sure to get
+		 * the correct values */
+		/*pci_dma_sync_single_for_cpu(priv->pci_dev,
+					    sq->nic +
+					    sizeof(struct ipw2100_status) * i,
+					    sizeof(struct ipw2100_status),
+					    PCI_DMA_FROMDEVICE);*/
+
+		/* Sync the DMA for the RX buffer so CPU is sure to get
+		 * the correct values */
+		/*pci_dma_sync_single_for_cpu(priv->pci_dev, packet->dma_addr,
+					    sizeof(struct ipw2100_rx),
+					    PCI_DMA_FROMDEVICE);*/
+
+		if (unlikely(ipw2100_corruption_check(priv, i))) {
+			//ipw2100_corruption_detected(priv, i);
+			goto increment;
+		}
+
+		u = packet->rxp;
+		frame_type = sq->drv[i].status_fields & STATUS_TYPE_MASK;
+		stats.rssi = sq->drv[i].rssi + IPW2100_RSSI_TO_DBM;
+		stats.len = sq->drv[i].frame_size;
+
+		stats.mask = 0;
+		if (stats.rssi != 0)
+			stats.mask |= IEEE80211_STATMASK_RSSI;
+		stats.freq = IEEE80211_24GHZ_BAND;
+
+		IOLog("%s: '%s' frame type received (%d).\n",
+			     priv->net_dev->name, frame_types[frame_type],
+			     stats.len);
+
+		switch (frame_type) {
+		case COMMAND_STATUS_VAL:
+			/* Reset Rx watchdog */
+			isr_rx_complete_command(priv, &u->rx_data.command);
+			break;
+
+		case STATUS_CHANGE_VAL:
+			isr_status_change(priv, u->rx_data.status);
+			break;
+
+		case P80211_DATA_VAL:
+		case P8023_DATA_VAL:
+#ifdef CONFIG_IPW2100_MONITOR
+			if (priv->ieee->iw_mode == IW_MODE_MONITOR) {
+				isr_rx_monitor(priv, i, &stats);
+				break;
+			}
+#endif
+			if (stats.len < sizeof(struct ieee80211_hdr_3addr))
+				break;
+			switch (WLAN_FC_GET_TYPE(u->rx_data.header.frame_ctl)) {
+			case IEEE80211_FTYPE_MGMT:
+				ieee80211_rx_mgt(priv->ieee,&u->rx_data.header, &stats);
+				break;
+
+			case IEEE80211_FTYPE_CTL:
+				break;
+
+			case IEEE80211_FTYPE_DATA:
+				//isr_rx(priv, i, &stats);
+				break;
+
+			}
+			break;
+		}
+
+	      increment:
+		/* clear status field associated with this RBD */
+		rxq->drv[i].status.info.field = 0;
+
+		i = (i + 1) % rxq->entries;
+	}
+
+	if (i != s) {
+		/* backtrack one entry, wrapping to end if at 0 */
+		rxq->next = (i ? i : rxq->entries) - 1;
+
+		write_register(priv->net_dev,
+			       IPW_MEM_HOST_SHARED_RX_WRITE_INDEX, rxq->next);
+	}
+}
+
 UInt32 darwin_iwi2100::handleInterrupt(void)
 {
 	struct net_device *dev = priv->net_dev;
@@ -1943,7 +3283,7 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 			       priv->net_dev->name, tmp);
 
 		/* Wake up any sleeping jobs */
-		//schedule_reset(priv);
+		schedule_reset(priv);
 	}
 
 	if (inta & IPW2100_INTA_PARITY_ERROR) {
@@ -1960,7 +3300,7 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 
 		write_register(dev, IPW_REG_INTA, IPW2100_INTA_RX_TRANSFER);
 
-		//__ipw2100_rx_process(priv);
+		__ipw2100_rx_process(priv);
 		//__ipw2100_tx_complete(priv);
 	}
 
@@ -3330,7 +4670,7 @@ darwin_iwi2100::getSTATUS_DEV(IO80211Interface *interface,
 	ifnet_find_by_name(i,&fifnet);
 	IOLog("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	//ifnet_set_mtu(fifnet,IPW_RX_BUF_SIZE); //>=IPW_RX_BUF_SIZE
-	ipw2100_sw_reset(1);
+	//ipw2100_sw_reset(1);
 	memcpy(&priv->ieee->dev->name,i,sizeof(i));
 
 	super::enable(fNetif);
