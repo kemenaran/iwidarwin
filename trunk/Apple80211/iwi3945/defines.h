@@ -940,6 +940,19 @@ typedef unsigned char UInt8;
 #define IPW_RATE_SCALE_MAX_WINDOW 62
 #define IPW_INVALID_VALUE  -1
 
+#define IPW_PLCP_QUIET_THRESH       (1)	/* packets */
+#define IPW_ACTIVE_QUIET_TIME       (5)	/* msec */
+#define PROBE_OPTION_MAX        0x4
+#define WLAN_EID_SSID 0
+#define PROBE_OPTION_MAX        0x4
+#define TX_CMD_FLG_SEQ_CTL_MSK  0x2000
+#define TX_CMD_LIFE_TIME_INFINITE       0xFFFFFFFF
+#define IPW_GOOD_CRC_TH             (1)
+
+#define IPW_MAX_SCAN_SIZE 1024
+
+
+
 
 
 

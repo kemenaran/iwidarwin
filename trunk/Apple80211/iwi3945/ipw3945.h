@@ -516,33 +516,7 @@ struct ipw_rx_frame {
  */
 
 /* Tx flags */
-enum {
-	TX_CMD_FLG_RTS_MSK = (1 << 1),
-	TX_CMD_FLG_CTS_MSK = (1 << 2),
-	TX_CMD_FLG_ACK_MSK = (1 << 3),
-	TX_CMD_FLG_FULL_TXOP_PROT_MSK = (1 << 7),
-	TX_CMD_FLG_ANT_SEL_MSK = 0xf00,
-	TX_CMD_FLG_ANT_A_MSK = (1 << 8),
-	TX_CMD_FLG_ANT_B_MSK = (1 << 9),
 
-	/* ucode ignores BT priority for this frame */
-	TX_CMD_FLG_BT_DIS_MSK = (1 << 12),
-
-	/* ucode overides sequence control */
-	TX_CMD_FLG_SEQ_CTL_MSK = (1 << 13),
-
-	/* signal that this frame is non-last MPDU */
-	TX_CMD_FLG_MORE_FRAG_MSK = (1 << 14),
-
-	/* calculate TSF in outgoing frame */
-	TX_CMD_FLG_TSF_MSK = (1 << 16),
-
-	/* activate TX calibration. */
-	TX_CMD_FLG_CALIB_MSK = (1 << 17),
-
-	/* HCCA-AP - disable duration overwriting. */
-	TX_CMD_FLG_DUR_MSK = (1 << 25),
-};
 
 /*
  * TX command security control
@@ -571,7 +545,6 @@ struct ipw_tx_cmd {
 	u8 sta_id;		//byte 13
 	u8 tid_tspec;		//byte 14
 	u8 sec_ctl;
-//      u8 key_index:2,reserved:2,key_size:1,key_type:3;
 	u8 key[16];
 	union {
 		u8 byte[8];	//7:0
@@ -1443,6 +1416,7 @@ struct ipw_queue {
 	dma_addr_t dma_addr;		/**< physical addr for BD's */
 	int n_window;
 	u32 id;
+	u32 element_size;
 	int low_mark;		       /**< low watermark, resume queue if free space more than this */
 	int high_mark;		       /**< high watermark, stop queue if free space less than this */
 } __attribute__ ((packed));
@@ -2427,6 +2401,26 @@ EEPROM_REGULATORY_BAND5_CHANNELS_LENGTH)
 #define EEPROM_SKU_CAP_HW_RF_KILL_ENABLE                (1 << 1)
 #define EEPROM_SKU_CAP_OP_MODE_MRC                      (1 << 7)
 
+struct ipw_rxon_cmd {
+	u8 node_addr[6];
+	u16 reserved1;
+	u8 bssid_addr[6];
+	u16 reserved2;
+	u8 wlap_bssid_addr[6];
+	u16 reserved3;
+	u8 dev_type;
+	u8 air_propagation;
+	u16 reserved4;		// 27:26
+	u8 ofdm_basic_rates;
+	u8 cck_basic_rates;
+	u16 assoc_id;
+	u32 flags;
+	u32 filter_flags;
+	u16 channel;
+	u16 reserved5;
+} __attribute__ ((packed));
+
+
 struct ipw_priv {
 	/* ieee device used by generic ieee processing code */
 	struct ieee80211_device *ieee;
@@ -2459,12 +2453,13 @@ struct ipw_priv {
 	int scan_passes;
 	int scan_bands_remaining;
 	int scan_bands;
-#if WIRELESS_EXT > 17
+//#if WIRELESS_EXT > 17
 	int one_direct_scan;
 	u8 direct_ssid_len;
 	u8 direct_ssid[IW_ESSID_MAX_SIZE];
-#endif
-
+//#endif
+	struct ipw_scan_cmd *scan;
+	
 	/* spinlock */
 	//spinlock_t lock;
 
@@ -2486,6 +2481,8 @@ struct ipw_priv {
 	struct fw_image_desc ucode_data;
 	struct fw_image_desc ucode_boot;
 	struct fw_image_desc ucode_boot_data;
+	
+	struct ipw_rxon_cmd active_rxon;
 	
 	struct ipw_shared_t *shared_virt;
 	dma_addr_t shared_phys;
@@ -2620,5 +2617,63 @@ struct ipw_priv {
 	/* debugging info */
 	u32 framecnt_to_us;
 };				/*ipw_priv */
+
+struct ipw_tx_power {
+	u8 tx_gain;		/* gain for analog radio */
+	u8 dsp_atten;		/* gain for DSP */
+} __attribute__ ((packed));
+
+struct ipw_scan_channel {
+	u8 type;
+	/* type is defined as:
+	 * 0:0 active (0 - passive)
+	 * 1:4 SSID direct
+	 *     If 1 is set then corresponding SSID IE is transmitted in probe
+	 * 5:6 reserved
+	 * 7:7 Narrow
+	 */
+	u8 channel;
+	struct ipw_tx_power tpc;
+	u16 active_dwell;
+	u16 passive_dwell;
+} __attribute__ ((packed));
+
+struct ipw_ssid_ie {
+	u8 id;
+	u8 len;
+	u8 ssid[32];
+} __attribute__ ((packed));
+
+#define IPW_MAX_SCAN_SIZE 1024
+struct ipw_scan_cmd {
+	u16 len;
+	u8 reserved0;
+	u8 channel_count;
+	u16 quiet_time;		/* dwell only this long on quiet chnl (active scan) */
+	u16 quiet_plcp_th;	/* quiet chnl is < this # pkts (typ. 1) */
+	u16 good_CRC_th;	/* passive -> active promotion threshold */
+	u16 reserved1;
+	u32 max_out_time;	/* max msec to be out of associated (service) chnl */
+	u32 suspend_time;	/* pause scan this long when returning to svc chnl */
+
+	u32 flags;
+	u32 filter_flags;
+
+	struct ipw_tx_cmd tx_cmd;
+	struct ipw_ssid_ie direct_scan[PROBE_OPTION_MAX];
+
+	u8 data[0];
+	/*
+	   The channels start after the probe request payload and are of type:
+
+	   struct ipw_scan_channel channels[0];
+
+	   NOTE:  Only one band of channels can be scanned per pass.  You
+	   can not mix 2.4Ghz channels and 5.2Ghz channels and must
+	   request a scan multiple times (not concurrently)
+
+	 */
+} __attribute__ ((packed));
+
 
 #endif				/* __ipw3945_h__ */
