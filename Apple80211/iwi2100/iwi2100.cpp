@@ -3,6 +3,7 @@
 #include "firmware/iwi_mon.fw.h"
 #include "defines.h"
 
+//			<string>0x25208086 0x25218086 0x25248086 0x25258086 0x25268086 0x25228086 0x25238086 0x25278086 0x25288086 0x25298086 0x252B8086 0x252C8086 0x252D8086 0x25508086 0x25518086 0x25538086 0x25548086 0x25558086 0x25608086 0x25628086 0x25638086 0x25618086 0x25658086 0x25668086 0x25678086 0x25708086 0x25808086 0x25828086 0x25838086 0x25818086 0x25858086 0x25868086 0x25878086 0x25908086 0x25928086 0x25918086 0x25938086 0x25968086 0x25988086 0x25A08086</string>
 
 // Define my superclass
 #define super IO80211Controller
@@ -758,6 +759,73 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 
 	priv->net_dev = net_dev;
 	
+	priv->ieee->perfect_rssi = -20;
+	priv->ieee->worst_rssi = -85;
+
+	priv->power_mode = IPW_POWER_AUTO;
+
+#ifdef CONFIG_IPW2100_MONITOR
+	priv->config |= CFG_CRC_CHECK;
+#endif
+	priv->ieee->wpa_enabled = 0;
+	priv->ieee->drop_unencrypted = 0;
+	priv->ieee->privacy_invoked = 0;
+	priv->ieee->ieee802_1x = 1;
+
+	/* Set module parameters */
+	switch (mode) {
+	case 1:
+		priv->ieee->iw_mode = IW_MODE_ADHOC;
+		break;
+#ifdef CONFIG_IPW2100_MONITOR
+	case 2:
+		priv->ieee->iw_mode = IW_MODE_MONITOR;
+		break;
+#endif
+	default:
+	case 0:
+		priv->ieee->iw_mode = IW_MODE_INFRA;
+		break;
+	}
+
+	if (disable2 == 1)
+		priv->status |= STATUS_RF_KILL_SW;
+
+	if (channel != 0 &&
+	    ((channel >= REG_MIN_CHANNEL) && (channel <= REG_MAX_CHANNEL))) {
+		priv->config |= CFG_STATIC_CHANNEL;
+		priv->channel = channel;
+	}
+
+	if (associate)
+		priv->config |= CFG_ASSOCIATE;
+
+	priv->beacon_interval = DEFAULT_BEACON_INTERVAL;
+	priv->short_retry_limit = DEFAULT_SHORT_RETRY_LIMIT;
+	priv->long_retry_limit = DEFAULT_LONG_RETRY_LIMIT;
+	priv->rts_threshold = DEFAULT_RTS_THRESHOLD | RTS_DISABLED;
+	priv->frag_threshold = DEFAULT_FTS | FRAG_DISABLED;
+	priv->tx_power = IPW_TX_POWER_DEFAULT;
+	priv->tx_rates = DEFAULT_TX_RATES;
+
+
+	INIT_LIST_HEAD(&priv->msg_free_list);
+	INIT_LIST_HEAD(&priv->msg_pend_list);
+	INIT_STAT(&priv->msg_free_stat);
+	INIT_STAT(&priv->msg_pend_stat);
+
+	INIT_LIST_HEAD(&priv->tx_free_list);
+	INIT_LIST_HEAD(&priv->tx_pend_list);
+	INIT_STAT(&priv->tx_free_stat);
+	INIT_STAT(&priv->tx_pend_stat);
+
+	INIT_LIST_HEAD(&priv->fw_pend_list);
+	INIT_STAT(&priv->fw_pend_stat);
+
+	priv->stop_rf_kill = 1;
+	priv->stop_hang_check = 1;
+
+
 	/*if (!ipw2100_hw_is_adapter_in_system(dev)) {
 		printk(KERN_WARNING DRV_NAME
 		       "Device not found via register read.\n");
@@ -776,38 +844,176 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 		IOLog(
 		       "Error calilng ipw2100_queues_allocate.\n");
 	}
-	ipw2100_queues_initialize(priv);
+	//ipw2100_queues_initialize(priv);
 
-
+	//ipw2100_initialize_ordinals(priv);
+	
 	IOLog(": Detected Intel PRO/Wireless 2100 Network Connection\n");
 
-	registered = 1;
-
-	ipw2100_initialize_ordinals(priv);
-
-	/* If the RF Kill switch is disabled, go ahead and complete the
-	 * startup sequence */
-	if (!(priv->status & STATUS_RF_KILL_MASK)) {
-		/* Enable the adapter - sends HOST_COMPLETE */
+	ipw2100_up(priv,1);
+	/*if (!(priv->status & STATUS_RF_KILL_MASK)) {
 		if (ipw2100_enable_adapter(priv)) {
-			IOLog(": %s: failed in call to enable adapter.\n",
+			IOLog(
+			       ": %s: failed in call to enable adapter.\n",
 			       priv->net_dev->name);
-			//ipw2100_hw_stop_adapter(priv);
-			err = -EIO;
-			//return err;
+			ipw2100_hw_stop_adapter(priv);
+			return -EIO;
 		}
 
-		/* Start a scan . . . */
-		ipw2100_set_scan_options(priv);
-		ipw2100_start_scan(priv);
-	}
-
+		//ipw2100_set_scan_options(priv);
+		//ipw2100_start_scan(priv);
+	}*/
+	registered = 1;
 
 	priv->status |= STATUS_INITIALIZED;
-
-
+	
+	
+		
 	return 0;
 
+}
+
+int darwin_iwi2100::ipw2100_hw_phy_off(struct ipw2100_priv *priv)
+{
+
+#define HW_PHY_OFF_LOOP_DELAY (HZ / 5000)
+
+	struct host_command cmd;
+		cmd.host_command = CARD_DISABLE_PHY_OFF;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 0;
+
+	int err, i;
+	u32 val1, val2;
+
+	IOLog("CARD_DISABLE_PHY_OFF\n");
+
+	/* Turn off the radio */
+	err = ipw2100_hw_send_command(priv, &cmd);
+	if (err)
+		return err;
+
+	for (i = 0; i < 2500; i++) {
+		read_nic_dword(priv->net_dev, IPW2100_CONTROL_REG, &val1);
+		read_nic_dword(priv->net_dev, IPW2100_COMMAND, &val2);
+
+		if ((val1 & IPW2100_CONTROL_PHY_OFF) &&
+		    (val2 & IPW2100_COMMAND_PHY_OFF))
+			return 0;
+
+		//set_current_state(TASK_UNINTERRUPTIBLE);
+		//schedule_timeout(HW_PHY_OFF_LOOP_DELAY);
+	}
+
+	return -EIO;
+}
+
+int darwin_iwi2100::ipw2100_hw_stop_adapter(struct ipw2100_priv *priv)
+{
+#define HW_POWER_DOWN_DELAY (msecs_to_jiffies(100))
+
+	struct host_command cmd;
+		cmd.host_command = HOST_PRE_POWER_DOWN;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 0;
+
+	int err, i;
+	u32 reg;
+
+	if (!(priv->status & STATUS_RUNNING))
+		return 0;
+
+	priv->status |= STATUS_STOPPING;
+
+	/* We can only shut down the card if the firmware is operational.  So,
+	 * if we haven't reset since a fatal_error, then we can not send the
+	 * shutdown commands. */
+	if (!priv->fatal_error) {
+		/* First, make sure the adapter is enabled so that the PHY_OFF
+		 * command can shut it down */
+		ipw2100_enable_adapter(priv);
+
+		err = ipw2100_hw_phy_off(priv);
+		if (err)
+			IOLog(
+			       ": Error disabling radio %d\n", err);
+
+		/*
+		 * If in D0-standby mode going directly to D3 may cause a
+		 * PCI bus violation.  Therefore we must change out of the D0
+		 * state.
+		 *
+		 * Sending the PREPARE_FOR_POWER_DOWN will restrict the
+		 * hardware from going into standby mode and will transition
+		 * out of D0-standby if it is already in that state.
+		 *
+		 * STATUS_PREPARE_POWER_DOWN_COMPLETE will be sent by the
+		 * driver upon completion.  Once received, the driver can
+		 * proceed to the D3 state.
+		 *
+		 * Prepare for power down command to fw.  This command would
+		 * take HW out of D0-standby and prepare it for D3 state.
+		 *
+		 * Currently FW does not support event notification for this
+		 * event. Therefore, skip waiting for it.  Just wait a fixed
+		 * 100ms
+		 */
+		IOLog("HOST_PRE_POWER_DOWN\n");
+
+		err = ipw2100_hw_send_command(priv, &cmd);
+		if (err)
+			IOLog(  ": "
+			       "%s: Power down command failed: Error %d\n",
+			       priv->net_dev->name, err);
+		//else {
+		//	set_current_state(TASK_UNINTERRUPTIBLE);
+		//	schedule_timeout(HW_POWER_DOWN_DELAY);
+		//}
+	}
+
+	priv->status &= ~STATUS_ENABLED;
+
+	/*
+	 * Set GPIO 3 writable by FW; GPIO 1 writable
+	 * by driver and enable clock
+	 */
+	ipw2100_hw_set_gpio(priv);
+
+	/*
+	 * Power down adapter.  Sequence:
+	 * 1. Stop master assert (RESET_REG[9]=1)
+	 * 2. Wait for stop master (RESET_REG[8]==1)
+	 * 3. S/w reset assert (RESET_REG[7] = 1)
+	 */
+
+	/* Stop master assert */
+	write_register(priv->net_dev, IPW_REG_RESET_REG,
+		       IPW_AUX_HOST_RESET_REG_STOP_MASTER);
+
+	/* wait stop master not more than 50 usec.
+	 * Otherwise return error. */
+	for (i = 5; i > 0; i--) {
+		udelay(10);
+
+		/* Check master stop bit */
+		read_register(priv->net_dev, IPW_REG_RESET_REG, &reg);
+
+		if (reg & IPW_AUX_HOST_RESET_REG_MASTER_DISABLED)
+			break;
+	}
+
+	if (i == 0)
+		IOLog( 
+		       ": %s: Could now power down adapter.\n",
+		       priv->net_dev->name);
+
+	/* assert s/w reset */
+	write_register(priv->net_dev, IPW_REG_RESET_REG,
+		       IPW_AUX_HOST_RESET_REG_SW_RESET);
+
+	priv->status &= ~(STATUS_RUNNING | STATUS_STOPPING);
+
+	return 0;
 }
 
 int darwin_iwi2100::ipw2100_start_scan(struct ipw2100_priv *priv)
@@ -1339,7 +1545,7 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 		IODelay(HZ);
 		if (err==HZ) break;
 	}
-	if (err == 0) {
+	if (err == HZ) {
 		IOLog("Command completion failed out \n");//;after %dms.\n",
 			      // 1000 * (HOST_COMPLETE_TIMEOUT / HZ));
 		priv->fatal_error = IPW2100_ERR_MSG_TIMEOUT;
@@ -1370,15 +1576,54 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	return err;
 }
 
+void darwin_iwi2100::ipw2100_hang_check(struct ipw2100_priv *priv)
+{
+	unsigned long flags;
+	u32 rtc = 0xa5a5a5a5;
+	u32 len = sizeof(rtc);
+	int restart = 0;
+
+	//spin_lock_irqsave(&priv->low_lock, flags);
+
+	if (priv->fatal_error != 0) {
+		/* If fatal_error is set then we need to restart */
+		IOLog("%s: Hardware fatal error detected.\n",
+			       priv->net_dev->name);
+
+		restart = 1;
+	} else if (ipw2100_get_ordinal(priv, IPW_ORD_RTC_TIME, &rtc, &len) ||
+		   (rtc == priv->last_rtc)) {
+		/* Check if firmware is hung */
+		IOLog("%s: Firmware RTC stalled.\n",
+			       priv->net_dev->name);
+
+		restart = 1;
+	}
+
+	if (restart) {
+		/* Kill timer */
+		priv->stop_hang_check = 1;
+		priv->hangs++;
+
+		/* Restart the NIC */
+		schedule_reset(priv);
+	}
+
+	priv->last_rtc = rtc;
+
+	if (!priv->stop_hang_check)
+	queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_hang_check),priv,1,true);
+	//	queue_delayed_work(priv->workqueue, &priv->hang_check, HZ / 2);
+
+	//spin_unlock_irqrestore(&priv->low_lock, flags);
+}
+
 int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 {
-	struct host_command cmd = {
-		HOST_COMPLETE,
-		NULL,
-		0,
-		0,
-		NULL
-	};
+	struct host_command cmd;
+		cmd.host_command = HOST_COMPLETE;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 0;
 	int err = 0;
 
 	IOLog("HOST_COMPLETE\n");
@@ -1389,24 +1634,25 @@ int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 
 	if (rf_kill_active(priv)) {
 		IOLog("Command aborted due to RF kill active.\n");
-		//goto fail_up;
+		goto fail_up;
 	}
 
 	err = ipw2100_hw_send_command(priv, &cmd);
 	if (err) {
 		IOLog("Failed to send HOST_COMPLETE command\n");
-		//goto fail_up;
+		goto fail_up;
 	}
 
 	err = ipw2100_wait_for_card_state(priv, IPW_HW_STATE_ENABLED);
 	if (err) {
 		IOLog("%s: card not responding to init command.\n",
 			       priv->net_dev->name);
-		//goto fail_up;
+		goto fail_up;
 	}
 
 	if (priv->stop_hang_check) {
 		priv->stop_hang_check = 0;
+		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_hang_check),priv,1,true);
 		//queue_delayed_work(priv->workqueue, &priv->hang_check, HZ / 2);
 	}
 
@@ -1506,8 +1752,17 @@ bool darwin_iwi2100::start(IOService *provider)
 		// is enabled immediately.
 		fInterruptSrc->enable();
 		
+		fTransmitQueue = createOutputQueue();
+		if (fTransmitQueue == NULL)
+		{
+			IWI_ERR("ERR: getOutputQueue()\n");
+			break;
+		}
+		fTransmitQueue->setCapacity(1024);
+		
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw2100_sw_reset(1);
+		
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -1556,6 +1811,8 @@ bool darwin_iwi2100::start(IOService *provider)
 		queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_scan_check),NULL,NULL,false);
 		queue_te(5,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_associate),NULL,NULL,false);
 		queue_te(6,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_gather_stats),NULL,NULL,false);
+		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_hang_check),NULL,NULL,false);
+		
 		
 		pl=1;
 		return true;			// end start successfully
@@ -2114,7 +2371,6 @@ int darwin_iwi2100::sw_reset_and_clock(struct ipw2100_priv *priv)
 	// wait for clock stabilization
 	for (i = 0; i < 1000; i++) {
 		udelay(IPW_WAIT_RESET_ARC_COMPLETE_DELAY);
-
 		// check clock ready bit
 		read_register(priv->net_dev, IPW_REG_RESET_REG, &r);
 		if (r & IPW_AUX_HOST_RESET_REG_PRINCETON_RESET)
@@ -2276,7 +2532,7 @@ int darwin_iwi2100::ipw2100_ucode_download(struct ipw2100_priv *priv,
 	if (i == 10) {
 		IOLog( ": %s: Error initializing Symbol\n",
 		       dev->name);
-		//return -EIO;
+		return -EIO;
 	}
 
 	/* Get Symbol alive response */
@@ -2296,7 +2552,7 @@ int darwin_iwi2100::ipw2100_ucode_download(struct ipw2100_priv *priv,
 		       ": %s: No response from Symbol - hw not alive\n",
 		       dev->name);
 		//printk_buf(IPW_DL_ERROR, (u8 *) & response, sizeof(response));
-		//return -EIO;
+		return -EIO;
 	}
 
 	return 0;
@@ -2331,7 +2587,7 @@ int darwin_iwi2100::ipw2100_fw_download(struct ipw2100_priv *priv, struct ipw210
 			IOLog( ": "
 			       "Invalid firmware run-length of %d bytes\n",
 			       len);
-			//return -EINVAL;
+			return -EINVAL;
 		}
 
 		write_nic_memory(priv->net_dev, addr, len, firmware_data);
@@ -2346,28 +2602,49 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 {
 	u32 address;
 	int err;
-	struct ipw2100_fw *ipw2100_firmware;
+	struct ipw2100_fw *ipw2100_firmware, ff0;
+	struct firmware w2;
 	
+	
+	ipw2100_firmware=&ff0;
+	ipw2100_firmware->fw_entry=&w2;
+
 	if (priv->fatal_error) {
 		IOLog("%s: ipw2100_download_firmware called after "
 				"fatal error %d.  Interface must be brought down.\n",
 				priv->net_dev->name, priv->fatal_error);
-		//return -EINVAL;
+		return -EINVAL;
 	}
-	
 	switch (priv->ieee->iw_mode) {
 	case IW_MODE_ADHOC:
-		(void*)ipw2100_firmware=(void*)iwi_ibss;
+		(void*)ipw2100_firmware->fw_entry->data=(void*)iwi_ibss;
 		break;
 	case IW_MODE_MONITOR:
-		(void*)ipw2100_firmware=(void*)iwi_mon;
+		(void*)ipw2100_firmware->fw_entry->data=(void*)iwi_mon;
 		break;
 	case IW_MODE_INFRA:
 	default:
-		(void*)ipw2100_firmware=(void*)iwi_bss;
+		(void*)ipw2100_firmware->fw_entry->data=(void*)iwi_bss;
 		break;
 	}
-	
+	struct ipw2100_fw_header *h =
+	    (struct ipw2100_fw_header *)ipw2100_firmware->fw_entry->data;
+
+	if (IPW2100_FW_MAJOR(h->version) != IPW2100_FW_MAJOR_VERSION) {
+		IOLog(  ": Firmware image not compatible "
+		       "(detected version id of %d). "
+		       "See Documentation/networking/README.ipw2100\n",
+		       h->version);
+		return 1;
+	}
+
+	ipw2100_firmware->version = h->version;
+	ipw2100_firmware->fw.data = ipw2100_firmware->fw_entry->data + sizeof(struct ipw2100_fw_header);
+	ipw2100_firmware->fw.size = h->fw_size;
+	ipw2100_firmware->uc.data = (UInt8*)ipw2100_firmware->fw.data + h->fw_size;
+	ipw2100_firmware->uc.size = h->uc_size;
+
+	IOLog("fw version %d s: %d uc s:%d",ipw2100_firmware->version,ipw2100_firmware->fw.size,ipw2100_firmware->uc.size );
 	/*err = ipw2100_get_firmware(priv, &ipw2100_firmware);
 	if (err) {
 		IOLog("%s: ipw2100_get_firmware failed: %d\n",
@@ -2384,7 +2661,6 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 				priv->net_dev->name, err);
 		//goto fail;
 	}
-
 	err = ipw2100_verify(priv);
 	if (err) {
 		IOLog("%s: ipw2100_verify failed: %d\n",
@@ -2471,7 +2747,7 @@ int darwin_iwi2100::ipw2100_start_adapter(struct ipw2100_priv *priv)
 		IOLog(
 		       ": %s: Failed to power on the adapter.\n",
 		       priv->net_dev->name);
-		//return -EIO;
+		return -EIO;
 	}
 
 	/* Clear the Tx, Rx and Msg queues and the r/w indexes
@@ -2744,7 +3020,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("%s: Radio is disabled by Manual Disable "
 			       "switch\n", priv->net_dev->name);
-		//return 0;
+		return 0;
 	}
 
 	/* If the interrupt is enabled, turn it off... */
@@ -2752,7 +3028,6 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 
 	/* Reset any fatal_error conditions */
 	ipw2100_reset_fatalerror(priv);
-
 	if (priv->status & STATUS_POWERED ||
 	    (priv->status & STATUS_RESET_PENDING)) {
 		/* Power cycle the card ... */
@@ -2761,18 +3036,17 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			       ": %s: Could not cycle adapter.\n",
 			       priv->net_dev->name);
 			rc = 1;
-			//goto exit;
+			goto exit;
 		}
 	} else
 		priv->status |= STATUS_POWERED;
-
 	/* Load the firmware, start the clocks, etc. */
 	if (ipw2100_start_adapter(priv)) {
 		IOLog(
 		       ": %s: Failed to start the firmware.\n",
 		       priv->net_dev->name);
 		rc = 1;
-		//goto exit;
+		goto exit;
 	}
 
 	ipw2100_initialize_ordinals(priv);
@@ -2783,13 +3057,13 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		       ": %s: Failed to determine HW features.\n",
 		       priv->net_dev->name);
 		rc = 1;
-		//goto exit;
+		goto exit;
 	}
 
 	/* Initialize the geo */
 	if (ipw_set_geo(priv->ieee, &ipw_geos[0])) {
 		IOLog( "Could not set geo\n");
-		//return 0;
+		return 0;
 	}
 	priv->ieee->freq_band = IEEE80211_24GHZ_BAND;
 
@@ -2799,7 +3073,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		       ": %s: Failed to clear ordinal lock.\n",
 		       priv->net_dev->name);
 		rc = 1;
-		//goto exit;
+		goto exit;
 	}
 
 	priv->status &= ~STATUS_SCANNING;
@@ -2825,7 +3099,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog( ": %s: Failed to start the card.\n",
 		       priv->net_dev->name);
 		rc = 1;
-		//goto exit;
+		goto exit;
 	}
 
 	if (!deferred) {
@@ -2834,7 +3108,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			IOLog( ": "
 			       "%s: failed in call to enable adapter.\n",
 			       priv->net_dev->name);
-			//ipw2100_hw_stop_adapter(priv);
+			ipw2100_hw_stop_adapter(priv);
 			rc = 1;
 			goto exit;
 		}
@@ -3223,6 +3497,7 @@ void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
 
 			case IEEE80211_FTYPE_DATA:
 				//isr_rx(priv, i, &stats);
+				IOLog("todo: isr_rx\n ");
 				break;
 
 			}
@@ -3242,6 +3517,198 @@ void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
 
 		write_register(priv->net_dev,
 			       IPW_MEM_HOST_SHARED_RX_WRITE_INDEX, rxq->next);
+	}
+}
+
+int darwin_iwi2100::__ipw2100_tx_process(struct ipw2100_priv *priv)
+{
+	struct ipw2100_bd_queue *txq = &priv->tx_queue;
+	struct ipw2100_bd *tbd;
+	struct list_head *element;
+	struct ipw2100_tx_packet *packet;
+	int descriptors_used;
+	int e, i;
+	u32 r, w, frag_num = 0;
+
+	if (list_empty(&priv->fw_pend_list))
+		return 0;
+
+	element = priv->fw_pend_list.next;
+
+	packet = list_entry(element, struct ipw2100_tx_packet, list);
+	tbd = &txq->drv[packet->index];
+
+	/* Determine how many TBD entries must be finished... */
+	switch (packet->type) {
+	case COMMAND:
+		/* COMMAND uses only one slot; don't advance */
+		descriptors_used = 1;
+		e = txq->oldest;
+		break;
+
+	case DATA:
+		/* DATA uses two slots; advance and loop position. */
+		descriptors_used = tbd->num_fragments;
+		frag_num = tbd->num_fragments - 1;
+		e = txq->oldest + frag_num;
+		e %= txq->entries;
+		break;
+
+	default:
+		IOLog(  ": %s: Bad fw_pend_list entry!\n",
+		       priv->net_dev->name);
+		return 0;
+	}
+
+	/* if the last TBD is not done by NIC yet, then packet is
+	 * not ready to be released.
+	 *
+	 */
+	read_register(priv->net_dev, IPW_MEM_HOST_SHARED_TX_QUEUE_READ_INDEX,
+		      &r);
+	read_register(priv->net_dev, IPW_MEM_HOST_SHARED_TX_QUEUE_WRITE_INDEX,
+		      &w);
+	if (w != txq->next)
+		IOLog(  ": %s: write index mismatch\n",
+		       priv->net_dev->name);
+
+	/*
+	 * txq->next is the index of the last packet written txq->oldest is
+	 * the index of the r is the index of the next packet to be read by
+	 * firmware
+	 */
+
+	/*
+	 * Quick graphic to help you visualize the following
+	 * if / else statement
+	 *
+	 * ===>|                     s---->|===============
+	 *                               e>|
+	 * | a | b | c | d | e | f | g | h | i | j | k | l
+	 *       r---->|
+	 *               w
+	 *
+	 * w - updated by driver
+	 * r - updated by firmware
+	 * s - start of oldest BD entry (txq->oldest)
+	 * e - end of oldest BD entry
+	 *
+	 */
+	if (!((r <= w && (e < r || e >= w)) || (e < r && e >= w))) {
+		IOLog("exit - no processed packets ready to release.\n");
+		return 0;
+	}
+
+	list_del(element);
+	DEC_STAT(&priv->fw_pend_stat);
+
+#ifdef CONFIG_IPW2100_DEBUG
+	{
+		int i = txq->oldest;
+		IOLog("TX%d V=%p P=%04X T=%04X L=%d\n", i,
+			     &txq->drv[i],
+			     (u32) (txq->nic + i * sizeof(struct ipw2100_bd)),
+			     txq->drv[i].host_addr, txq->drv[i].buf_length);
+
+		if (packet->type == DATA) {
+			i = (i + 1) % txq->entries;
+
+			IOLog("TX%d V=%p P=%04X T=%04X L=%d\n", i,
+				     &txq->drv[i],
+				     (u32) (txq->nic + i *
+					    sizeof(struct ipw2100_bd)),
+				     (u32) txq->drv[i].host_addr,
+				     txq->drv[i].buf_length);
+		}
+	}
+#endif
+
+	switch (packet->type) {
+	case DATA:
+		if (txq->drv[txq->oldest].status.info.fields.txType != 0)
+			IOLog(  ": %s: Queue mismatch.  "
+			       "Expecting DATA TBD but pulled "
+			       "something else: ids %d=%d.\n",
+			       priv->net_dev->name, txq->oldest, packet->index);
+
+		/* DATA packet; we have to unmap and free the SKB */
+		for (i = 0; i < frag_num; i++) {
+			tbd = &txq->drv[(packet->index + 1 + i) % txq->entries];
+
+			IOLog("TX%d P=%08x L=%d\n",
+				     (packet->index + 1 + i) % txq->entries,
+				     tbd->host_addr, tbd->buf_length);
+
+			tbd->host_addr=NULL;
+			/*pci_unmap_single(priv->pci_dev,
+					 tbd->host_addr,
+					 tbd->buf_length, PCI_DMA_TODEVICE);*/
+		}
+
+		ieee80211_txb_free(packet->info.d_struct.txb);
+		packet->info.d_struct.txb = NULL;
+
+		list_add_tail(element, &priv->tx_free_list);
+		INC_STAT(&priv->tx_free_stat);
+
+		/* We have a free slot in the Tx queue, so wake up the
+		 * transmit layer if it is stopped. */
+		if (priv->status & STATUS_ASSOCIATED)
+			fTransmitQueue->start();
+		//	netif_wake_queue(priv->net_dev);
+
+		/* A packet was processed by the hardware, so update the
+		 * watchdog */
+		priv->net_dev->trans_start = jiffies;
+
+		break;
+
+	case COMMAND:
+		if (txq->drv[txq->oldest].status.info.fields.txType != 1)
+			IOLog(  ": %s: Queue mismatch.  "
+			       "Expecting COMMAND TBD but pulled "
+			       "something else: ids %d=%d.\n",
+			       priv->net_dev->name, txq->oldest, packet->index);
+
+#ifdef CONFIG_IPW2100_DEBUG
+		if (packet->info.c_struct.cmd->host_command_reg <
+		    sizeof(command_types) / sizeof(*command_types))
+			IOLog("Command '%s (%d)' processed: %d.\n",
+				     command_types[packet->info.c_struct.cmd->
+						   host_command_reg],
+				     packet->info.c_struct.cmd->
+				     host_command_reg,
+				     packet->info.c_struct.cmd->cmd_status_reg);
+#endif
+
+		list_add_tail(element, &priv->msg_free_list);
+		INC_STAT(&priv->msg_free_stat);
+		break;
+	}
+
+	/* advance oldest used TBD pointer to start of next entry */
+	txq->oldest = (e + 1) % txq->entries;
+	/* increase available TBDs number */
+	txq->available += descriptors_used;
+	SET_STAT(&priv->txq_stat, txq->available);
+
+	IOLog("packet latency (send to process)  %ld jiffies\n",
+		     jiffies - packet->jiffy_start);
+
+	return (!list_empty(&priv->fw_pend_list));
+}
+
+void darwin_iwi2100::__ipw2100_tx_complete(struct ipw2100_priv *priv)
+{
+	int i = 0;
+
+	while (__ipw2100_tx_process(priv) && i < 200)
+		i++;
+
+	if (i == 200) {
+		IOLog(  ": "
+		       "%s: Driver is running slow (%d iters).\n",
+		       priv->net_dev->name, i);
 	}
 }
 
@@ -3301,7 +3768,7 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 		write_register(dev, IPW_REG_INTA, IPW2100_INTA_RX_TRANSFER);
 
 		__ipw2100_rx_process(priv);
-		//__ipw2100_tx_complete(priv);
+		__ipw2100_tx_complete(priv);
 	}
 
 	if (inta & IPW2100_INTA_TX_TRANSFER) {
@@ -3311,9 +3778,9 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 
 		write_register(dev, IPW_REG_INTA, IPW2100_INTA_TX_TRANSFER);
 
-		//__ipw2100_tx_complete(priv);
-		//ipw2100_tx_send_commands(priv);
-		//ipw2100_tx_send_data(priv);
+		__ipw2100_tx_complete(priv);
+		ipw2100_tx_send_commands(priv);
+		ipw2100_tx_send_data(priv);
 	}
 
 	if (inta & IPW2100_INTA_TX_COMPLETE) {
@@ -3321,7 +3788,7 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 		priv->inta_other++;
 		write_register(dev, IPW_REG_INTA, IPW2100_INTA_TX_COMPLETE);
 
-		//__ipw2100_tx_complete(priv);
+		__ipw2100_tx_complete(priv);
 	}
 
 	if (inta & IPW2100_INTA_EVENT_INTERRUPT) {
@@ -5017,5 +5484,164 @@ void darwin_iwi2100::notifIntr(struct ipw2100_priv *priv,
 				struct ipw2100_rx_notification *notif)
 {
 	
+}
+
+void darwin_iwi2100::write_nic_memory(struct net_device *dev, u32 addr, u32 len,
+			     const u8 * buf)
+{
+	u32 aligned_addr;
+	u32 aligned_len;
+	u32 dif_len;
+	u32 i;
+
+	/* read first nibble byte by byte */
+	aligned_addr = addr & (~0x3);
+	dif_len = addr - aligned_addr;
+	if (dif_len) {
+		/* Start reading at aligned_addr + dif_len */
+		write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
+			       aligned_addr);
+		for (i = dif_len; i < 4; i++, buf++)
+			write_register_byte(dev,
+					    IPW_REG_INDIRECT_ACCESS_DATA + i,
+					    *buf);
+
+		len -= dif_len;
+		aligned_addr += 4;
+	}
+
+	/* read DWs through autoincrement registers */
+	write_register(dev, IPW_REG_AUTOINCREMENT_ADDRESS, aligned_addr);
+	aligned_len = len & (~0x3);
+	for (i = 0; i < aligned_len; i += 4, buf += 4, aligned_addr += 4)
+		write_register(dev, IPW_REG_AUTOINCREMENT_DATA, *(u32 *) buf);
+
+	/* copy the last nibble */
+	dif_len = len - aligned_len;
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS, aligned_addr);
+	for (i = 0; i < dif_len; i++, buf++)
+		write_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA + i,
+				    *buf);
+}
+
+void darwin_iwi2100::read_register_word(struct net_device *dev, u32 reg,
+				      u16 * val)
+{
+	//*val = readw((void __iomem *)(memBase + reg));
+	*val=OSReadLittleInt16(memBase,reg);
+	//IOLog("r: 0x%08X => %04X\n", reg, *val);
+}
+
+void darwin_iwi2100::read_nic_word(struct net_device *dev, u32 addr, u16 * val)
+{
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
+		       addr & IPW_REG_INDIRECT_ADDR_MASK);
+	read_register_word(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
+}
+
+void darwin_iwi2100::read_nic_byte(struct net_device *dev, u32 addr, u8 * val)
+{
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
+		       addr & IPW_REG_INDIRECT_ADDR_MASK);
+	read_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
+}
+
+void darwin_iwi2100::write_register_byte(struct net_device *dev, u32 reg, u8 val)
+{
+	//writeb(val, (void __iomem *)(memBase + reg));
+	*((UInt8 *)memBase + reg) = (UInt8)val;
+	//IOLog("w: 0x%08X =< %02X\n", reg, val);
+}
+
+void darwin_iwi2100::write_nic_byte(struct net_device *dev, u32 addr, u8 val)
+{
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
+		       addr & IPW_REG_INDIRECT_ADDR_MASK);
+	write_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
+}
+
+void darwin_iwi2100::write_nic_word(struct net_device *dev, u32 addr, u16 val)
+{
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
+		       addr & IPW_REG_INDIRECT_ADDR_MASK);
+	write_register_word(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
+}
+
+void darwin_iwi2100::write_register_word(struct net_device *dev, u32 reg, u16 val)
+{
+	//writew(val, (void __iomem *)(memBase + reg));
+	OSWriteLittleInt16(memBase,reg,val);
+	//IOLog("w: 0x%08X <= %04X\n", reg, val);
+}
+
+void darwin_iwi2100::write_nic_dword(struct net_device *dev, u32 addr, u32 val)
+{
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
+		       addr & IPW_REG_INDIRECT_ADDR_MASK);
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
+}
+
+void darwin_iwi2100::read_register(struct net_device *dev, u32 reg, u32 * val)
+{
+	//*val = readl((void __iomem *)(memBase + reg));
+	*val=OSReadLittleInt32(memBase,reg);
+	//IOLog("r: 0x%08X => 0x%08X\n", reg, *val);
+}
+
+void darwin_iwi2100::write_register(struct net_device *dev, u32 reg, u32 val)
+{
+	//writel(val, (void __iomem *)(memBase + reg));
+	OSWriteLittleInt32(memBase,reg,val);
+	//IOLog("w: 0x%08X <= 0x%08X\n", reg, val);
+}
+
+void darwin_iwi2100::read_nic_dword(struct net_device *dev, u32 addr, u32 * val)
+{
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
+		       addr & IPW_REG_INDIRECT_ADDR_MASK);
+	read_register(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
+}
+
+void darwin_iwi2100::read_register_byte(struct net_device *dev, u32 reg, u8 * val)
+{
+	//*val = readb((void __iomem *)(memBase + reg));
+	*val= (UInt8)*((UInt8 *)memBase + reg);
+	//IOLog("r: 0x%08X => %02X\n", reg, *val);
+}
+
+void darwin_iwi2100::read_nic_memory(struct net_device *dev, u32 addr, u32 len, u8 * buf)
+{
+	u32 aligned_addr;
+	u32 aligned_len;
+	u32 dif_len;
+	u32 i;
+
+	/* read first nibble byte by byte */
+	aligned_addr = addr & (~0x3);
+	dif_len = addr - aligned_addr;
+	if (dif_len) {
+		/* Start reading at aligned_addr + dif_len */
+		write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
+			       aligned_addr);
+		for (i = dif_len; i < 4; i++, buf++)
+			read_register_byte(dev,
+					   IPW_REG_INDIRECT_ACCESS_DATA + i,
+					   buf);
+
+		len -= dif_len;
+		aligned_addr += 4;
+	}
+
+	/* read DWs through autoincrement registers */
+	write_register(dev, IPW_REG_AUTOINCREMENT_ADDRESS, aligned_addr);
+	aligned_len = len & (~0x3);
+	for (i = 0; i < aligned_len; i += 4, buf += 4, aligned_addr += 4)
+		read_register(dev, IPW_REG_AUTOINCREMENT_DATA, (u32 *) buf);
+
+	/* copy the last nibble */
+	dif_len = len - aligned_len;
+	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS, aligned_addr);
+	for (i = 0; i < dif_len; i++, buf++)
+		read_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA + i, buf);
 }
 

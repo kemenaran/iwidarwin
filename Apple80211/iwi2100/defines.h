@@ -943,7 +943,14 @@ typedef unsigned char UInt8;
 
 #define IPW_CARD_DISABLE_COMPLETE_WAIT		    100	// 100 milli
 
+#define IPW2100_FW_MAJOR_VERSION 1
+#define IPW2100_FW_MINOR_VERSION 3
 
+#define IPW2100_FW_MINOR(x) ((x & 0xff) >> 8)
+#define IPW2100_FW_MAJOR(x) (x & 0xff)
+
+#define IPW2100_FW_VERSION ((IPW2100_FW_MINOR_VERSION << 8) | \
+                             IPW2100_FW_MAJOR_VERSION)
 
 
 

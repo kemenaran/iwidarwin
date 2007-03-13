@@ -7,6 +7,7 @@
 //#define IWI_NOLOG
 #define IWI_DEBUG_NORMAL
 //#define IWI_DEBUG_FULL
+#define CONFIG_IPW2100_DEBUG
 
 #if defined(IWI_NOLOG)
 	#define IWI_LOG(...) do{ }while(0)
@@ -160,11 +161,6 @@ struct fw_header {
 struct fw_chunk {
 	u32 address;
 	u32 length;
-};
-
-struct firmware {
-	size_t size;
-	u8 *data;
 };
 
 struct iwi_hdr {
@@ -555,7 +551,23 @@ virtual IOOptionBits getState( void ) const;
 	virtual int ipw2100_rf_eeprom_ready(struct ipw2100_priv *priv);
 	virtual int ipw2100_verify_ucode(struct ipw2100_priv *priv);
 	virtual int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv);
-	
+	virtual void darwin_iwi2100::read_nic_memory(struct net_device *dev, u32 addr, u32 len, u8 * buf);
+	virtual void darwin_iwi2100::read_register_byte(struct net_device *dev, u32 reg, u8 * val);
+	virtual void darwin_iwi2100::read_nic_dword(struct net_device *dev, u32 addr, u32 * val);
+	virtual void darwin_iwi2100::write_register(struct net_device *dev, u32 reg, u32 val);
+	virtual void darwin_iwi2100::read_register(struct net_device *dev, u32 reg, u32 * val);
+	virtual void darwin_iwi2100::write_nic_dword(struct net_device *dev, u32 addr, u32 val);
+	virtual void darwin_iwi2100::write_register_word(struct net_device *dev, u32 reg, u16 val);
+	virtual void darwin_iwi2100::write_nic_word(struct net_device *dev, u32 addr, u16 val);
+	virtual void darwin_iwi2100::write_nic_byte(struct net_device *dev, u32 addr, u8 val);
+	virtual void darwin_iwi2100::write_register_byte(struct net_device *dev, u32 reg, u8 val);
+	virtual void darwin_iwi2100::read_nic_byte(struct net_device *dev, u32 addr, u8 * val);
+	virtual void darwin_iwi2100::read_nic_word(struct net_device *dev, u32 addr, u16 * val);
+	virtual void darwin_iwi2100::read_register_word(struct net_device *dev, u32 reg,
+				      u16 * val);
+	virtual void darwin_iwi2100::write_nic_memory(struct net_device *dev, u32 addr, u32 len,
+			     const u8 * buf);
+
 	
 	
 	
@@ -753,6 +765,15 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual void isr_status_change(struct ipw2100_priv *priv, int status);				
 	virtual void ieee80211_rx_mgt(struct ieee80211_device *ieee, 
         struct ieee80211_hdr_4addr *header,struct ieee80211_rx_stats *stats);
+	virtual void ipw2100_hang_check(struct ipw2100_priv *priv);
+	virtual int ipw2100_hw_stop_adapter(struct ipw2100_priv *priv);
+	virtual int ipw2100_hw_phy_off(struct ipw2100_priv *priv);
+	virtual void __ipw2100_tx_complete(struct ipw2100_priv *priv);
+	virtual int __ipw2100_tx_process(struct ipw2100_priv *priv);
+	
+	
+	
+	
 	
 	
 	
@@ -771,164 +792,6 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
     IOMbufNaturalMemoryCursor                   *rxMbufCursor;
     IOMbufNaturalMemoryCursor                   *txMbufCursor;
 
-void write_nic_memory(struct net_device *dev, u32 addr, u32 len,
-			     const u8 * buf)
-{
-	u32 aligned_addr;
-	u32 aligned_len;
-	u32 dif_len;
-	u32 i;
-
-	/* read first nibble byte by byte */
-	aligned_addr = addr & (~0x3);
-	dif_len = addr - aligned_addr;
-	if (dif_len) {
-		/* Start reading at aligned_addr + dif_len */
-		write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
-			       aligned_addr);
-		for (i = dif_len; i < 4; i++, buf++)
-			write_register_byte(dev,
-					    IPW_REG_INDIRECT_ACCESS_DATA + i,
-					    *buf);
-
-		len -= dif_len;
-		aligned_addr += 4;
-	}
-
-	/* read DWs through autoincrement registers */
-	write_register(dev, IPW_REG_AUTOINCREMENT_ADDRESS, aligned_addr);
-	aligned_len = len & (~0x3);
-	for (i = 0; i < aligned_len; i += 4, buf += 4, aligned_addr += 4)
-		write_register(dev, IPW_REG_AUTOINCREMENT_DATA, *(u32 *) buf);
-
-	/* copy the last nibble */
-	dif_len = len - aligned_len;
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS, aligned_addr);
-	for (i = 0; i < dif_len; i++, buf++)
-		write_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA + i,
-				    *buf);
-}
-
-inline void read_register_word(struct net_device *dev, u32 reg,
-				      u16 * val)
-{
-	//*val = readw((void __iomem *)(memBase + reg));
-	*val=OSReadLittleInt16(memBase,reg);
-	//IOLog("r: 0x%08X => %04X\n", reg, *val);
-}
-
-inline void read_nic_word(struct net_device *dev, u32 addr, u16 * val)
-{
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
-		       addr & IPW_REG_INDIRECT_ADDR_MASK);
-	read_register_word(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
-}
-
-inline void read_nic_byte(struct net_device *dev, u32 addr, u8 * val)
-{
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
-		       addr & IPW_REG_INDIRECT_ADDR_MASK);
-	read_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
-}
-
-inline void write_register_byte(struct net_device *dev, u32 reg, u8 val)
-{
-	//writeb(val, (void __iomem *)(memBase + reg));
-	*((UInt8 *)memBase + reg) = (UInt8)val;
-	//IOLog("w: 0x%08X =< %02X\n", reg, val);
-}
-
-inline void write_nic_byte(struct net_device *dev, u32 addr, u8 val)
-{
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
-		       addr & IPW_REG_INDIRECT_ADDR_MASK);
-	write_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
-}
-
-inline void write_nic_word(struct net_device *dev, u32 addr, u16 val)
-{
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
-		       addr & IPW_REG_INDIRECT_ADDR_MASK);
-	write_register_word(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
-}
-
-inline void write_register_word(struct net_device *dev, u32 reg, u16 val)
-{
-	//writew(val, (void __iomem *)(memBase + reg));
-	OSWriteLittleInt16(memBase,reg,val);
-	//IOLog("w: 0x%08X <= %04X\n", reg, val);
-}
-
-inline void write_nic_dword(struct net_device *dev, u32 addr, u32 val)
-{
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
-		       addr & IPW_REG_INDIRECT_ADDR_MASK);
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
-}
-
-inline void read_register(struct net_device *dev, u32 reg, u32 * val)
-{
-	//*val = readl((void __iomem *)(memBase + reg));
-	*val=OSReadLittleInt32(memBase,reg);
-	//IOLog("r: 0x%08X => 0x%08X\n", reg, *val);
-}
-
-inline void write_register(struct net_device *dev, u32 reg, u32 val)
-{
-	//writel(val, (void __iomem *)(memBase + reg));
-	OSWriteLittleInt32(memBase,reg,val);
-	//IOLog("w: 0x%08X <= 0x%08X\n", reg, val);
-}
-
-inline void read_nic_dword(struct net_device *dev, u32 addr, u32 * val)
-{
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
-		       addr & IPW_REG_INDIRECT_ADDR_MASK);
-	read_register(dev, IPW_REG_INDIRECT_ACCESS_DATA, val);
-}
-
-inline void read_register_byte(struct net_device *dev, u32 reg, u8 * val)
-{
-	//*val = readb((void __iomem *)(memBase + reg));
-	*val= (UInt8)*((UInt8 *)memBase + reg);
-	//IOLog("r: 0x%08X => %02X\n", reg, *val);
-}
-
-void read_nic_memory(struct net_device *dev, u32 addr, u32 len, u8 * buf)
-{
-	u32 aligned_addr;
-	u32 aligned_len;
-	u32 dif_len;
-	u32 i;
-
-	/* read first nibble byte by byte */
-	aligned_addr = addr & (~0x3);
-	dif_len = addr - aligned_addr;
-	if (dif_len) {
-		/* Start reading at aligned_addr + dif_len */
-		write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS,
-			       aligned_addr);
-		for (i = dif_len; i < 4; i++, buf++)
-			read_register_byte(dev,
-					   IPW_REG_INDIRECT_ACCESS_DATA + i,
-					   buf);
-
-		len -= dif_len;
-		aligned_addr += 4;
-	}
-
-	/* read DWs through autoincrement registers */
-	write_register(dev, IPW_REG_AUTOINCREMENT_ADDRESS, aligned_addr);
-	aligned_len = len & (~0x3);
-	for (i = 0; i < aligned_len; i += 4, buf += 4, aligned_addr += 4)
-		read_register(dev, IPW_REG_AUTOINCREMENT_DATA, (u32 *) buf);
-
-	/* copy the last nibble */
-	dif_len = len - aligned_len;
-	write_register(dev, IPW_REG_INDIRECT_ACCESS_ADDRESS, aligned_addr);
-	for (i = 0; i < dif_len; i++, buf++)
-		read_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA + i, buf);
-}
 
 inline UInt32 MEM_READ_4(UInt16 *base, UInt32 addr)
 {
@@ -1034,7 +897,6 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int burst_duration_CCK;
 	int burst_duration_OFDM;
 	ifnet_t fifnet;
-	
 	
 };
 
