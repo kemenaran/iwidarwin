@@ -4,6 +4,8 @@
 #include <IOKit/IOInterruptEventSource.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>
 #include <IOKit/pci/IOPCIDevice.h>
+//#include <IOKit/network/IONetworkController.h>
+//#include <IOKit/network/IONetworkInterface.h>
 #include <IOKit/network/IOEthernetController.h>
 #include <IOKit/network/IOEthernetInterface.h>
 #include <IOKit/network/IOGatedOutputQueue.h>
@@ -12,8 +14,16 @@
 #include <IOKit/pccard/IOPCCard.h>
 #include <IOKit/apple80211/IO80211Controller.h>
 #include <IOKit/apple80211/IO80211Interface.h>
+#include <IOKit/network/IOPacketQueue.h>
+#include <IOKit/network/IONetworkMedium.h>
+#include <IOKit/IOTimerEventSource.h>
+#include <IOKit/IODeviceMemory.h>
+#include <IOKit/assert.h>
+#include <IOKit/IODataQueue.h>
 
 
+
+//includes for fifnet functions
 extern "C" {
 #include <net/if_var.h>
 #include <sys/vm.h>
@@ -950,6 +960,11 @@ typedef unsigned char UInt8;
 #define IPW_GOOD_CRC_TH             (1)
 
 #define IPW_MAX_SCAN_SIZE 1024
+
+
+
+
+
 
 
 

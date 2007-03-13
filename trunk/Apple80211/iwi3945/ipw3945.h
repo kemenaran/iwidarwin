@@ -31,7 +31,6 @@
 
 #define DRV_NAME	"ipw3945"
 
-#include "ipw3945_daemon.h"
 
 /* Kernel compatibility defines */
 #ifndef IRQ_NONE
@@ -198,6 +197,8 @@ do { if (ipw_debug_level & (level)) \
 
 /* Multi-Station support */
 #define REPLY_ADD_STA       0x18
+
+
 
 /* RX, TX */
 #define REPLY_RX        0x1b
@@ -1463,14 +1464,14 @@ struct ipw_cmd;
 struct ipw_priv;
 
 typedef int (*IPW_CALLBACK_FUNC) (struct ipw_priv * priv,
-				  struct ipw_cmd * cmd, struct sk_buff * skb);
+				  struct ipw_cmd * cmd, mbuf_t skb);
 #define TFD_TX_CMD_SLOTS 64
 #define TFD_CMD_SLOTS 32
 
 struct ipw_cmd_meta {
 	union {
 		struct ipw_cmd_meta *source;
-		struct sk_buff *skb;
+		mbuf_t skb;
 		IPW_CALLBACK_FUNC callback;
 	} __attribute__ ((packed)) u;
 
@@ -1540,10 +1541,10 @@ struct ipw_cmd {
  */
 struct ipw_tx_queue {
 	struct ipw_queue q;
-	struct tfd_frame *bd;
+	u8 *bd;
 	struct ipw_cmd *cmd;
 	dma_addr_t dma_addr_cmd;
-	struct ieee80211_txb **txb;
+	struct ipw_tx_info *txb;
 	int need_update;	/* flag to indicate we need to update read/write index */
 };
 
@@ -1909,12 +1910,6 @@ struct ipw_ibss_seq {
 	u16 frag_num;
 	unsigned long packet_time;
 	struct list_head list;
-};
-
-struct ipw_daemon_cmd_list {
-	struct list_head list;
-	struct sk_buff *skb_resp;
-	struct daemon_cmd_hdr cmd;	/* Must be last */
 };
 
 /* Power management (not Tx power) structures */
@@ -2420,12 +2415,256 @@ struct ipw_rxon_cmd {
 	u16 reserved5;
 } __attribute__ ((packed));
 
+struct ipw_driver_hw_info {
+
+	u32 eeprom_size;
+	u16 max_queue_number;
+	u16 max_num_rate;
+	u16 number_of_stations;
+	u16 broadcast_id;
+	u16 ac_queue_count;
+	u8 cmd_queue_no;
+	u8 start_cmd_queue;
+	u32 rx_buffer_size;
+	u32 max_inst_size;
+	u32 max_data_size;
+	u16 tx_cmd_len;
+	int statistics_size;
+	u16 max_rxq_size;
+	u16 max_rxq_log;
+	u16 rate_scale_size;
+	u16 add_station_size;
+	u32 cck_flag;
+	void *shared_virt;
+	dma_addr_t shared_phys;
+
+};
+
+#define MAX_NUM_OF_TBS          (20)
+#define TFD_MAX_PAYLOAD_SIZE (sizeof(struct ipw_cmd) - \
+                              sizeof(struct ipw_cmd_meta))
+
+
+struct ipw_rate_scaling_info {
+	u8 tx_rate;
+	u8 flags;
+	u8 try_cnt;
+	u8 next_rate_index;
+} __attribute__ ((packed));
+
+struct ipw_rate_scaling_cmd_specifics {
+	u8 table_id;
+	u8 reserved[3];
+	struct ipw_rate_scaling_info table[IPW_MAX_RATES];
+} __attribute__ ((packed));
+
+struct ieee80211_tx_control {
+	int tx_rate; /* Transmit rate, given as the hw specific value for the
+		      * rate (from struct ieee80211_rate) */
+	int rts_cts_rate; /* Transmit rate for RTS/CTS frame, given as the hw
+			   * specific value for the rate (from
+			   * struct ieee80211_rate) */
+
+#define IEEE80211_TXCTL_REQ_TX_STATUS	(1<<0)/* request TX status callback for
+						* this frame */
+#define IEEE80211_TXCTL_DO_NOT_ENCRYPT	(1<<1) /* send this frame without
+						* encryption; e.g., for EAPOL
+						* frames */
+#define IEEE80211_TXCTL_USE_RTS_CTS	(1<<2) /* use RTS-CTS before sending
+						* frame */
+#define IEEE80211_TXCTL_USE_CTS_PROTECT	(1<<3) /* use CTS protection for the
+						* frame (e.g., for combined
+						* 802.11g / 802.11b networks) */
+#define IEEE80211_TXCTL_NO_ACK		(1<<4) /* tell the low level not to
+						* wait for an ack */
+#define IEEE80211_TXCTL_RATE_CTRL_PROBE	(1<<5)
+#define IEEE80211_TXCTL_CLEAR_DST_MASK	(1<<6)
+#define IEEE80211_TXCTL_REQUEUE		(1<<7)
+#define IEEE80211_TXCTL_FIRST_FRAGMENT	(1<<8) /* this is a first fragment of
+						* the frame */
+#define IEEE80211_TXCTL_TKIP_NEW_PHASE1_KEY (1<<9)
+	u32 flags;			       /* tx control flags defined
+						* above */
+	u8 retry_limit;		/* 1 = only first attempt, 2 = one retry, .. */
+	u8 power_level;		/* per-packet transmit power level, in dBm */
+	u8 antenna_sel_tx; 	/* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
+	s8 key_idx;		/* -1 = do not encrypt, >= 0 keyidx from
+				 * hw->set_key() */
+	u8 icv_len;		/* length of the ICV/MIC field in octets */
+	u8 iv_len;		/* length of the IV field in octets */
+	u8 tkip_key[16];	/* generated phase2/phase1 key for hw TKIP */
+	u8 queue;		/* hardware queue to use for this frame;
+				 * 0 = highest, hw->queues-1 = lowest */
+	u8 sw_retry_attempt;	/* number of times hw has tried to
+				 * transmit frame (not incl. hw retries) */
+
+	int rateidx;		/* internal 80211.o rateidx */
+	int rts_rateidx;	/* internal 80211.o rateidx for RTS/CTS */
+	int alt_retry_rate; /* retry rate for the last retries, given as the
+			     * hw specific value for the rate (from
+			     * struct ieee80211_rate). To be used to limit
+			     * packet dropping when probing higher rates, if hw
+			     * supports multiple retry rates. -1 = not used */
+	int type;	/* internal */
+	int ifindex;	/* internal */
+};
+
+struct ieee80211_rx_status {
+	u64 mactime;
+	int freq; /* receive frequency in Mhz */
+	int channel;
+	int phymode;
+	int ssi;
+	int signal; /* used as qual in statistics reporting */
+	int noise;
+	int antenna;
+	int rate;
+	int flag;
+};
+
+struct ieee80211_tx_status {
+	/* copied ieee80211_tx_control structure */
+	struct ieee80211_tx_control control;
+
+#define IEEE80211_TX_STATUS_TX_FILTERED	(1<<0)
+#define IEEE80211_TX_STATUS_ACK		(1<<1) /* whether the TX frame was ACKed */
+	u32 flags;		/* tx staus flags defined above */
+
+	int ack_signal; /* measured signal strength of the ACK frame */
+	int excessive_retries;
+	int retry_count;
+
+	int queue_length;      /* information about TX queue */
+	int queue_number;
+};
+
+struct ipw_tx_info {
+	struct ieee80211_tx_status status;
+	mbuf_t skb[MAX_NUM_OF_TBS];
+};
+
+struct ipw_channel_tgd_info {
+	u8 type;
+	s8 max_power;
+};
+
+struct ipw_channel_tgh_info {
+	s32 last_radar_time;
+	//s64 last_radar_time;
+};
+
+/* current Tx power values to use, one for each rate for each channel.
+ * requested power is limited by:
+ * -- regulatory EEPROM limits for this channel
+ * -- hardware capabilities (clip-powers)
+ * -- spectrum management
+ * -- user preference (e.g. iwconfig)
+ * when requested power is set, base power index must also be set. */
+ 
+ struct ipw_tx_power {
+	u8 tx_gain;		/* gain for analog radio */
+	u8 dsp_atten;		/* gain for DSP */
+} __attribute__ ((packed));
+
+struct ipw_channel_power_info {
+	struct ipw_tx_power tpc;	/* actual radio and DSP gain settings */
+	s8 power_table_index;	/* actual (temp-comp'd) index into gain table */
+	s8 base_power_index;	/* gain index for req. power at factory temp. */
+	s8 requested_power;	/* power (dBm) requested for this chnl/rate */
+};
+
+enum {
+	IPW_CHANNEL_VALID = (1<<0),	/* legally usable for this SKU/geo */
+	IPW_CHANNEL_IBSS = (1<<1),	/* usable as an IBSS channel */
+	/* bit 2 reserved */
+	IPW_CHANNEL_ACTIVE = (1<<3),	/* active scanning allowed */
+	IPW_CHANNEL_RADAR = (1<<4),	/* radar detection required */
+	IPW_CHANNEL_WIDE = (1<<5),
+	IPW_CHANNEL_NARROW = (1<<6),
+	IPW_CHANNEL_DFS = (1<<7),	/* dynamic freq selection candidate */
+};
+
+struct ipw_clip_group {
+	/* maximum power level to prevent clipping for each rate, derived by
+	 *   us from this band's saturation power in EEPROM */
+	const s8 clip_powers[IPW_MAX_RATES];
+};
+
+
+/* current scan Tx power values to use, one for each scan rate for each channel.
+ */
+struct ipw_scan_power_info {
+	struct ipw_tx_power tpc;	/* actual radio and DSP gain settings */
+	s8 power_table_index;	/* actual (temp-comp'd) index into gain table */
+	s8 requested_power;	/* scan pwr (dBm) requested for chnl/rate */
+};
+
+#define IPW_NUM_SCAN_RATES         (2)
+
+struct ipw_channel_info {
+	struct ipw_channel_tgd_info tgd;
+	struct ipw_channel_tgh_info tgh;
+	struct ipw_eeprom_channel eeprom;	/* EEPROM regulatory limit */
+
+	u8 channel;		/* channel number */
+	u8 flags;		/* flags copied from EEPROM */
+	s8 max_power_avg;	/* (dBm) regul. eeprom, normal Tx, any rate */
+	s8 curr_txpow;		/* (dBm) regulatory/spectrum/user (not h/w) */
+	s8 min_power;		/* always 0 */
+	s8 scan_power;		/* (dBm) regul. eeprom, direct scans, any rate */
+
+	u8 group_index;		/* 0-4, maps channel to group1/2/3/4/5 */
+	u8 band_index;		/* 0-4, maps channel to band1/2/3/4/5 */
+	u8 phymode;		/* MODE_IEEE80211{A,B,G} */
+
+	u8 tx_locked;		/* 0 - Tx allowed.  1 - Tx disabled.
+				 * Any channel requiring RADAR DETECT or PASSIVE ONLY
+				 * is Tx locked until a beacon or probe response is
+				 * received (for PASSIVE ONLY) */
+	unsigned long rx_unlock;	/* For channels that are not tx_unlocked,
+					 * this is the time (in seconds) of the last
+					 * frame that will unlock this channel.  If
+					 * more than 15s have passed then the channel
+					 * is not unlocked. */
+	unsigned long csa_received;	/* Time that the last CSA was received on
+					 * this channel, or 0 if never.  A channel
+					 * can only be scanned or used if no CSA
+					 * has been received in the past 15s */
+
+	/* Radio/DSP gain settings for each "normal" data Tx rate.
+	 * These include, in addition to RF and DSP gain, a few fields for
+	 *   remembering/modifying gain settings (indexes). */
+	struct ipw_channel_power_info power_info[IPW_MAX_RATES];
+
+	/* Radio/DSP gain settings for each scan rate, for directed scans. */
+	struct ipw_scan_power_info scan_pwr_info[IPW_NUM_SCAN_RATES];
+};
 
 struct ipw_priv {
 	/* ieee device used by generic ieee processing code */
-	struct ieee80211_device *ieee;
+	struct ieee80211_hw *ieee;
 	struct ipw_eeprom eeprom;
+	struct ieee80211_conf active_conf;
+	struct ieee80211_hw_mode *modes;
+	struct ipw_channel_info *channel_info;	/* channel info array */
+	u8 channel_count;	/* # of channels */
+	const struct ipw_clip_group clip_groups[5];
+	
+	int curr_temperature;
+	int last_temperature;
+	struct ieee80211_channel *ieee_channels;
+	struct ieee80211_rate *ieee_rates;
 	//struct iw_public_data wireless_data;
+
+	struct ipw_driver_hw_info hw_setting;
+	u8 is_3945;
+	int interface_id;
+	int freq_band;
+	int iw_mode;
+	u16 assoc_id;
+	u16 assoc_capability;
+	u32 timestamp0;
+	u32 timestamp1;
 
 	/* temporary frame storage list */
 	struct list_head free_frames;
@@ -2477,12 +2716,13 @@ struct ipw_priv {
 	void __iomem *hw_base;
 	unsigned long hw_len;
 
+	struct ipw_rxon_cmd active_rxon;
+	struct ipw_rxon_cmd staging_rxon;
+	
 	struct fw_image_desc ucode_code;
 	struct fw_image_desc ucode_data;
 	struct fw_image_desc ucode_boot;
 	struct fw_image_desc ucode_boot_data;
-	
-	struct ipw_rxon_cmd active_rxon;
 	
 	struct ipw_shared_t *shared_virt;
 	dma_addr_t shared_phys;
@@ -2618,11 +2858,6 @@ struct ipw_priv {
 	u32 framecnt_to_us;
 };				/*ipw_priv */
 
-struct ipw_tx_power {
-	u8 tx_gain;		/* gain for analog radio */
-	u8 dsp_atten;		/* gain for DSP */
-} __attribute__ ((packed));
-
 struct ipw_scan_channel {
 	u8 type;
 	/* type is defined as:
@@ -2674,6 +2909,12 @@ struct ipw_scan_cmd {
 
 	 */
 } __attribute__ ((packed));
+
+
+
+
+
+
 
 
 #endif				/* __ipw3945_h__ */

@@ -12,7 +12,6 @@
 		61B0347E0B59837C00286B6C /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B0347B0B59837C00286B6C /* defines.h */; };
 		61B0347F0B59837C00286B6C /* iwi3945.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61B0347C0B59837C00286B6C /* iwi3945.cpp */; };
 		61B034800B59837C00286B6C /* iwi3945.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B0347D0B59837C00286B6C /* iwi3945.h */; };
-		61B0C7520B824C3700F76542 /* ipw3945_daemon.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B0C7510B824C3700F76542 /* ipw3945_daemon.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +22,11 @@
 		618A5E1D0B85414E00694B28 /* base.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = base.c; sourceTree = "<group>"; };
 		618A5E1E0B85414E00694B28 /* iwlwifi.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwlwifi.h; sourceTree = "<group>"; };
 		618A5E1F0B85414E00694B28 /* iwlwifi_hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwlwifi_hw.h; sourceTree = "<group>"; };
+		61AD407B0BA4ADEB00E67029 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		61AD407C0BA4ADEB00E67029 /* nl80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = nl80211.h; sourceTree = "<group>"; };
+		61AD407E0BA4ADEB00E67029 /* cfg80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = cfg80211.h; sourceTree = "<group>"; };
+		61AD407F0BA4ADEB00E67029 /* mac80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mac80211.h; sourceTree = "<group>"; };
+		61AD40800BA4ADEB00E67029 /* wireless.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wireless.h; sourceTree = "<group>"; };
 		61B0347B0B59837C00286B6C /* defines.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
 		61B0347C0B59837C00286B6C /* iwi3945.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = iwi3945.cpp; sourceTree = "<group>"; };
 		61B0347D0B59837C00286B6C /* iwi3945.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi3945.h; sourceTree = "<group>"; };
@@ -33,7 +37,6 @@
 		61B06DFF0B589546000DD1AE /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
 		61B06E000B589546000DD1AE /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
 		61B06E010B589546000DD1AE /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
-		61B0C7510B824C3700F76542 /* ipw3945_daemon.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw3945_daemon.h; sourceTree = "<group>"; };
 		61B0CB590B824EF500F76542 /* ipw3945.ucode.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw3945.ucode.h; sourceTree = "<group>"; };
 		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
@@ -52,6 +55,7 @@
 		089C166AFE841209C02AAC07 /* iwi3945 */ = {
 			isa = PBXGroup;
 			children = (
+				61AD40790BA4ADEB00E67029 /* include */,
 				618A5E1C0B85414E00694B28 /* origin */,
 				61B03A420B59C2A900286B6C /* ipw3945-1.2.0 */,
 				247142CAFF3F8F9811CA285C /* Source */,
@@ -86,7 +90,6 @@
 				61B0347C0B59837C00286B6C /* iwi3945.cpp */,
 				61B0347D0B59837C00286B6C /* iwi3945.h */,
 				618A5DF80B8540D500694B28 /* ipw3945.h */,
-				61B0C7510B824C3700F76542 /* ipw3945_daemon.h */,
 				61B0346E0B59819700286B6C /* firmware */,
 				61B06DFD0B589546000DD1AE /* net */,
 			);
@@ -103,6 +106,35 @@
 			name = origin;
 			path = "../../../../3945/iwlwifi-0.0.10/origin";
 			sourceTree = SOURCE_ROOT;
+		};
+		61AD40790BA4ADEB00E67029 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				61AD407A0BA4ADEB00E67029 /* linux */,
+				61AD407D0BA4ADEB00E67029 /* net */,
+			);
+			name = include;
+			path = "../../../../3945/mac80211-4.0.4/origin/include";
+			sourceTree = SOURCE_ROOT;
+		};
+		61AD407A0BA4ADEB00E67029 /* linux */ = {
+			isa = PBXGroup;
+			children = (
+				61AD407B0BA4ADEB00E67029 /* ieee80211.h */,
+				61AD407C0BA4ADEB00E67029 /* nl80211.h */,
+			);
+			path = linux;
+			sourceTree = "<group>";
+		};
+		61AD407D0BA4ADEB00E67029 /* net */ = {
+			isa = PBXGroup;
+			children = (
+				61AD407E0BA4ADEB00E67029 /* cfg80211.h */,
+				61AD407F0BA4ADEB00E67029 /* mac80211.h */,
+				61AD40800BA4ADEB00E67029 /* wireless.h */,
+			);
+			path = net;
+			sourceTree = "<group>";
 		};
 		61B0346E0B59819700286B6C /* firmware */ = {
 			isa = PBXGroup;
@@ -159,7 +191,6 @@
 			files = (
 				61B0347E0B59837C00286B6C /* defines.h in Headers */,
 				61B034800B59837C00286B6C /* iwi3945.h in Headers */,
-				61B0C7520B824C3700F76542 /* ipw3945_daemon.h in Headers */,
 				618A5DF90B8540D500694B28 /* ipw3945.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

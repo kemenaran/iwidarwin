@@ -859,13 +859,346 @@ enum ieee80211_mfie {
 	MFIE_TYPE_QOS_PARAMETER = 222,
 };
 
+struct ieee80211_mgmt {
+	__le16 frame_control;
+	__le16 duration;
+	__u8 da[6];
+	__u8 sa[6];
+	__u8 bssid[6];
+	__le16 seq_ctrl;
+	union {
+		struct {
+			__le16 auth_alg;
+			__le16 auth_transaction;
+			__le16 status_code;
+			/* possibly followed by Challenge text */
+			__u8 variable[0];
+		} __attribute__ ((packed)) auth;
+		struct {
+			__le16 reason_code;
+		} __attribute__ ((packed)) deauth;
+		struct {
+			__le16 capab_info;
+			__le16 listen_interval;
+			/* followed by SSID and Supported rates */
+			u8 variable[0];
+		} __attribute__ ((packed)) assoc_req;
+		struct {
+			__le16 capab_info;
+			__le16 status_code;
+			__le16 aid;
+			/* followed by Supported rates */
+			__u8 variable[0];
+		} __attribute__ ((packed)) assoc_resp, reassoc_resp;
+		struct {
+			__le16 capab_info;
+			__le16 listen_interval;
+			__u8 current_ap[6];
+			/* followed by SSID and Supported rates */
+			__u8 variable[0];
+		} __attribute__ ((packed)) reassoc_req;
+		struct {
+			__le16 reason_code;
+		} __attribute__ ((packed)) disassoc;
+		struct {
+			__le64 timestamp;
+			__le16 beacon_int;
+			__le16 capab_info;
+			/* followed by some of SSID, Supported rates,
+			 * FH Params, DS Params, CF Params, IBSS Params, TIM */
+			__u8 variable[0];
+		} __attribute__ ((packed)) beacon;
+		struct {
+			/* only variable items: SSID, Supported rates */
+			__u8 variable[0];
+		} __attribute__ ((packed)) probe_req;
+		struct {
+			__le64 timestamp;
+			__le16 beacon_int;
+			__le16 capab_info;
+			/* followed by some of SSID, Supported rates,
+			 * FH Params, DS Params, CF Params, IBSS Params */
+			__u8 variable[0];
+		} __attribute__ ((packed)) probe_resp;
+		struct {
+			__u8 category;
+			union {
+				struct {
+					__u8 action_code;
+					__u8 dialog_token;
+					__u8 status_code;
+					__u8 variable[0];
+				} __attribute__ ((packed)) wme_action;
+				struct{
+					__u8 action_code;
+					__u8 element_id;
+					__u8 length;
+					__u8 switch_mode;
+					__u8 new_chan;
+					__u8 switch_count;
+				} __attribute__((packed)) chan_switch;
+			} u;
+		} __attribute__ ((packed)) action;
+	} u;
+} __attribute__ ((packed));
+
+enum {
+	MODE_IEEE80211A = 0 /* IEEE 802.11a */,
+	MODE_IEEE80211B = 1 /* IEEE 802.11b only */,
+	MODE_ATHEROS_TURBO = 2 /* Atheros Turbo mode (2x.11a at 5 GHz) */,
+	MODE_IEEE80211G = 3 /* IEEE 802.11g (and 802.11b compatibility) */,
+	MODE_ATHEROS_TURBOG = 4 /* Atheros Turbo mode (2x.11g at 2.4 GHz) */,
+	NUM_IEEE80211_MODES = 5
+};
+
+enum ieee80211_if_types {
+	IEEE80211_IF_TYPE_AP = 0x00000000,
+	IEEE80211_IF_TYPE_MGMT = 0x00000001,
+	IEEE80211_IF_TYPE_STA = 0x00000002,
+	IEEE80211_IF_TYPE_IBSS = 0x00000003,
+	IEEE80211_IF_TYPE_MNTR = 0x00000004,
+	IEEE80211_IF_TYPE_WDS = 0x5A580211,
+	IEEE80211_IF_TYPE_VLAN = 0x00080211,
+};
+
+struct ieee80211_conf {
+	int channel;			/* IEEE 802.11 channel number */
+	int freq;			/* MHz */
+	int channel_val;		/* hw specific value for the channel */
+
+	int phymode;			/* MODE_IEEE80211A, .. */
+	unsigned int regulatory_domain;
+	int radio_enabled;
+
+	int beacon_int;
+
+#define IEEE80211_CONF_SHORT_SLOT_TIME	(1<<0) /* use IEEE 802.11g Short Slot
+						* Time */
+#define IEEE80211_CONF_SSID_HIDDEN	(1<<1) /* do not broadcast the ssid */
+	u32 flags;			/* configuration flags defined above */
+
+	u8 power_level;			/* transmit power limit for current
+					 * regulatory domain; in dBm */
+	u8 antenna_max;			/* maximum antenna gain */
+	short tx_power_reduction; /* in 0.1 dBm */
+
+	/* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
+	u8 antenna_sel_tx;
+	u8 antenna_sel_rx;
+
+	int antenna_def;
+	int antenna_mode;
+
+	/* Following five fields are used for IEEE 802.11H */
+	unsigned int radar_detect;
+	unsigned int spect_mgmt;
+	unsigned int quiet_duration; /* duration of quiet period */
+	unsigned int quiet_offset; /* how far into the beacon is the quiet
+				    * period */
+	unsigned int quiet_period;
+	u8 radar_firpwr_threshold;
+	u8 radar_rssi_threshold;
+	u8 pulse_height_threshold;
+	u8 pulse_rssi_threshold;
+	u8 pulse_inband_threshold;
+};
+
+struct ieee80211_rate {
+	int rate; /* rate in 100 kbps */
+	int val; /* hw specific value for the rate */
+	int flags; /* IEEE80211_RATE_ flags */
+	int val2; /* hw specific value for the rate when using short preamble
+		   * (only when IEEE80211_RATE_PREAMBLE2 flag is set, i.e., for
+		   * 2, 5.5, and 11 Mbps) */
+	signed char min_rssi_ack;
+	unsigned char min_rssi_ack_delta;
+
+	/* following fields are set by 80211.o and need not be filled by the
+	 * low-level driver */
+	int rate_inv; /* inverse of the rate (LCM(all rates) / rate) for
+		       * optimizing channel utilization estimates */
+};
+
+enum ieee80211_eid {
+	WLAN_EID_SSID = 0,
+	WLAN_EID_SUPP_RATES = 1,
+	WLAN_EID_FH_PARAMS = 2,
+	WLAN_EID_DS_PARAMS = 3,
+	WLAN_EID_CF_PARAMS = 4,
+	WLAN_EID_TIM = 5,
+	WLAN_EID_IBSS_PARAMS = 6,
+	WLAN_EID_CHALLENGE = 16,
+	/* 802.11d */
+	WLAN_EID_COUNTRY = 7,
+	WLAN_EID_HP_PARAMS = 8,
+	WLAN_EID_HP_TABLE = 9,
+	WLAN_EID_REQUEST = 10,
+	/* 802.11h */
+	WLAN_EID_PWR_CONSTRAINT = 32,
+	WLAN_EID_PWR_CAPABILITY = 33,
+	WLAN_EID_TPC_REQUEST = 34,
+	WLAN_EID_TPC_REPORT = 35,
+	WLAN_EID_SUPPORTED_CHANNELS = 36,
+	WLAN_EID_CHANNEL_SWITCH = 37,
+	WLAN_EID_MEASURE_REQUEST = 38,
+	WLAN_EID_MEASURE_REPORT = 39,
+	WLAN_EID_QUIET = 40,
+	WLAN_EID_IBSS_DFS = 41,
+	/* 802.11g */
+	WLAN_EID_ERP_INFO = 42,
+	WLAN_EID_EXT_SUPP_RATES = 50,
+	/* 802.11i */
+	WLAN_EID_RSN = 48,
+	WLAN_EID_WPA = 221,
+	WLAN_EID_GENERIC = 221,
+	WLAN_EID_VENDOR_SPECIFIC = 221,
+	WLAN_EID_QOS_PARAMETER = 222
+};
+
+#define IEEE80211_CHAN_W_RADAR_DETECT 0x00000010
+
+#define IEEE80211_CHAN_W_SCAN 0x00000001
+#define IEEE80211_CHAN_W_ACTIVE_SCAN 0x00000002
+#define IEEE80211_CHAN_W_IBSS 0x00000004
+
+#define IEEE80211_RATE_ERP 0x00000001
+#define IEEE80211_RATE_BASIC 0x00000002
+#define IEEE80211_RATE_PREAMBLE2 0x00000004
+#define IEEE80211_RATE_SUPPORTED 0x00000010
+#define IEEE80211_RATE_OFDM 0x00000020
+#define IEEE80211_RATE_CCK 0x00000040
+#define IEEE80211_RATE_TURBO 0x00000080
+#define IEEE80211_RATE_MANDATORY 0x00000100
+
+#define IEEE80211_RATE_CCK_2 (IEEE80211_RATE_CCK | IEEE80211_RATE_PREAMBLE2)
+#define IEEE80211_RATE_MODULATION(f) \
+(f & (IEEE80211_RATE_CCK | IEEE80211_RATE_OFDM))
+
+
+struct ieee80211_hw {
+	/* points to the cfg80211 wiphy for this piece. Note
+	 * that you must fill in the perm_addr and dev fields
+	 * of this structure, use the macros provided below. */
+	//struct wiphy *wiphy;
+
+	/* assigned by mac80211, don't write */
+	struct ieee80211_conf conf;
+
+	/* Pointer to the private area that was
+	 * allocated with this struct for you. */
+	void *priv;
+
+	/* The rest is information about your hardware */
+
+	/* TODO: frame_type 802.11/802.3, sw_encryption requirements */
+
+	/* Some wireless LAN chipsets generate beacons in the hardware/firmware
+	 * and others rely on host generated beacons. This option is used to
+	 * configure the upper layer IEEE 802.11 module to generate beacons.
+	 * The low-level driver can use ieee80211_beacon_get() to fetch the
+	 * next beacon frame. */
+#define IEEE80211_HW_HOST_GEN_BEACON (1<<0)
+
+	/* The device needs to be supplied with a beacon template only. */
+#define IEEE80211_HW_HOST_GEN_BEACON_TEMPLATE (1<<1)
+
+	/* Some devices handle decryption internally and do not
+	 * indicate whether the frame was encrypted (unencrypted frames
+	 * will be dropped by the hardware, unless specifically allowed
+	 * through) */
+#define IEEE80211_HW_DEVICE_HIDES_WEP (1<<2)
+
+	/* Whether RX frames passed to ieee80211_rx() include FCS in the end */
+#define IEEE80211_HW_RX_INCLUDES_FCS (1<<3)
+
+	/* Some wireless LAN chipsets buffer broadcast/multicast frames for
+	 * power saving stations in the hardware/firmware and others rely on
+	 * the host system for such buffering. This option is used to
+	 * configure the IEEE 802.11 upper layer to buffer broadcast/multicast
+	 * frames when there are power saving stations so that low-level driver
+	 * can fetch them with ieee80211_get_buffered_bc(). */
+#define IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING (1<<4)
+
+#define IEEE80211_HW_WEP_INCLUDE_IV (1<<5)
+
+	/* will data nullfunc frames get proper TX status callback */
+#define IEEE80211_HW_DATA_NULLFUNC_ACK (1<<6)
+
+	/* Force software encryption for TKIP packets if WMM is enabled. */
+#define IEEE80211_HW_NO_TKIP_WMM_HWACCEL (1<<7)
+
+	/* Some devices handle Michael MIC internally and do not include MIC in
+	 * the received packets passed up. device_strips_mic must be set
+	 * for such devices. The 'encryption' frame control bit is expected to
+	 * be still set in the IEEE 802.11 header with this option unlike with
+	 * the device_hides_wep configuration option.
+	 */
+#define IEEE80211_HW_DEVICE_STRIPS_MIC (1<<8)
+
+	/* Device is capable of performing full monitor mode even during
+	 * normal operation. */
+#define IEEE80211_HW_MONITOR_DURING_OPER (1<<9)
+
+	/* please fill this gap when adding new flags */
+
+	/* calculate Michael MIC for an MSDU when doing hwcrypto */
+#define IEEE80211_HW_TKIP_INCLUDE_MMIC (1<<12)
+	/* Do TKIP phase1 key mixing in stack to support cards only do
+	 * phase2 key mixing when doing hwcrypto */
+#define IEEE80211_HW_TKIP_REQ_PHASE1_KEY (1<<13)
+	/* Do TKIP phase1 and phase2 key mixing in stack and send the generated
+	 * per-packet RC4 key with each TX frame when doing hwcrypto */
+#define IEEE80211_HW_TKIP_REQ_PHASE2_KEY (1<<14)
+
+	u32 flags;			/* hardware flags defined above */
+
+	/* Set to the size of a needed device specific skb headroom for TX skbs. */
+	unsigned int extra_tx_headroom;
+
+	/* This is the time in us to change channels
+	 */
+	int channel_change_time;
+	/* Maximum values for various statistics.
+	 * Leave at 0 to indicate no support. Use negative numbers for dBm. */
+	s8 max_rssi;
+	s8 max_signal;
+	s8 max_noise;
+
+	/* Number of available hardware TX queues for data packets.
+	 * WMM requires at least four queues. */
+	int queues;
+};
+
+struct ieee80211_channel {
+	short chan; /* channel number (IEEE 802.11) */
+	short freq; /* frequency in MHz */
+	int val; /* hw specific value for the channel */
+	int flag; /* flag for hostapd use (IEEE80211_CHAN_*) */
+	unsigned char power_level;
+	unsigned char antenna_max;
+};
+
+struct ieee80211_hw_mode {
+	int mode; /* MODE_IEEE80211... */
+	int num_channels; /* Number of channels (below) */
+	struct ieee80211_channel *channels; /* Array of supported channels */
+	int num_rates; /* Number of rates (below) */
+	struct ieee80211_rate *rates; /* Array of supported rates */
+
+	struct list_head list; /* Internal, don't touch */
+};
+
 /* Minimal header; can be used for passing 802.11 frames with sufficient
  * information to determine what type of underlying data type is actually
  * stored in the data. */
 struct ieee80211_hdr {
-	__le16 frame_ctl;
+	__le16 frame_control;
 	__le16 duration_id;
-	u8 payload[0];
+	__u8 addr1[6];
+	__u8 addr2[6];
+	__u8 addr3[6];
+	__le16 seq_ctrl;
+	__u8 addr4[6];
 } __attribute__ ((packed));
 
 struct ieee80211_hdr_1addr {
@@ -1307,12 +1640,12 @@ enum {
 	IEEE80211_CH_INVALID = (1 << 6),
 };
 
-struct ieee80211_channel {
-	u32 freq;	/* in MHz */
+/*struct ieee80211_channel {
+	u32 freq;	
 	u8 channel;
 	u8 flags;
-	u8 max_power;	/* in dBm */
-};
+	u8 max_power;	
+};*/
 
 struct ieee80211_geo {
 	u8 name[4];
@@ -1514,7 +1847,7 @@ static inline int ieee80211_get_hdrlen(u16 fc)
 
 static inline u8 *ieee80211_get_payload(struct ieee80211_hdr *hdr)
 {
-	switch (ieee80211_get_hdrlen(le16_to_cpu(hdr->frame_ctl))) {
+	switch (ieee80211_get_hdrlen(le16_to_cpu(hdr->frame_control))) {
 	case IEEE80211_1ADDR_LEN:
 		return ((struct ieee80211_hdr_1addr *)hdr)->payload;
 	case IEEE80211_2ADDR_LEN:

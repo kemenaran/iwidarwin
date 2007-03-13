@@ -542,7 +542,7 @@ virtual IOOptionBits getState( void ) const;
 	virtual int ipw_download_ucode(struct ipw_priv *priv,
 			      struct fw_image_desc *desc,
 			      u32 mem_size, dma_addr_t dst_addr);
-	virtual int attach_buffer_to_tfd_frame(struct tfd_frame *tfd,
+	virtual int attach_buffer_to_tfd_frame(void *ptr,
 				      dma_addr_t addr, u16 len);
 	virtual void ipw_write_buffer_restricted(struct ipw_priv *priv,
 					u32 reg, u32 len, u32 * values);
@@ -569,6 +569,60 @@ virtual IOOptionBits getState( void ) const;
 	virtual void ipw_clear_bits_restricted_reg(struct ipw_priv
 					  *priv, u32 reg, u32 mask);
 	virtual void ipw_bg_resume_work();
+	virtual int ipw_init_channel_map(struct ipw_priv *priv);
+	virtual  void ipw_init_band_reference(struct ipw_priv *priv, int band,
+				    int *eeprom_ch_count,
+				    const struct ipw_eeprom_channel
+				    **eeprom_ch_info,
+				    const u8 ** eeprom_ch_index);
+	virtual int is_channel_valid(const struct ipw_channel_info *ch_info);
+	virtual u8 is_channel_a_band(const struct ipw_channel_info *ch_info);
+	virtual int is_channel_passive(const struct ipw_channel_info *ch);
+	virtual int is_channel_radar(const struct ipw_channel_info *ch_info);
+	virtual int reg_txpower_set_from_eeprom(struct ipw_priv *priv);
+	virtual int reg_txpower_get_temperature(struct ipw_priv *priv);
+	virtual int ipw_get_temperature(struct ipw_priv *priv);
+	virtual int reg_temp_out_of_range(int temperature);
+	virtual void reg_init_channel_groups(struct ipw_priv *priv);
+	virtual u16 reg_get_chnl_grp_index(struct ipw_priv *priv,
+				  const struct ipw_channel_info *ch_info);
+	virtual int reg_adjust_power_by_temp(int new_reading, int old_reading);			  
+	virtual int reg_get_matched_power_index(struct ipw_priv *priv,
+				       s8 requested_power,
+				       s32 setting_index, s32 * new_index);			  
+	virtual u8 reg_fix_power_index(int index);			  
+	virtual void reg_set_scan_power(struct ipw_priv *priv, u32 scan_tbl_index,
+			       s32 rate_index, const s8 * clip_pwrs,
+			       struct ipw_channel_info *ch_info, int band_index);			  
+	virtual void ipw_init_geos(struct ipw_priv *priv);
+	virtual void ipw_init_hw_rates(struct ipw_priv *priv, struct ieee80211_rate *rates);
+	virtual struct ipw_channel_info *ipw_get_channel_info(struct ipw_priv *priv,
+						     int phymode, int channel);
+	virtual void ipw_set_supported_rates_mask(struct ipw_priv *priv, int rates_mask);
+	virtual int ipw_set_rate(struct ipw_priv *priv);
+	virtual void ipw_set_supported_rates(struct ipw_priv *priv);
+	virtual int ipw_rate_plcp2index(u8 x);
+	virtual int ipw_send_power_mode(struct ipw_priv *priv, u32 mode);
+	virtual int ipw3945_send_power_mode(struct ipw_priv *priv, u32 mode);
+	virtual int ipw_update_power_cmd(struct ipw_priv *priv,
+				struct ipw_powertable_cmd *cmd, u32 mode);
+	virtual int ipw_send_cmd_pdu(struct ipw_priv *priv, u8 id, u16 len, void *data);
+	virtual void ipw_connection_init_rx_config(struct ipw_priv *priv);
+	virtual const struct ipw_channel_info *find_channel(struct ipw_priv *priv,
+						   u8 channel);
+	virtual void ipw_set_flags_for_channel(struct ipw_priv *priv,
+				      const struct ipw_channel_info *ch_info);
+	virtual int ipw_send_bt_config(struct ipw_priv *priv);
+	virtual int ipw3945_queue_tx_free(struct ipw_priv *priv,
+				 struct ipw_tx_queue *txq);
+	virtual int ipw3945_queue_tx_init(struct ipw_priv *priv,
+				 struct ipw_tx_queue *q, int count, u32 id);
+	
+	
+	
+	
+	
+	
 	
 	
 	
@@ -742,10 +796,40 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
 	virtual int ipw_scan_schedule(struct ipw_priv *priv, unsigned long ms);
 	virtual int ipw_is_ready(struct ipw_priv *priv);
 	virtual int ipw_is_associated(struct ipw_priv *priv);
-	
-	
-	
-	
+	virtual void ipw_handle_reply_tx(struct ipw_priv *priv, void *data, u16 sequence);
+	virtual int x2_queue_used(const struct ipw_queue *q, int i);
+	virtual void ipw_handle_reply_rx(struct ipw_priv *priv,
+				struct ipw_rx_mem_buffer *rxb);
+	virtual int is_network_packet(struct ipw_priv *priv,
+			     struct ieee80211_hdr *header);
+	virtual struct ieee80211_network *ieee80211_move_network_channel(struct
+								ieee80211_device
+								*ieee, struct
+								ieee80211_network
+								*network,
+								u8 channel);			 
+	virtual int is_same_network_channel_switch(struct ieee80211_network
+					  *src, struct ieee80211_network
+					  *dst, u8 channel);			 
+	virtual void ipw_tx_complete(struct ipw_priv *priv,
+			    struct ipw_rx_mem_buffer *rxb);			 
+	virtual int ipw_queue_tx_reclaim(struct ipw_priv *priv, int fifo, int index);			 
+	virtual int ipw_queue_space(const struct ipw_queue *q);
+	virtual u8 get_next_cmd_index(struct ipw_queue *q, u32 index, int is_huge);
+	virtual int ipw_fill_probe_req(struct ipw_priv *priv,
+			      struct ieee80211_mgmt *frame,
+			      int left, int is_direct);
+	virtual u16 ipw_supported_rate_to_ie(u8 * ie,
+				    u16 supported_rate,
+				    u16 basic_rate, int max_count);
+	virtual u8 ipw_rate_index2ieee(int x);
+	virtual struct ieee80211_hw_mode *ipw_get_hw_mode(struct ipw_priv *priv,
+						  int mode);
+	virtual int ipw_get_antenna_flags(struct ipw_priv *priv);
+	virtual int ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd);
+	virtual int is_cmd_sync(struct ipw_host_cmd *cmd);
+	virtual int ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd);
+	virtual int is_cmd_small(struct ipw_host_cmd *cmd);
 	
 	
 	
@@ -861,7 +945,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	struct list_head network_free_list;
 	thread_call_t tlink[20];
 	ipw_priv *priv;
-	ieee80211_device ieee2;
+	struct ieee80211_hw ieee2;
 	ipw_priv priv2;
 	net_device net_dev2;
 	int qos_enable;
