@@ -1071,6 +1071,18 @@ typedef enum _ORDINAL_TABLE_2 {	// NS - means Not Supported by FW
 #define IPW_HOST_FW_INTERRUPT_AREA 	0x0002ff80
 #define IPW_HOST_FW_INTERRUPT_AREA_END 	0x00030000	// 0x80 bytes
 
+struct firmware {
+	size_t size;
+	u8 *data;
+};
+
+struct ipw2100_fw_header {
+	short version;
+	short mode;
+	unsigned int fw_size;
+	unsigned int uc_size;
+} __attribute__ ((packed));
+
 struct ipw2100_fw_chunk {
 	unsigned char *buf;
 	long len;
@@ -1087,7 +1099,7 @@ struct ipw2100_fw {
 	int version;
 	struct ipw2100_fw_chunk_set fw;
 	struct ipw2100_fw_chunk_set uc;
-	const struct firmware *fw_entry;
+	struct firmware *fw_entry;
 };
 
 #define MAX_FW_VERSION_LEN 14
