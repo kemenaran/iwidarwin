@@ -1762,7 +1762,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw2100_sw_reset(1);
-		
+		priv->status &= ~STATUS_POWERED; //keep power on!!
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -3723,6 +3723,8 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 
 	read_register(dev, IPW_REG_INTA, &inta);
 
+	if (inta==0) goto skipi;
+	
 	IOLog("enter - INTA: 0x%08lX\n",
 		      (unsigned long)inta & IPW_INTERRUPT_MASK);
 
@@ -3826,6 +3828,8 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 	}
 
 	priv->in_isr--;
+	
+skipi:
 	ipw2100_enable_interrupts(priv);
 	return 0;
 }

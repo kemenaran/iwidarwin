@@ -221,8 +221,6 @@
 			<key>Layout</key>
 			<array>
 				<dict>
-					<key>BecomeActive</key>
-					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -302,6 +300,8 @@
 					<key>Dock</key>
 					<array>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -319,7 +319,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61D901070BA6DE5300590544</string>
+										<string>61EEBBD80BAB012600812237</string>
 										<key>history</key>
 										<array>
 											<string>61B06DA80B58946B000DD1AE</string>
@@ -332,11 +332,11 @@
 											<string>61B03AD90BA3643400CAB22B</string>
 											<string>61810F4B0BA5A80D00220520</string>
 											<string>618B44640BA5B46D0097F8C2</string>
-											<string>61813BEB0BA5CC3D0037F5F4</string>
-											<string>61D900F80BA6DE5300590544</string>
 											<string>61D900F90BA6DE5300590544</string>
 											<string>61D900FA0BA6DE5300590544</string>
-											<string>61D900FB0BA6DE5300590544</string>
+											<string>6159CC430BAA24DB00BA3DDC</string>
+											<string>6159CC440BAA24DB00BA3DDC</string>
+											<string>61A1E9130BAA276300D9ABD8</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -355,17 +355,6 @@
 											<string>61B03AFC0BA3643400CAB22B</string>
 											<string>61B03AFE0BA3643400CAB22B</string>
 											<string>61810F4F0BA5A80D00220520</string>
-											<string>61D900FC0BA6DE5300590544</string>
-											<string>61D900FD0BA6DE5300590544</string>
-											<string>61D900FE0BA6DE5300590544</string>
-											<string>61D900FF0BA6DE5300590544</string>
-											<string>61D901000BA6DE5300590544</string>
-											<string>61D901010BA6DE5300590544</string>
-											<string>61D901020BA6DE5300590544</string>
-											<string>61D901030BA6DE5300590544</string>
-											<string>61D901040BA6DE5300590544</string>
-											<string>61D901050BA6DE5300590544</string>
-											<string>61D901060BA6DE5300590544</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -423,9 +412,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61D901080BA6DE5300590544</string>
+				<string>61EEBBD50BAB011200812237</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61D901090BA6DE5300590544</string>
+				<string>61EEBBD60BAB011200812237</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -560,7 +549,6 @@
 	<key>WindowOrderList</key>
 	<array>
 		<string>61B069860B5885D6000DD1AE</string>
-		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>/var/root/svn/trunk/Apple80211/iwi2100/iwi2100.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -641,7 +629,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B069860B5885D6000DD1AE</string>
-				<string>61D900EE0BA6DD8C00590544</string>
+				<string>61EEBBD70BAB011200812237</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -835,8 +823,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61D900F40BA6DD8C00590544</string>
-				<string>61D900F50BA6DD8C00590544</string>
+				<string>61A1E90A0BAA25DF00D9ABD8</string>
+				<string>61A1E90B0BAA25DF00D9ABD8</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
@@ -845,7 +833,7 @@
 			<key>WindowToolGUID</key>
 			<string>1C530D57069F1CE1000CFCEE</string>
 			<key>WindowToolIsVisible</key>
-			<true/>
+			<false/>
 		</dict>
 		<dict>
 			<key>Identifier</key>
