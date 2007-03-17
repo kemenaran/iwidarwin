@@ -1480,8 +1480,8 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	if (!(priv->status & STATUS_RUNNING)) {
 		IOLog
 		    ("Attempt to send command while hardware is not running.\n");
-		err = -EIO;
-		goto fail_unlock;
+		//err = -EIO;
+		//goto fail_unlock;
 	}
 
 	if (priv->status & STATUS_CMD_ACTIVE) {
