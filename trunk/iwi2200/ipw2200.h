@@ -125,6 +125,8 @@ enum connection_manager_assoc_states {
 
 #define TX_QUEUE_SIZE                        32
 #define RX_QUEUE_SIZE                        32
+#define RX_FREE_BUFFERS						 0
+#define RX_LOW_WATERMARK					 0
 
 #define DINO_CMD_WEP_KEY                   0x08
 #define DINO_CMD_TX                        0x0B
@@ -361,6 +363,7 @@ struct clx2_queue {
 	u32 reg_w;		     /**< 'write' reg (queue head), addr in domain 1 */
 	u32 reg_r;		     /**< 'read' reg (queue tail), addr in domain 1 */
 	dma_addr_t dma_addr;		/**< physical addr for BD's */
+	IOBufferMemoryDescriptor *memD;
 	int low_mark;		       /**< low watermark, resume queue if free space more than this */
 	int high_mark;		       /**< high watermark, stop queue if free space less than this */
 } __attribute__ ((packed));
@@ -515,8 +518,7 @@ struct clx2_tx_queue {
 /*
  * RX related structures and functions
  */
-#define RX_FREE_BUFFERS 32
-#define RX_LOW_WATERMARK 8
+
 
 #define SUP_RATE_11A_MAX_NUM_CHANNELS  8
 #define SUP_RATE_11B_MAX_NUM_CHANNELS  4
@@ -690,6 +692,7 @@ struct ipw_rx_packet {
 
 struct ipw_rx_mem_buffer {
 	dma_addr_t dma_addr;
+	//IOBufferMemoryDescriptor *memD;
 	mbuf_t skb;
 	struct list_head list;
 };				/* Not transferred over network, so not  __attribute__ ((packed)) */

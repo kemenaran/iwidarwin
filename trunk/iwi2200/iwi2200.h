@@ -13,7 +13,6 @@
 //#define IWI_DEBUG_FULL_MODE
 //#define IWI_WARNERR
 
-
 #if defined(IWI_NOLOG)
 	#define IWI_LOG(...)
 #else
@@ -402,7 +401,7 @@ __div(unsigned long long n, unsigned int base)
 {
 	return n / base;
 }
-//FIXME
+#undef jiffies
 #define jiffies		\
 ({		\
 	uint64_t m;		\
@@ -487,8 +486,8 @@ inline void list_add(struct list_head *new2, struct list_head *head)
 inline void hlist_del(struct hlist_node *n)
 {
 	__hlist_del(n);
-	(void*)n->next = LIST_POISON1;
-	(void*)n->pprev = LIST_POISON2;
+	n->next = (struct hlist_node *)LIST_POISON1;
+	n->pprev = (struct hlist_node **)LIST_POISON2;
 }
 
 inline void __list_del(struct list_head * prev, struct list_head * next)
@@ -500,8 +499,8 @@ inline void __list_del(struct list_head * prev, struct list_head * next)
 inline void list_del(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
-	(void*)entry->next = LIST_POISON1;
-	(void*)entry->prev = LIST_POISON2;
+	entry->next = (struct list_head *)LIST_POISON1;
+	entry->prev = (struct list_head *)LIST_POISON2;
 }
 
 struct ipw_network_match {
@@ -748,168 +747,33 @@ class darwin_iwi2200 : public IOEthernetController//IO80211Controller
 	OSDeclareDefaultStructors(darwin_iwi2200)
 
 public:
-//virtual const char * getNamePrefix() const;
+	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
 	virtual bool		init(OSDictionary *dictionary = 0);
 	virtual void		free(void);
-//	virtual IOService *	probe(IOService *provider, SInt32 *score);
 	virtual bool		start(IOService *provider);
     virtual void		stop(IOService *provider);
 	virtual IOReturn	getHardwareAddress(IOEthernetAddress *addr);
 	virtual IOReturn	enable(IONetworkInterface * netif);
 	virtual IOReturn	disable(IONetworkInterface * netif);
-	virtual bool		uploadFirmware2(UInt16 *base, const unsigned char *fw, UInt32 size, int offset);
-	virtual bool		uploadFirmware(u8 * data, size_t len);
-	virtual bool		uploadUCode(const unsigned char * data, UInt16 len);
-	virtual bool		uploadUCode2(UInt16 *base, const unsigned char *uc, UInt16 size, int offset);
-	virtual void		stopMaster(UInt16 *base);
-	virtual void		stopDevice(UInt16 *base);
-	virtual bool		resetDevice(UInt16 *);
-	virtual UInt16		readPromWord(UInt16 *base, UInt8 addr);
 	static void			interruptOccurred(OSObject * owner, void * src, IOService *nub, int count);
 	virtual UInt32		handleInterrupt(void);
 	virtual IOBufferMemoryDescriptor * MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt_add);
-//	virtual bool configureInterface( IONetworkInterface * interface );
+	virtual bool configureInterface( IONetworkInterface * interface );
 	virtual bool		createWorkLoop( void );
 	virtual IOWorkLoop * getWorkLoop( void ) const;
 	virtual IOOutputQueue * createOutputQueue( void );
 	virtual const OSString * newModelString( void ) const;
 	virtual const OSString * newVendorString( void ) const;
-	virtual bool		addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name = 0);
 	virtual IOReturn	selectMedium(const IONetworkMedium * medium);
-			
-	virtual int			sendCommand(UInt8 type,void *data,UInt8 len,bool async);
-	virtual int			ipw_scan(struct ipw_priv *priv, int type);
-	virtual int			initCmdQueue();
-	virtual int			resetCmdQueue();
-	virtual int			initRxQueue();
-	virtual int			resetRxQueue();
-	virtual int			initTxQueue();
-	virtual int			resetTxQueue();
-	virtual void		ipw_rx(struct ipw_priv *priv);
-	virtual int			configu(struct ipw_priv *priv);
-	
-virtual IOOptionBits getState( void ) const;
+	virtual IOOptionBits getState( void ) const;
+ 	virtual IOReturn message( UInt32 type, IOService * provider,
+                              void * argument);
+	virtual UInt32 outputPacket(mbuf_t m, void * param);
 
-	virtual void notifIntr(struct ipw_priv *priv,
-				struct ipw_rx_notification *notif);
-	
-	/* Memory operation functions */
-	virtual void inline ipw_write32(UInt32 offset, UInt32 data);
-	virtual UInt32 inline ipw_read32(UInt32 offset);
-	virtual void inline ipw_set_bit(UInt32 reg, UInt32 mask);
-	virtual void inline ipw_clear_bit(UInt32 reg, UInt32 mask);
-	virtual int ipw_poll_bit(UInt32 reg, UInt32 mask, int timeout);
-	
-	/* EEPROM functions */
-	virtual void cacheEEPROM(struct ipw_priv *priv);
-	virtual void inline eeprom_write_reg(UInt32 data);
-	virtual void inline eeprom_cs(bool sel);
-	virtual void inline eeprom_write_bit(UInt8 bit);
-	virtual void eeprom_op(UInt8 op, UInt8 addr);
-	virtual UInt16 eeprom_read_UInt16(UInt8 addr);
-	virtual UInt32 read_reg_UInt32(UInt32 reg);
-	
-	virtual void ipw_zero_memory(UInt32 start, UInt32 count);
-	virtual inline void ipw_fw_dma_reset_command_blocks();
-	virtual void ipw_write_reg32( UInt32 reg, UInt32 value);
-	virtual int ipw_fw_dma_enable();
-	virtual int ipw_fw_dma_add_buffer(UInt32 src_phys, UInt32 dest_address, UInt32 length);
-	virtual int ipw_fw_dma_write_command_block(int index,
-					  struct command_block *cb);
-	virtual int ipw_fw_dma_kick();
-	virtual int ipw_fw_dma_add_command_block(
-					UInt32 src_address,
-					UInt32 dest_address,
-					UInt32 length,
-					int interrupt_enabled, int is_last);
-	virtual void ipw_write_indirect(UInt32 addr, UInt8 * buf,
-				int num);
-	virtual int ipw_fw_dma_wait();			
-	virtual int ipw_fw_dma_command_block_index();
-	virtual void ipw_fw_dma_dump_command_block();
-	virtual void ipw_fw_dma_abort();
-	virtual UInt32 ipw_read_reg32( UInt32 reg);
-	virtual void ipw_write_reg8(UInt32 reg, UInt8 value);		
-	virtual UInt8 ipw_read_reg8(UInt32 reg);
-	virtual void ipw_write_reg16(UInt32 reg, UInt16 value);
-	virtual int ipw_stop_nic();
-	virtual int ipw_reset_nic(struct ipw_priv *priv);
-	virtual int ipw_init_nic();									
-	virtual void ipw_start_nic();
-	virtual inline void ipw_enable_interrupts(struct ipw_priv *priv);
-	virtual int ipw_set_geo(struct ieee80211_device *ieee,
-		       const struct ieee80211_geo *geo);
-	virtual int rf_kill_active(struct ipw_priv *priv);
-	virtual void ipw_down(struct ipw_priv *priv);
-	virtual int ipw_up(struct ipw_priv *priv);
-	virtual inline int ipw_is_init(struct ipw_priv *priv);
-	virtual void ipw_deinit(struct ipw_priv *priv);
-	virtual void ipw_led_shutdown(struct ipw_priv *priv);
-	virtual u32 ipw_register_toggle(u32 reg);
-	virtual void ipw_led_activity_off(struct ipw_priv *priv);
-	virtual void ipw_led_link_off(struct ipw_priv *priv);
-	virtual void ipw_led_band_off(struct ipw_priv *priv);
-	virtual inline void ipw_disable_interrupts(struct ipw_priv *priv);
-	virtual void ipw_led_radio_off(struct ipw_priv *priv);
-	virtual void ipw_led_init(struct ipw_priv *priv);
-	virtual void ipw_led_link_on(struct ipw_priv *priv);
-	virtual void ipw_led_band_on(struct ipw_priv *priv);
-	virtual int ipw_sw_reset(int option);
-	virtual int ipw_get_fw(const struct firmware **fw, const char *name);
-	virtual void ipw_led_link_down(struct ipw_priv *priv);
-	virtual void ipw_rf_kill(ipw_priv *priv);
-	virtual int ipw_best_network(struct ipw_priv *priv,
-			    struct ipw_network_match *match,
-			    struct ieee80211_network *network, int roaming);
-	virtual int ipw_compatible_rates(struct ipw_priv *priv,
-				const struct ieee80211_network *network,
-				struct ipw_supported_rates *rates);
-	virtual void ipw_copy_rates(struct ipw_supported_rates *dest,
-			   const struct ipw_supported_rates *src);
-	virtual int ipw_is_rate_in_mask(struct ipw_priv *priv, int ieee_mode, u8 rate);
-	virtual void ipw_adhoc_create(struct ipw_priv *priv,
-			     struct ieee80211_network *network);		   
-	virtual int ipw_is_valid_channel(struct ieee80211_device *ieee, u8 channel);
-	virtual int ipw_channel_to_index(struct ieee80211_device *ieee, u8 channel);
-	virtual void ipw_create_bssid(struct ipw_priv *priv, u8 * bssid);
-	virtual void ipw_set_fixed_rate(struct ipw_priv *priv, int mode);
-	virtual void ipw_qos_init(struct ipw_priv *priv, int enable,
-			 int burst_enable, u32 burst_duration_CCK,
-			 u32 burst_duration_OFDM);
-	virtual struct ipw_rx_queue *darwin_iwi2200::ipw_rx_queue_alloc(struct ipw_priv *priv);
-	virtual int ipw_queue_tx_hcmd(struct ipw_priv *priv, int hcmd, void *buf,
-			     int len, int sync);
-	virtual int ipw_queue_space(const struct clx2_queue *q);
-	virtual int ipw_queue_tx_reclaim(struct ipw_priv *priv,
-				struct clx2_tx_queue *txq, int qindex);
-	virtual int is_duplicate_packet(struct ipw_priv *priv,
-			       struct ieee80211_hdr_4addr *header);
-	virtual int ipw_get_tx_queue_number(struct ipw_priv *priv, u16 priority);
-	virtual int ipw_net_is_queue_full(struct net_device *dev, int pri);
-	virtual int ipw_qos_set_tx_queue_command(struct ipw_priv *priv,
-					u16 priority, struct tfd_data *tfd);
-	virtual int ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
-				   struct net_device *dev, int pri);
-          virtual mbuf_t ieee80211_frag_cache_get(struct ieee80211_device *ieee,
-							struct ieee80211_hdr_4addr *hdr);
-	virtual struct ieee80211_frag_entry *ieee80211_frag_cache_find(struct
-					ieee80211_device
-					*ieee,
-					unsigned int seq,
-					unsigned int frag,
-					u8 * src,
-					u8 * dst);
-	virtual int ieee80211_frag_cache_invalidate(struct ieee80211_device *ieee,
-					struct ieee80211_hdr_4addr *hdr);
-	virtual int ieee80211_is_eapol_frame(struct ieee80211_device *ieee,
-						mbuf_t skb);	
-	
-	
-	
-	
-	
-			   
-
+    virtual IOReturn registerWithPolicyMaker(IOService * policyMaker);
+    virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
+    virtual void setPowerStateOff(void);
+    virtual void setPowerStateOn(void);
 	/*virtual SInt32	getSSID(IO80211Interface *interface,
 							struct apple80211_ssid_data *sd);
 	
@@ -978,107 +842,228 @@ virtual IOOptionBits getState( void ) const;
 
 virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 
-
-virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
-	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
-	
-
-    virtual int ipw_load(struct ipw_priv *priv);
-	virtual void ipw_add_scan_channels(struct ipw_priv *priv,
+protected:
+	void freePacket2(mbuf_t  m);
+	 bool		addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name = 0);			
+	 int			sendCommand(UInt8 type,void *data,UInt8 len,bool async);
+	 int			ipw_scan(struct ipw_priv *priv, int type);
+	 int			initCmdQueue();
+	 int			resetCmdQueue();
+	 int			initRxQueue();
+	 int			resetRxQueue();
+	 int			initTxQueue();
+	 int			resetTxQueue();
+	 void		ipw_rx(struct ipw_priv *priv);
+	 int			configu(struct ipw_priv *priv);
+	 void notifIntr(struct ipw_priv *priv,
+				struct ipw_rx_notification *notif);
+	 void inline ipw_write32(UInt32 offset, UInt32 data);
+	 UInt32 inline ipw_read32(UInt32 offset);
+	 void inline ipw_set_bit(UInt32 reg, UInt32 mask);
+	 void inline ipw_clear_bit(UInt32 reg, UInt32 mask);
+	 int ipw_poll_bit(UInt32 reg, UInt32 mask, int timeout);
+	 void cacheEEPROM(struct ipw_priv *priv);
+	 void inline eeprom_write_reg(UInt32 data);
+	 void inline eeprom_cs(bool sel);
+	 void inline eeprom_write_bit(UInt8 bit);
+	 void eeprom_op(UInt8 op, UInt8 addr);
+	 UInt16 eeprom_read_UInt16(UInt8 addr);
+	 UInt32 read_reg_UInt32(UInt32 reg);
+	 void ipw_zero_memory(UInt32 start, UInt32 count);
+	 inline void ipw_fw_dma_reset_command_blocks();
+	 void ipw_write_reg32( UInt32 reg, UInt32 value);
+	 int ipw_fw_dma_enable();
+	 int ipw_fw_dma_add_buffer(UInt32 src_phys, UInt32 dest_address, UInt32 length);
+	 int ipw_fw_dma_write_command_block(int index,
+					  struct command_block *cb);
+	 int ipw_fw_dma_kick();
+	 int ipw_fw_dma_add_command_block(
+					UInt32 src_address,
+					UInt32 dest_address,
+					UInt32 length,
+					int interrupt_enabled, int is_last);
+	 void ipw_write_indirect(UInt32 addr, UInt8 * buf,
+				int num);
+	 int ipw_fw_dma_wait();			
+	 int ipw_fw_dma_command_block_index();
+	 void ipw_fw_dma_dump_command_block();
+	 void ipw_fw_dma_abort();
+	 UInt32 ipw_read_reg32( UInt32 reg);
+	 void ipw_write_reg8(UInt32 reg, UInt8 value);		
+	 UInt8 ipw_read_reg8(UInt32 reg);
+	 void ipw_write_reg16(UInt32 reg, UInt16 value);
+	 int ipw_stop_nic();
+	 int ipw_reset_nic(struct ipw_priv *priv);
+	 int ipw_init_nic();									
+	 void ipw_start_nic();
+	 inline void ipw_enable_interrupts(struct ipw_priv *priv);
+	 int ipw_set_geo(struct ieee80211_device *ieee,
+		       const struct ieee80211_geo *geo);
+	 int rf_kill_active(struct ipw_priv *priv);
+	 void ipw_down(struct ipw_priv *priv);
+	 int ipw_up(struct ipw_priv *priv);
+	 inline int ipw_is_init(struct ipw_priv *priv);
+	 void ipw_deinit(struct ipw_priv *priv);
+	 void ipw_led_shutdown(struct ipw_priv *priv);
+	 u32 ipw_register_toggle(u32 reg);
+	 void ipw_led_activity_off(struct ipw_priv *priv);
+	 void ipw_led_link_off(struct ipw_priv *priv);
+	 void ipw_led_band_off(struct ipw_priv *priv);
+	 inline void ipw_disable_interrupts(struct ipw_priv *priv);
+	 void ipw_led_radio_off(struct ipw_priv *priv);
+	 void ipw_led_init(struct ipw_priv *priv);
+	 void ipw_led_link_on(struct ipw_priv *priv);
+	 void ipw_led_band_on(struct ipw_priv *priv);
+	 int ipw_sw_reset(int option);
+	 int ipw_get_fw(const struct firmware **fw, const char *name);
+	 void ipw_led_link_down(struct ipw_priv *priv);
+	 void ipw_rf_kill(ipw_priv *priv);
+	 int ipw_best_network(struct ipw_priv *priv,
+			    struct ipw_network_match *match,
+			    struct ieee80211_network *network, int roaming);
+	 int ipw_compatible_rates(struct ipw_priv *priv,
+				const struct ieee80211_network *network,
+				struct ipw_supported_rates *rates);
+	 void ipw_copy_rates(struct ipw_supported_rates *dest,
+			   const struct ipw_supported_rates *src);
+	 int ipw_is_rate_in_mask(struct ipw_priv *priv, int ieee_mode, u8 rate);
+	 void ipw_adhoc_create(struct ipw_priv *priv,
+			     struct ieee80211_network *network);		   
+	 int ipw_is_valid_channel(struct ieee80211_device *ieee, u8 channel);
+	 int ipw_channel_to_index(struct ieee80211_device *ieee, u8 channel);
+	 void ipw_create_bssid(struct ipw_priv *priv, u8 * bssid);
+	 void ipw_set_fixed_rate(struct ipw_priv *priv, int mode);
+	 void ipw_qos_init(struct ipw_priv *priv, int enable,
+			 int burst_enable, u32 burst_duration_CCK,
+			 u32 burst_duration_OFDM);
+	 struct ipw_rx_queue *darwin_iwi2200::ipw_rx_queue_alloc(struct ipw_priv *priv);
+	 int ipw_queue_tx_hcmd(struct ipw_priv *priv, int hcmd, void *buf,
+			     int len, int sync);
+	 int ipw_queue_space(const struct clx2_queue *q);
+	 int ipw_queue_tx_reclaim(struct ipw_priv *priv,
+				struct clx2_tx_queue *txq, int qindex);
+	 int is_duplicate_packet(struct ipw_priv *priv,
+			       struct ieee80211_hdr_4addr *header);
+	 int ipw_get_tx_queue_number(struct ipw_priv *priv, u16 priority);
+	 int ipw_net_is_queue_full(struct net_device *dev, int pri);
+	 int ipw_qos_set_tx_queue_command(struct ipw_priv *priv,
+					u16 priority, struct tfd_data *tfd);
+	 int ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
+				   struct net_device *dev, int pri);
+	 mbuf_t ieee80211_frag_cache_get(struct ieee80211_device *ieee,
+							struct ieee80211_hdr_4addr *hdr);
+	 struct ieee80211_frag_entry *ieee80211_frag_cache_find(struct
+					ieee80211_device
+					*ieee,
+					unsigned int seq,
+					unsigned int frag,
+					u8 * src,
+					u8 * dst);
+	 int ieee80211_frag_cache_invalidate(struct ieee80211_device *ieee,
+					struct ieee80211_hdr_4addr *hdr);
+	 int ieee80211_is_eapol_frame(struct ieee80211_device *ieee,
+						mbuf_t skb);
+	 bool		uploadFirmware2(UInt16 *base, const unsigned char *fw, UInt32 size, int offset);
+	 bool		uploadFirmware(u8 * data, size_t len);
+	 bool		uploadUCode(const unsigned char * data, UInt16 len);
+	 bool		uploadUCode2(UInt16 *base, const unsigned char *uc, UInt16 size, int offset);
+	 void		stopMaster(UInt16 *base);
+	 void		stopDevice(UInt16 *base);
+	 bool		resetDevice(UInt16 *);
+	 UInt16		readPromWord(UInt16 *base, UInt8 addr);
+	 int ieee80211_copy_snap(u8 * data, u16 h_proto);
+     int ipw_load(struct ipw_priv *priv);
+	 void ipw_add_scan_channels(struct ipw_priv *priv,
 				  struct ipw_scan_request_ext *scan,
 				  int scan_type);
-	virtual int ipw_associate(ipw_priv *data);
-	virtual void ipw_adapter_restart(ipw_priv *adapter);
-	virtual void ipw_arc_release();
-	virtual int ipw_stop_master();
-	virtual void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start);
-	virtual void queue_td(int num , thread_call_func_t func);
-	virtual void ipw_scan_check(ipw_priv *priv);
-	virtual IOReturn message( UInt32 type, IOService * provider,
-                              void * argument);
-	virtual int ipw_associate_network(struct ipw_priv *priv,
+	 int ipw_associate(ipw_priv *data);
+	 void ipw_adapter_restart(ipw_priv *adapter);
+	 void ipw_arc_release();
+	 int ipw_stop_master();
+	 void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start);
+	 void queue_td(int num , thread_call_func_t func);
+	 void ipw_scan_check(ipw_priv *priv);
+	 int ipw_associate_network(struct ipw_priv *priv,
 				 struct ieee80211_network *network,
 				 struct ipw_supported_rates *rates, int roaming);
-	virtual void ipw_remove_current_network(struct ipw_priv *priv);
-	virtual void ipw_abort_scan(struct ipw_priv *priv);
-	virtual int ipw_disassociate(struct ipw_priv *data);
-	virtual int ipw_set_tx_power(struct ipw_priv *priv);
-	virtual void init_sys_config(struct ipw_sys_config *sys_config);
-	virtual int init_supported_rates(struct ipw_priv *priv,
+	 void ipw_remove_current_network(struct ipw_priv *priv);
+	 void ipw_abort_scan(struct ipw_priv *priv);
+	 int ipw_disassociate(struct ipw_priv *data);
+	 int ipw_set_tx_power(struct ipw_priv *priv);
+	 void init_sys_config(struct ipw_sys_config *sys_config);
+	 int init_supported_rates(struct ipw_priv *priv,
 				struct ipw_supported_rates *rates);
-	virtual void ipw_set_hwcrypto_keys(struct ipw_priv *priv);
-	virtual void ipw_add_cck_scan_rates(struct ipw_supported_rates *rates,
+	 void ipw_set_hwcrypto_keys(struct ipw_priv *priv);
+	 void ipw_add_cck_scan_rates(struct ipw_supported_rates *rates,
 				   u8 modulation, u32 rate_mask);
-	virtual void ipw_add_ofdm_scan_rates(struct ipw_supported_rates *rates,
+	 void ipw_add_ofdm_scan_rates(struct ipw_supported_rates *rates,
 				    u8 modulation, u32 rate_mask);
-	virtual void ipw_send_tgi_tx_key(struct ipw_priv *priv, int type, int index);
-	virtual void ipw_send_wep_keys(struct ipw_priv *priv, int type);
-	virtual void ipw_set_hw_decrypt_unicast(struct ipw_priv *priv, int level);
-	virtual void ipw_set_hw_decrypt_multicast(struct ipw_priv *priv, int level);
-	virtual const struct ieee80211_geo* ipw_get_geo(struct ieee80211_device *ieee);
-	virtual void ipw_send_disassociate(struct ipw_priv *priv, int quiet);
-	virtual int ipw_send_associate(struct ipw_priv *priv,
+	 void ipw_send_tgi_tx_key(struct ipw_priv *priv, int type, int index);
+	 void ipw_send_wep_keys(struct ipw_priv *priv, int type);
+	 void ipw_set_hw_decrypt_unicast(struct ipw_priv *priv, int level);
+	 void ipw_set_hw_decrypt_multicast(struct ipw_priv *priv, int level);
+	 const struct ieee80211_geo* ipw_get_geo(struct ieee80211_device *ieee);
+	 void ipw_send_disassociate(struct ipw_priv *priv, int quiet);
+	 int ipw_send_associate(struct ipw_priv *priv,
 			      struct ipw_associate *associate);
-	virtual void ipw_link_up(struct ipw_priv *priv);
-	virtual void ipw_link_down(struct ipw_priv *priv);
-	virtual const char* ipw_get_status_code(u16 status);
-	virtual bool configureInterface(IONetworkInterface * netif);
-	virtual int ipw_qos_activate(struct ipw_priv *priv,
+	 void ipw_link_up(struct ipw_priv *priv);
+	 void ipw_link_down(struct ipw_priv *priv);
+	 const char* ipw_get_status_code(u16 status);
+	 int ipw_qos_activate(struct ipw_priv *priv,
 			    struct ieee80211_qos_data *qos_network_data);
-	virtual u8 ipw_qos_current_mode(struct ipw_priv *priv);
-	virtual u32 ipw_qos_get_burst_duration(struct ipw_priv *priv);
-	virtual void ipw_init_ordinals(struct ipw_priv *priv);
-	virtual void ipw_reset_stats(struct ipw_priv *priv);
-	virtual int ipw_get_ordinal(struct ipw_priv *priv, u32 ord, void *val, u32 * len);
-	virtual void ipw_read_indirect(struct ipw_priv *priv, u32 addr, u8 * buf,
+	 u8 ipw_qos_current_mode(struct ipw_priv *priv);
+	 u32 ipw_qos_get_burst_duration(struct ipw_priv *priv);
+	 void ipw_init_ordinals(struct ipw_priv *priv);
+	 void ipw_reset_stats(struct ipw_priv *priv);
+	 int ipw_get_ordinal(struct ipw_priv *priv, u32 ord, void *val, u32 * len);
+	 void ipw_read_indirect(struct ipw_priv *priv, u32 addr, u8 * buf,
 			       int num);
-	virtual u32 ipw_get_current_rate(struct ipw_priv *priv);
-	virtual u32 ipw_get_max_rate(struct ipw_priv *priv);
-	virtual void ipw_gather_stats(struct ipw_priv *priv);
-	virtual void average_add(struct average *avg, s16 val);
-	virtual void ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_queue *rxq);
-	virtual int ipw_queue_reset(struct ipw_priv *priv);
-	virtual void ipw_tx_queue_free(struct ipw_priv *priv);
-	virtual void ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_queue *txq);
-	virtual int ipw_queue_inc_wrap(int index, int n_bd);
-	virtual void ipw_queue_tx_free_tfd(struct ipw_priv *priv,
+	 u32 ipw_get_current_rate(struct ipw_priv *priv);
+	 u32 ipw_get_max_rate(struct ipw_priv *priv);
+	 void ipw_gather_stats(struct ipw_priv *priv);
+	 void average_add(struct average *avg, s16 val);
+	 void ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_queue *rxq);
+	 int ipw_queue_reset(struct ipw_priv *priv);
+	 void ipw_tx_queue_free(struct ipw_priv *priv);
+	 void ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_queue *txq);
+	 int ipw_queue_inc_wrap(int index, int n_bd);
+	 void ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 				  struct clx2_tx_queue *txq);
-	virtual int ipw_queue_tx_init(struct ipw_priv *priv,
+	 int ipw_queue_tx_init(struct ipw_priv *priv,
 			     struct clx2_tx_queue *q,
 			     int count, u32 read, u32 write, u32 base, u32 size);
-	virtual void ipw_queue_init(struct ipw_priv *priv, struct clx2_queue *q,
+	 void ipw_queue_init(struct ipw_priv *priv, struct clx2_queue *q,
 			   int count, u32 read, u32 write, u32 base, u32 size);
-	virtual void ipw_rx_queue_replenish(void *data);		   
-	virtual void ipw_rx_queue_restock(struct ipw_priv *priv);		   
-	virtual int is_network_packet(struct ipw_priv *priv,
+	 void ipw_rx_queue_replenish(void *data);		   
+	 void ipw_rx_queue_restock(struct ipw_priv *priv);		   
+	 int is_network_packet(struct ipw_priv *priv,
 			     struct ieee80211_hdr_4addr *header);
-	virtual int ipw_is_multicast_ether_addr(const u8 * addr);
-	virtual s16 exponential_average(s16 prev_avg, s16 val, u8 depth);
-	virtual int __ipw_send_cmd(struct ipw_priv *priv, struct host_cmd *cmd);
-	virtual int ipw_send_cmd_simple(struct ipw_priv *priv, u8 command);
-	virtual int ipw_send_cmd_pdu(struct ipw_priv *priv, u8 command, u8 len,
+	 int ipw_is_multicast_ether_addr(const u8 * addr);
+	 s16 exponential_average(s16 prev_avg, s16 val, u8 depth);
+	 int __ipw_send_cmd(struct ipw_priv *priv, struct host_cmd *cmd);
+	 int ipw_send_cmd_simple(struct ipw_priv *priv, u8 command);
+	 int ipw_send_cmd_pdu(struct ipw_priv *priv, u8 command, u8 len,
 			    void *data);
-	// add kazu
-    virtual void ieee80211_rx_mgt(struct ieee80211_device *ieee, 
+     void ieee80211_rx_mgt(struct ieee80211_device *ieee, 
 									  struct ieee80211_hdr_4addr *header,
 									   struct ieee80211_rx_stats *stats);
-	virtual void ieee80211_process_probe_response(struct ieee80211_device *ieee,
+	 void ieee80211_process_probe_response(struct ieee80211_device *ieee,
         struct ieee80211_probe_response *new_beacon,
         struct ieee80211_rx_stats *stats); // copy from isr_process_probe_response in ipw-0.2
-	virtual int ieee80211_network_init(struct ieee80211_device *ieee,
+	 int ieee80211_network_init(struct ieee80211_device *ieee,
 	                 struct ieee80211_probe_response *beacon,
 					 struct ieee80211_network *network,
 					 struct ieee80211_rx_stats *stats); 
-    virtual int ieee80211_parse_info_param(struct ieee80211_info_element
+     int ieee80211_parse_info_param(struct ieee80211_info_element
 				      *info_element, u16 length,
 				      struct ieee80211_network *network);
-	virtual int ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
+	 int ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
 				       *frame, struct ieee80211_rx_stats *stats);
-	virtual int is_beacon(__le16 fc)
+	 int is_beacon(__le16 fc)
 	{
 		return (WLAN_FC_GET_STYPE(le16_to_cpu(fc)) == IEEE80211_STYPE_BEACON);
 	}
-	virtual int is_same_network(struct ieee80211_network *src,
+	 int is_same_network(struct ieee80211_network *src,
 				  struct ieee80211_network *dst)
 	{
 		return ((src->ssid_len == dst->ssid_len) &&
@@ -1086,7 +1071,7 @@ virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
 		!compare_ether_addr(src->bssid, dst->bssid) &&
 		!memcmp(src->ssid, dst->ssid, src->ssid_len));
 	}
-	virtual unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
+	 unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
 	{
 		const u16 *a = (const u16 *) _a;
 		const u16 *b = (const u16 *) _b;
@@ -1094,12 +1079,12 @@ virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
 		if(ETH_ALEN != 6) return -1;
 		return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
 	}
-	virtual void update_network(struct ieee80211_network *dst,
+	 void update_network(struct ieee80211_network *dst,
 				  struct ieee80211_network *src);
-	virtual void ipw_handle_mgmt_packet(struct ipw_priv *priv,
+	 void ipw_handle_mgmt_packet(struct ipw_priv *priv,
 				   struct ipw_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_stats *stats);			  
-	virtual void ieee80211_network_reset(struct ieee80211_network *network)
+	 void ieee80211_network_reset(struct ieee80211_network *network)
 	{
 		if (!network)
 		return;
@@ -1109,108 +1094,96 @@ virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
 		network->ibss_dfs = NULL;
 		}
 	}			  
-	virtual u8 ipw_add_station(struct ipw_priv *priv, u8 * bssid);
-	virtual void ipw_write_direct(struct ipw_priv *priv, u32 addr, void *buf,
+	 u8 ipw_add_station(struct ipw_priv *priv, u8 * bssid);
+	 void ipw_write_direct(struct ipw_priv *priv, u32 addr, void *buf,
 			     int num);
-	virtual void ipw_adhoc_check(void *data);
-	virtual bool ipw_handle_data_packet(struct ipw_priv *priv,
+	 void ipw_adhoc_check(void *data);
+	 bool ipw_handle_data_packet(struct ipw_priv *priv,
 				   struct ipw_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_stats *stats);
-	virtual void __ipw_led_activity_on(struct ipw_priv *priv);
-	virtual int ipw_qos_association(struct ipw_priv *priv,
+	 void __ipw_led_activity_on(struct ipw_priv *priv);
+	 int ipw_qos_association(struct ipw_priv *priv,
 			       struct ieee80211_network *network);
-	virtual int ipw_qos_set_info_element(struct ipw_priv *priv);
-	virtual int ipw_send_qos_info_command(struct ipw_priv *priv, struct ieee80211_qos_information_element
+	 int ipw_qos_set_info_element(struct ipw_priv *priv);
+	 int ipw_send_qos_info_command(struct ipw_priv *priv, struct ieee80211_qos_information_element
 				     *qos_param);
-	virtual int ipw_handle_assoc_response(struct net_device *dev,
+	 int ipw_handle_assoc_response(struct net_device *dev,
 				     struct ieee80211_assoc_response *resp,
 				     struct ieee80211_network *network);		
-	virtual int ipw_qos_association_resp(struct ipw_priv *priv,
+	 int ipw_qos_association_resp(struct ipw_priv *priv,
 				    struct ieee80211_network *network);
-	virtual int ipw_handle_beacon(struct net_device *dev,
+	 int ipw_handle_beacon(struct net_device *dev,
 			     struct ieee80211_beacon *resp,
 			     struct ieee80211_network *network);
-	virtual int ipw_handle_probe_response(struct net_device *dev,
+	 int ipw_handle_probe_response(struct net_device *dev,
 				     struct ieee80211_probe_response *resp,
 				     struct ieee80211_network *network);
-	virtual int ipw_qos_handle_probe_response(struct ipw_priv *priv,
+	 int ipw_qos_handle_probe_response(struct ipw_priv *priv,
 					 int active_network,
 					 struct ieee80211_network *network);
-	virtual void ipw_bg_qos_activate(void *data);
-	virtual int ieee80211_parse_qos_info_param_IE(struct ieee80211_info_element
+	 void ipw_bg_qos_activate(void *data);
+	 int ieee80211_parse_qos_info_param_IE(struct ieee80211_info_element
 					     *info_element,
 					     struct ieee80211_network *network);
-	virtual int ieee80211_read_qos_info_element(struct
+	 int ieee80211_read_qos_info_element(struct
 					   ieee80211_qos_information_element
 					   *element_info, struct ieee80211_info_element
 					   *info_element);
-	virtual int ieee80211_verify_qos_info(struct ieee80211_qos_information_element
+	 int ieee80211_verify_qos_info(struct ieee80211_qos_information_element
 				     *info_element, int sub_type);
-	virtual int ieee80211_read_qos_param_element(struct ieee80211_qos_parameter_info
+	 int ieee80211_read_qos_param_element(struct ieee80211_qos_parameter_info
 					    *element_param, struct ieee80211_info_element
 					    *info_element);
-	virtual int ieee80211_qos_convert_ac_to_parameters(struct
+	 int ieee80211_qos_convert_ac_to_parameters(struct
 						  ieee80211_qos_parameter_info
 						  *param_elm, struct
 						  ieee80211_qos_parameters
 						  *qos_param);
-	virtual void ipw_handle_missed_beacon(struct ipw_priv *priv, int missed_count);
-	virtual void ipw_merge_adhoc_network(void *data);
-	virtual int ipw_find_adhoc_network(struct ipw_priv *priv,
+	 void ipw_handle_missed_beacon(struct ipw_priv *priv, int missed_count);
+	 void ipw_merge_adhoc_network(void *data);
+	 int ipw_find_adhoc_network(struct ipw_priv *priv,
 				  struct ipw_network_match *match,
 				  struct ieee80211_network *network,
 				  int roaming);
-	virtual void ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
+	 void ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 				      mbuf_t skb);
-	virtual int ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
+	 int ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		 struct ieee80211_rx_stats *rx_stats);
-	virtual mbuf_t mergePacket(mbuf_t m);
-	virtual UInt32 outputPacket(mbuf_t m, void * param);
-	virtual void ieee80211_txb_free(struct ieee80211_txb *txb);
-	virtual u8 ipw_find_station(struct ipw_priv *priv, u8 * bssid);
-	virtual int ipw_handle_probe_request(struct net_device *dev, struct ieee80211_probe_request
+	 mbuf_t mergePacket(mbuf_t m);
+	 void ieee80211_txb_free(struct ieee80211_txb *txb);
+	 u8 ipw_find_station(struct ipw_priv *priv, u8 * bssid);
+	 int ipw_handle_probe_request(struct net_device *dev, struct ieee80211_probe_request
 				    *frame, struct ieee80211_rx_stats *stats);
-	virtual struct ipw_frame *ipw_get_free_frame(struct ipw_priv *priv);
-	virtual int ipw_fill_beacon_frame(struct ipw_priv *priv,
+	 struct ipw_frame *ipw_get_free_frame(struct ipw_priv *priv);
+	 int ipw_fill_beacon_frame(struct ipw_priv *priv,
 				 struct ieee80211_hdr *hdr, u8 * dest, int left);
-	virtual void *ieee80211_next_info_element(struct ieee80211_info_element
+	 void *ieee80211_next_info_element(struct ieee80211_info_element
 					 *info_element);
-	virtual int ieee80211_xmit(mbuf_t skb, struct net_device *dev);
-	virtual int ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb, int pri);
-	virtual struct ieee80211_txb *ieee80211_alloc_txb(int nr_frags, int txb_size,
+	 int ieee80211_xmit(mbuf_t skb, struct net_device *dev);
+	 int ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb, int pri);
+	 struct ieee80211_txb *ieee80211_alloc_txb(int nr_frags, int txb_size,
 						 int headroom, int gfp_mask);
-	virtual int ipw_is_qos_active(struct net_device *dev, mbuf_t skb);
-	virtual void freePacket(mbuf_t  m,  IOOptionBits options = 0); 
-    virtual IOReturn registerWithPolicyMaker(IOService * policyMaker);
-    virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
- 
-   virtual  void setPowerStateOff(void);
-   virtual void setPowerStateOn(void);
-	virtual int ipw_send_system_config(struct ipw_priv *priv);
+	 int ipw_is_qos_active(struct net_device *dev, mbuf_t skb);
+	 int ipw_send_system_config(struct ipw_priv *priv);
+	inline void *kzalloc(size_t size, unsigned flags)
+	{
+		void *ret = kmalloc(size, flags);
+		if (ret)
+			memset(ret, 0, size);
+		return ret;
+	}
 
+	inline UInt32 MEM_READ_4(UInt16 *base, UInt32 addr)
+	{
+		CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr & IWI_INDIRECT_ADDR_MASK);
+		return CSR_READ_4(base, IWI_CSR_INDIRECT_DATA);
+	}
 
-
-
-
-inline void *kzalloc(size_t size, unsigned flags)
-{
-	void *ret = kmalloc(size, flags);
-	if (ret)
-		memset(ret, 0, size);
-	return ret;
-}
-
-inline UInt32 MEM_READ_4(UInt16 *base, UInt32 addr)
-{
-	CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr & IWI_INDIRECT_ADDR_MASK);
-	return CSR_READ_4(base, IWI_CSR_INDIRECT_DATA);
-}
-
-inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
-{
-	CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
-	return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
-}
+	inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
+	{
+		CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
+		return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
+	}
 
 
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
@@ -1317,6 +1290,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	UInt32                  _pmPowerState;
     thread_call_t           _powerOffThreadCall;
     thread_call_t           _powerOnThreadCall;
+	
 	
 };
 

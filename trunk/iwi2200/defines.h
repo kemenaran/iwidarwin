@@ -928,6 +928,7 @@ typedef unsigned char UInt8;
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
+#undef LIST_HEAD
 #define LIST_HEAD(name) \
 	struct list_head name = LIST_HEAD_INIT(name)
 
@@ -953,6 +954,11 @@ typedef unsigned char UInt8;
 
 #define IPW_GET_PACKET_STYPE(x) WLAN_FC_GET_STYPE( \
 			 le16_to_cpu(((struct ieee80211_hdr *)(x))->frame_ctl))
+
+#undef MSEC_PER_SEC		
+#undef USEC_PER_SEC		
+#undef NSEC_PER_SEC		
+#undef NSEC_PER_USEC		
 
 #define MSEC_PER_SEC		1000L
 #define USEC_PER_SEC		1000000L
