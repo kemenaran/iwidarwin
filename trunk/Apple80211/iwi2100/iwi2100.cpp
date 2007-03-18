@@ -1473,8 +1473,8 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	if (priv->fatal_error) {
 		IOLog
 		    ("Attempt to send command while hardware in fatal error condition.\n");
-		err = -EIO;
-		goto fail_unlock;
+		//err = -EIO;
+		//goto fail_unlock;
 	}
 
 	if (!(priv->status & STATUS_RUNNING)) {
@@ -1487,8 +1487,8 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	if (priv->status & STATUS_CMD_ACTIVE) {
 		IOLog
 		    ("Attempt to send command while another command is pending.\n");
-		err = -EBUSY;
-		goto fail_unlock;
+		//err = -EBUSY;
+		//goto fail_unlock;
 	}
 
 	if (list_empty(&priv->msg_free_list)) {
@@ -1550,14 +1550,14 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 			      // 1000 * (HOST_COMPLETE_TIMEOUT / HZ));
 		priv->fatal_error = IPW2100_ERR_MSG_TIMEOUT;
 		priv->status &= ~STATUS_CMD_ACTIVE;
-		schedule_reset(priv);
-		return -EIO;
+		//schedule_reset(priv);
+		//return -EIO;
 	}
 
 	if (priv->fatal_error) {
 		IOLog( ": %s: firmware fatal error\n",
 		       priv->net_dev->name);
-		return -EIO;
+		//return -EIO;
 	}
 
 	/* !!!!! HACK TEST !!!!!
@@ -3020,7 +3020,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("%s: Radio is disabled by Manual Disable "
 			       "switch\n", priv->net_dev->name);
-		return 0;
+		//return 0;
 	}
 
 	/* If the interrupt is enabled, turn it off... */
@@ -3031,13 +3031,13 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_POWERED ||
 	    (priv->status & STATUS_RESET_PENDING)) {
 		/* Power cycle the card ... */
-		if (ipw2100_power_cycle_adapter(priv)) {
+		/*if (ipw2100_power_cycle_adapter(priv)) {
 			IOLog(
 			       ": %s: Could not cycle adapter.\n",
 			       priv->net_dev->name);
 			rc = 1;
 			goto exit;
-		}
+		}*/
 	} else
 		priv->status |= STATUS_POWERED;
 	/* Load the firmware, start the clocks, etc. */
@@ -3045,8 +3045,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to start the firmware.\n",
 		       priv->net_dev->name);
-		rc = 1;
-		goto exit;
+		//rc = 1;
+		//goto exit;
 	}
 
 	ipw2100_initialize_ordinals(priv);
@@ -3056,14 +3056,14 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to determine HW features.\n",
 		       priv->net_dev->name);
-		rc = 1;
-		goto exit;
+		//rc = 1;
+		//goto exit;
 	}
 
 	/* Initialize the geo */
 	if (ipw_set_geo(priv->ieee, &ipw_geos[0])) {
 		IOLog( "Could not set geo\n");
-		return 0;
+		//return 0;
 	}
 	priv->ieee->freq_band = IEEE80211_24GHZ_BAND;
 
@@ -3072,8 +3072,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to clear ordinal lock.\n",
 		       priv->net_dev->name);
-		rc = 1;
-		goto exit;
+		//rc = 1;
+		//goto exit;
 	}
 
 	priv->status &= ~STATUS_SCANNING;
@@ -3098,8 +3098,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (ipw2100_adapter_setup(priv)) {
 		IOLog( ": %s: Failed to start the card.\n",
 		       priv->net_dev->name);
-		rc = 1;
-		goto exit;
+		//rc = 1;
+		//goto exit;
 	}
 
 	if (!deferred) {
@@ -3108,9 +3108,9 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			IOLog( ": "
 			       "%s: failed in call to enable adapter.\n",
 			       priv->net_dev->name);
-			ipw2100_hw_stop_adapter(priv);
-			rc = 1;
-			goto exit;
+			//ipw2100_hw_stop_adapter(priv);
+			//rc = 1;
+			//goto exit;
 		}
 
 		/* Start a scan . . . */
@@ -3725,8 +3725,8 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 
 	if (inta==0) goto skipi;
 	
-	IOLog("enter - INTA: 0x%08lX\n",
-		      (unsigned long)inta & IPW_INTERRUPT_MASK);
+	//IOLog("enter - INTA: 0x%08lX\n",
+	//	      (unsigned long)inta & IPW_INTERRUPT_MASK);
 
 	priv->in_isr++;
 	priv->interrupts++;
