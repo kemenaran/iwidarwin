@@ -319,7 +319,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61EEBBD80BAB012600812237</string>
+										<string>618F53390BACADB100F43747</string>
 										<key>history</key>
 										<array>
 											<string>61B06DA80B58946B000DD1AE</string>
@@ -336,7 +336,7 @@
 											<string>61D900FA0BA6DE5300590544</string>
 											<string>6159CC430BAA24DB00BA3DDC</string>
 											<string>6159CC440BAA24DB00BA3DDC</string>
-											<string>61A1E9130BAA276300D9ABD8</string>
+											<string>61B60B1A0BACACA200BCF07B</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -412,9 +412,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61EEBBD50BAB011200812237</string>
+				<string>618F533A0BACADB100F43747</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61EEBBD60BAB011200812237</string>
+				<string>618F533B0BACADB100F43747</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -548,7 +548,6 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>61B069860B5885D6000DD1AE</string>
 		<string>/var/root/svn/trunk/Apple80211/iwi2100/iwi2100.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -568,12 +567,14 @@
 					<key>Dock</key>
 					<array>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
 								<string>1CD0528F0623707200166675</string>
 								<key>PBXProjectModuleLabel</key>
-								<string></string>
+								<string>iwi2100.cpp</string>
 								<key>StatusBarVisibility</key>
 								<true/>
 							</dict>
@@ -629,7 +630,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B069860B5885D6000DD1AE</string>
-				<string>61EEBBD70BAB011200812237</string>
+				<string>61B60B130BACAC6200BCF07B</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -823,8 +824,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61A1E90A0BAA25DF00D9ABD8</string>
-				<string>61A1E90B0BAA25DF00D9ABD8</string>
+				<string>61B60B070BACAB1F00BCF07B</string>
+				<string>61B60B080BACAB1F00BCF07B</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
