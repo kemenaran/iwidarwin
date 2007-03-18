@@ -618,6 +618,14 @@ virtual IOOptionBits getState( void ) const;
 	virtual int ipw3945_queue_tx_init(struct ipw_priv *priv,
 				 struct ipw_tx_queue *q, int count, u32 id);
 	
+	virtual int ieee80211_rate_control_register(struct rate_control_ops *ops);
+	virtual void ipw_reset_channel_flag(struct ipw_priv *priv);
+	
+	
+	
+	
+	
+	
 	
 	
 	

@@ -1045,7 +1045,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw_nic_init(priv);
 		//ipw_nic_reset(priv);
-		//ipw_bg_resume_work();
+		ipw_bg_resume_work();
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -1111,7 +1111,7 @@ void darwin_iwi3945::ipw_bg_resume_work()
 	unsigned long flags;
 
 	//mutex_lock(&priv->mutex);
-	IOLockLock(mutex);
+	//IOLockLock(mutex);
 	
 	/* The following it a temporary work around due to the
 	 * suspend / resume not fully initializing the NIC correctly.
@@ -1157,7 +1157,7 @@ void darwin_iwi3945::ipw_bg_resume_work()
 	priv->status &= ~STATUS_IN_SUSPEND;
 
 	//mutex_unlock(&priv->mutex);
-	IOLockUnlock(mutex);
+	//IOLockUnlock(mutex);
 }
 
 IOReturn darwin_iwi3945::selectMedium(const IONetworkMedium * medium)
@@ -5996,6 +5996,39 @@ void darwin_iwi3945::ipw_set_supported_rates_mask(struct ipw_priv *priv, int rat
 	priv->active_rate_basic = (rates_mask >> 16) & 0xffff;
 }
 
+int darwin_iwi3945::ieee80211_rate_control_register(struct rate_control_ops *ops)
+{
+	struct rate_control_alg *alg;
+
+	alg = (struct rate_control_alg*)kmalloc(sizeof(*alg), NULL);
+	if (alg == NULL) {
+		return -ENOMEM;
+	}
+	memset(alg, 0, sizeof(*alg));
+	alg->ops = ops;
+
+	//mutex_lock(&rate_ctrl_mutex);
+	list_add_tail(&alg->list, &rate_ctrl_algs);
+	//mutex_unlock(&rate_ctrl_mutex);
+
+	return 0;
+}
+
+void darwin_iwi3945::ipw_reset_channel_flag(struct ipw_priv *priv)
+{
+	/*int i;
+	struct ieee80211_channel *chan;
+	struct ieee80211_hw_mode *hw_mode;
+	struct ieee80211_local *local = hw_to_local(priv->ieee);
+
+	list_for_each_entry(hw_mode, &local->modes_list, list) {
+		for (i = 0; i < hw_mode->num_channels; i++) {
+			chan = &(hw_mode->channels[i]);
+			chan->flag = chan->val;
+		}
+	}*/
+}
+
 void darwin_iwi3945::ipw_bg_alive_start()
 {
 	//struct ipw_priv *priv =
@@ -6056,7 +6089,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 	if (!priv->netdev_registered) {
 	//	mutex_unlock(&priv->mutex);
-	//	ieee80211_rate_control_register(&priv->rate_control);
+		ieee80211_rate_control_register(&priv->rate_control);
 
 		//rc = ieee80211_register_hw(priv->ieee);
 		if (rc) {
@@ -6070,7 +6103,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//	mutex_lock(&priv->mutex);
 		priv->netdev_registered = 1;
 
-		//ipw_reset_channel_flag(priv);
+		ipw_reset_channel_flag(priv);
 	}
 
 	//memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
@@ -6834,12 +6867,14 @@ int darwin_iwi3945::ipw_queue_tx_reclaim(struct ipw_priv *priv, int fifo, int in
 	struct ipw_queue *q = &txq->q;
 	u8 is_next = 0;
 	int used;
+	IOLog("ipw_queue_tx_reclaim queue: %d index: %d\n",fifo,index);
 	if ((index >= q->n_bd) || (x2_queue_used(q, index) == 0)) {
 		IOLog
 		    ("Read index for DMA queue (%d) is out of range [0-%d) %d %d\n",
 		     index, q->n_bd, q->first_empty, q->last_used);
 		goto done;
 	}
+	if (!index) index=0;//hack index
 	index = ipw_queue_inc_wrap(index, q->n_bd);
 	for (; q->last_used != index;
 	     q->last_used = ipw_queue_inc_wrap(q->last_used, q->n_bd)) {
