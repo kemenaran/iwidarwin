@@ -29,6 +29,39 @@
 
 #include "defines.h"
 
+static LIST_HEAD(rate_ctrl_algs);
+
+struct rate_control_ops {
+	//struct module *module;
+	const char *name;
+	/*void (*tx_status)(void *priv, struct net_device *dev,
+			  struct sk_buff *skb,
+			  struct ieee80211_tx_status *status);
+	struct ieee80211_rate *(*get_rate)(void *priv, struct net_device *dev,
+					   struct sk_buff *skb,
+					   struct rate_control_extra *extra);
+	void (*rate_init)(void *priv, void *priv_sta,
+			  struct ieee80211_local *local, struct sta_info *sta);
+	void (*clear)(void *priv);
+
+	void *(*alloc)(struct ieee80211_local *local);
+	void (*free)(void *priv);
+	void *(*alloc_sta)(void *priv, gfp_t gfp);
+	void (*free_sta)(void *priv, void *priv_sta);
+
+	int (*add_attrs)(void *priv, struct kobject *kobj);
+	void (*remove_attrs)(void *priv, struct kobject *kobj);
+	int (*add_sta_attrs)(void *priv, void *priv_sta,
+			     struct kobject *kobj);
+	void (*remove_sta_attrs)(void *priv, void *priv_sta,
+				 struct kobject *kobj);*/
+};
+
+struct rate_control_alg {
+	struct list_head list;
+	struct rate_control_ops *ops;
+};
+
 #define DRV_NAME	"ipw3945"
 
 
@@ -2645,6 +2678,7 @@ struct ipw_priv {
 	struct ieee80211_hw *ieee;
 	struct ipw_eeprom eeprom;
 	struct ieee80211_conf active_conf;
+	struct rate_control_ops rate_control;
 	struct ieee80211_hw_mode *modes;
 	struct ipw_channel_info *channel_info;	/* channel info array */
 	u8 channel_count;	/* # of channels */
