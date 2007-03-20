@@ -713,7 +713,7 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 		IOLog("Unable to network device.\n");
 		return -1;
 	}
-	
+	(UInt16*)net_dev->base_addr=memBase;
 	//ieee = (struct ieee80211_device*)netdev_priv(net_dev);
 	ieee=&ieee2;
 	ieee->dev = net_dev;
@@ -3386,6 +3386,181 @@ void darwin_iwi2100::isr_rx_complete_command(struct ipw2100_priv *priv,
 	//wake_up_interruptible(&priv->wait_command_queue);
 }
 
+void darwin_iwi2100::isr_indicate_associated(struct ipw2100_priv *priv, u32 status)
+{
+
+#define MAC_ASSOCIATION_READ_DELAY (HZ)
+	int ret, len, essid_len;
+	char essid[IW_ESSID_MAX_SIZE];
+	u32 txrate;
+	u32 chan;
+	char *txratename;
+	u8 bssid[ETH_ALEN];
+
+	/*
+	 * TBD: BSSID is usually 00:00:00:00:00:00 here and not
+	 *      an actual MAC of the AP. Seems like FW sets this
+	 *      address too late. Read it later and expose through
+	 *      /proc or schedule a later task to query and update
+	 */
+
+	essid_len = IW_ESSID_MAX_SIZE;
+	ret = ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_SSID,
+				  essid, (u32*)&essid_len);
+	if (ret) {
+		IOLog("failed querying ordinals at line %d\n",
+			       __LINE__);
+		return;
+	}
+
+	len = sizeof(u32);
+	ret = ipw2100_get_ordinal(priv, IPW_ORD_CURRENT_TX_RATE, &txrate, (u32*)&len);
+	if (ret) {
+		IOLog("failed querying ordinals at line %d\n",
+			       __LINE__);
+		return;
+	}
+
+	len = sizeof(u32);
+	ret = ipw2100_get_ordinal(priv, IPW_ORD_OUR_FREQ, &chan, (u32*)&len);
+	if (ret) {
+		IOLog("failed querying ordinals at line %d\n",
+			       __LINE__);
+		return;
+	}
+	len = ETH_ALEN;
+	ret=ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_AP_BSSID, &bssid, (u32*)&len);
+	if (ret) {
+		IOLog("failed querying ordinals at line %d\n",
+			       __LINE__);
+		return;
+	}
+	memcpy(priv->ieee->bssid, bssid, ETH_ALEN);
+
+	switch (txrate) {
+	case TX_RATE_1_MBIT:
+		txratename = "1Mbps";
+		break;
+	case TX_RATE_2_MBIT:
+		txratename = "2Mbsp";
+		break;
+	case TX_RATE_5_5_MBIT:
+		txratename = "5.5Mbps";
+		break;
+	case TX_RATE_11_MBIT:
+		txratename = "11Mbps";
+		break;
+	default:
+		IOLog("Unknown rate: %d\n", txrate);
+		txratename = "unknown rate";
+		break;
+	}
+
+	IOLog("%s: Associated with '%s' at %s, channel %d (BSSID="
+		       MAC_FMT ")\n",
+		       priv->net_dev->name, escape_essid(essid, essid_len),
+		       txratename, chan, MAC_ARG(bssid));
+
+	/* now we copy read ssid into dev */
+	if (!(priv->config & CFG_STATIC_ESSID)) {
+		priv->essid_len = min((u8) essid_len, (u8) IW_ESSID_MAX_SIZE);
+		memcpy(priv->essid, essid, priv->essid_len);
+	}
+	priv->channel = chan;
+	memcpy(priv->bssid, bssid, ETH_ALEN);
+
+	priv->status |= STATUS_ASSOCIATING;
+	//priv->connect_start = get_seconds();
+
+	//queue_delayed_work(priv->workqueue, &priv->wx_event_work, HZ / 10);
+}
+
+struct ipw2100_status_indicator {
+	int status;
+	void (*cb) (struct ipw2100_priv * priv, u32 status);
+};
+#define IPW2100_HANDLER(v, f) { v, f }
+static const struct ipw2100_status_indicator status_handlers[] = {
+	IPW2100_HANDLER(IPW_STATE_INITIALIZED, NULL),
+	IPW2100_HANDLER(IPW_STATE_COUNTRY_FOUND, NULL),
+	IPW2100_HANDLER(IPW_STATE_ASSOCIATED, darwin_iwi2100::isr_indicate_associated),
+	IPW2100_HANDLER(IPW_STATE_ASSN_LOST, darwin_iwi2100::isr_indicate_association_lost),
+	IPW2100_HANDLER(IPW_STATE_ASSN_CHANGED, NULL),
+	IPW2100_HANDLER(IPW_STATE_SCAN_COMPLETE, darwin_iwi2100::isr_scan_complete),
+	IPW2100_HANDLER(IPW_STATE_ENTERED_PSP, NULL),
+	IPW2100_HANDLER(IPW_STATE_LEFT_PSP, NULL),
+	IPW2100_HANDLER(IPW_STATE_RF_KILL, darwin_iwi2100::isr_indicate_rf_kill),
+	IPW2100_HANDLER(IPW_STATE_DISABLED, NULL),
+	IPW2100_HANDLER(IPW_STATE_POWER_DOWN, NULL),
+	IPW2100_HANDLER(IPW_STATE_SCANNING, darwin_iwi2100::isr_indicate_scanning),
+	IPW2100_HANDLER(-1, NULL)
+};
+
+void darwin_iwi2100::isr_indicate_scanning(struct ipw2100_priv *priv, u32 status)
+{
+	IOLog("Scanning...\n");
+	priv->status |= STATUS_SCANNING;
+}
+
+void darwin_iwi2100::isr_indicate_rf_kill(struct ipw2100_priv *priv, u32 status)
+{
+	IOLog("%s: RF Kill state changed to radio OFF.\n",
+		       priv->net_dev->name);
+
+	/* RF_KILL is now enabled (else we wouldn't be here) */
+	priv->status |= STATUS_RF_KILL_HW;
+
+#ifdef ACPI_CSTATE_LIMIT_DEFINED
+	if (priv->config & CFG_C3_DISABLED) {
+		IOLog(": Resetting C3 transitions.\n");
+		acpi_set_cstate_limit(priv->cstate_limit);
+		priv->config &= ~CFG_C3_DISABLED;
+	}
+#endif
+
+	/* Make sure the RF Kill check timer is running */
+	priv->stop_rf_kill = 0;
+	//cancel_delayed_work(&priv->rf_kill);
+	//queue_delayed_work(priv->workqueue, &priv->rf_kill, HZ);
+}
+
+void darwin_iwi2100::isr_scan_complete(struct ipw2100_priv *priv, u32 status)
+{
+	IOLog("scan complete\n");
+	/* Age the scan results... */
+	priv->ieee->scans++;
+	priv->status &= ~STATUS_SCANNING;
+}
+
+void darwin_iwi2100::isr_indicate_association_lost(struct ipw2100_priv *priv, u32 status)
+{
+	IOLog(  
+		  "disassociated: '%s' " MAC_FMT " \n",
+		  escape_essid((const char*)priv->essid, priv->essid_len),
+		  MAC_ARG(priv->bssid));
+
+	priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+
+	if (priv->status & STATUS_STOPPING) {
+		IOLog("Card is stopping itself, discard ASSN_LOST.\n");
+		return;
+	}
+
+	memset(priv->bssid, 0, ETH_ALEN);
+	memset(priv->ieee->bssid, 0, ETH_ALEN);
+
+	//netif_carrier_off(priv->net_dev);
+	//netif_stop_queue(priv->net_dev);
+
+	if (!(priv->status & STATUS_RUNNING))
+		return;
+
+	//if (priv->status & STATUS_SECURITY_UPDATED)
+	//	queue_delayed_work(priv->workqueue, &priv->security_work, 0);
+
+	//queue_delayed_work(priv->workqueue, &priv->wx_event_work, 0);
+}
+
 void darwin_iwi2100::isr_status_change(struct ipw2100_priv *priv, int status)
 {
 	int i;
@@ -3400,24 +3575,664 @@ void darwin_iwi2100::isr_status_change(struct ipw2100_priv *priv, int status)
 		schedule_reset(priv);
 	}
 
-	/*for (i = 0; status_handlers[i].status != -1; i++) {
+	for (i = 0; status_handlers[i].status != -1; i++) {
 		if (status == status_handlers[i].status) {
-			IOLog("Status change: %s\n",
-					status_handlers[i].name);
+			IOLog("Status change: %d\n",status);
+					//status_handlers[i].name);
 			if (status_handlers[i].cb)
 				status_handlers[i].cb(priv, status);
 			priv->wstats.status = status;
 			return;
 		}
-	}*/
+	}
 
 	IOLog("unknown status received: %04x\n", status);
+}
+
+int darwin_iwi2100::ieee80211_parse_info_param(struct ieee80211_info_element
+				      *info_element, u16 length,
+				      struct ieee80211_network *network)
+{
+	u8 i;
+
+	while (length >= sizeof(*info_element)) {
+		if (sizeof(*info_element) + info_element->len > length) {
+			IWI_DEBUG("ERROR: Info elem: parse failed: "
+					"info_element->len + 2 > left : "
+					"info_element->len+2=%zd left=%d, id=%d.\n",
+					info_element->len +
+					sizeof(*info_element),
+					length, info_element->id);
+			/* We stop processing but don't return an error here
+			 * because some misbehaviour APs break this rule. ie.
+			 * Orinoco AP1000. */
+			break;
+		}
+
+		switch (info_element->id) {
+		case MFIE_TYPE_SSID:
+			if (ieee80211_is_empty_essid((const char*)info_element->data,
+						     info_element->len)) {
+				network->flags |= NETWORK_EMPTY_ESSID;
+				break;
+			}
+
+			network->ssid_len = min(info_element->len,
+						(u8) IW_ESSID_MAX_SIZE);
+			memcpy(network->ssid, info_element->data,
+			       network->ssid_len);
+			if (network->ssid_len < IW_ESSID_MAX_SIZE)
+				memset(network->ssid + network->ssid_len, 0,
+				       IW_ESSID_MAX_SIZE - network->ssid_len);
+
+			IWI_DEBUG("MFIE_TYPE_SSID: '%s' len=%d.\n",
+					     escape_essid((const char*)network->ssid, network->ssid_len), network->ssid_len);
+			
+			break;
+
+		case MFIE_TYPE_RATES:
+			network->rates_len = min(info_element->len,
+						 MAX_RATES_LENGTH);
+			for (i = 0; i < network->rates_len; i++) {
+				network->rates[i] = info_element->data[i];
+				if (ieee80211_is_ofdm_rate
+				    (info_element->data[i])) {
+					network->flags |= NETWORK_HAS_OFDM;
+					if (info_element->data[i] &
+					    IEEE80211_BASIC_RATE_MASK)
+						network->flags &=
+						    ~NETWORK_HAS_CCK;
+				}
+			}
+			break;
+
+		case MFIE_TYPE_RATES_EX:
+			network->rates_ex_len = min(info_element->len,
+						    MAX_RATES_EX_LENGTH);
+			for (i = 0; i < network->rates_ex_len; i++) {
+				network->rates_ex[i] = info_element->data[i];
+				if (ieee80211_is_ofdm_rate
+				    (info_element->data[i])) {
+					network->flags |= NETWORK_HAS_OFDM;
+					if (info_element->data[i] &
+					    IEEE80211_BASIC_RATE_MASK)
+						network->flags &=
+						    ~NETWORK_HAS_CCK;
+				}
+			}
+
+			break;
+
+		case MFIE_TYPE_DS_SET:
+			IEEE80211_DEBUG_MGMT("MFIE_TYPE_DS_SET: %d\n",
+					     info_element->data[0]);
+			network->channel = info_element->data[0];
+			break;
+
+		case MFIE_TYPE_FH_SET:
+			IEEE80211_DEBUG_MGMT("MFIE_TYPE_FH_SET: ignored\n");
+			break;
+
+		case MFIE_TYPE_CF_SET:
+			IEEE80211_DEBUG_MGMT("MFIE_TYPE_CF_SET: ignored\n");
+			break;
+
+		case MFIE_TYPE_TIM:
+			network->tim.tim_count = info_element->data[0];
+			network->tim.tim_period = info_element->data[1];
+			IEEE80211_DEBUG_MGMT("MFIE_TYPE_TIM: partially ignored\n");
+			break;
+
+		case MFIE_TYPE_ERP_INFO:
+			network->erp_value = info_element->data[0];
+			network->flags |= NETWORK_HAS_ERP_VALUE;
+			IEEE80211_DEBUG_MGMT("MFIE_TYPE_ERP_SET: %d\n",
+					     network->erp_value);
+			break;
+
+		case MFIE_TYPE_IBSS_SET:
+			network->atim_window = info_element->data[0];
+			//IEEE80211_DEBUG_MGMT("MFIE_TYPE_IBSS_SET: %d\n",network->atim_window);
+			IWI_DEBUG("MFIE_TYPE_IBSS_SET (%02x:%02x:%02x:%02x:%02x:%02x)\n",
+					MAC_ARG(network->atim_window));
+			break;
+
+		case MFIE_TYPE_CHALLENGE:
+			IEEE80211_DEBUG_MGMT("MFIE_TYPE_CHALLENGE: ignored\n");
+			break;
+
+		case MFIE_TYPE_GENERIC:
+			IEEE80211_DEBUG_MGMT("MFIE_TYPE_GENERIC: %d bytes\n",
+					     info_element->len);
+						 
+			//if (qos_enable)
+			//if (!ieee80211_parse_qos_info_param_IE(info_element,
+			//				       network))
+			//	break;
+
+			if (info_element->len >= 4 &&
+			    info_element->data[0] == 0x00 &&
+			    info_element->data[1] == 0x50 &&
+			    info_element->data[2] == 0xf2 &&
+			    info_element->data[3] == 0x01) {
+				network->wpa_ie_len = min(info_element->len + 2,
+							  MAX_WPA_IE_LEN);
+				memcpy(network->wpa_ie, info_element,
+				       network->wpa_ie_len);
+			}
+			break;
+
+		case MFIE_TYPE_RSN:
+			IEEE80211_DEBUG_MGMT("MFIE_TYPE_RSN: %d bytes\n",
+					     info_element->len);
+			network->rsn_ie_len = min(info_element->len + 2,
+						  MAX_WPA_IE_LEN);
+			memcpy(network->rsn_ie, info_element,
+			       network->rsn_ie_len);
+			break;
+
+		case MFIE_TYPE_QOS_PARAMETER:
+			IWI_DEBUG(
+			       "ERROR: QoS Error need to parse QOS_PARAMETER IE\n");
+			break;
+			/* 802.11h */
+		case MFIE_TYPE_POWER_CONSTRAINT:
+			network->power_constraint = info_element->data[0];
+			network->flags |= NETWORK_HAS_POWER_CONSTRAINT;
+			break;
+
+		case MFIE_TYPE_CSA:
+			network->power_constraint = info_element->data[0];
+			network->flags |= NETWORK_HAS_CSA;
+			break;
+
+		case MFIE_TYPE_QUIET:
+			network->quiet.count = info_element->data[0];
+			network->quiet.period = info_element->data[1];
+			network->quiet.duration = info_element->data[2];
+			network->quiet.offset = info_element->data[3];
+			network->flags |= NETWORK_HAS_QUIET;
+			break;
+
+		case MFIE_TYPE_IBSS_DFS:
+		    IEEE80211_DEBUG_MGMT("MFIE_TYPE_IBSS_DFS:\n");
+			 
+			if (network->ibss_dfs)
+				break;
+			network->ibss_dfs = (struct ieee80211_ibss_dfs*)kmalloc(info_element->len, NULL);
+			if (!network->ibss_dfs)
+				return 1;
+			memcpy(network->ibss_dfs, info_element->data,
+			       info_element->len);
+			network->flags |= NETWORK_HAS_IBSS_DFS;
+			
+			break;
+
+		case MFIE_TYPE_TPC_REPORT:
+			network->tpc_report.transmit_power =
+			    info_element->data[0];
+			network->tpc_report.link_margin = info_element->data[1];
+			network->flags |= NETWORK_HAS_TPC_REPORT;
+			break;
+
+		default:
+			IOLog
+			    ("Unsupported info element: %d\n",0);
+			   //  get_info_element_string(info_element->id),
+			     //info_element->id);
+			break;
+		}
+
+		length -= sizeof(*info_element) + info_element->len;
+		info_element =
+		    (struct ieee80211_info_element *)&info_element->
+		    data[info_element->len];
+	}
+
+	return 0;
+}
+
+int darwin_iwi2100::ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
+				       *frame, struct ieee80211_rx_stats *stats)
+{
+	struct ieee80211_network network_resp; 
+		network_resp.ibss_dfs = NULL;
+	
+	struct ieee80211_network *network = &network_resp;
+	struct net_device *dev = ieee->dev;
+
+	network->flags = 0;
+	network->qos_data.active = 0;
+	network->qos_data.supported = 0;
+	network->qos_data.param_count = 0;
+	network->qos_data.old_param_count = 0;
+
+	//network->atim_window = le16_to_cpu(frame->aid) & (0x3FFF);
+	network->atim_window = le16_to_cpu(frame->aid);
+	network->listen_interval = le16_to_cpu(frame->status);
+	memcpy(network->bssid, frame->header.addr3, ETH_ALEN);
+	network->capability = le16_to_cpu(frame->capability);
+	network->last_scanned = jiffies;
+	network->rates_len = network->rates_ex_len = 0;
+	network->last_associate = 0;
+	network->ssid_len = 0;
+	network->erp_value =
+	    (network->capability & WLAN_CAPABILITY_IBSS) ? 0x3 : 0x0;
+
+	if (stats->freq == IEEE80211_52GHZ_BAND) {
+		/* for A band (No DS info) */
+		network->channel = stats->received_channel;
+	} else
+		network->flags |= NETWORK_HAS_CCK;
+
+	network->wpa_ie_len = 0;
+	network->rsn_ie_len = 0;
+
+	if (ieee80211_parse_info_param
+	    (frame->info_element, stats->len - sizeof(*frame), network))
+		return 1;
+
+	network->mode = 0;
+	if (stats->freq == IEEE80211_52GHZ_BAND)
+		network->mode = IEEE_A;
+	else {
+		if (network->flags & NETWORK_HAS_OFDM)
+			network->mode |= IEEE_G;
+		if (network->flags & NETWORK_HAS_CCK)
+			network->mode |= IEEE_B;
+	}
+
+	if (ieee80211_is_empty_essid((const char*)network->ssid, network->ssid_len))
+		network->flags |= NETWORK_EMPTY_ESSID;
+
+	memcpy(&network->stats, stats, sizeof(network->stats));
+
+	//if (ieee->handle_assoc_response != NULL)
+	//	ieee->handle_assoc_response(dev, frame, network);
+	//ipw_handle_assoc_response(dev, frame, network);
+	return 0;
+}
+
+int darwin_iwi2100::ieee80211_network_init(struct ieee80211_device *ieee, struct ieee80211_probe_response
+					 *beacon,
+					 struct ieee80211_network *network,
+					 struct ieee80211_rx_stats *stats)
+{
+    // add by kazu expire qos routine
+	network->qos_data.active = 0;
+	network->qos_data.supported = 0;
+	network->qos_data.param_count = 0;
+	network->qos_data.old_param_count = 0;
+    
+
+	/* Pull out fixed field data */
+	memcpy(network->bssid, beacon->header.addr3, ETH_ALEN);
+	network->capability = le16_to_cpu(beacon->capability);
+	network->last_scanned = ieee->scans;
+	network->time_stamp[0] = le32_to_cpu(beacon->time_stamp[0]);
+	network->time_stamp[1] = le32_to_cpu(beacon->time_stamp[1]);
+	network->beacon_interval = le16_to_cpu(beacon->beacon_interval);
+	/* Where to pull this? beacon->listen_interval; */
+	network->listen_interval = 0x0A;
+	network->rates_len = network->rates_ex_len = 0;
+	network->last_associate = 0;
+	network->ssid_len = 0;
+	network->flags = 0;
+	network->atim_window = 0;
+	network->erp_value = (network->capability & WLAN_CAPABILITY_IBSS) ?
+	    0x3 : 0x0;
+
+	if (stats->freq == IEEE80211_52GHZ_BAND) {
+		/* for A band (No DS info) */
+		network->channel = stats->received_channel;
+	} else
+		network->flags |= NETWORK_HAS_CCK;
+
+	network->wpa_ie_len = 0;
+	network->rsn_ie_len = 0;
+
+     
+	if (ieee80211_parse_info_param
+	    (beacon->info_element, stats->len - sizeof(*beacon), network))
+		return 1;
+    
+	
+	
+	network->mode = 0;
+	if (stats->freq == IEEE80211_52GHZ_BAND)
+		network->mode = IEEE_A;
+	else {
+		if (network->flags & NETWORK_HAS_OFDM)
+			network->mode |= IEEE_G;
+		if (network->flags & NETWORK_HAS_CCK)
+			network->mode |= IEEE_B;
+	}
+
+	if (network->mode == 0) {
+		IEEE80211_DEBUG_SCAN("Filtered out '%s (" MAC_FMT ")' "
+				     "network.\n",
+				     escape_essid((const char *)network->ssid,
+						  network->ssid_len),
+				     MAC_ARG(network->bssid));
+		return 1;
+	}
+   
+	if (ieee80211_is_empty_essid((const char *)network->ssid, network->ssid_len))
+		network->flags |= NETWORK_EMPTY_ESSID;
+
+	memcpy(&network->stats, stats, sizeof(network->stats));
+
+	return 0;
+}
+
+void darwin_iwi2100::update_network(struct ieee80211_network *dst,
+				  struct ieee80211_network *src)
+{
+	int qos_active;
+	u8 old_param;
+
+	ieee80211_network_reset(dst);
+	dst->ibss_dfs = src->ibss_dfs;
+
+	/* We only update the statistics if they were created by receiving
+	 * the network information on the actual channel the network is on.
+	 *
+	 * This keeps beacons received on neighbor channels from bringing
+	 * down the signal level of an AP. */
+	if (dst->channel == src->stats.received_channel)
+		memcpy(&dst->stats, &src->stats,
+		       sizeof(struct ieee80211_rx_stats));
+	else
+		IEEE80211_DEBUG_SCAN("Network " MAC_FMT " info received "
+			"off channel (%d vs. %d)\n", MAC_ARG(src->bssid),
+			dst->channel, src->stats.received_channel);
+
+	dst->capability = src->capability;
+	memcpy(dst->rates, src->rates, src->rates_len);
+	dst->rates_len = src->rates_len;
+	memcpy(dst->rates_ex, src->rates_ex, src->rates_ex_len);
+	dst->rates_ex_len = src->rates_ex_len;
+
+	dst->mode = src->mode;
+	dst->flags = src->flags;
+	dst->time_stamp[0] = src->time_stamp[0];
+	dst->time_stamp[1] = src->time_stamp[1];
+
+	dst->beacon_interval = src->beacon_interval;
+	dst->listen_interval = src->listen_interval;
+	dst->atim_window = src->atim_window;
+	dst->erp_value = src->erp_value;
+	dst->tim = src->tim;
+
+	memcpy(dst->wpa_ie, src->wpa_ie, src->wpa_ie_len);
+	dst->wpa_ie_len = src->wpa_ie_len;
+	memcpy(dst->rsn_ie, src->rsn_ie, src->rsn_ie_len);
+	dst->rsn_ie_len = src->rsn_ie_len;
+
+	dst->last_scanned = jiffies;
+	qos_active = src->qos_data.active;
+	old_param = dst->qos_data.old_param_count;
+	if (dst->flags & NETWORK_HAS_QOS_MASK)
+		memcpy(&dst->qos_data, &src->qos_data,
+		       sizeof(struct ieee80211_qos_data));
+	else {
+		dst->qos_data.supported = src->qos_data.supported;
+		dst->qos_data.param_count = src->qos_data.param_count;
+	}
+
+	if (dst->qos_data.supported == 1) {
+		if (dst->ssid_len)
+			IEEE80211_DEBUG_QOS
+			    ("QoS the network %s is QoS supported\n",
+			     dst->ssid);
+		else
+			IEEE80211_DEBUG_QOS
+			    ("QoS the network is QoS supported\n");
+	}
+	dst->qos_data.active = qos_active;
+	dst->qos_data.old_param_count = old_param;
+
+	/* dst->last_associate is not overwritten */
+}
+
+void darwin_iwi2100::ieee80211_process_probe_response(struct ieee80211_device *ieee,
+        struct ieee80211_probe_response *beacon,
+        struct ieee80211_rx_stats *stats)
+{
+	struct net_device *dev = ieee->dev;
+	struct ieee80211_network network;
+		network.ibss_dfs = NULL;
+	struct ieee80211_network *target;
+	struct ieee80211_network *oldest = NULL;
+	
+	IEEE80211_DEBUG_SCAN("'%s' (" MAC_FMT
+			     "): %c%c%c%c %c%c%c%c-%c%c%c%c %c%c%c%c\n",
+			     escape_essid((const char*)beacon->info_element->data,
+					  beacon->info_element->len),
+			     MAC_ARG(beacon->header.addr3),
+			     (beacon->capability & (1 << 0xf)) ? '1' : '0',
+			     (beacon->capability & (1 << 0xe)) ? '1' : '0',
+			     (beacon->capability & (1 << 0xd)) ? '1' : '0',
+			     (beacon->capability & (1 << 0xc)) ? '1' : '0',
+			     (beacon->capability & (1 << 0xb)) ? '1' : '0',
+			     (beacon->capability & (1 << 0xa)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x9)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x8)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x7)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x6)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x5)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x4)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x3)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x2)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x1)) ? '1' : '0',
+			     (beacon->capability & (1 << 0x0)) ? '1' : '0');
+
+	if (ieee80211_network_init(ieee, beacon, &network, stats)) {
+		IEEE80211_DEBUG_SCAN("Dropped '%s' (" MAC_FMT ") via %s.\n",
+				     escape_essid((const char*)beacon->info_element->data,
+						  beacon->info_element->len),
+				     MAC_ARG(beacon->header.addr3),
+				     is_beacon(beacon->header.frame_ctl) ?
+				     "BEACON" : "PROBE RESPONSE");
+		return;
+	}
+
+	/* The network parsed correctly -- so now we scan our known networks
+	 * to see if we can find it in our list.
+	 *
+	 * NOTE:  This search is definitely not optimized.  Once its doing
+	 *        the "right thing" we'll optimize it for efficiency if
+	 *        necessary */
+
+	/* Search for this entry in the list and update it if it is
+	 * already there. */
+
+	//spin_lock_irqsave(&ieee->lock, flags);
+	//IOLockLock(mutex);
+	list_for_each_entry(target, &ieee->network_list, list) {
+		if (is_same_network(target, &network))
+			break;
+
+		if ((oldest == NULL) ||
+		    (target->last_scanned < oldest->last_scanned))
+			oldest = target;
+	}
+
+	/* If we didn't find a match, then get a new network slot to initialize
+	 * with this beacon's information */
+	if (&target->list == &ieee->network_list) {
+		if (list_empty(&ieee->network_free_list)) {
+			/* If there are no more slots, expire the oldest */
+			list_del(&oldest->list);
+			target = oldest;
+			IEEE80211_DEBUG_SCAN("Expired '%s' (" MAC_FMT ") from "
+					     "network list.\n",
+					     escape_essid((const char*)target->ssid,
+							  target->ssid_len),
+					     MAC_ARG(target->bssid));
+			ieee80211_network_reset(target);
+		} else {
+			/* Otherwise just pull from the free list */
+			target = list_entry(ieee->network_free_list.next,
+					    struct ieee80211_network, list);
+			list_del(ieee->network_free_list.next);
+		}
+
+		memcpy(target, &network, sizeof(*target));
+		network.ibss_dfs = NULL;
+		list_add_tail(&target->list, &ieee->network_list);
+	} else {
+		IEEE80211_DEBUG_SCAN("Updating '%s' (" MAC_FMT ") via %s.\n",
+				     escape_essid((const char*)target->ssid,
+						  target->ssid_len),
+				     MAC_ARG(target->bssid),
+				     is_beacon(beacon->header.frame_ctl) ?
+				     "BEACON" : "PROBE RESPONSE");
+		update_network(target, &network);
+		network.ibss_dfs = NULL;
+	}
+
+	//spin_unlock_irqrestore(&ieee->lock, flags);
+	//IOLockUnlock(mutex);
+	
+	/*if (is_beacon(beacon->header.frame_ctl)) {
+				ipw_handle_probe_response(dev, beacon, target);
+		//if (ieee->handle_beacon != NULL)
+		//	ieee->handle_beacon(dev, beacon, target);
+	} else {
+				ipw_handle_beacon(dev, beacon, target);
+		//if (ieee->handle_probe_response != NULL)
+		//	ieee->handle_probe_response(dev, beacon, target);
+	}*/
 }
 
 void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee, 
         struct ieee80211_hdr_4addr *header,struct ieee80211_rx_stats *stats)
 {
+	// copy from ieee80211_rx.c ieee80211_rx_mgt
+	switch (WLAN_FC_GET_STYPE(le16_to_cpu(header->frame_ctl))) {
+	case IEEE80211_STYPE_ASSOC_RESP:
+		IWI_DEBUG("received ASSOCIATION RESPONSE (%d)\n",
+				WLAN_FC_GET_STYPE(le16_to_cpu(header->frame_ctl)));
+		ieee80211_handle_assoc_resp(ieee,
+				                    (struct ieee80211_assoc_response *)
+									header, stats); 
+		break;
+	case IEEE80211_STYPE_REASSOC_RESP:
+			IEEE80211_DEBUG_MGMT("received REASSOCIATION RESPONSE (%d)\n",
+								 WLAN_FC_GET_STYPE(le16_to_cpu
+													(header->frame_ctl)));
+		break;
+	case IEEE80211_STYPE_PROBE_REQ:
+			IEEE80211_DEBUG_MGMT("received auth (%d)\n",
+                                     WLAN_FC_GET_STYPE(le16_to_cpu
+                                                       (header->frame_ctl)));
+			IWI_DEBUG("but not impletented \n");										   
+            /*
+			if (ieee->handle_probe_request != NULL)
+                        ieee->handle_probe_request(ieee->dev,
+                                                   (struct
+                                                    ieee80211_probe_request *)
+                                                   header, stats); */
+		break;
+	case IEEE80211_STYPE_PROBE_RESP:
+			IEEE80211_DEBUG_MGMT("received PROBE RESPONSE (%d)\n",
+                                     WLAN_FC_GET_STYPE(le16_to_cpu
+                                                       (header->frame_ctl)));	
+			/*ipw_handle_probe_request(ieee->dev, (struct
+                                                    ieee80211_probe_request *)
+                                                   header, stats);*/
+                ieee80211_process_probe_response(ieee,
+                                                 (struct
+                                                  ieee80211_probe_response *)
+                                                 header, stats); 
+		break;
+	case IEEE80211_STYPE_BEACON:
+                IEEE80211_DEBUG_MGMT("received BEACON (%d)\n",
+                                     WLAN_FC_GET_STYPE(le16_to_cpu
+                                                       (header->frame_ctl)));
+                ieee80211_process_probe_response(ieee,
+                                                 (struct
+                                                  ieee80211_probe_response *)
+                                                 header, stats); 
+                break;
+	case IEEE80211_STYPE_AUTH:
 
+                IEEE80211_DEBUG_MGMT("received auth (%d)\n",
+                                     WLAN_FC_GET_STYPE(le16_to_cpu
+                                                       (header->frame_ctl)));
+                IWI_DEBUG("but not impletented \n"); 
+				/*
+                if (ieee->handle_auth != NULL)
+                        ieee->handle_auth(ieee->dev,
+                                          (struct ieee80211_auth *)header); */
+                break;
+
+	case IEEE80211_STYPE_DISASSOC:
+		        IWI_DEBUG("DISASSOC: not impletented \n");
+				/* 
+                if (ieee->handle_disassoc != NULL)
+                        ieee->handle_disassoc(ieee->dev,
+                                              (struct ieee80211_disassoc *)
+                                              header); */
+                break;
+	case IEEE80211_STYPE_ACTION:
+                IEEE80211_DEBUG_MGMT("ACTION\n");
+				IWI_DEBUG("ACTION: but not impletented \n");
+				/* 
+                if (ieee->handle_action)
+                        ieee->handle_action(ieee->dev,
+                                            (struct ieee80211_action *)
+                                            header, stats); */
+                break;
+
+	case IEEE80211_STYPE_REASSOC_REQ:
+                IEEE80211_DEBUG_MGMT("received reassoc (%d)\n",
+                                     WLAN_FC_GET_STYPE(le16_to_cpu
+                                                       (header->frame_ctl)));
+
+                IEEE80211_DEBUG_MGMT("%s: IEEE80211_REASSOC_REQ received\n",
+									 ieee->dev->name);
+				IWI_DEBUG("REASSOC: but not impletented \n");
+				/*
+                if (ieee->handle_reassoc_request != NULL)
+                        ieee->handle_reassoc_request(ieee->dev,
+                                                    (struct ieee80211_reassoc_request *)
+                                                     header); */
+                break;
+	case IEEE80211_STYPE_ASSOC_REQ:
+                IEEE80211_DEBUG_MGMT("received assoc (%d)\n",
+                                     WLAN_FC_GET_STYPE(le16_to_cpu
+                                                       (header->frame_ctl)));
+				ieee80211_handle_assoc_resp(ieee,
+				                    (struct ieee80211_assoc_response *)
+									header, stats); 
+				/*ieee80211_process_probe_response(ieee,
+                                                 (struct
+                                                  ieee80211_probe_response *)
+                                                 header, stats);*/
+                /* if (ieee->handle_assoc_request != NULL)
+                        ieee->handle_assoc_request(ieee->dev); */
+                break;
+
+	case IEEE80211_STYPE_DEAUTH:
+                IEEE80211_DEBUG_MGMT("DEAUTH\n");
+				IWI_DEBUG("DEAUTH: but not impletented \n");
+                /*if (ieee->handle_deauth != NULL)
+                        ieee->handle_deauth(ieee->dev,
+                                            (struct ieee80211_deauth *)
+                                            header); */
+                break;
+	default:
+                IEEE80211_DEBUG_MGMT("received UNKNOWN (%d)\n",
+                                     WLAN_FC_GET_STYPE(le16_to_cpu
+                                                       (header->frame_ctl)));
+                IEEE80211_DEBUG_MGMT("%s: Unknown management packet: %d\n",
+									ieee->dev->name,
+                                     WLAN_FC_GET_STYPE(le16_to_cpu
+                                                       (header->frame_ctl)));
+                break;
+	}
 }
 
 void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
@@ -5584,14 +6399,14 @@ void darwin_iwi2100::write_nic_dword(struct net_device *dev, u32 addr, u32 val)
 void darwin_iwi2100::read_register(struct net_device *dev, u32 reg, u32 * val)
 {
 	//*val = readl((void __iomem *)(memBase + reg));
-	*val=OSReadLittleInt32(memBase,reg);
+	*val=OSReadLittleInt32(&dev->base_addr,reg);
 	//IOLog("r: 0x%08X => 0x%08X\n", reg, *val);
 }
 
 void darwin_iwi2100::write_register(struct net_device *dev, u32 reg, u32 val)
 {
 	//writel(val, (void __iomem *)(memBase + reg));
-	OSWriteLittleInt32(memBase,reg,val);
+	OSWriteLittleInt32(&dev->base_addr,reg,val);
 	//IOLog("w: 0x%08X <= 0x%08X\n", reg, val);
 }
 
@@ -5605,7 +6420,7 @@ void darwin_iwi2100::read_nic_dword(struct net_device *dev, u32 addr, u32 * val)
 void darwin_iwi2100::read_register_byte(struct net_device *dev, u32 reg, u8 * val)
 {
 	//*val = readb((void __iomem *)(memBase + reg));
-	*val= (UInt8)*((UInt8 *)memBase + reg);
+	*val= (UInt8)*((UInt8 *)&dev->base_addr + reg);
 	//IOLog("r: 0x%08X => %02X\n", reg, *val);
 }
 

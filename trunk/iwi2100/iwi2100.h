@@ -4,6 +4,8 @@
 
 #include "defines.h"
 
+
+
 //#define IWI_NOLOG
 #define IWI_DEBUG_NORMAL
 //#define IWI_DEBUG_FULL
@@ -555,11 +557,11 @@ virtual IOOptionBits getState( void ) const;
 	virtual int ipw2100_rf_eeprom_ready(struct ipw2100_priv *priv);
 	virtual int ipw2100_verify_ucode(struct ipw2100_priv *priv);
 	virtual int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv);
-	virtual void darwin_iwi2100::read_nic_memory(struct net_device *dev, u32 addr, u32 len, u8 * buf);
-	virtual void darwin_iwi2100::read_register_byte(struct net_device *dev, u32 reg, u8 * val);
-	virtual void darwin_iwi2100::read_nic_dword(struct net_device *dev, u32 addr, u32 * val);
-	virtual void darwin_iwi2100::write_register(struct net_device *dev, u32 reg, u32 val);
-	virtual void darwin_iwi2100::read_register(struct net_device *dev, u32 reg, u32 * val);
+	static void darwin_iwi2100::read_nic_memory(struct net_device *dev, u32 addr, u32 len, u8 * buf);
+	static void darwin_iwi2100::read_register_byte(struct net_device *dev, u32 reg, u8 * val);
+	static void darwin_iwi2100::read_nic_dword(struct net_device *dev, u32 addr, u32 * val);
+	static void darwin_iwi2100::write_register(struct net_device *dev, u32 reg, u32 val);
+	static void darwin_iwi2100::read_register(struct net_device *dev, u32 reg, u32 * val);
 	virtual void darwin_iwi2100::write_nic_dword(struct net_device *dev, u32 addr, u32 val);
 	virtual void darwin_iwi2100::write_register_word(struct net_device *dev, u32 reg, u16 val);
 	virtual void darwin_iwi2100::write_nic_word(struct net_device *dev, u32 addr, u16 val);
@@ -572,7 +574,7 @@ virtual IOOptionBits getState( void ) const;
 	virtual void darwin_iwi2100::write_nic_memory(struct net_device *dev, u32 addr, u32 len,
 			     const u8 * buf);
 
-	
+	static  void isr_indicate_associated(struct ipw2100_priv *priv, u32 status);
 	
 	
 	
@@ -713,7 +715,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 				 u8 * image_data, size_t image_len_data);
 	virtual void ipw2100_initialize_ordinals(struct ipw2100_priv *priv);
 	virtual int ipw2100_wait_for_card_state(struct ipw2100_priv *priv, int state);
-	virtual int ipw2100_get_ordinal(struct ipw2100_priv *priv, u32 ord,
+	static int ipw2100_get_ordinal(struct ipw2100_priv *priv, u32 ord,
 			       void *val, u32 * len);
 	virtual void ipw2100_reset_fatalerror(struct ipw2100_priv *priv);
 	virtual int ipw2100_power_cycle_adapter(struct ipw2100_priv *priv);
@@ -774,13 +776,51 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual int ipw2100_hw_phy_off(struct ipw2100_priv *priv);
 	virtual void __ipw2100_tx_complete(struct ipw2100_priv *priv);
 	virtual int __ipw2100_tx_process(struct ipw2100_priv *priv);
-	
-	
-	
-	
-	
-	
-	
+	static void isr_indicate_association_lost(struct ipw2100_priv *priv, u32 status);
+	static void isr_scan_complete(struct ipw2100_priv *priv, u32 status);
+	static void isr_indicate_rf_kill(struct ipw2100_priv *priv, u32 status);
+	static void isr_indicate_scanning(struct ipw2100_priv *priv, u32 status);
+	virtual int ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
+				       *frame, struct ieee80211_rx_stats *stats);
+	virtual int ieee80211_parse_info_param(struct ieee80211_info_element
+				      *info_element, u16 length,
+				      struct ieee80211_network *network);
+	virtual void ieee80211_process_probe_response(struct ieee80211_device *ieee,
+        struct ieee80211_probe_response *beacon,
+        struct ieee80211_rx_stats *stats);
+	virtual int ieee80211_network_init(struct ieee80211_device *ieee, struct ieee80211_probe_response
+					 *beacon,
+					 struct ieee80211_network *network,
+					 struct ieee80211_rx_stats *stats);
+	int is_beacon(__le16 fc)
+		{
+			return (WLAN_FC_GET_STYPE(le16_to_cpu(fc)) == IEEE80211_STYPE_BEACON);
+		}
+	 int is_same_network(struct ieee80211_network *src,
+				  struct ieee80211_network *dst)
+		{
+			return ((src->ssid_len == dst->ssid_len) &&
+			(src->channel == dst->channel) &&
+			!compare_ether_addr(src->bssid, dst->bssid) &&
+			!memcmp(src->ssid, dst->ssid, src->ssid_len));
+		}
+	 unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
+		{
+			const u16 *a = (const u16 *) _a;
+			const u16 *b = (const u16 *) _b;
+
+			if(ETH_ALEN != 6) return -1;
+			return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
+		}				 
+	virtual void update_network(struct ieee80211_network *dst,
+				  struct ieee80211_network *src);
+				  					
+							
+								
+										
+		
+		
+		
 	
 	
 	
@@ -820,7 +860,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	IOInterruptEventSource *	fInterruptSrc;	// ???
 //	IOTimerEventSource *		fWatchdogTimer;	// ???
 	IOOutputQueue *				fTransmitQueue;	// ???
-	UInt16 *					memBase;
+	
 	UInt32						event;
 	u8 eeprom[0x100];
 	
@@ -905,6 +945,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	UInt32                  _pmPowerState;
     thread_call_t           _powerOffThreadCall;
     thread_call_t           _powerOnThreadCall;
+	UInt16 *					memBase;
 	
 };
 
