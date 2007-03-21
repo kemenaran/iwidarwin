@@ -6040,6 +6040,554 @@ void darwin_iwi3945::ipw_reset_channel_flag(struct ipw_priv *priv)
 	}*/
 }
 
+int darwin_iwi3945::ipw_is_alive(struct ipw_priv *priv)
+{
+	return (priv->status & STATUS_ALIVE) ? 1 : 0;
+}
+
+int darwin_iwi3945::check_bits(unsigned long field, unsigned long mask)
+{
+	return ((field & mask) == mask) ? 1 : 0;
+}
+
+int darwin_iwi3945::tune_required(struct ipw_priv *priv)
+{
+	if (memcmp
+	    (priv->staging_rxon.bssid_addr, priv->active_rxon.bssid_addr,
+	     ETH_ALEN))
+		return 1;
+
+	if ((priv->staging_rxon.dev_type != priv->active_rxon.dev_type) ||
+	    (priv->staging_rxon.channel != priv->active_rxon.channel))
+		return 1;
+
+	/* Check if we are not switching bands */
+	if (check_bits(priv->staging_rxon.flags, RXON_FLG_BAND_24G_MSK) !=
+	    check_bits(priv->active_rxon.flags, RXON_FLG_BAND_24G_MSK))
+		return 1;
+
+	/* Check if we are switching association toggle */
+	if (check_bits(priv->staging_rxon.filter_flags,
+		       RXON_FILTER_ASSOC_MSK) &&
+	    check_bits(priv->active_rxon.filter_flags, RXON_FILTER_ASSOC_MSK))
+		return 0;
+
+	return 1;
+}
+
+int darwin_iwi3945::ipw_send_rxon_assoc(struct ipw_priv *priv)
+{
+	int rc = 0;
+	struct ipw_rx_packet *res = NULL;
+	struct ipw_rxon_assoc_cmd rxon_assoc;
+	struct ipw_host_cmd cmd;// = {
+		cmd.id = REPLY_RXON_ASSOC;
+		cmd.len = sizeof(struct ipw_rxon_assoc_cmd);
+		cmd.meta.flags = CMD_WANT_SKB;
+		cmd.data = &rxon_assoc;
+	//};
+
+	rxon_assoc.flags = priv->staging_rxon.flags;
+	rxon_assoc.filter_flags = priv->staging_rxon.filter_flags;
+	rxon_assoc.ofdm_basic_rates = priv->staging_rxon.ofdm_basic_rates;
+	rxon_assoc.cck_basic_rates = priv->staging_rxon.cck_basic_rates;
+	rxon_assoc.reserved = 0;
+
+	rc = ipw_send_cmd(priv, &cmd);
+	if (rc)
+		return rc;
+
+	res = (struct ipw_rx_packet *)mbuf_data(cmd.meta.u.skb);//->data;
+	if (res->hdr.flags & 0x40) {
+		IOLog("Bad return from REPLY_RXON_ASSOC command\n");
+		rc = -EIO;
+	}
+
+	freePacket(cmd.meta.u.skb);
+
+	return rc;
+}
+
+u8 darwin_iwi3945::ipw_rate_index2plcp(int x)
+{
+
+	if (x < ARRAY_SIZE(rate_table_info))
+		return rate_table_info[x].rate_plcp;
+
+	return IPW_INVALID_RATE;
+}
+
+int darwin_iwi3945::ipw_reg_send_txpower(struct ipw_priv *priv)
+{
+	int rate_idx;
+	struct ipw_channel_info *ch_info = NULL;
+	struct ipw_txpowertable_cmd txpower;// = {
+		txpower.channel = priv->active_conf.channel;
+	//};
+
+	txpower.band = (priv->active_conf.phymode == MODE_IEEE80211A) ? 0 : 1;
+	ch_info = ipw_get_channel_info(priv,
+				       priv->active_conf.phymode,
+				       priv->active_conf.channel);
+	if (!ch_info) {
+		IOLog
+		    ("Failed to get channel info for channel %d [%d]\n",
+		     priv->active_conf.channel, priv->active_conf.phymode);
+		return -EINVAL;
+	}
+
+	if (!is_channel_valid(ch_info)) {
+		IPW_DEBUG_POWER("Not calling TX_PWR_TABLE_CMD on "
+				"non-Tx channel.\n");
+		return 0;
+	}
+
+	/* fill cmd with power settings for all rates for current channel */
+	for (rate_idx = 0; rate_idx < IPW_MAX_RATES; rate_idx++) {
+		txpower.power[rate_idx].tpc =
+			ch_info->power_info[rate_idx].tpc;
+		txpower.power[rate_idx].rate = ipw_rate_index2plcp(rate_idx);
+
+		IPW_DEBUG_POWER("ch %d:%d rf %d dsp %3d rate code 0x%02x\n",
+				txpower.channel,
+				txpower.band,
+				txpower.power[rate_idx].tpc.tx_gain,
+				txpower.power[rate_idx].tpc.dsp_atten,
+				txpower.power[rate_idx].rate);
+	}
+
+	return ipw_send_cmd_pdu(priv, REPLY_TX_PWR_TABLE_CMD,
+				sizeof(struct ipw_txpowertable_cmd), &txpower);
+
+}
+
+u8 darwin_iwi3945::ipw_remove_station(struct ipw_priv *priv, u8 * bssid, int is_ap)
+{
+	int index = IPW_INVALID_STATION;
+	int i;
+	unsigned long flags;
+
+	//spin_lock_irqsave(&priv->sta_lock, flags);
+	if (is_ap) {
+		index = AP_ID;
+		if ((priv->stations[index].used))
+			priv->stations[index].used = 0;
+	} else if (ipw_is_broadcast_ether_addr(bssid)) {
+		index = priv->hw_setting.broadcast_id;
+		if ((priv->stations[index].used))
+			priv->stations[index].used = 0;
+	} else {
+		for (i = STA_ID; i < (priv->num_stations + STA_ID); i++) {
+			if ((priv->stations[i].used)
+			    &&
+			    (!memcmp
+			     (priv->stations[i].sta.sta.MACAddr,
+			      bssid, ETH_ALEN))) {
+				index = i;
+				priv->stations[index].used = 0;
+				break;
+			}
+		}
+	}
+
+	if (index != IPW_INVALID_STATION) {
+		if (priv->num_stations > 0)
+			priv->num_stations--;
+		IOLog("Removing STA ID %d: " MAC_FMT "\n",
+			index, MAC_ARG(bssid));
+
+	}
+
+	//spin_unlock_irqrestore(&priv->sta_lock, flags);
+	return 0;
+}
+
+u8 darwin_iwi3945::ipw_add_station(struct ipw_priv *priv, u8 * bssid,
+			  int is_ap, u8 flags)
+{
+	int i = priv->hw_setting.number_of_stations;
+	int index = IPW_INVALID_STATION;
+	unsigned long flags_spin;
+
+	//spin_lock_irqsave(&priv->sta_lock, flags_spin);
+	if (is_ap) {
+		index = AP_ID;
+		if ((priv->stations[index].used) &&
+		    (!memcmp
+		     (priv->stations[index].sta.sta.MACAddr, bssid, ETH_ALEN)))
+			goto done;
+	} else if (ipw_is_broadcast_ether_addr(bssid)) {
+		index = priv->hw_setting.broadcast_id;
+		if ((priv->stations[index].used) &&
+		    (!memcmp
+		     (priv->stations[index].sta.sta.MACAddr, bssid, ETH_ALEN)))
+			goto done;
+	} else {
+		for (i = STA_ID; i < (priv->num_stations + STA_ID); i++) {
+			if ((priv->stations[i].used)
+			    &&
+			    (!memcmp
+			     (priv->stations[i].sta.sta.MACAddr,
+			      bssid, ETH_ALEN))) {
+				goto done;
+			}
+
+			if ((priv->stations[i].used == 0) &&
+			    (index == IPW_INVALID_STATION))
+				index = i;
+		}
+	}
+
+	if (index != IPW_INVALID_STATION)
+		i = index;
+
+	if (i == priv->hw_setting.number_of_stations) {
+		index = IPW_INVALID_STATION;
+		goto done;
+	}
+
+	IOLog("Adding STA ID %d: " MAC_FMT "\n", i, MAC_ARG(bssid));
+
+	priv->stations[i].used = 1;
+	priv->stations[i].current_rate.s.rate = R_1M;
+	memset(&priv->stations[i].sta, 0, sizeof(struct ipw_addsta_cmd));
+	memcpy(priv->stations[i].sta.sta.MACAddr, bssid, ETH_ALEN);
+	priv->stations[i].sta.ctrlAddModify = 0;
+	priv->stations[i].sta.sta.staID = i;
+	priv->stations[i].sta.station_flags = 0;
+
+	//todoG do we need this
+//      priv->stations[i].sta.tid_disable_tx = 0xffff;  /* all TID's disabled */
+	if (priv->active_conf.phymode == MODE_IEEE80211A)
+		priv->stations[i].sta.tx_rate.rate_n_flags = R_6M;
+	else
+		priv->stations[i].sta.tx_rate.rate_n_flags = R_1M |
+			priv->hw_setting.cck_flag;
+
+	priv->stations[i].sta.tx_rate.rate_n_flags |= RATE_MCS_ANT_B_MSK;
+	priv->stations[i].sta.tx_rate.rate_n_flags &= ~RATE_MCS_ANT_A_MSK;
+
+	priv->stations[i].sta.station_flags |= STA_MODIFY_TX_RATE_MSK;
+
+	priv->stations[i].current_rate.rate_n_flags = priv->stations[i].sta.tx_rate.rate_n_flags;
+
+	priv->num_stations++;
+	//spin_unlock_irqrestore(&priv->sta_lock, flags_spin);
+	ipw_send_add_station(priv, &priv->stations[i].sta, flags);
+	return i;
+      done:
+	//spin_unlock_irqrestore(&priv->sta_lock, flags_spin);
+	return index;
+
+}
+
+int darwin_iwi3945::ipw_send_add_station(struct ipw_priv *priv,
+				struct ipw_addsta_cmd *sta, u8 flags)
+{
+	struct ipw_rx_packet *res = NULL;
+	int rc = 0;
+	struct ipw_host_cmd cmd;// = {
+		cmd.id = REPLY_ADD_STA;
+		cmd.len = priv->hw_setting.add_station_size;
+		cmd.meta.flags = flags;
+		cmd.data = sta;
+
+	if (!(flags & CMD_ASYNC))
+		//cmd.meta.u.callback = ipw_add_sta_sync_callback;
+	//else
+		cmd.meta.flags |= CMD_WANT_SKB;
+
+	rc = ipw_send_cmd(priv, &cmd);
+
+	if (rc || (flags & CMD_ASYNC))
+		return rc;
+
+	res = (struct ipw_rx_packet *)mbuf_data(cmd.meta.u.skb);//->data;
+	if (res->hdr.flags & 0x40) {
+		IOLog("Bad return from REPLY_ADD_STA (0x%08X)\n",
+			  res->hdr.flags);
+		rc = -EIO;
+	}
+
+	if (rc == 0) {
+		switch (res->u.add_sta.status) {
+		case ADD_STA_SUCCESS_MSK:
+			IOLog("REPLY_ADD_STA PASSED\n");
+			break;
+		default:
+			rc = -EIO;
+			IOLog("REPLY_ADD_STA failed\n");
+			break;
+		}
+	}
+	freePacket(cmd.meta.u.skb);
+
+	return rc;
+}
+
+int darwin_iwi3945::ipw_rxon_add_station(struct ipw_priv *priv, u8 * addr, int is_ap)
+{
+	/* Remove this station if it happens to already exist */
+	ipw_remove_station(priv, addr, is_ap);
+
+	return ipw_add_station(priv, addr, is_ap, 0);
+}
+
+int darwin_iwi3945::ipw_commit_rxon(struct ipw_priv *priv)
+{
+	int rc = 0;
+
+	if (!ipw_is_alive(priv))
+		return -1;
+
+	/* always get timestamp with Rx frame */
+	priv->staging_rxon.flags |= RXON_FLG_TSF2HOST_MSK;
+
+	/* select antenna */
+	priv->staging_rxon.flags &=
+	    ~(RXON_FLG_DIS_DIV_MSK | RXON_FLG_ANT_SEL_MSK);
+	priv->staging_rxon.flags |= ipw_get_antenna_flags(priv);
+
+	/* If we don't need to retune, we can use ipw_rxon_assoc_cmd which
+	 * is used to reconfigure filter and other flags for the current
+	 * radio configuration.
+	 *
+	 * If we need to tune, we need to request the regulatory
+	 * daemon to tune and configure the radio via ipw_send_rx_config. */
+	if (!tune_required(priv))
+		rc = ipw_send_rxon_assoc(priv);
+	else {
+		/* Sending the RXON command clears out the station table,
+		 * so we must clear out our cached table values so we will
+		 * re-add stations to the uCode for TX */
+		ipw_clear_stations_table(priv);
+
+		/* If we are currently associated and the new config requires
+		 * a tune *and* the new config wants the associated mask enabled,
+		 * we must clear the associated from the active configuration
+		 * before we apply the new config */
+		if (ipw_is_associated(priv) &&
+		    (priv->staging_rxon.
+		     filter_flags & RXON_FILTER_ASSOC_MSK)) {
+			IOLog("Toggling associated bit on current "
+				       "RXON\n");
+			priv->active_rxon.filter_flags &=
+				~RXON_FILTER_ASSOC_MSK;
+			rc = ipw_send_cmd_pdu(priv, REPLY_RXON,
+					      sizeof(struct ipw_rxon_cmd),
+					      &priv->active_rxon);
+
+			/* If the mask clearing failed then we set
+			 * active_config back to what it was previously */
+			if (!rc)
+				priv->active_rxon.filter_flags |=
+					RXON_FILTER_ASSOC_MSK;
+
+		}
+
+		if (!rc)
+			rc = ipw_send_cmd_pdu(priv, REPLY_RXON,
+					      sizeof(struct ipw_rxon_cmd),
+					      &priv->staging_rxon);
+		if (!rc)
+			rc = ipw_reg_send_txpower(priv);
+
+		/* Add the broadcast address so we can send broadcast frames */
+		if (!rc) {
+			if (ipw_rxon_add_station(priv, BROADCAST_ADDR, 0) ==
+			    IPW_INVALID_STATION)
+				rc = -EIO;
+		}
+	}
+
+	if (rc)
+		IOLog("Error setting configuration.  Reload driver.\n");
+	else
+		memcpy(&priv->active_rxon, &priv->staging_rxon,
+		       sizeof(priv->active_rxon));
+
+	return rc;
+}
+
+int darwin_iwi3945::ipw_init_rate_scaling(struct ipw_priv *priv)
+{
+	int rc;
+	struct ipw_rate_scaling_cmd_specifics *cmd;
+	struct ipw_rate_scaling_info *table;
+	unsigned long flags;
+	int i;
+
+	cmd = &priv->lq_mngr.scale_rate_cmd;
+	table = &cmd->table[0];
+
+	//spin_lock_irqsave(&priv->lq_mngr.lock, flags);
+
+	priv->lq_mngr.flush_time = IPW_RATE_SCALE_FLUSH;
+	priv->lq_mngr.stamp_last = jiffies;
+	priv->lq_mngr.tx_packets = 0;
+
+
+	switch (priv->active_conf.phymode) {
+	case MODE_IEEE80211A:
+		IOLog("Select A mode rate scale\n");
+
+		table[RATE_SCALE_6M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_6M_INDEX].next_rate_index =
+		    RATE_SCALE_6M_INDEX;
+		table[RATE_SCALE_9M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_9M_INDEX].next_rate_index =
+		    RATE_SCALE_6M_INDEX;
+		table[RATE_SCALE_12M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_12M_INDEX].next_rate_index =
+		    RATE_SCALE_9M_INDEX;
+		table[RATE_SCALE_18M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_18M_INDEX].next_rate_index =
+		    RATE_SCALE_12M_INDEX;
+		table[RATE_SCALE_24M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_24M_INDEX].next_rate_index =
+		    RATE_SCALE_18M_INDEX;
+		table[RATE_SCALE_36M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_36M_INDEX].next_rate_index =
+		    RATE_SCALE_24M_INDEX;
+		table[RATE_SCALE_48M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_48M_INDEX].next_rate_index =
+		    RATE_SCALE_36M_INDEX;
+		table[RATE_SCALE_54M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_54M_INDEX].next_rate_index =
+		    RATE_SCALE_48M_INDEX;
+
+		/* If one of the following CCK rates is used,
+		 * have it fall back to an above OFDM rate */
+		table[RATE_SCALE_1M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_1M_INDEX].next_rate_index =
+		    RATE_SCALE_6M_INDEX;
+		table[RATE_SCALE_2M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_2M_INDEX].next_rate_index =
+		    RATE_SCALE_6M_INDEX;
+		table[RATE_SCALE_5_5M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_5_5M_INDEX].next_rate_index =
+		    RATE_SCALE_6M_INDEX;
+		table[RATE_SCALE_11M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_11M_INDEX].next_rate_index =
+		    RATE_SCALE_6M_INDEX;
+
+		for (i = NUM_RATES; i < IPW_MAX_RATES; i++) {
+			table[i].try_cnt = priv->retry_rate;
+			table[i].next_rate_index = RATE_SCALE_6M_INDEX;
+		}
+		break;
+	case MODE_IEEE80211B:
+		IOLog("Select B mode rate scale\n");
+
+		/* If one of the following OFDM rates is used,
+		 * have it fall back to the CCK rates at the end */
+		table[RATE_SCALE_6M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_6M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_9M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_9M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_12M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_12M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_18M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_18M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_24M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_24M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_36M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_36M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_48M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_48M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_54M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_54M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+
+		/* CCK rates... */
+		table[RATE_SCALE_1M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_1M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_2M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_2M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_5_5M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_5_5M_INDEX].next_rate_index =
+		    RATE_SCALE_2M_INDEX;
+		table[RATE_SCALE_11M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_11M_INDEX].next_rate_index =
+		    RATE_SCALE_5_5M_INDEX;
+		for (i = NUM_RATES; i < IPW_MAX_RATES; i++) {
+			table[i].try_cnt = priv->retry_rate;
+			table[i].next_rate_index = RATE_SCALE_1M_INDEX;
+		}
+		break;
+	case MODE_IEEE80211G:
+		IOLog("Select G mode rate scale\n");
+
+		table[RATE_SCALE_6M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_6M_INDEX].next_rate_index =
+		    RATE_SCALE_2M_INDEX;
+		table[RATE_SCALE_9M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_9M_INDEX].next_rate_index =
+		    RATE_SCALE_6M_INDEX;
+		table[RATE_SCALE_12M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_12M_INDEX].next_rate_index =
+		    RATE_SCALE_9M_INDEX;
+		table[RATE_SCALE_18M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_18M_INDEX].next_rate_index =
+		    RATE_SCALE_12M_INDEX;
+		table[RATE_SCALE_24M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_24M_INDEX].next_rate_index =
+		    RATE_SCALE_18M_INDEX;
+		table[RATE_SCALE_36M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_36M_INDEX].next_rate_index =
+		    RATE_SCALE_24M_INDEX;
+		table[RATE_SCALE_48M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_48M_INDEX].next_rate_index =
+		    RATE_SCALE_36M_INDEX;
+		table[RATE_SCALE_54M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_54M_INDEX].next_rate_index =
+		    RATE_SCALE_48M_INDEX;
+		table[RATE_SCALE_1M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_1M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_2M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_2M_INDEX].next_rate_index =
+		    RATE_SCALE_1M_INDEX;
+		table[RATE_SCALE_5_5M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_5_5M_INDEX].next_rate_index =
+		    RATE_SCALE_2M_INDEX;
+		table[RATE_SCALE_11M_INDEX].try_cnt = priv->retry_rate;
+		table[RATE_SCALE_11M_INDEX].next_rate_index =
+		    RATE_SCALE_5_5M_INDEX;
+		for (i = NUM_RATES; i < IPW_MAX_RATES; i++) {
+			table[i].try_cnt = priv->retry_rate;
+			table[i].next_rate_index = RATE_SCALE_6M_INDEX;
+
+		}
+		break;
+	}
+
+	//spin_unlock_irqrestore(&priv->lq_mngr.lock, flags);
+
+	/* Update the rate scaling for control frame Tx */
+	cmd->table_id = 0;
+	rc = ipw_send_cmd_pdu(priv, REPLY_RATE_SCALE,
+			      sizeof(*cmd), cmd);
+	if (rc)
+		return rc;
+
+	/* Update the rate scaling for data frame Tx */
+	cmd->table_id = 1;
+	rc = ipw_send_cmd_pdu(priv, REPLY_RATE_SCALE,
+			      sizeof(*cmd), cmd);
+
+	return rc;
+}
+
 void darwin_iwi3945::ipw_bg_alive_start()
 {
 	//struct ipw_priv *priv =
@@ -6139,11 +6687,11 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	ipw_send_bt_config(priv);
 
 	/* Configure the adapter for unassociated operation */
-	//ipw_commit_rxon(priv);
+	ipw_commit_rxon(priv);
 
 	/* Add the broadcast address so we can send probe requests */
-	//ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
-	//ipw_init_rate_scaling(priv);
+	ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
+	ipw_init_rate_scaling(priv);
 
 	/* At this point, the NIC is initialized and operational */
 	priv->notif_missed_beacons = 0;

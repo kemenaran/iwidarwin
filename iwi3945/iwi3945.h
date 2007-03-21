@@ -624,15 +624,25 @@ virtual IOOptionBits getState( void ) const;
 	
 	virtual int ieee80211_rate_control_register(struct rate_control_ops *ops);
 	virtual void ipw_reset_channel_flag(struct ipw_priv *priv);
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	virtual int ipw_commit_rxon(struct ipw_priv *priv);
+	virtual int ipw_is_alive(struct ipw_priv *priv);
+	virtual int tune_required(struct ipw_priv *priv);
+	virtual int check_bits(unsigned long field, unsigned long mask);
+	virtual int ipw_send_rxon_assoc(struct ipw_priv *priv);
+	virtual int ipw_reg_send_txpower(struct ipw_priv *priv);
+	virtual u8 ipw_rate_index2plcp(int x);
+	virtual int ipw_rxon_add_station(struct ipw_priv *priv, u8 * addr, int is_ap);
+	virtual u8 ipw_remove_station(struct ipw_priv *priv, u8 * bssid, int is_ap);
+	inline int ipw_is_broadcast_ether_addr(const u8 * addr)
+	{
+	return (addr[0] & addr[1] & addr[2] & addr[3] & addr[4] &
+		addr[5]) == 0xff;
+	}
+	virtual u8 ipw_add_station(struct ipw_priv *priv, u8 * bssid,
+			  int is_ap, u8 flags);
+	virtual int ipw_send_add_station(struct ipw_priv *priv,
+				struct ipw_addsta_cmd *sta, u8 flags);
+	virtual int ipw_init_rate_scaling(struct ipw_priv *priv);
 	
 	
 	
