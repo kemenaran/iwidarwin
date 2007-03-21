@@ -718,7 +718,7 @@ bool darwin_iwi2200::start(IOService *provider)
 			IWI_ERR("ERR: getOutputQueue()\n");
 			break;
 		}
-		//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
 		
 		resetDevice((UInt16 *)memBase);
 		
@@ -953,7 +953,7 @@ struct ipw_rx_queue *darwin_iwi2200::ipw_rx_queue_alloc(struct ipw_priv *priv)
 	struct ipw_rx_queue *rxq;
 	int i;
 
-	rxq = (struct ipw_rx_queue*)kzalloc(sizeof(*rxq), NULL);//GFP_KERNEL);
+	rxq = (struct ipw_rx_queue*)kmalloc(sizeof(*rxq), NULL);//GFP_KERNEL);
 	if (unlikely(!rxq)) {
 		IWI_ERR("memory allocation failed\n");
 		return NULL;
@@ -1002,7 +1002,7 @@ void darwin_iwi2200::ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_que
 		if (rxq->pool[i].skb != NULL) {
 			//pci_unmap_single(priv->pci_dev, rxq->pool[i].dma_addr, IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
 			//dev_kfree_skb(rxq->pool[i].skb);
-			//IOMemoryDescriptor::withPhysicalAddress(rxq->pool[i].dma_addr,IPW_RX_BUF_SIZE,kIODirectionOutIn)->release();
+			IOMemoryDescriptor::withPhysicalAddress(rxq->pool[i].dma_addr,IPW_RX_BUF_SIZE,kIODirectionOutIn)->release();
 			freePacket2(rxq->pool[i].skb);
 			rxq->pool[i].dma_addr=NULL;
 			rxq->pool[i].skb = NULL;
@@ -1050,7 +1050,7 @@ void darwin_iwi2200::ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 		//pci_unmap_single(dev, le32_to_cpu(bd->u.data.chunk_ptr[i]),
 		//		 le16_to_cpu(bd->u.data.chunk_len[i]),
 		//		 PCI_DMA_TODEVICE);
-		//IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],le16_to_cpu(bd->u.data.chunk_len[i]),kIODirectionOutIn)->release();
+		IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],le16_to_cpu(bd->u.data.chunk_len[i]),kIODirectionNone)->release();
 		
 		if (txq->txb[txq->q.last_used]) {
 			ieee80211_txb_free(txq->txb[txq->q.last_used]);
@@ -1089,7 +1089,7 @@ void darwin_iwi2200::ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_que
 
 	/* free buffers belonging to queue itself */
 	//pci_free_consistent(dev, sizeof(txq->bd[0]) * q->n_bd, txq->bd, q->dma_addr);
-	//IOMemoryDescriptor::withPhysicalAddress(q->dma_addr,sizeof(txq->bd[0]) * q->n_bd,kIODirectionOutIn)->release();
+	IOMemoryDescriptor::withPhysicalAddress(q->dma_addr,sizeof(txq->bd[0]) * q->n_bd,kIODirectionNone)->release();
 	q->memD->release();
 	q->dma_addr=NULL;
 	kfree(txq->txb);
@@ -1289,7 +1289,6 @@ void darwin_iwi2200::ipw_rx_queue_restock(struct ipw_priv *priv)
 	if (rxq->free_count <= RX_LOW_WATERMARK) 
 	{
 		//ipw_rx_queue_replenish(priv);
-		//return;
 		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rx_queue_replenish),priv,NULL,true);
 	}
 	/* If we've added more space for the firmware to place data, tell it */
@@ -2124,6 +2123,7 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(struct ipw_priv *priv,
 		ipw_queue_tx_free_tfd(priv, txq);
 		priv->tx_packets++;
 	}
+	
       done:
 #ifdef TX_QUEUE_CHECK	  
 	if ((ipw_queue_space(q) > q->low_mark) &&
@@ -2303,7 +2303,8 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 			&& (fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING) )
 		{
 			 IWI_DEBUG("fTrasmitQueue->service()\n");
-			 //fTransmitQueue->start();//service(IOBasicOutputQueue::kServiceAsync);
+			 //fTransmitQueue->flush();//service(IOBasicOutputQueue::kServiceAsync);
+			 //fNetif->clearInputQueue();
 			 //ipw_send_cmd_simple(priv, IPW_CMD_TX_FLUSH);
 		}
 #endif
@@ -4830,11 +4831,19 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 
 	while (i != r) {
 		rxb = priv->rxq->queue[i];
-		if (unlikely(rxb == NULL)) {
+		priv->rxq->queue[i] = NULL;
+		if (rxb == NULL) {
 			IWI_DEBUG( "Queue not allocated!\n");
 			break;
 		}
-		priv->rxq->queue[i] = NULL;
+		if (rxb->skb == NULL) {
+			IWI_DEBUG( "Queue not allocated!\n");
+			break;
+		}
+		if (mbuf_data(rxb->skb)==NULL || mbuf_len(rxb->skb)==0){
+			IWI_DEBUG( "Queue not allocated!\n");
+			break;
+		}
 		//IOMemoryDescriptor* memD=//IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,IPW_RX_BUF_SIZE,kIODirectionOutIn);
 		//memD->prepare();
 		//pci_dma_sync_single_for_cpu(priv->pci_dev, rxb->dma_addr,IPW_RX_BUF_SIZE,PCI_DMA_FROMDEVICE);
@@ -4985,11 +4994,11 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		 * fail to Rx correctly */
 		//memD->complete();
 		//memD->release();
-			
-		//if (rxb->skb != NULL) {
+		if (rxb)	
+		if (rxb->skb)
 		if (!doFlushQueue) {
 			//dev_kfree_skb_any(rxb->skb);
-			//IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,IPW_RX_BUF_SIZE,kIODirectionOutIn)->release();
+			IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,IPW_RX_BUF_SIZE,kIODirectionNone)->release();
 			freePacket2(rxb->skb);
 			rxb->dma_addr=NULL;
 			rxb->skb = NULL;
@@ -7683,7 +7692,7 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 	//spin_unlock_irqrestore(&priv->lock, flags);
 	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	test_lock--;
-	return kIOReturnOutputStall;
+	return kIOReturnOutputDropped;//kIOReturnOutputStall;
 }
 
 int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
@@ -7802,8 +7811,8 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		if (unlikely(!skb_new))
 			goto failed;
 
-		skb_reserve(skb_new, crypt->ops->extra_msdu_prefix_len);
-		//mbuf_setlen(skb_new, crypt->ops->extra_msdu_prefix_len);
+		//skb_reserve(skb_new, crypt->ops->extra_msdu_prefix_len);
+		mbuf_setlen(skb_new, crypt->ops->extra_msdu_prefix_len);
 		memcpy(skb_put(skb_new, hdr_len), &header, hdr_len);
 		//memcpy(((UInt8*)mbuf_data(skb_new)+hdr_len), &header, hdr_len);
 		snapped = 1;
@@ -7929,10 +7938,12 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		skb_frag = txb->fragments[i];
 
 		if (host_encrypt || host_build_iv)
-			skb_reserve(skb_frag,
-				crypt->ops->extra_mpdu_prefix_len);
-			//mbuf_setlen(skb_frag,crypt->ops->extra_mpdu_prefix_len);
+		{
+			//skb_reserve(skb_frag, crypt->ops->extra_mpdu_prefix_len);
+			mbuf_setlen(skb_frag,crypt->ops->extra_mpdu_prefix_len);
 			//frag_hdr =(struct ieee80211_hdr_3addrqos *)((UInt8*)mbuf_data(skb_frag)+hdr_len);
+			mbuf_pkthdr_setlen(skb_frag,crypt->ops->extra_mpdu_prefix_len);
+		}
 		frag_hdr  = (struct ieee80211_hdr_3addrqos *)skb_put(skb_frag, hdr_len);
 		memcpy(frag_hdr, &header, hdr_len);
 		
@@ -8022,6 +8033,8 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		}
 
 		ieee80211_txb_free(txb);
+		freePacket2(skb_frag);
+		skb_frag=NULL;
 	}
 
 	return ret;
@@ -8030,7 +8043,12 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//spin_unlock_irqrestore(&ieee->lock, flags);
 	//IOLockUnlock(mutex);
 	//netif_stop_queue(dev);
-	IWI_DEBUG("TX drop\n");
+	IWI_WARN("TX drop\n");
+	freePacket2(skb);
+	skb=NULL;
+	ieee80211_txb_free(txb);
+	freePacket2(skb_frag);
+	skb_frag=NULL;
 	//fTransmitQueue->stop();
 	////fTransmitQueue->setCapacity(0);
 	//fTransmitQueue->flush();
@@ -8208,9 +8226,9 @@ int darwin_iwi2200::ipw_tx_skb(struct ipw_priv *priv, struct ieee80211_txb *txb,
 							mbuf_data_to_physical(
 								mbuf_data(txb->fragments[i]) ) ) );
 			// FIXME: this routine is not required					
-			if (  cpu_to_le16(mbuf_pkthdr_len(txb->fragments[i]) )  >= IPW_RX_BUF_SIZE) {
-				IWI_ERR("output packet >= IPW_RX_BUF_SIZE\n");
-				goto drop;
+			if (  cpu_to_le16(mbuf_pkthdr_len(txb->fragments[i]) )  > IPW_RX_BUF_SIZE) {
+				IWI_ERR("output packet > IPW_RX_BUF_SIZE %d\n",mbuf_pkthdr_len(txb->fragments[i]));
+				//goto drop;
 			}					
 			tfd->u.data.chunk_ptr[i] =
 				cpu_to_le32(mbuf_data_to_physical
@@ -8292,7 +8310,7 @@ frg:
       drop:
 	IWI_DEBUG("Silently dropping Tx packet.\n");
 	ieee80211_txb_free(txb);
-	return kIOReturnOutputSuccess;//NETDEV_TX_OK;
+	return kIOReturnOutputDropped;//NETDEV_TX_OK;
 }
 
 /* 
@@ -8338,12 +8356,12 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 					mbuf_len(m),mbuf_pkthdr_len(m),
 					mbuf_len(nm),mbuf_pkthdr_len(nm) );
 	freePacket2(nm);
+	nm=NULL;
 	return NULL;
 
 copy_packet: 
 		
 		return copyPacket(m, 0); 
-		//return replaceOrCopyPacket(&m,mbuf_len(m),NULL);
 }
 
 void darwin_iwi2200::freePacket2(mbuf_t m)
@@ -8353,10 +8371,10 @@ void darwin_iwi2200::freePacket2(mbuf_t m)
 	{
 		//freePacket(m);
 		//return;
-		mbuf_t nm;
-		for (nm = m; nm;  nm !=NULL) 
+		mbuf_t nm=m;
+		while (nm) 
 		{
-			if (!(mbuf_type(nm) & MBUF_TYPE_FREE) && mbuf_len(nm)!=0) 
+			if (!(mbuf_type(nm) & MBUF_TYPE_FREE) && mbuf_len(nm)!=0 && mbuf_data(nm)!=NULL) 
 			{
 				nm=mbuf_free(nm);
 				//releaseFreePackets();
@@ -8383,6 +8401,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	if(!(fNetif->getFlags() & IFF_RUNNING) || mbuf_pkthdr_len(m)==0 || m==NULL)
 	{
 		freePacket2(m);
+		m=NULL;
 		return kIOReturnOutputDropped;
 	}
 	
@@ -8447,9 +8466,10 @@ finish:
 	
 	/* free finished packet */
 	freePacket2(nm);
-
+	nm=NULL;
 	if (ret !=  kIOReturnOutputStall) { 
 		freePacket2(m);
+		m=NULL;
 	}
 	return ret;	
 }
@@ -9026,7 +9046,7 @@ struct ipw_frame *darwin_iwi2200::ipw_get_free_frame(struct ipw_priv *priv)
 {
 	struct ipw_frame *frame;
 	//if (list_empty(&priv->free_frames)) {
-		frame = (struct ipw_frame *)kzalloc(sizeof(*frame), NULL);
+		frame = (struct ipw_frame *)kmalloc(sizeof(*frame), NULL);
 		if (!frame) {
 			IWI_DEBUG("Could not allocate frame!\n");
 			return 0;
@@ -9857,8 +9877,8 @@ void darwin_iwi2200::ieee80211_process_probe_response(struct ieee80211_device *i
 	
 	IEEE80211_DEBUG_SCAN("'%s' (" MAC_FMT
 			     "): %c%c%c%c %c%c%c%c-%c%c%c%c %c%c%c%c\n",
-			     escape_essid((const char*)info_element->data,
-					  info_element->len),
+			     escape_essid((const char*)beacon->info_element->data,
+					  beacon->info_element->len),
 			     MAC_ARG(beacon->header.addr3),
 			     (beacon->capability & (1 << 0xf)) ? '1' : '0',
 			     (beacon->capability & (1 << 0xe)) ? '1' : '0',
@@ -9879,8 +9899,8 @@ void darwin_iwi2200::ieee80211_process_probe_response(struct ieee80211_device *i
 
 	if (ieee80211_network_init(ieee, beacon, &network, stats)) {
 		IEEE80211_DEBUG_SCAN("Dropped '%s' (" MAC_FMT ") via %s.\n",
-				     escape_essid((const char*)info_element->data,
-						  info_element->len),
+				     escape_essid((const char*)beacon->info_element->data,
+						  beacon->info_element->len),
 				     MAC_ARG(beacon->header.addr3),
 				     is_beacon(beacon->header.frame_ctl) ?
 				     "BEACON" : "PROBE RESPONSE");
