@@ -62,8 +62,35 @@ struct rate_control_alg {
 	struct rate_control_ops *ops;
 };
 
+ struct ipw_tx_power {
+	u8 tx_gain;		/* gain for analog radio */
+	u8 dsp_atten;		/* gain for DSP */
+} __attribute__ ((packed));
+
+struct ipw_power_per_rate {
+	u8 rate;
+	struct ipw_tx_power tpc;
+	u8 reserved;
+} __attribute__ ((packed));
+
+struct ipw_txpowertable_cmd {
+	u8 band;
+	u8 reserved;
+	u16 channel;
+	struct ipw_power_per_rate power[IPW_MAX_RATES];
+} __attribute__ ((packed));
+
 #define DRV_NAME	"ipw3945"
 
+#define STA_MODIFY_KEY_MASK	0x01
+#define STA_MODIFY_TX_RATE_MSK  0x04
+#define RATE_MCS_ANT_A_POS 14
+#define RATE_MCS_ANT_A_MSK 0x4000
+// bit-15 0==>chain B incative 1==>chain B active
+#define RATE_MCS_ANT_B_POS 15
+#define RATE_MCS_ANT_B_MSK 0x8000
+// bit-15:14 mask for both ant.
+#define RATE_MCS_ANT_AB_MSK 0xc000
 
 /* Kernel compatibility defines */
 #ifndef IRQ_NONE
@@ -442,6 +469,7 @@ struct ipw_qosparam_cmd {
 /*
  * Add/Modify Station Command & Response
  */
+
 struct ipw_keyinfo {
 	u16 key_flags;
 	u8 tkip_rx_tsc_byte2;	//byte  2 TSC[2] for key mix ph1 detection
@@ -460,18 +488,23 @@ struct sta_id_modify {
 } __attribute__ ((packed));
 
 struct ipw_addsta_cmd {
-	u8 ctrlAddModify;	// byte  4
-	u8 reserved[3];		// bytes 7:5
-	struct sta_id_modify sta;	// bytes 19:8
-	struct ipw_keyinfo key;	//byte 51:20
-	u32 station_flags;	//bytes 55:52
-	u32 station_flags_msk;	//bytes 59:56
-	u16 tid_disable_tx;	//bytes 61:60
-	u8 tx_rate;		//byte 62
-	u8 reserved_1;		//byte 63
-	u8 add_immediate_ba_tid;	//byte 64
-	u8 remove_immediate_ba_tid;	//byte 65
-	u16 add_immediate_ba_start_seq;	//byte 67:66
+	u8 ctrlAddModify;
+	u8 reserved[3];
+	struct sta_id_modify sta;
+	struct ipw_keyinfo key;
+	u32 station_flags;
+	u32 station_flags_msk;
+	u16 tid_disable_tx;
+	union {
+		struct {
+			u8 rate;
+			u8 flags;
+		} s;
+		u16 rate_n_flags;
+	} tx_rate;
+	u8 add_immediate_ba_tid;
+	u8 remove_immediate_ba_tid;
+	u16 add_immediate_ba_start_seq;
 } __attribute__ ((packed));
 
 struct ipw_add_sta_resp {
@@ -1850,11 +1883,53 @@ struct ipw_tid_data {
 	u16 seq_number;
 };
 
+struct ipw_rate_scaling_info {
+	u8 tx_rate;
+	u8 flags;
+	u8 try_cnt;
+	u8 next_rate_index;
+} __attribute__ ((packed));
+
+struct ipw_rate_scaling_cmd_specifics {
+	u8 table_id;
+	u8 reserved[3];
+	struct ipw_rate_scaling_info table[IPW_MAX_RATES];
+} __attribute__ ((packed));
+
+struct ipw_lq_mngr {
+	spinlock_t lock;
+	s32 max_window_size;
+	struct ipw_rate_scaling_cmd_specifics scale_rate_cmd;
+	s32 *expected_tpt;
+	u8 *next_higher_rate;
+	u8 *next_lower_rate;
+	unsigned long stamp;
+	unsigned long stamp_last;
+	u32 flush_time;
+	u32 tx_packets;
+};
+
+typedef enum { ALG_NONE, ALG_WEP, ALG_TKIP, ALG_CCMP, ALG_NULL }
+ieee80211_key_alg;
+
+struct ipw_hw_key {
+	ieee80211_key_alg alg;
+	int keylen;
+	u8 key[32];
+};
+
 struct ipw_station_entry {
 	struct ipw_addsta_cmd sta;
 	struct ipw_tid_data tid[MAX_TID_COUNT];
-	u8 current_rate;
+	union {
+		struct  {
+			u8 rate;
+			u8 flags;
+		} s;
+		u16 rate_n_flags;
+	} current_rate;
 	u8 used;
+	struct ipw_hw_key keyinfo;
 };
 
 struct ipw_rate_info {
@@ -2478,19 +2553,6 @@ struct ipw_driver_hw_info {
                               sizeof(struct ipw_cmd_meta))
 
 
-struct ipw_rate_scaling_info {
-	u8 tx_rate;
-	u8 flags;
-	u8 try_cnt;
-	u8 next_rate_index;
-} __attribute__ ((packed));
-
-struct ipw_rate_scaling_cmd_specifics {
-	u8 table_id;
-	u8 reserved[3];
-	struct ipw_rate_scaling_info table[IPW_MAX_RATES];
-} __attribute__ ((packed));
-
 struct ieee80211_tx_control {
 	int tx_rate; /* Transmit rate, given as the hw specific value for the
 		      * rate (from struct ieee80211_rate) */
@@ -2594,11 +2656,6 @@ struct ipw_channel_tgh_info {
  * -- user preference (e.g. iwconfig)
  * when requested power is set, base power index must also be set. */
  
- struct ipw_tx_power {
-	u8 tx_gain;		/* gain for analog radio */
-	u8 dsp_atten;		/* gain for DSP */
-} __attribute__ ((packed));
-
 struct ipw_channel_power_info {
 	struct ipw_tx_power tpc;	/* actual radio and DSP gain settings */
 	s8 power_table_index;	/* actual (temp-comp'd) index into gain table */
@@ -2749,7 +2806,8 @@ struct ipw_priv {
 	/* pci hardware address support */
 	void __iomem *hw_base;
 	unsigned long hw_len;
-
+	struct ipw_lq_mngr lq_mngr;
+	
 	struct ipw_rxon_cmd active_rxon;
 	struct ipw_rxon_cmd staging_rxon;
 	
