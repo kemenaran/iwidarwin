@@ -11,7 +11,7 @@
 //#define IWI_NOLOG
 //#define IWI_DEBUG_NORMAL
 //#define IWI_DEBUG_FULL_MODE
-//#define IWI_WARNERR
+#define IWI_WARNERR
 
 #if defined(IWI_NOLOG)
 	#define IWI_LOG(...)
@@ -843,7 +843,7 @@ public:
 virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 
 protected:
-	void freePacket2(mbuf_t  m);
+	 void freePacket2(mbuf_t  m);
 	 bool		addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name = 0);			
 	 int			sendCommand(UInt8 type,void *data,UInt8 len,bool async);
 	 int			ipw_scan(struct ipw_priv *priv, int type);
@@ -1048,7 +1048,7 @@ protected:
 									  struct ieee80211_hdr_4addr *header,
 									   struct ieee80211_rx_stats *stats);
 	 void ieee80211_process_probe_response(struct ieee80211_device *ieee,
-        struct ieee80211_probe_response *new_beacon,
+        struct ieee80211_probe_response *beacon,
         struct ieee80211_rx_stats *stats); // copy from isr_process_probe_response in ipw-0.2
 	 int ieee80211_network_init(struct ieee80211_device *ieee,
 	                 struct ieee80211_probe_response *beacon,
@@ -1060,40 +1060,40 @@ protected:
 	 int ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
 				       *frame, struct ieee80211_rx_stats *stats);
 	 int is_beacon(__le16 fc)
-	{
-		return (WLAN_FC_GET_STYPE(le16_to_cpu(fc)) == IEEE80211_STYPE_BEACON);
-	}
+		{
+			return (WLAN_FC_GET_STYPE(le16_to_cpu(fc)) == IEEE80211_STYPE_BEACON);
+		}
 	 int is_same_network(struct ieee80211_network *src,
 				  struct ieee80211_network *dst)
-	{
-		return ((src->ssid_len == dst->ssid_len) &&
-		(src->channel == dst->channel) &&
-		!compare_ether_addr(src->bssid, dst->bssid) &&
-		!memcmp(src->ssid, dst->ssid, src->ssid_len));
-	}
+		{
+			return ((src->ssid_len == dst->ssid_len) &&
+			(src->channel == dst->channel) &&
+			!compare_ether_addr(src->bssid, dst->bssid) &&
+			!memcmp(src->ssid, dst->ssid, src->ssid_len));
+		}
 	 unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
-	{
-		const u16 *a = (const u16 *) _a;
-		const u16 *b = (const u16 *) _b;
+		{
+			const u16 *a = (const u16 *) _a;
+			const u16 *b = (const u16 *) _b;
 
-		if(ETH_ALEN != 6) return -1;
-		return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
-	}
+			if(ETH_ALEN != 6) return -1;
+			return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
+		}
 	 void update_network(struct ieee80211_network *dst,
 				  struct ieee80211_network *src);
 	 void ipw_handle_mgmt_packet(struct ipw_priv *priv,
 				   struct ipw_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_stats *stats);			  
 	 void ieee80211_network_reset(struct ieee80211_network *network)
-	{
-		if (!network)
-		return;
+		{
+			if (!network)
+			return;
 
-		if (network->ibss_dfs) {
-		kfree(network->ibss_dfs);
-		network->ibss_dfs = NULL;
-		}
-	}			  
+			if (network->ibss_dfs) {
+			kfree(network->ibss_dfs);
+			network->ibss_dfs = NULL;
+			}
+		}			  
 	 u8 ipw_add_station(struct ipw_priv *priv, u8 * bssid);
 	 void ipw_write_direct(struct ipw_priv *priv, u32 addr, void *buf,
 			     int num);
@@ -1165,25 +1165,23 @@ protected:
 						 int headroom, int gfp_mask);
 	 int ipw_is_qos_active(struct net_device *dev, mbuf_t skb);
 	 int ipw_send_system_config(struct ipw_priv *priv);
-	inline void *kzalloc(size_t size, unsigned flags)
-	{
-		void *ret = kmalloc(size, flags);
-		if (ret)
-			memset(ret, 0, size);
-		return ret;
-	}
-
+	 inline void *kzalloc(size_t size, unsigned flags)
+		{
+			void *ret = kmalloc(size, flags);
+			if (ret)
+				memset(ret, 0, size);
+			return ret;
+		}
 	inline UInt32 MEM_READ_4(UInt16 *base, UInt32 addr)
-	{
-		CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr & IWI_INDIRECT_ADDR_MASK);
-		return CSR_READ_4(base, IWI_CSR_INDIRECT_DATA);
-	}
-
+		{
+			CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr & IWI_INDIRECT_ADDR_MASK);
+			return CSR_READ_4(base, IWI_CSR_INDIRECT_DATA);
+		}
 	inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
-	{
-		CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
-		return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
-	}
+		{
+			CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
+			return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
+		}
 
 
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
