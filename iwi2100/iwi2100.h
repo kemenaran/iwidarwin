@@ -814,7 +814,16 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 		}				 
 	virtual void update_network(struct ieee80211_network *dst,
 				  struct ieee80211_network *src);
-				  					
+	 void ieee80211_network_reset(struct ieee80211_network *network)
+		{
+			if (!network)
+			return;
+
+			if (network->ibss_dfs) {
+			kfree(network->ibss_dfs);
+			network->ibss_dfs = NULL;
+			}
+		}			  					
 							
 								
 										

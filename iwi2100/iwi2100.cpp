@@ -2646,7 +2646,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 	ipw2100_firmware->uc.data = (UInt8*)ipw2100_firmware->fw.data + h->fw_size;
 	ipw2100_firmware->uc.size = h->uc_size;
 
-	IOLog("fw version %d s: %d uc s:%d",ipw2100_firmware->version,ipw2100_firmware->fw.size,ipw2100_firmware->uc.size );
+	IOLog("fw version %d s: %d uc s:%d\n",ipw2100_firmware->version,ipw2100_firmware->fw.size,ipw2100_firmware->uc.size );
 	/*err = ipw2100_get_firmware(priv, &ipw2100_firmware);
 	if (err) {
 		IOLog("%s: ipw2100_get_firmware failed: %d\n",
