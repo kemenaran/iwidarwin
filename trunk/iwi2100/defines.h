@@ -964,5 +964,5 @@ typedef unsigned char UInt8;
 #define IPW2100_FW_VERSION ((IPW2100_FW_MINOR_VERSION << 8) | \
                              IPW2100_FW_MAJOR_VERSION)
 
-
+#define MAX_RESET_BACKOFF 10
 

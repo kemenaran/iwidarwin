@@ -4,6 +4,7 @@
 #include "defines.h"
 
 //			<string>0x25208086 0x25218086 0x25248086 0x25258086 0x25268086 0x25228086 0x25238086 0x25278086 0x25288086 0x25298086 0x252B8086 0x252C8086 0x252D8086 0x25508086 0x25518086 0x25538086 0x25548086 0x25558086 0x25608086 0x25628086 0x25638086 0x25618086 0x25658086 0x25668086 0x25678086 0x25708086 0x25808086 0x25828086 0x25838086 0x25818086 0x25858086 0x25868086 0x25878086 0x25908086 0x25928086 0x25918086 0x25938086 0x25968086 0x25988086 0x25A08086</string>
+// 0x10438086
 
 // Define my superclass
 #define super IOEthernetController
@@ -845,9 +846,9 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 		IOLog(
 		       "Error calilng ipw2100_queues_allocate.\n");
 	}
-	//ipw2100_queues_initialize(priv);
+	ipw2100_queues_initialize(priv);
 
-	//ipw2100_initialize_ordinals(priv);
+	ipw2100_initialize_ordinals(priv);
 	
 	IOLog(": Detected Intel PRO/Wireless 2100 Network Connection\n");
 
@@ -1474,22 +1475,22 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	if (priv->fatal_error) {
 		IOLog
 		    ("Attempt to send command while hardware in fatal error condition.\n");
-		//err = -EIO;
-		//goto fail_unlock;
+		err = -EIO;
+		goto fail_unlock;
 	}
 
 	if (!(priv->status & STATUS_RUNNING)) {
 		IOLog
 		    ("Attempt to send command while hardware is not running.\n");
-		//err = -EIO;
-		//goto fail_unlock;
+		err = -EIO;
+		goto fail_unlock;
 	}
 
 	if (priv->status & STATUS_CMD_ACTIVE) {
 		IOLog
 		    ("Attempt to send command while another command is pending.\n");
-		//err = -EBUSY;
-		//goto fail_unlock;
+		err = -EBUSY;
+		goto fail_unlock;
 	}
 
 	if (list_empty(&priv->msg_free_list)) {
@@ -1551,14 +1552,14 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 			      // 1000 * (HOST_COMPLETE_TIMEOUT / HZ));
 		priv->fatal_error = IPW2100_ERR_MSG_TIMEOUT;
 		priv->status &= ~STATUS_CMD_ACTIVE;
-		//schedule_reset(priv);
-		//return -EIO;
+		schedule_reset(priv);
+		return -EIO;
 	}
 
 	if (priv->fatal_error) {
 		IOLog( ": %s: firmware fatal error\n",
 		       priv->net_dev->name);
-		//return -EIO;
+		return -EIO;
 	}
 
 	/* !!!!! HACK TEST !!!!!
@@ -1813,6 +1814,8 @@ bool darwin_iwi2100::start(IOService *provider)
 		queue_te(5,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_associate),NULL,NULL,false);
 		queue_te(6,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_gather_stats),NULL,NULL,false);
 		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_hang_check),NULL,NULL,false);
+		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter),NULL,NULL,false);
+
 		
 		
 		pl=1;
@@ -2043,36 +2046,75 @@ void darwin_iwi2100::ipw2100_remove_current_network(struct ipw2100_priv *priv)
 
 void darwin_iwi2100::schedule_reset(struct ipw2100_priv *priv)
 {
-/*	unsigned long now = get_seconds();
+	unsigned long now = jiffies;//get_seconds();
 
 
 	if (priv->reset_backoff &&
 	    (now - priv->last_reset > priv->reset_backoff))
 		priv->reset_backoff = 0;
 
-	priv->last_reset = get_seconds();
+	priv->last_reset = jiffies;//get_seconds();
 
 	if (!(priv->status & STATUS_RESET_PENDING)) {
 		IOLog("%s: Scheduling firmware restart (%ds).\n",
 			       priv->net_dev->name, priv->reset_backoff);
-		netif_carrier_off(priv->net_dev);
-		netif_stop_queue(priv->net_dev);
+		//netif_carrier_off(priv->net_dev);
+		setLinkStatus(kIONetworkLinkValid);
+		fTransmitQueue->stop();
+		//netif_stop_queue(priv->net_dev);
 		priv->status |= STATUS_RESET_PENDING;
 		if (priv->reset_backoff)
-			queue_delayed_work(priv->workqueue, &priv->reset_work,
-					   priv->reset_backoff * HZ);
+			//queue_delayed_work(priv->workqueue, &priv->reset_work,  priv->reset_backoff * HZ);
+			queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter),priv,1,true);
 		else
-			queue_delayed_work(priv->workqueue, &priv->reset_work,
-					   0);
+			//queue_delayed_work(priv->workqueue, &priv->reset_work,  0);
+			queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter),priv,NULL,true);
 
 		if (priv->reset_backoff < MAX_RESET_BACKOFF)
 			priv->reset_backoff++;
 
-		wake_up_interruptible(&priv->wait_command_queue);
+		//wake_up_interruptible(&priv->wait_command_queue);
 	} else
 		IOLog("%s: Firmware restart already in progress.\n",
 			       priv->net_dev->name);
-*/
+
+}
+
+void darwin_iwi2100::ipw2100_reset_adapter(struct ipw2100_priv *priv)
+{
+	unsigned long flags;
+	/*union iwreq_data wrqu = {
+		.ap_addr = {
+			    .sa_family = ARPHRD_ETHER}
+	};*/
+	int associated = priv->status & STATUS_ASSOCIATED;
+
+	//spin_lock_irqsave(&priv->low_lock, flags);
+	IOLog(": %s: Restarting adapter.\n", priv->net_dev->name);
+	priv->resets++;
+	priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+	priv->status |= STATUS_SECURITY_UPDATED;
+
+	/* Force a power cycle even if interface hasn't been opened
+	 * yet */
+	//cancel_delayed_work(&priv->reset_work);
+	queue_td(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter));
+	priv->status |= STATUS_RESET_PENDING;
+	//spin_unlock_irqrestore(&priv->low_lock, flags);
+
+	//mutex_lock(&priv->action_mutex);
+	/* stop timed checks so that they don't interfere with reset */
+	priv->stop_hang_check = 1;
+	//cancel_delayed_work(&priv->hang_check);
+	queue_td(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_hang_check));
+
+	/* We have to signal any supplicant if we are disassociating */
+	//if (associated)
+	//	wireless_send_event(priv->net_dev, SIOCGIWAP, &wrqu, NULL);
+
+	ipw2100_up(priv, 0);
+	//mutex_unlock(&priv->action_mutex);
+
 }
 
 void darwin_iwi2100::ipw2100_rf_kill(ipw2100_priv *priv)
@@ -2083,7 +2125,8 @@ void darwin_iwi2100::ipw2100_rf_kill(ipw2100_priv *priv)
 
 	if (rf_kill_active(priv)) {
 		IOLog("RF Kill active, rescheduling GPIO check\n");
-		//if (!priv->stop_rf_kill)
+		if (!priv->stop_rf_kill)
+		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill),priv,2,true);
 		//	queue_delayed_work(priv->workqueue, &priv->rf_kill, HZ);
 		goto exit_unlock;
 	}
@@ -2345,7 +2388,7 @@ int darwin_iwi2100::ipw2100_power_cycle_adapter(struct ipw2100_priv *priv)
 	if (!i) {
 		IOLog
 		    ("exit - waited too long for master assert stop\n");
-		//return -EIO;
+		return -EIO;
 	}
 
 	write_register(priv->net_dev, IPW_REG_RESET_REG,
@@ -2661,13 +2704,13 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 	if (err) {
 		IOLog("%s: sw_reset_and_clock failed: %d\n",
 				priv->net_dev->name, err);
-		//goto fail;
+		goto fail;
 	}
 	err = ipw2100_verify(priv);
 	if (err) {
 		IOLog("%s: ipw2100_verify failed: %d\n",
 				priv->net_dev->name, err);
-		//goto fail;
+		goto fail;
 	}
 
 	/* Hold ARC */
@@ -2682,7 +2725,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 	if (err) {
 		IOLog(": %s: Error loading microcode: %d\n",
 		       priv->net_dev->name, err);
-		//goto fail;
+		goto fail;
 	}
 
 	/* release ARC */
@@ -2695,7 +2738,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 		IOLog(
 		       ": %s: sw_reset_and_clock failed: %d\n",
 		       priv->net_dev->name, err);
-		//goto fail;
+		goto fail;
 	}
 
 	/* load f/w */
@@ -2703,7 +2746,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 	if (err) {
 		IOLog("%s: Error loading firmware: %d\n",
 				priv->net_dev->name, err);
-		//goto fail;
+		goto fail;
 	}
 
 
@@ -2811,7 +2854,7 @@ int darwin_iwi2100::ipw2100_start_adapter(struct ipw2100_priv *priv)
 		IOLog(
 		       ": %s: Firmware did not initialize.\n",
 		       priv->net_dev->name);
-		//return -EIO;
+		return -EIO;
 	}
 
 	/* allow firmware to write to GPIO1 & GPIO3 */
@@ -2917,12 +2960,463 @@ int darwin_iwi2100::ipw_set_geo(struct ieee80211_device *ieee,
 	return 0;
 }
 
+int darwin_iwi2100::ipw2100_disable_adapter(struct ipw2100_priv *priv)
+{
+	struct host_command cmd;// = {
+		cmd.host_command = CARD_DISABLE;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 0;
+	//};
+	int err = 0;
+
+	IOLog("CARD_DISABLE\n");
+
+	if (!(priv->status & STATUS_ENABLED))
+		return 0;
+
+	/* Make sure we clear the associated state */
+	priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+
+	if (!priv->stop_hang_check) {
+		priv->stop_hang_check = 1;
+		//cancel_delayed_work(&priv->hang_check);
+		queue_td(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_hang_check));
+	}
+
+	//mutex_lock(&priv->adapter_mutex);
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+	if (err) {
+		IOLog( 
+		       ": exit - failed to send CARD_DISABLE command\n");
+		goto fail_up;
+	}
+
+	err = ipw2100_wait_for_card_state(priv, IPW_HW_STATE_DISABLED);
+	if (err) {
+		IOLog( 
+		       ": exit - card failed to change to DISABLED\n");
+		goto fail_up;
+	}
+
+	IOLog("TODO: implement scan state machine\n");
+
+      fail_up:
+	//mutex_unlock(&priv->adapter_mutex);
+	return err;
+}
+
+int darwin_iwi2100::ipw2100_read_mac_address(struct ipw2100_priv *priv)
+{
+	u32 length = ETH_ALEN;
+	u8 mac[ETH_ALEN];
+
+	int err;
+
+	err = ipw2100_get_ordinal(priv, IPW_ORD_STAT_ADAPTER_MAC, mac, &length);
+	if (err) {
+		IOLog("MAC address read failed\n");
+		return -EIO;
+	}
+	IOLog("card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
+		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+	memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
+
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_set_mac_address(struct ipw2100_priv *priv, int batch_mode)
+{
+	struct host_command cmd; 
+		cmd.host_command = ADAPTER_ADDRESS;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = ETH_ALEN;
+	
+	int err;
+
+	IOLog("SET_MAC_ADDRESS\n");
+
+
+	if (priv->config & CFG_CUSTOM_MAC) {
+		memcpy(cmd.host_command_parameters, priv->mac_addr, ETH_ALEN);
+		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
+	} else
+		memcpy(cmd.host_command_parameters, priv->net_dev->dev_addr,
+		       ETH_ALEN);
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+
+	return err;
+}
+
+int darwin_iwi2100::ipw2100_set_port_type(struct ipw2100_priv *priv, u32 port_type,
+				 int batch_mode)
+{
+	struct host_command cmd;
+		cmd.host_command = PORT_TYPE;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = sizeof(u32);
+	
+	int err;
+
+	switch (port_type) {
+	case IW_MODE_INFRA:
+		cmd.host_command_parameters[0] = IPW_BSS;
+		break;
+	case IW_MODE_ADHOC:
+		cmd.host_command_parameters[0] = IPW_IBSS;
+		break;
+	}
+
+	IOLog("PORT_TYPE: %s\n",
+		     port_type == IPW_IBSS ? "Ad-Hoc" : "Managed");
+
+	if (!batch_mode) {
+		err = ipw2100_disable_adapter(priv);
+		if (err) {
+			IOLog( 
+			       ": %s: Could not disable adapter %d\n",
+			       priv->net_dev->name, err);
+			return err;
+		}
+	}
+
+	/* send cmd to firmware */
+	err = ipw2100_hw_send_command(priv, &cmd);
+
+	if (!batch_mode)
+		ipw2100_enable_adapter(priv);
+
+	return err;
+}
+
+int darwin_iwi2100::ipw2100_set_channel(struct ipw2100_priv *priv, u32 channel,
+			       int batch_mode)
+{
+	struct host_command cmd;
+		cmd.host_command = CHANNEL;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = sizeof(u32);
+	int err;
+
+	cmd.host_command_parameters[0] = channel;
+
+	IOLog("CHANNEL: %d\n", channel);
+
+	/* If BSS then we don't support channel selection */
+	if (priv->ieee->iw_mode == IW_MODE_INFRA)
+		return 0;
+
+	if ((channel != 0) &&
+	    ((channel < REG_MIN_CHANNEL) || (channel > REG_MAX_CHANNEL)))
+		return -EINVAL;
+
+	if (!batch_mode) {
+		err = ipw2100_disable_adapter(priv);
+		if (err)
+			return err;
+	}
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+	if (err) {
+		IOLog("Failed to set channel to %d", channel);
+		return err;
+	}
+
+	if (channel)
+		priv->config |= CFG_STATIC_CHANNEL;
+	else
+		priv->config &= ~CFG_STATIC_CHANNEL;
+
+	priv->channel = channel;
+
+	if (!batch_mode) {
+		err = ipw2100_enable_adapter(priv);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_system_config(struct ipw2100_priv *priv, int batch_mode)
+{
+	struct host_command cmd;
+		cmd.host_command = SYSTEM_CONFIG;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 12;
+	u32 ibss_mask, len = sizeof(u32);
+	int err;
+
+	/* Set system configuration */
+
+	if (!batch_mode) {
+		err = ipw2100_disable_adapter(priv);
+		if (err)
+			return err;
+	}
+
+	if (priv->ieee->iw_mode == IW_MODE_ADHOC)
+		cmd.host_command_parameters[0] |= IPW_CFG_IBSS_AUTO_START;
+
+	cmd.host_command_parameters[0] |= IPW_CFG_IBSS_MASK |
+	    IPW_CFG_BSS_MASK | IPW_CFG_802_1x_ENABLE;
+
+	if (!(priv->config & CFG_LONG_PREAMBLE))
+		cmd.host_command_parameters[0] |= IPW_CFG_PREAMBLE_AUTO;
+
+	err = ipw2100_get_ordinal(priv,
+				  IPW_ORD_EEPROM_IBSS_11B_CHANNELS,
+				  &ibss_mask, &len);
+	if (err)
+		ibss_mask = IPW_IBSS_11B_DEFAULT_MASK;
+
+	cmd.host_command_parameters[1] = REG_CHANNEL_MASK;
+	cmd.host_command_parameters[2] = REG_CHANNEL_MASK & ibss_mask;
+
+	/* 11b only */
+	/*cmd.host_command_parameters[0] |= DIVERSITY_ANTENNA_A; */
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+	if (err)
+		return err;
+
+/* If IPv6 is configured in the kernel then we don't want to filter out all
+ * of the multicast packets as IPv6 needs some. */
+#if !defined(CONFIG_IPV6) && !defined(CONFIG_IPV6_MODULE)
+	cmd.host_command = ADD_MULTICAST;
+	cmd.host_command_sequence = 0;
+	cmd.host_command_length = 0;
+
+	ipw2100_hw_send_command(priv, &cmd);
+#endif
+	if (!batch_mode) {
+		err = ipw2100_enable_adapter(priv);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_set_tx_rates(struct ipw2100_priv *priv, u32 rate,
+				int batch_mode)
+{
+	struct host_command cmd;
+		cmd.host_command = BASIC_TX_RATES;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 4;
+	int err;
+
+	cmd.host_command_parameters[0] = rate & TX_RATE_MASK;
+
+	if (!batch_mode) {
+		err = ipw2100_disable_adapter(priv);
+		if (err)
+			return err;
+	}
+
+	/* Set BASIC TX Rate first */
+	ipw2100_hw_send_command(priv, &cmd);
+
+	/* Set TX Rate */
+	cmd.host_command = TX_RATES;
+	ipw2100_hw_send_command(priv, &cmd);
+
+	/* Set MSDU TX Rate */
+	cmd.host_command = MSDU_TX_RATES;
+	ipw2100_hw_send_command(priv, &cmd);
+
+	if (!batch_mode) {
+		err = ipw2100_enable_adapter(priv);
+		if (err)
+			return err;
+	}
+
+	priv->tx_rates = rate;
+
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_set_power_mode(struct ipw2100_priv *priv, int power_level)
+{
+	struct host_command cmd;
+		cmd.host_command = POWER_MODE;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 4;
+	int err;
+
+	cmd.host_command_parameters[0] = power_level;
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+	if (err)
+		return err;
+
+	if (power_level == IPW_POWER_MODE_CAM)
+		priv->power_mode = IPW_POWER_LEVEL(priv->power_mode);
+	else
+		priv->power_mode = IPW_POWER_ENABLED | power_level;
+
+#ifdef CONFIG_IPW2100_TX_POWER
+	if (priv->port_type == IBSS && priv->adhoc_power != DFTL_IBSS_TX_POWER) {
+		/* Set beacon interval */
+		cmd.host_command = TX_POWER_INDEX;
+		cmd.host_command_parameters[0] = (u32) priv->adhoc_power;
+
+		err = ipw2100_hw_send_command(priv, &cmd);
+		if (err)
+			return err;
+	}
+#endif
+
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_set_rts_threshold(struct ipw2100_priv *priv, u32 threshold)
+{
+	struct host_command cmd;
+		cmd.host_command = RTS_THRESHOLD;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 4;
+	int err;
+
+	if (threshold & RTS_DISABLED)
+		cmd.host_command_parameters[0] = MAX_RTS_THRESHOLD;
+	else
+		cmd.host_command_parameters[0] = threshold & ~RTS_DISABLED;
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+	if (err)
+		return err;
+
+	priv->rts_threshold = threshold;
+
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_set_mandatory_bssid(struct ipw2100_priv *priv, u8 * bssid,
+				       int batch_mode)
+{
+	struct host_command cmd;
+		cmd.host_command = MANDATORY_BSSID;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = (bssid == NULL) ? 0 : ETH_ALEN;
+	int err;
+
+//#ifdef CONFIG_IPW2100_DEBUG
+	if (bssid != NULL)
+		IOLog("MANDATORY_BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
+			     bssid[0], bssid[1], bssid[2], bssid[3], bssid[4],
+			     bssid[5]);
+	else
+		IOLog("MANDATORY_BSSID: <clear>\n");
+//#endif
+	/* if BSSID is empty then we disable mandatory bssid mode */
+	if (bssid != NULL)
+		memcpy(cmd.host_command_parameters, bssid, ETH_ALEN);
+
+	if (!batch_mode) {
+		err = ipw2100_disable_adapter(priv);
+		if (err)
+			return err;
+	}
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+
+	if (!batch_mode)
+		ipw2100_enable_adapter(priv);
+
+	return err;
+}
+
+int darwin_iwi2100::ipw2100_set_essid(struct ipw2100_priv *priv, char *essid,
+			     int length, int batch_mode)
+{
+	int ssid_len = min(length, IW_ESSID_MAX_SIZE);
+	struct host_command cmd;
+		cmd.host_command = SSID;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = ssid_len;
+	int err;
+
+	IOLog("SSID: '%s'\n", escape_essid(essid, ssid_len));
+
+	if (ssid_len)
+		memcpy(cmd.host_command_parameters, essid, ssid_len);
+
+	if (!batch_mode) {
+		err = ipw2100_disable_adapter(priv);
+		if (err)
+			return err;
+	}
+
+	/* Bug in FW currently doesn't honor bit 0 in SET_SCAN_OPTIONS to
+	 * disable auto association -- so we cheat by setting a bogus SSID */
+	if (!ssid_len && !(priv->config & CFG_ASSOCIATE)) {
+		int i;
+		u8 *bogus = (u8 *) cmd.host_command_parameters;
+		for (i = 0; i < IW_ESSID_MAX_SIZE; i++)
+			bogus[i] = 0x18 + i;
+		cmd.host_command_length = IW_ESSID_MAX_SIZE;
+	}
+
+	/* NOTE:  We always send the SSID command even if the provided ESSID is
+	 * the same as what we currently think is set. */
+
+	err = ipw2100_hw_send_command(priv, &cmd);
+	if (!err) {
+		memset(priv->essid + ssid_len, 0, IW_ESSID_MAX_SIZE - ssid_len);
+		memcpy(priv->essid, essid, ssid_len);
+		priv->essid_len = ssid_len;
+	}
+
+	if (!batch_mode) {
+		if (ipw2100_enable_adapter(priv))
+			err = -EIO;
+	}
+
+	return err;
+}
+
+int darwin_iwi2100::ipw2100_set_ibss_beacon_interval(struct ipw2100_priv *priv,
+					    u32 interval, int batch_mode)
+{
+	struct host_command cmd;
+		cmd.host_command = BEACON_INTERVAL;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 4;
+	int err;
+
+	cmd.host_command_parameters[0] = interval;
+
+
+	if (priv->ieee->iw_mode == IW_MODE_ADHOC) {
+		if (!batch_mode) {
+			err = ipw2100_disable_adapter(priv);
+			if (err)
+				return err;
+		}
+
+		ipw2100_hw_send_command(priv, &cmd);
+
+		if (!batch_mode) {
+			err = ipw2100_enable_adapter(priv);
+			if (err)
+				return err;
+		}
+	}
+
+
+	return 0;
+}
+
 int darwin_iwi2100::ipw2100_adapter_setup(struct ipw2100_priv *priv)
 {
 	int err;
 	int batch_mode = 1;
 	u8 *bssid;
-/*
+
 
 	err = ipw2100_disable_adapter(priv);
 	if (err)
@@ -2982,16 +3476,16 @@ int darwin_iwi2100::ipw2100_adapter_setup(struct ipw2100_priv *priv)
 		return err;
 
 	if (priv->config & CFG_STATIC_ESSID)
-		err = ipw2100_set_essid(priv, priv->essid, priv->essid_len,
+		err = ipw2100_set_essid(priv, (char*)priv->essid, priv->essid_len,
 					batch_mode);
 	else
 		err = ipw2100_set_essid(priv, NULL, 0, batch_mode);
 	if (err)
 		return err;
 
-	err = ipw2100_configure_security(priv, batch_mode);
-	if (err)
-		return err;
+	//err = ipw2100_configure_security(priv, batch_mode);
+	//if (err)
+	//	return err;
 
 	if (priv->ieee->iw_mode == IW_MODE_ADHOC) {
 		err =
@@ -3006,7 +3500,30 @@ int darwin_iwi2100::ipw2100_adapter_setup(struct ipw2100_priv *priv)
 			return err;
 	}
 
-*/
+
+	return 0;
+}
+
+int darwin_iwi2100::ipw2100_set_tx_power(struct ipw2100_priv *priv, u32 tx_power)
+{
+	struct host_command cmd;
+		cmd.host_command = TX_POWER_INDEX;
+		cmd.host_command_sequence = 0;
+		cmd.host_command_length = 4;
+	int err = 0;
+	u32 tmp = tx_power;
+
+	if (tx_power != IPW_TX_POWER_DEFAULT)
+		tmp = (tx_power - IPW_TX_POWER_MIN_DBM) * 16 /
+		      (IPW_TX_POWER_MAX_DBM - IPW_TX_POWER_MIN_DBM);
+
+	cmd.host_command_parameters[0] = tmp;
+
+	if (priv->ieee->iw_mode == IW_MODE_ADHOC)
+		err = ipw2100_hw_send_command(priv, &cmd);
+	if (!err)
+		priv->tx_power = tx_power;
+
 	return 0;
 }
 
@@ -3022,7 +3539,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("%s: Radio is disabled by Manual Disable "
 			       "switch\n", priv->net_dev->name);
-		//return 0;
+		return 0;
 	}
 
 	/* If the interrupt is enabled, turn it off... */
@@ -3033,13 +3550,13 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_POWERED ||
 	    (priv->status & STATUS_RESET_PENDING)) {
 		/* Power cycle the card ... */
-		/*if (ipw2100_power_cycle_adapter(priv)) {
+		if (ipw2100_power_cycle_adapter(priv)) {
 			IOLog(
 			       ": %s: Could not cycle adapter.\n",
 			       priv->net_dev->name);
 			rc = 1;
 			goto exit;
-		}*/
+		}
 	} else
 		priv->status |= STATUS_POWERED;
 	/* Load the firmware, start the clocks, etc. */
@@ -3047,8 +3564,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to start the firmware.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	ipw2100_initialize_ordinals(priv);
@@ -3058,14 +3575,14 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to determine HW features.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	/* Initialize the geo */
 	if (ipw_set_geo(priv->ieee, &ipw_geos[0])) {
 		IOLog( "Could not set geo\n");
-		//return 0;
+		return 0;
 	}
 	priv->ieee->freq_band = IEEE80211_24GHZ_BAND;
 
@@ -3074,8 +3591,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to clear ordinal lock.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	priv->status &= ~STATUS_SCANNING;
@@ -3087,6 +3604,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		if (priv->stop_rf_kill) {
 			priv->stop_rf_kill = 0;
 			//queue_delayed_work(priv->workqueue, &priv->rf_kill, HZ);
+			queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill),priv,2,true);
 		}
 
 		deferred = 1;
@@ -3100,8 +3618,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (ipw2100_adapter_setup(priv)) {
 		IOLog( ": %s: Failed to start the card.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	if (!deferred) {
@@ -3110,9 +3628,9 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			IOLog( ": "
 			       "%s: failed in call to enable adapter.\n",
 			       priv->net_dev->name);
-			//ipw2100_hw_stop_adapter(priv);
-			//rc = 1;
-			//goto exit;
+			ipw2100_hw_stop_adapter(priv);
+			rc = 1;
+			goto exit;
 		}
 
 		/* Start a scan . . . */
@@ -3475,15 +3993,15 @@ void darwin_iwi2100::isr_indicate_associated(struct ipw2100_priv *priv, u32 stat
 	//queue_delayed_work(priv->workqueue, &priv->wx_event_work, HZ / 10);
 }
 
-struct ipw2100_status_indicator {
+/*struct ipw2100_status_indicator {
 	int status;
 	void (*cb) (struct ipw2100_priv * priv, u32 status);
 };
 #define IPW2100_HANDLER(v, f) { v, f }
-static const struct ipw2100_status_indicator status_handlers[] = {
+const struct ipw2100_status_indicator status_handlers[] = {
 	IPW2100_HANDLER(IPW_STATE_INITIALIZED, NULL),
 	IPW2100_HANDLER(IPW_STATE_COUNTRY_FOUND, NULL),
-	IPW2100_HANDLER(IPW_STATE_ASSOCIATED, darwin_iwi2100::isr_indicate_associated),
+	IPW2100_HANDLER(IPW_STATE_ASSOCIATED, isr_indicate_associated),
 	IPW2100_HANDLER(IPW_STATE_ASSN_LOST, darwin_iwi2100::isr_indicate_association_lost),
 	IPW2100_HANDLER(IPW_STATE_ASSN_CHANGED, NULL),
 	IPW2100_HANDLER(IPW_STATE_SCAN_COMPLETE, darwin_iwi2100::isr_scan_complete),
@@ -3494,7 +4012,71 @@ static const struct ipw2100_status_indicator status_handlers[] = {
 	IPW2100_HANDLER(IPW_STATE_POWER_DOWN, NULL),
 	IPW2100_HANDLER(IPW_STATE_SCANNING, darwin_iwi2100::isr_indicate_scanning),
 	IPW2100_HANDLER(-1, NULL)
-};
+};*/
+
+void darwin_iwi2100::isr_status_change(struct ipw2100_priv *priv, int status)
+{
+	int i;
+
+	if (status == IPW_STATE_SCANNING &&
+	    priv->status & STATUS_ASSOCIATED &&
+	    !(priv->status & STATUS_SCANNING)) {
+		IOLog("Scan detected while associated, with "
+			       "no scan request.  Restarting firmware.\n");
+
+		/* Wake up any sleeping jobs */
+		schedule_reset(priv);
+	}
+
+	switch (status)
+	{
+		case IPW_STATE_INITIALIZED:
+		case IPW_STATE_COUNTRY_FOUND:
+		case IPW_STATE_ASSN_CHANGED:
+		case IPW_STATE_ENTERED_PSP:
+		case IPW_STATE_LEFT_PSP:
+		case IPW_STATE_DISABLED:
+		case IPW_STATE_POWER_DOWN:
+			IOLog("status received: %04x\n", status);
+			break;
+		
+		case IPW_STATE_ASSOCIATED:
+			isr_indicate_associated(priv,status);
+			break;
+			
+		case IPW_STATE_ASSN_LOST:
+			isr_indicate_association_lost(priv,status);
+			break;
+			
+		case IPW_STATE_SCAN_COMPLETE:
+			isr_scan_complete(priv,status);
+			break;
+			
+		case IPW_STATE_RF_KILL:
+			isr_indicate_rf_kill(priv,status);
+			break;
+			
+		case IPW_STATE_SCANNING:
+			isr_indicate_scanning(priv,status);
+			
+		default:
+			IOLog("unknown status received: %04x\n", status);
+			break;
+	
+	}
+	/*for (i = 0; status_handlers[i].status != -1; i++) {
+		if (status == status_handlers[i].status) {
+			IOLog("Status change: %d\n",status);
+					//status_handlers[i].name);
+			if (status_handlers[i].cb)
+				status_handlers[i].cb(priv, status);
+			priv->wstats.status = status;
+			return;
+		}
+	}*/
+
+	//IOLog("unknown status received: %04x\n", status);
+}
 
 void darwin_iwi2100::isr_indicate_scanning(struct ipw2100_priv *priv, u32 status)
 {
@@ -3522,6 +4104,7 @@ void darwin_iwi2100::isr_indicate_rf_kill(struct ipw2100_priv *priv, u32 status)
 	priv->stop_rf_kill = 0;
 	//cancel_delayed_work(&priv->rf_kill);
 	//queue_delayed_work(priv->workqueue, &priv->rf_kill, HZ);
+	queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill),priv,2,true);
 }
 
 void darwin_iwi2100::isr_scan_complete(struct ipw2100_priv *priv, u32 status)
@@ -3561,33 +4144,6 @@ void darwin_iwi2100::isr_indicate_association_lost(struct ipw2100_priv *priv, u3
 	//queue_delayed_work(priv->workqueue, &priv->wx_event_work, 0);
 }
 
-void darwin_iwi2100::isr_status_change(struct ipw2100_priv *priv, int status)
-{
-	int i;
-
-	if (status == IPW_STATE_SCANNING &&
-	    priv->status & STATUS_ASSOCIATED &&
-	    !(priv->status & STATUS_SCANNING)) {
-		IOLog("Scan detected while associated, with "
-			       "no scan request.  Restarting firmware.\n");
-
-		/* Wake up any sleeping jobs */
-		schedule_reset(priv);
-	}
-
-	for (i = 0; status_handlers[i].status != -1; i++) {
-		if (status == status_handlers[i].status) {
-			IOLog("Status change: %d\n",status);
-					//status_handlers[i].name);
-			if (status_handlers[i].cb)
-				status_handlers[i].cb(priv, status);
-			priv->wstats.status = status;
-			return;
-		}
-	}
-
-	IOLog("unknown status received: %04x\n", status);
-}
 
 int darwin_iwi2100::ieee80211_parse_info_param(struct ieee80211_info_element
 				      *info_element, u16 length,

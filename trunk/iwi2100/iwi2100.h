@@ -557,11 +557,11 @@ virtual IOOptionBits getState( void ) const;
 	virtual int ipw2100_rf_eeprom_ready(struct ipw2100_priv *priv);
 	virtual int ipw2100_verify_ucode(struct ipw2100_priv *priv);
 	virtual int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv);
-	static void darwin_iwi2100::read_nic_memory(struct net_device *dev, u32 addr, u32 len, u8 * buf);
-	static void darwin_iwi2100::read_register_byte(struct net_device *dev, u32 reg, u8 * val);
-	static void darwin_iwi2100::read_nic_dword(struct net_device *dev, u32 addr, u32 * val);
-	static void darwin_iwi2100::write_register(struct net_device *dev, u32 reg, u32 val);
-	static void darwin_iwi2100::read_register(struct net_device *dev, u32 reg, u32 * val);
+	virtual void darwin_iwi2100::read_nic_memory(struct net_device *dev, u32 addr, u32 len, u8 * buf);
+	virtual void darwin_iwi2100::read_register_byte(struct net_device *dev, u32 reg, u8 * val);
+	virtual void darwin_iwi2100::read_nic_dword(struct net_device *dev, u32 addr, u32 * val);
+	virtual void darwin_iwi2100::write_register(struct net_device *dev, u32 reg, u32 val);
+	virtual void darwin_iwi2100::read_register(struct net_device *dev, u32 reg, u32 * val);
 	virtual void darwin_iwi2100::write_nic_dword(struct net_device *dev, u32 addr, u32 val);
 	virtual void darwin_iwi2100::write_register_word(struct net_device *dev, u32 reg, u16 val);
 	virtual void darwin_iwi2100::write_nic_word(struct net_device *dev, u32 addr, u16 val);
@@ -574,10 +574,27 @@ virtual IOOptionBits getState( void ) const;
 	virtual void darwin_iwi2100::write_nic_memory(struct net_device *dev, u32 addr, u32 len,
 			     const u8 * buf);
 
-	static  void isr_indicate_associated(struct ipw2100_priv *priv, u32 status);
-	
-	
-	
+	virtual  void isr_indicate_associated(struct ipw2100_priv *priv, u32 status);
+	virtual void ipw2100_reset_adapter(struct ipw2100_priv *priv);
+	virtual int ipw2100_disable_adapter(struct ipw2100_priv *priv);
+	virtual int ipw2100_read_mac_address(struct ipw2100_priv *priv);
+	virtual int ipw2100_set_mac_address(struct ipw2100_priv *priv, int batch_mode);
+	virtual int ipw2100_set_port_type(struct ipw2100_priv *priv, u32 port_type,
+				 int batch_mode);
+	virtual int ipw2100_set_channel(struct ipw2100_priv *priv, u32 channel,
+			       int batch_mode);
+	virtual int ipw2100_system_config(struct ipw2100_priv *priv, int batch_mode);
+	virtual int ipw2100_set_tx_rates(struct ipw2100_priv *priv, u32 rate,
+				int batch_mode);
+	virtual int ipw2100_set_rts_threshold(struct ipw2100_priv *priv, u32 threshold);
+	virtual int ipw2100_set_power_mode(struct ipw2100_priv *priv, int power_level);			
+	virtual int ipw2100_set_mandatory_bssid(struct ipw2100_priv *priv, u8 * bssid,
+				       int batch_mode);						
+	virtual int ipw2100_set_essid(struct ipw2100_priv *priv, char *essid,
+			     int length, int batch_mode);									
+	virtual int ipw2100_set_ibss_beacon_interval(struct ipw2100_priv *priv,
+					    u32 interval, int batch_mode);												
+	virtual int ipw2100_set_tx_power(struct ipw2100_priv *priv, u32 tx_power);																		
 	
 	
 /*	
@@ -715,7 +732,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 				 u8 * image_data, size_t image_len_data);
 	virtual void ipw2100_initialize_ordinals(struct ipw2100_priv *priv);
 	virtual int ipw2100_wait_for_card_state(struct ipw2100_priv *priv, int state);
-	static int ipw2100_get_ordinal(struct ipw2100_priv *priv, u32 ord,
+	virtual int ipw2100_get_ordinal(struct ipw2100_priv *priv, u32 ord,
 			       void *val, u32 * len);
 	virtual void ipw2100_reset_fatalerror(struct ipw2100_priv *priv);
 	virtual int ipw2100_power_cycle_adapter(struct ipw2100_priv *priv);
@@ -776,10 +793,10 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual int ipw2100_hw_phy_off(struct ipw2100_priv *priv);
 	virtual void __ipw2100_tx_complete(struct ipw2100_priv *priv);
 	virtual int __ipw2100_tx_process(struct ipw2100_priv *priv);
-	static void isr_indicate_association_lost(struct ipw2100_priv *priv, u32 status);
-	static void isr_scan_complete(struct ipw2100_priv *priv, u32 status);
-	static void isr_indicate_rf_kill(struct ipw2100_priv *priv, u32 status);
-	static void isr_indicate_scanning(struct ipw2100_priv *priv, u32 status);
+	virtual void isr_indicate_association_lost(struct ipw2100_priv *priv, u32 status);
+	virtual void isr_scan_complete(struct ipw2100_priv *priv, u32 status);
+	virtual void isr_indicate_rf_kill(struct ipw2100_priv *priv, u32 status);
+	virtual void isr_indicate_scanning(struct ipw2100_priv *priv, u32 status);
 	virtual int ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
 				       *frame, struct ieee80211_rx_stats *stats);
 	virtual int ieee80211_parse_info_param(struct ieee80211_info_element
