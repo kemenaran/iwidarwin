@@ -643,9 +643,9 @@ virtual IOOptionBits getState( void ) const;
 	virtual int ipw_send_add_station(struct ipw_priv *priv,
 				struct ipw_addsta_cmd *sta, u8 flags);
 	virtual int ipw_init_rate_scaling(struct ipw_priv *priv);
-	
-	
-	
+	virtual void reg_txpower_periodic(struct ipw_priv *priv);
+	virtual int is_temp_calib_needed(struct ipw_priv *priv);
+	virtual int reg_txpower_compensate_for_temperature_dif(struct ipw_priv *priv);
 	
 	
 	
