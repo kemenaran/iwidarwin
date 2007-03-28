@@ -1096,6 +1096,8 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rx_queue_replenish),NULL,NULL,false);
 		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_led_activity_off),NULL,NULL,false);
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_alive_start),NULL,NULL,false);
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),NULL,NULL,false);
+		
 		
 		
 		pl=1;
@@ -3411,6 +3413,98 @@ inline void darwin_iwi3945::ipw_disable_interrupts(struct ipw_priv *priv)
 
 void darwin_iwi3945::ipw_down(struct ipw_priv *priv)
 {
+	unsigned long flags;
+	int exit_pending = priv->status & STATUS_EXIT_PENDING;
+	struct ieee80211_conf *conf = NULL;
+
+	IOLog("ipw going down \n");
+
+	conf = &priv->active_conf;//ieee80211_get_hw_conf(priv->ieee);
+
+	priv->status |= STATUS_EXIT_PENDING;
+
+	/* If we are coming down due to a microcode error, then
+	 * don't bother trying to do anything that results in sending
+	 * host commands... */
+	if (!(priv->status & STATUS_FW_ERROR) && ipw_is_alive(priv)) {
+
+		/*ipw_update_link_led(priv);
+		ipw_update_activity_led(priv);
+		ipw_update_tech_led(priv);*/
+	}
+
+	ipw_clear_stations_table(priv);
+
+	/* Cancel any pending scheduled work */
+	//ipw_cancel_deferred_work(priv);
+
+	/* Unblock any waiting calls */
+	//wake_up_interruptible_all(&priv->wait_command_queue);
+
+	/* Wipe out the EXIT_PENDING status bit if we are not actually
+	 * exiting the module */
+	if (!exit_pending)
+		priv->status &= ~STATUS_EXIT_PENDING;
+
+	/* tell the device to stop sending interrupts */
+	ipw_write32(CSR_RESET, CSR_RESET_REG_FLAG_NEVO_RESET);
+	ipw_disable_interrupts(priv);
+
+	if (priv->netdev_registered) {
+		//netif_carrier_off(priv->net_dev);
+		//ieee80211_stop_queues(priv->ieee);
+	}
+
+	/* If we have not previously called ipw_init() then
+	 * clear all bits but the RF Kill and SUSPEND bits and return */
+	if (!ipw_is_init(priv)) {
+		priv->status &= (STATUS_RF_KILL_MASK | STATUS_IN_SUSPEND);
+		goto exit;
+	}
+
+	/* ...otherwise clear out all the status bits but the RF Kill and
+	 * SUSPEND bits and continue taking the NIC down. */
+	priv->status &= (STATUS_RF_KILL_MASK | STATUS_IN_SUSPEND);
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	ipw_clear_bit( CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	//ipw_stop_tx_queue(priv);
+	//ipw_rxq_stop(priv);
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	if (!ipw_grab_restricted_access(priv)) {
+		_ipw_write_restricted_reg(priv, ALM_APMG_CLK_DIS,
+					 APMG_CLK_REG_VAL_DMA_CLK_RQT);
+		_ipw_release_restricted_access(priv);
+	}
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	udelay(5);
+
+	ipw_nic_stop_master(priv);
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	ipw_set_bit( CSR_RESET, CSR_RESET_REG_FLAG_SW_RESET);
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	ipw_nic_reset(priv);
+
+      exit:
+	memset(&priv->card_alive, 0, sizeof(struct ipw_alive_resp));
+
+	//if (priv->ibss_beacon)
+	//	freePacket(priv->ibss_beacon);
+	//priv->ibss_beacon = NULL;
+
+	if (priv->scan) {
+		kfree(priv->scan);
+		priv->scan = NULL;
+	}
+
+	/* clear out any free frames */
+	//ipw_clear_free_frames(priv);
 }
 
 
@@ -6603,9 +6697,9 @@ void darwin_iwi3945::ipw_bg_alive_start()
 		/* We had an error bringing up the hardware, so take it
 		 * all the way back down so we can try again */
 		IOLog("Alive failed.\n");
-		//ipw_down(priv);
+		ipw_down(priv);
 		//mutex_unlock(&priv->mutex);
-		//return;
+		return;
 	}
 
 	/* bootstrap uCode has loaded runtime uCode ... verify inst image */
@@ -6613,9 +6707,9 @@ void darwin_iwi3945::ipw_bg_alive_start()
 		/* Runtime instruction load was bad;
 		 * take it all the way back down so we can try again */
 		IOLog("Bad runtime uCode load.\n");
-		//ipw_down(priv);
+		ipw_down(priv);
 		//mutex_unlock(&priv->mutex);
-		//return;
+		return;
 	}
 
 	/* After the ALIVE response, we can processed host commands */
@@ -6699,9 +6793,119 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 //	ipw_update_link_led(priv);
 
-	//reg_txpower_periodic(priv);
+	reg_txpower_periodic(priv);
 
 	//mutex_unlock(&priv->mutex);
+}
+
+#define IPW_TEMPERATURE_LIMIT_TIMER   6
+
+int darwin_iwi3945::is_temp_calib_needed(struct ipw_priv *priv)
+{
+	int temp_diff;
+
+	priv->curr_temperature = reg_txpower_get_temperature(priv);
+	temp_diff = priv->curr_temperature - priv->last_temperature;
+
+	/* get absolute value */
+	if (temp_diff < 0) {
+		IOLog("Getting cooler, delta %d,\n", temp_diff);
+		temp_diff = -temp_diff;
+	} else if (temp_diff == 0)
+		IOLog("Same temp,\n");
+	else
+		IOLog("Getting warmer, delta %d,\n", temp_diff);
+
+	/* if we don't need calibration, *don't* update last_temperature */
+	if (temp_diff < IPW_TEMPERATURE_LIMIT_TIMER) {
+		IOLog("Timed thermal calib not needed\n");
+		return 0;
+	}
+
+	IOLog("Timed thermal calib needed\n");
+
+	/* assume that caller will actually do calib ...
+	 *   update the "last temperature" value */
+	priv->last_temperature = priv->curr_temperature;
+	return 1;
+}
+
+int darwin_iwi3945::reg_txpower_compensate_for_temperature_dif(struct ipw_priv *priv)
+{
+	struct ipw_channel_info *ch_info = NULL;
+	int delta_index;
+	const s8 *clip_pwrs; /* array of h/w max power levels for each rate */
+	u8 a_band;
+	u8 rate_index;
+	u8 scan_tbl_index;
+	u8 i;
+	int ref_temp;
+	int temperature = priv->curr_temperature;
+
+	/* set up new Tx power info for each and every channel, 2.4 and 5.x */
+	for (i = 0; i < priv->channel_count; i++) {
+		ch_info = &priv->channel_info[i];
+		a_band = is_channel_a_band(ch_info);
+
+		/* Get this chnlgrp's factory calibration temperature */
+		ref_temp = priv->eeprom.groups[ch_info->group_index].
+		    temperature;
+
+		/* get power index adjustment based on curr and factory
+		 * temps */
+		delta_index = reg_adjust_power_by_temp(temperature, ref_temp);
+
+		/* set tx power value for all rates, OFDM and CCK */
+		for (rate_index = 0; rate_index < IPW_MAX_RATES;
+		     rate_index++) {
+			int power_idx =
+			    ch_info->power_info[rate_index].base_power_index;
+
+			/* temperature compensate */
+			power_idx += delta_index;
+
+			/* stay within table range */
+			power_idx = reg_fix_power_index(power_idx);
+			ch_info->power_info[rate_index].
+			    power_table_index = (u8) power_idx;
+			ch_info->power_info[rate_index].tpc =
+			    power_gain_table[a_band][power_idx];
+		}
+
+		/* Get this chnlgrp's rate-to-max/clip-powers table */
+		clip_pwrs = priv->clip_groups[ch_info->group_index].
+			clip_powers;
+
+		/* set scan tx power, 1Mbit for CCK, 6Mbit for OFDM */
+		for (scan_tbl_index = 0;
+		     scan_tbl_index < IPW_NUM_SCAN_RATES; scan_tbl_index++) {
+			s32 actual_index = (scan_tbl_index == 0) ?
+			    RATE_SCALE_1M_INDEX : RATE_SCALE_6M_INDEX;
+			reg_set_scan_power(priv, scan_tbl_index,
+					   actual_index, clip_pwrs,
+					   ch_info, a_band);
+		}
+	}
+
+	/* send Txpower command for current channel to ucode */
+	return ipw_reg_send_txpower(priv);
+}
+
+void darwin_iwi3945::reg_txpower_periodic(struct ipw_priv *priv)
+{
+	/* This will kick in the "brute force"
+	 *   reg_txpower_compensate_for_temperature_dif() below */
+	if (!is_temp_calib_needed(priv))
+		goto reschedule;
+
+	/* Set up a new set of temp-adjusted TxPowers, send to NIC.
+	 * This is based *only* on current temperature,
+	 * ignoring any previous power measurements */
+	reg_txpower_compensate_for_temperature_dif(priv);
+
+ reschedule:
+	//queue_delayed_work(priv->workqueue,   &priv->thermal_periodic, REG_RECALIB_PERIOD * HZ);
+	queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),priv,NULL,true);
 }
 
 int darwin_iwi3945::ipw_send_bt_config(struct ipw_priv *priv)

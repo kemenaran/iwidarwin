@@ -320,7 +320,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61AF80310BB16F4F0017EEC0</string>
+										<string>617C1EE20BBB2B280068AA35</string>
 										<key>history</key>
 										<array>
 											<string>61B125000B592DD600E4BC65</string>
@@ -337,15 +337,14 @@
 											<string>61ADCC8C0BA5E5830031B225</string>
 											<string>61F149AB0BAECBB000A13F2E</string>
 											<string>61F149AC0BAECBB000A13F2E</string>
-											<string>6117D6EB0BB061AF00578486</string>
 											<string>61B3355A0BB15FCB00D6C9C6</string>
-											<string>61B3357E0BB162E600D6C9C6</string>
 											<string>61AF80120BB16F370017EEC0</string>
 											<string>61AF80130BB16F370017EEC0</string>
-											<string>61AF80140BB16F370017EEC0</string>
 											<string>61AF80150BB16F370017EEC0</string>
 											<string>61AF80160BB16F370017EEC0</string>
-											<string>61AF80170BB16F370017EEC0</string>
+											<string>617C1EC30BBB296B0068AA35</string>
+											<string>617C1EDA0BBB2AF60068AA35</string>
+											<string>617C1EDB0BBB2AF60068AA35</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -372,28 +371,15 @@
 											<string>61AD41FB0BA4CA0600E67029</string>
 											<string>61F149B40BAECBB000A13F2E</string>
 											<string>6117D6F10BB061AF00578486</string>
-											<string>61B335630BB15FCB00D6C9C6</string>
-											<string>61AF80180BB16F370017EEC0</string>
-											<string>61AF80190BB16F370017EEC0</string>
-											<string>61AF801A0BB16F370017EEC0</string>
-											<string>61AF801B0BB16F370017EEC0</string>
-											<string>61AF801C0BB16F370017EEC0</string>
-											<string>61AF801D0BB16F370017EEC0</string>
-											<string>61AF801E0BB16F370017EEC0</string>
-											<string>61AF801F0BB16F370017EEC0</string>
-											<string>61AF80200BB16F370017EEC0</string>
-											<string>61AF80210BB16F370017EEC0</string>
-											<string>61AF80220BB16F370017EEC0</string>
-											<string>61AF80230BB16F370017EEC0</string>
-											<string>61AF80240BB16F370017EEC0</string>
-											<string>61AF80250BB16F370017EEC0</string>
-											<string>61AF80260BB16F370017EEC0</string>
-											<string>61AF80270BB16F370017EEC0</string>
-											<string>61AF80280BB16F370017EEC0</string>
-											<string>61AF80290BB16F370017EEC0</string>
-											<string>61AF802A0BB16F370017EEC0</string>
-											<string>61AF802B0BB16F370017EEC0</string>
-											<string>61AF802C0BB16F370017EEC0</string>
+											<string>617C1EC60BBB296B0068AA35</string>
+											<string>617C1EC70BBB296B0068AA35</string>
+											<string>617C1EC80BBB296B0068AA35</string>
+											<string>617C1EC90BBB296B0068AA35</string>
+											<string>617C1ECA0BBB296B0068AA35</string>
+											<string>617C1EDC0BBB2AF60068AA35</string>
+											<string>617C1EDD0BBB2AF60068AA35</string>
+											<string>617C1EDE0BBB2AF60068AA35</string>
+											<string>617C1EDF0BBB2AF60068AA35</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -451,9 +437,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61AF802E0BB16F370017EEC0</string>
+				<string>617C1B260BBB25080068AA35</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61AF802F0BB16F370017EEC0</string>
+				<string>617C1B270BBB25080068AA35</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -608,14 +594,12 @@
 					<key>Dock</key>
 					<array>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
 								<string>1CD0528F0623707200166675</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>ipw3945.h</string>
+								<string></string>
 								<key>StatusBarVisibility</key>
 								<true/>
 							</dict>
@@ -671,7 +655,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B06E030B58957A000DD1AE</string>
-				<string>61AF7FD50BB16B9D0017EEC0</string>
+				<string>617C1ECC0BBB296C0068AA35</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -811,14 +795,12 @@
 							<key>Dock</key>
 							<array>
 								<dict>
-									<key>BecomeActive</key>
-									<true/>
 									<key>ContentConfiguration</key>
 									<dict>
 										<key>PBXProjectModuleGUID</key>
 										<string>1CDD528C0622207200134675</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>iwlwifi_hw.h</string>
+										<string>iwi3945.cpp</string>
 										<key>StatusBarVisibility</key>
 										<true/>
 									</dict>
@@ -839,6 +821,8 @@
 							<string>212pt</string>
 						</dict>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -874,8 +858,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61AF7FE20BB16B9D0017EEC0</string>
-				<string>61AF7FE30BB16B9D0017EEC0</string>
+				<string>617C1EC00BBB25E00068AA35</string>
+				<string>617C1EC10BBB25E00068AA35</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
@@ -884,7 +868,7 @@
 			<key>WindowToolGUID</key>
 			<string>1C530D57069F1CE1000CFCEE</string>
 			<key>WindowToolIsVisible</key>
-			<true/>
+			<false/>
 		</dict>
 		<dict>
 			<key>Identifier</key>
