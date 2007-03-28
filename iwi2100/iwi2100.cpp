@@ -848,7 +848,7 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 	}
 	ipw2100_queues_initialize(priv);
 
-	ipw2100_initialize_ordinals(priv);
+	//ipw2100_initialize_ordinals(priv);
 	
 	IOLog(": Detected Intel PRO/Wireless 2100 Network Connection\n");
 
@@ -3564,8 +3564,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to start the firmware.\n",
 		       priv->net_dev->name);
-		rc = 1;
-		goto exit;
+		//rc = 1;
+		//goto exit;
 	}
 
 	ipw2100_initialize_ordinals(priv);
@@ -3575,14 +3575,14 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to determine HW features.\n",
 		       priv->net_dev->name);
-		rc = 1;
-		goto exit;
+		//rc = 1;
+		//goto exit;
 	}
 
 	/* Initialize the geo */
 	if (ipw_set_geo(priv->ieee, &ipw_geos[0])) {
 		IOLog( "Could not set geo\n");
-		return 0;
+		//return 0;
 	}
 	priv->ieee->freq_band = IEEE80211_24GHZ_BAND;
 
@@ -3591,8 +3591,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to clear ordinal lock.\n",
 		       priv->net_dev->name);
-		rc = 1;
-		goto exit;
+		//rc = 1;
+		//goto exit;
 	}
 
 	priv->status &= ~STATUS_SCANNING;
