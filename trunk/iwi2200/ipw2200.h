@@ -125,8 +125,8 @@ enum connection_manager_assoc_states {
 
 #define TX_QUEUE_SIZE                        32
 #define RX_QUEUE_SIZE                        32
-#define RX_FREE_BUFFERS						 0
-#define RX_LOW_WATERMARK					 0
+#define RX_FREE_BUFFERS						 32
+#define RX_LOW_WATERMARK					 8
 
 #define DINO_CMD_WEP_KEY                   0x08
 #define DINO_CMD_TX                        0x0B
@@ -1151,7 +1151,6 @@ struct ipw_rt_hdr {
 struct ipw_priv {
 	/* ieee device used by generic ieee processing code */
 	struct ieee80211_device *ieee;
-
 	//spinlock_t lock;
 	//spinlock_t irq_lock;
 	//struct mutex mutex;
@@ -1175,8 +1174,8 @@ struct ipw_priv {
 	/* result of ucode download */
 	struct alive_command_responce dino_alive;
 
-	wait_queue_head_t wait_command_queue;
-	wait_queue_head_t wait_state;
+	//wait_queue_head_t wait_command_queue;
+	//wait_queue_head_t wait_state;
 
 	/* Rx and Tx DMA processing queues */
 	struct ipw_rx_queue *rxq;
@@ -1208,7 +1207,7 @@ struct ipw_priv {
 	struct notif_link_deterioration last_link_deterioration; /** for statistics */
 	struct ipw_cmd *hcmd; /**< host command currently executed */
 
-	wait_queue_head_t hcmd_wq;     /**< host command waits for execution */
+	//wait_queue_head_t hcmd_wq;     /**< host command waits for execution */
 	u32 tsf_bcn[2];		     /**< TSF from latest beacon */
 
 	struct notif_calibration calib;	/**< last calibration */
@@ -1266,7 +1265,7 @@ struct ipw_priv {
 	u8 country[4];
 	int eeprom_delay;
 
-	struct iw_statistics wstats;
+	//struct iw_statistics wstats;
 
 #if IW_HANDLER_VERSION >= 6
 	struct iw_public_data wireless_data;

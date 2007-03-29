@@ -44,6 +44,7 @@ extern "C" {
 #include <sys/sockio.h>
 #include <sys/malloc.h>
 #include <sys/queue.h>
+#include <sys/kern_control.h>
 }
 
 #include "net/ieee80211.h"

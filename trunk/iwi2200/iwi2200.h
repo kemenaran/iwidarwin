@@ -774,6 +774,15 @@ public:
     virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
     virtual void setPowerStateOff(void);
     virtual void setPowerStateOn(void);
+	
+		//kext control functions:
+	
+	friend  int 		sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len); //send network list to network selector app.
+	friend  int 		setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags); //get slected network from network selector app.
+	friend  int			ConnectClient(kern_ctl_ref kctlref,struct sockaddr_ctl *sac,void **unitinfo); //connect to network selector app.
+	friend  int 		disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo); //disconnect network selector app.
+	friend	int			configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len);
+
 	/*virtual SInt32	getSSID(IO80211Interface *interface,
 							struct apple80211_ssid_data *sd);
 	
@@ -1288,7 +1297,9 @@ protected:
 	UInt32                  _pmPowerState;
     thread_call_t           _powerOffThreadCall;
     thread_call_t           _powerOnThreadCall;
-	
+	//open link to user interface application flag:
+	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
+							//the user is connected to the driver.
 	
 };
 
