@@ -11,7 +11,7 @@
 //#define IWI_NOLOG
 //#define IWI_DEBUG_NORMAL
 //#define IWI_DEBUG_FULL_MODE
-#define IWI_WARNERR
+//#define IWI_WARNERR
 
 #if defined(IWI_NOLOG)
 	#define IWI_LOG(...)
@@ -1300,7 +1300,7 @@ protected:
 	//open link to user interface application flag:
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
-	
+
 };
 
 
