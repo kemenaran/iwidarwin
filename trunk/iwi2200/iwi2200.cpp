@@ -10461,6 +10461,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			if (!memcmp(network->bssid,((struct ieee80211_network *)data)->bssid,sizeof(*network->bssid)))
 			{
 				clone->ipw_best_network(clone->priv, &match, network, 0);
+				break;
 			}
 		}
 		network = match.network;
@@ -10485,9 +10486,11 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	{
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
+			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
-				if (clone->ipw_read32(0x30)==0x40000) clone->ipw_write32(0x30, 0x0f0ff);
+				
+				if (clone->ipw_read32(0x30)==0x40000) clone->ipw_write32(0x30, 0x1);//0x0f0ff);
 				else 
 				clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
 				
@@ -10504,19 +10507,21 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
 					if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
-			}
+			} else q=1;
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_rf_kill),clone->priv,2000,true);
+			if (q==1) clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_rf_kill),clone->priv,2000,true);
 			IWI_LOG("radio on 0x50000 = 0x%x\n", clone->ipw_read32(0x30));
 		}
 		else
 		{
 			if (!(clone->rf_kill_active(clone->priv))) 
 			{
+			
 				if (clone->ipw_read32(0x30)==0x50000) clone->ipw_write32(0x30, 0x1);
-				else clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
+				else 
+				clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
 				
 				if (clone->ipw_read32(0x30)!=0x40000)
 				{
