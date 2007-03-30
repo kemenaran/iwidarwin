@@ -5424,11 +5424,11 @@ int darwin_iwi3945::reg_txpower_get_temperature(struct ipw_priv *priv)
 
 	/* driver's okay range is -260 to +25.
 	 *   human readable okay range is 0 to +285 */
-	IOLog("Temperature: %d\n", temperature + 260);
+	IWI_DEBUG_FULL("Temperature: %d\n", temperature + 260);
 
 	/* handle insane temp reading */
 	if (reg_temp_out_of_range(temperature)) {
-		IOLog("Error bad temperature value  %d\n", temperature);
+		IWI_DEBUG_FULL("Error bad temperature value  %d\n", temperature);
 
 		/* if really really hot(?),
 		 *   substitute the 3rd band/group's temp measured at factory */
@@ -6809,20 +6809,20 @@ int darwin_iwi3945::is_temp_calib_needed(struct ipw_priv *priv)
 
 	/* get absolute value */
 	if (temp_diff < 0) {
-		IOLog("Getting cooler, delta %d,\n", temp_diff);
+		IWI_DEBUG_FULL("Getting cooler, delta %d,\n", temp_diff);
 		temp_diff = -temp_diff;
 	} else if (temp_diff == 0)
-		IOLog("Same temp,\n");
+		IWI_DEBUG_FULL("Same temp,\n");
 	else
-		IOLog("Getting warmer, delta %d,\n", temp_diff);
+		IWI_DEBUG_FULL("Getting warmer, delta %d,\n", temp_diff);
 
 	/* if we don't need calibration, *don't* update last_temperature */
 	if (temp_diff < IPW_TEMPERATURE_LIMIT_TIMER) {
-		IOLog("Timed thermal calib not needed\n");
+		IWI_DEBUG_FULL("Timed thermal calib not needed\n");
 		return 0;
 	}
 
-	IOLog("Timed thermal calib needed\n");
+	IWI_DEBUG_FULL("Timed thermal calib needed\n");
 
 	/* assume that caller will actually do calib ...
 	 *   update the "last temperature" value */
