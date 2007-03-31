@@ -6056,7 +6056,7 @@ int darwin_iwi2200::ipw_associate(ipw_priv *data)
 	IWI_DEBUG("associate...\n");
 	if (priv->ieee->iw_mode == IW_MODE_MONITOR) {
 		IWI_DEBUG("Not attempting association (monitor mode)\n");
-		return 0;
+		//return 0;
 	}
 
 	if (priv->status & (STATUS_ASSOCIATED | STATUS_ASSOCIATING)) {
@@ -6085,15 +6085,16 @@ int darwin_iwi2200::ipw_associate(ipw_priv *data)
 		IWI_DEBUG("Not attempting association (associate=0)\n");
 		return 0;
 	}
-	
-	list_for_each_entry(network, &priv->ieee->network_list, list) 
-		ipw_best_network(priv, &match, network, 0);
-
+	if (!(priv->config & CFG_ASSOCIATE))
+	{
+		list_for_each_entry(network, &priv->ieee->network_list, list) 
+			ipw_best_network(priv, &match, network, 0);
+	}
 	network = match.network;
 	rates = &match.rates;
 	
 	if (network == NULL &&
-	    priv->ieee->iw_mode == IW_MODE_ADHOC &&
+	    priv->ieee->iw_mode == IW_MODE_ADHOC && priv->ieee->scans>5 &&
 	    priv->config & CFG_ADHOC_CREATE &&
 	    //priv->config & CFG_STATIC_ESSID &&
 	    //priv->config & CFG_STATIC_CHANNEL &&
@@ -10430,8 +10431,11 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	{
 		int m=*((int*)data);
 		m=m-1;
-		clone->priv->ieee->iw_mode=m;
-		IWI_LOG("setting mode to %d\n",clone->priv->ieee->iw_mode);
+		IWI_LOG("setting mode to %d\n",m);
+		if (clone->priv->config & CFG_NO_LED) clone->led=0; else clone->led=1;
+		clone->associate=1;
+		clone->mode=m;
+		clone->ipw_sw_reset(0);
 		clone->ipw_adapter_restart(clone->priv);
 	}
 	if (opt==3)// led
@@ -10446,7 +10450,6 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	if (opt==2) //associate network.
 	{
 		//todo: check other priv status
-		clone->priv->config &= ~CFG_ASSOCIATE;
 		clone->priv->status |= STATUS_RF_KILL_HW;
 		clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 		clone->setLinkStatus(kIONetworkLinkValid);
@@ -10478,14 +10481,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->ipw_associate_network(clone->priv, network, rates, 0);
 			IODelay(5000*1000);
 		}
-		clone->priv->config |= CFG_ASSOCIATE;
-		//clone->ipw_link_up(clone->priv);
-		
 	}
 	if (opt==1) //HACK: start/stop the nic
 	{
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
+			clone->priv->config |= CFG_ASSOCIATE;
 			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
