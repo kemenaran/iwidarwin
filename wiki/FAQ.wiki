@@ -1,18 +1,20 @@
-#summary Freaquentry Ascked Question
+#summary Frequently Asked Questions
 #labels Featured,FAQ
 
 = F.A.Q =
 ==When will ipw3945abg/2100 be supported?==
 
-  We dont have its card. we can write test code. but no relese working version forever.
-  we require developer with 2100/3945abg or cards to support it
+We don't have this card. We can write test code, but no relese is currently working. We are looking for a skilled developer with 2100 or 3945abg cards to help.
 
-==when WEP , 802.1x,encrption and setting via AirPort menu is suppored?==
+==When will WEP, 802.1x, encrption and configuration via the AirPort menu be suppored?==
   
-  We caonnot answer it because we must analiyze IO80211Family( this information is closed)
+We cannot say because we must analyze the IO80211Family (closed source). The current work around is a small console application named "NetworkSelector" which replaces some of the airport functionality. 
 
-==Do i need to update my version of os x to 10.4.8 to even try this driver?==
-  Nope, the iwi3945 driver requires Apple80211.framework and IO80211.kext from 10.4.7
+==What does NetworkSelector do and why do I need it?==
+This application also allows you to control power to your card if you do not have an external switch. It will display any unencrypted networks in the area and allow you to associate with them. You can change the state of the wireless LED (if equiped). 
+
+==Do i need to update my version of OSX to 10.4.8+ to even try this driver?==
+Nope, the iwi driver requires Apple80211.framework and IO80211.kext from 10.4.7
 
 
 ==How do I create log's to help development of the drivers?==
@@ -26,6 +28,9 @@
   }}}
   # Now you have 3 log files; dmesg.txt, system.txt and ioreg.txt you can find them on the desktop
 
+==How do I upgrade to the latest version?==
+Look to the project homepage at http://code.google.com/p/iwidarwin/ to get the lastest driver. The included package should update your driver automatically. Make sure to use the matching version of network selector as they are not compatible between versions.
+
 ==How can I uninstall iwi3945?==
   # go to Terminal.App
   {{{
@@ -35,3 +40,4 @@
   % kextcache -k /System/Library/Extensions
   }}}
   # iwi3945 is now uninstalled
+
