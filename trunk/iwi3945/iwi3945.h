@@ -646,6 +646,10 @@ virtual IOOptionBits getState( void ) const;
 	virtual void reg_txpower_periodic(struct ipw_priv *priv);
 	virtual int is_temp_calib_needed(struct ipw_priv *priv);
 	virtual int reg_txpower_compensate_for_temperature_dif(struct ipw_priv *priv);
+	virtual int ipw3945_rxq_stop(struct ipw_priv *priv);
+	virtual void ipw_clear_free_frames(struct ipw_priv *priv);
+	
+	
 	
 	
 	
