@@ -6083,9 +6083,9 @@ int darwin_iwi2200::ipw_associate(ipw_priv *data)
 	    !(priv->config & (CFG_STATIC_ESSID |
 			      CFG_STATIC_CHANNEL | CFG_STATIC_BSSID))) {
 		IWI_DEBUG("Not attempting association (associate=0)\n");
-		return 0;
+		//return 0;
 	}
-	if (!(priv->config & CFG_ASSOCIATE))
+	if ((priv->config & CFG_ASSOCIATE))
 	{
 		list_for_each_entry(network, &priv->ieee->network_list, list) 
 			ipw_best_network(priv, &match, network, 0);
@@ -10433,7 +10433,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		m=m-1;
 		IWI_LOG("setting mode to %d\n",m);
 		if (clone->priv->config & CFG_NO_LED) clone->led=0; else clone->led=1;
-		clone->associate=1;
+		clone->associate=0;
 		clone->mode=m;
 		clone->ipw_sw_reset(0);
 		clone->ipw_adapter_restart(clone->priv);
@@ -10486,7 +10486,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	{
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
-			clone->priv->config |= CFG_ASSOCIATE;
+			clone->priv->config &= ~CFG_ASSOCIATE;
 			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
