@@ -25,7 +25,7 @@ This application also allows you to control power to your card if you do not hav
 Because of the closed source nature of OSX86 it will be hard to make progess in this area. It may be possible in the future with an improved driver and networkselector application but currently only unencrypted networks are supported
 
 ==Why is my 2915abg is unable to connect to my unencrypted 802.11a network?==
-We are working on this issue. Stay tuned.
+We are aware of this issue. Stay tuned.
 
 ==Do i need to update my version of OSX to 10.4.8+ to use this driver?==
 Nope, the iwi driver requires Apple80211.framework and IO80211.kext from 10.4.7
