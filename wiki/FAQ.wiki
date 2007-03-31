@@ -12,7 +12,7 @@ We may never be able to use the Airport utility. Its hard to say because we must
 
 ==Why is my card detected as a PCI Ethernet adapter instead of an airport card?==
 
-This is normal and to be accepted. We wrote the driver this way because the IO80211Family is closed source and not well documented. There is more information available for "wired" adapters in Mac OS. The basic networking functions of your card will be handled by the OS and wireless features are supplimented with our "NetworkSelector" utility.
+This is normal and to be expected. We wrote the driver this way because the IO80211Family is closed source and not well documented. There is more information available for "wired" adapters in Mac OS. The basic networking functions of your card will be handled by the OS and wireless features are supplimented with our "NetworkSelector" utility.
 
 ==What does NetworkSelector do and why do I need it?==
 This application also allows you to control power to your card if you do not have an external switch. It will display any unencrypted networks in the area and allow you to associate with them. You can change the state of the wireless LED (if equiped). 
