@@ -2,18 +2,25 @@
 #labels Featured,FAQ
 
 = F.A.Q =
-==When will ipw3945abg/2100 be supported?==
+==When will the 3945 or 2100 be supported?==
 
-We don't have this card. We can write test code, but no relese is currently working. We are looking for a skilled developer with 2100 or 3945abg cards to help.
+We don't have this card. We can write test code, but no release is currently working. We are looking for skilled developers with a 2100 or 3945abg card to help.
 
-==When will WEP, 802.1x, encrption and configuration via the AirPort menu be suppored?==
-  
-We cannot say because we must analyze the IO80211Family (closed source). The current work around is a small console application named "NetworkSelector" which replaces some of the airport functionality. 
+==When will configuration via the AirPort menu be supported?==
+
+We may never be able to. Its hard to say because we must analyze the IO80211Family which is closed source. The current work around is a small console application named "NetworkSelector" which replaces some of the airport functionality. 
 
 ==What does NetworkSelector do and why do I need it?==
 This application also allows you to control power to your card if you do not have an external switch. It will display any unencrypted networks in the area and allow you to associate with them. You can change the state of the wireless LED (if equiped). 
 
-==Do i need to update my version of OSX to 10.4.8+ to even try this driver?==
+==When will WEP or 802.1x be supported?==
+
+Because of the closed source nature of OSX86 it will be hard to make progess in this area. It may be possible in the future with an improved driver and networkselector application but currently only unencrypted networks are supported
+
+==Why is my 2915abg is unable to connect to my unencrypted 802.11a network?==
+We are working on this issue. Stay tuned.
+
+==Do i need to update my version of OSX to 10.4.8+ to use this driver?==
 Nope, the iwi driver requires Apple80211.framework and IO80211.kext from 10.4.7
 
 
@@ -40,4 +47,3 @@ Look to the project homepage at http://code.google.com/p/iwidarwin/ to get the l
   % kextcache -k /System/Library/Extensions
   }}}
   # iwi3945 is now uninstalled
-
