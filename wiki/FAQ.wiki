@@ -43,12 +43,13 @@ Nope, the iwi driver requires Apple80211.framework and IO80211.kext from 10.4.7
   # Now you have 3 log files; dmesg.txt, system.txt and ioreg.txt you can find them on the desktop
 
 
-==How can I uninstall iwi3945?==
+==How can I uninstall the driver?==
+First you must determine which driver is installed, either iwi2100, iwi3945 or iwi2200.
   # go to Terminal.App
   {{{
   % sudo -s
-  % rm /System/Library/Extensions/iwi3945.kext
+  % rm /System/Library/Extensions/iwiXXXX.kext (replace XXXX with your specific driver)
   % rm /System/Library/Extensions.*
   % kextcache -k /System/Library/Extensions
   }}}
-  # iwi3945 is now uninstalled
+  # Driver is now uninstalled
