@@ -1360,10 +1360,12 @@ void darwin_iwi3945::ipw_rf_kill(ipw_priv *priv)
 			    ("Can not turn radio back on - "
 			     "disabled by SW switch\n");
 		else
-			IOLog
+		{	IOLog
 			    ("Radio Frequency Kill Switch is On:\n"
 			     "Kill switch must be turned off for "
 			     "wireless networking to work.\n");
+				 queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
+		}
 	}
 	//mutex_unlock(&priv->mutex);
 }
@@ -3471,7 +3473,9 @@ void darwin_iwi3945::ipw_down(struct ipw_priv *priv)
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	//ipw_stop_tx_queue(priv);
+	ipw_tx_queue_free(priv);
 	//ipw_rxq_stop(priv);
+	ipw3945_rxq_stop(priv);
 
 	//spin_lock_irqsave(&priv->lock, flags);
 	if (!ipw_grab_restricted_access(priv)) {
@@ -3504,9 +3508,53 @@ void darwin_iwi3945::ipw_down(struct ipw_priv *priv)
 	}
 
 	/* clear out any free frames */
-	//ipw_clear_free_frames(priv);
+	ipw_clear_free_frames(priv);
 }
 
+void darwin_iwi3945::ipw_clear_free_frames(struct ipw_priv *priv)
+{
+	struct list_head *element;
+
+	IOLog("%d frames on pre-allocated heap on clear.\n",
+		       priv->frames_count);
+
+	while (!list_empty(&priv->free_frames)) {
+		element = priv->free_frames.next;
+		list_del(element);
+		kfree(list_entry(element, struct ipw_frame, list));
+		priv->frames_count--;
+	}
+
+	if (priv->frames_count) {
+		IOLog
+		    ("%d frames still in use.  Did we lose one?\n",
+		     priv->frames_count);
+		priv->frames_count = 0;
+	}
+}
+
+int darwin_iwi3945::ipw3945_rxq_stop(struct ipw_priv *priv)
+{
+	int rc;
+	unsigned long flags;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
+		//spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}
+
+	_ipw_write_restricted(priv, FH_RCSR_CONFIG(0), 0);
+	rc = ipw_poll_restricted_bit(priv, FH_RSSR_STATUS, (1 << 24), 1000);
+	if (rc < 0)
+		IOLog("Can't stop Rx DMA.\n");
+
+	_ipw_release_restricted_access(priv);
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	return 0;
+}
 
 void darwin_iwi3945::ipw_led_radio_off(struct ipw_priv *priv)
 {
@@ -8022,7 +8070,7 @@ void darwin_iwi3945::RxQueueIntr()
 				     (priv->status & STATUS_RF_KILL_HW))
 				    || ((status & STATUS_RF_KILL_SW)
 					!= (priv->status & STATUS_RF_KILL_SW))) {
-					queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,0,true);
+					queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
 					//queue_delayed_work(priv->workqueue,
 					//		   &priv->rf_kill, 0);
 				};// else
