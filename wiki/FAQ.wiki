@@ -8,7 +8,7 @@ We do not have this card in house. We can write test code, but no release is cur
 
 ==When will configuration via the Airport menu be supported?==
 
-We may never be able to use the Airport utility. Its hard to say because we must analyze the IO80211Family which is closed source and not well documented. Use our utlity "NetworkSelector" instead 
+We may never be able to use the Airport utility. Its hard to say because we must analyze the IO80211Family which is closed source and not well documented. Use our utlity NetworkSelector instead. 
 
 ==How do I install or upgrade my driver?==
 Look to the project homepage at http://code.google.com/p/iwidarwin/ to get the lastest driver. The included package should install or update your driver automatically. Make sure to use the matching version of network selector as they are not compatible between different driver versions. Once the driver package is finished reboot your system. After the reboot open "Network Preferences" and the adapter will be listed.
