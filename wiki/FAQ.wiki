@@ -70,6 +70,26 @@ First you must determine which driver is installed, either iwi2100, iwi3945 or i
 8) Last try "ping google.com" to verify DNS is working
 }}}
 
+
+== Where to report bugs ==
+
+If can use google project, send your report to [http://code.google.com/p/iwidarwin/issues/list issues].
+If not please reply to this thread [http://forum.insanelymac.com/index.php?showtopic=36976].
+
+
+=== Information to include in bug reports ===
+The following information is required in bug reports.
+
+ * Version of iwi *important*
+ * iwi message logs (type "grep iwi /var/log/system.log > report.log" and attach "report.log" and dmesg). *important*
+ * ioreg log
+ * Kernel version
+ * Mac OS X version
+ * IO80211Family version
+ * What you were doing when the bug occured 
+
+
+
 ==My question is not answered in this FAQ==
 
 Please join the discussion over on the InsanelyMac forum by click this link http://forum.insanelymac.com/index.php?showtopic=36976
