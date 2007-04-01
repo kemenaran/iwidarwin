@@ -18,14 +18,14 @@ This is the current installation document for iwi2200.
 
 3) Mount the DMG file you have downloaded
 
-4) Open the package in the newly mounted drive to load the installer program. 
+4) Copy the matching version of NetworkSelector to a place that is easy to remember and run it to configure your card
 
-5) Click continue to install and select the hard drive where OSX is installed
+5) Open the package in the newly mounted drive to load the installer program. 
 
-6) You may have to enter your password before the installation will continue
+6) Click continue to install and select the hard drive where OSX is installed
 
-7) When the installation completes the installer will ask you to reboot. 
+7) You may have to enter your password before the installation will continue
 
-8) After the reboot open "Network Preferences" and the adapter will be listed. 
+8) When the installation completes the installer will ask you to reboot. 
 
-9) Copy the matching version of NetworkSelector to a place that is easy to remember and run it to configure your card
+9) After the reboot open "Network Preferences" and the adapter will be listed. 
