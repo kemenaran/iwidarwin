@@ -25,8 +25,6 @@ NetworkSelector is used to configured the wireless card. Read more [http://code.
 
 Because of the closed source nature of OSX86 it will be hard to make progess in this area. It may be possible in the future with an improved driver and networkselector application but currently only unencrypted networks are supported
 
-Please make sure to update NetworkSelector any time you change drivers. 
-
 ==Why is my 2915abg is unable to connect to my unencrypted 802.11a network?==
 We are aware of this issue. Stay tuned.
 
