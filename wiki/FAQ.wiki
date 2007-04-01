@@ -19,7 +19,7 @@ This is normal and to be expected. We wrote the driver this way because the IO80
 
 ==What is NetworkSelector?==
 
-NetworkSelector is used to configured the wireless card. Read more [http://code.google.com/p/iwidarwin/networkselector here]
+NetworkSelector is used to configured the wireless card. Read more [http://code.google.com/p/iwidarwin/wiki/NetworkSelector here]
 
 ==When will WEP or 802.1x be supported?==
 
