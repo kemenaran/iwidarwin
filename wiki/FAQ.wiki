@@ -57,6 +57,19 @@ First you must determine which driver is installed, either iwi2100, iwi3945 or i
   }}}
   # Driver is now uninstalled
 
+==How can I tell if the driver or wireless network is working?==
+
+{{{
+1) Make sure the card is listed in Network Preferences
+2) Run the NetworkSelector utility and verify the card is turned on
+3) Make sure you are within range of an unencrypted 802.11b network and refresh the NetworkSelector screen to see if the network is listed and you are associated with the correct SSID.
+4) Open a terminal window and run the command "ifconfig en0" and verify an IP address has been assigned. *Note*- If you get a message "adapter not present" make note of the MAC address listed in Network Preferences and then run "ifconfig" and find the matching MAC and interface name
+5) If NetworkSelector says you are associated with a network and ifconfig shows no IP address try setting your address/subnet manually from within "NetworkPreferences" 
+6) From the terminal try to ping your default gateway. For example "ping 192.168.0.1" (realize the gateway could be any number and you have to find this yourself)
+7) If you can ping the gateway you should then try to ping an internet host "ping 67.17.144.1" 
+8) Last try "ping google.com" to verify DNS is working
+}}}
+
 ==My question is not answered in this FAQ==
 
 Please join the discussion over on the InsanelyMac forum by click this link http://forum.insanelymac.com/index.php?showtopic=36976
