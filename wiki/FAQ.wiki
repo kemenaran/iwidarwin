@@ -17,13 +17,15 @@ Please refer to the [http://code.google.com/p/iwidarwin/wiki/Installation instal
 
 This is normal and to be expected. We wrote the driver this way because the IO80211Family is closed source and not well documented. There is more information available for "wired" adapters in Mac OS. The basic networking functions of your card will be handled by the OS and wireless features are supplimented with our "NetworkSelector" utility.
 
-==What does NetworkSelector do?
+==What does NetworkSelector do?==
 
 This application also allows you to control power to your card if you do not have an external switch. It will display any unencrypted networks in the area and allow you to associate with them. You can change the state of the wireless LED (if equiped). 
 
 ==When will WEP or 802.1x be supported?==
 
 Because of the closed source nature of OSX86 it will be hard to make progess in this area. It may be possible in the future with an improved driver and networkselector application but currently only unencrypted networks are supported
+
+Please make sure to update NetworkSelector any time you change drivers. 
 
 ==Why is my 2915abg is unable to connect to my unencrypted 802.11a network?==
 We are aware of this issue. Stay tuned.
