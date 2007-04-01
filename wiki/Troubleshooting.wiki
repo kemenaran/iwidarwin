@@ -1,3 +1,4 @@
+#labels Featured,Troubleshooting
 1) Make sure the card is listed in Network Preferences
 
 2) Run the NetworkSelector utility and verify the card is turned on. Wait a few moments and use option 0 to refresh the screen and verify the card is still shown as powered
@@ -20,4 +21,4 @@
 
 7) If you can ping the gateway you should then try to ping an internet host "ping 67.17.144.1" 
 
-8) Last try "ping google.com" to verify DNS is working
+8) Last try "ping google.com" and wait a few seconds to verify DNS is working.
