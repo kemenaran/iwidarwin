@@ -80,8 +80,8 @@ If not please reply to this thread [http://forum.insanelymac.com/index.php?showt
 === Information to include in bug reports ===
 The following information is required in bug reports.
 
- * Version of iwi *important*
- * iwi message logs (type "grep iwi /var/log/system.log > report.log" and attach "report.log" and dmesg). *important*
+ * Version of iwi. _*important*_
+ * iwi message logs (type "grep iwi /var/log/system.log > report.log" and attach "report.log" and dmesg). _*important*_
  * ioreg log
  * Kernel version
  * Mac OS X version
