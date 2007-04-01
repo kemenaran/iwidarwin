@@ -15,7 +15,7 @@ Please refer to the [http://code.google.com/p/iwidarwin/wiki/Installation instal
 
 ==Why is my card detected as an Ethernet adapter instead of an Airport card?==
 
-This is normal and to be expected. We wrote the driver this way because the IO80211Family is closed source and not well documented. There is more information available for "wired" adapters in Mac OS. The basic networking functions of your card will be handled by the OS and wireless features are supplimented with our "NetworkSelector" utility.
+This is normal and to be expected. We wrote the driver this way because the IO80211Family is closed source and not well documented. There is more information available for "wired" adapters in Mac OS. The basic networking functions of your card will be handled by the OS and wireless features are supplemented with our "NetworkSelector" utility.
 
 ==What is NetworkSelector?==
 
@@ -23,7 +23,7 @@ NetworkSelector is used to configured the wireless card. Read more [http://code.
 
 ==When will WEP or 802.1x be supported?==
 
-Because of the closed source nature of OSX86 it will be hard to make progess in this area. It may be possible in the future with an improved driver and networkselector application but currently only unencrypted networks are supported
+Because of the closed source nature of OSX86 it will be hard to make progress in this area. It may be possible in the future with an improved driver and networkselector application but currently only unencrypted networks are supported
 
 ==What driver do I use for my 2915abg?==
 
@@ -67,7 +67,7 @@ Please see [http://code.google.com/p/iwidarwin/wiki/Troubleshooting Troubleshoot
 
 == Where to report bugs ==
 
-If can use google project, send your report to [http://code.google.com/p/iwidarwin/issues/list issues].
+If can use Google project, send your report to [http://code.google.com/p/iwidarwin/issues/list issues].
 If not please reply to this thread [http://forum.insanelymac.com/index.php?showtopic=36976].
 
 
