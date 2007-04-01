@@ -12,6 +12,21 @@ NetworkSelector controls all wireless aspects of your card.
 
 Each version of NetworkSelector is matched to the IWI driver it was included with. Un matched versions will not function properly. 
 
-=Menu Options=
+==Main Screen==
+{{{
 
+Wellcome to the insanelyMac SpacePort 0.1
+Adapter [mode: 0 led: off]
+Associated: 'doublepowerb (00:06:25:10:19:97)' 
 
+1) Turn card off
+2) Network List 
+3) Switch led 
+4) Change mode
+5) Close Program 
+0) Refresh
+
+Enter Option:  
+}}}
+
+==Description of each option==
