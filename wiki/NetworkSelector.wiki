@@ -1,14 +1,17 @@
 ==Description==
 
-NetworkSelector controls all wirless aspects of your card. 
- You can use it to turn the card on or off if you do not have an external switch. 
- It can display the network you are associated with currently.
- It can display any unencrypted networks in the area.
- You can choose which network to associate with if there are many available
- You can change the state of the wireless LED (if equiped). 
+NetworkSelector controls all wireless aspects of your card.
+ 
+  * You can use it to turn the card on or off if you do not have an external switch. 
+  * It can display the network you are associated with currently.
+  * It can display any unencrypted networks in the area.
+  * You can choose which network to associate with if there are many available
+  * You can change the state of the wireless LED (if equiped). 
 
 ==Caution==
 
 Each version of NetworkSelector is matched to the IWI driver it was included with. Un matched versions will not function properly. 
 
 =Menu Options=
+
+
