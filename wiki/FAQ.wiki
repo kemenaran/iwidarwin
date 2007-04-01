@@ -17,9 +17,9 @@ Please refer to the [http://code.google.com/p/iwidarwin/wiki/Installation instal
 
 This is normal and to be expected. We wrote the driver this way because the IO80211Family is closed source and not well documented. There is more information available for "wired" adapters in Mac OS. The basic networking functions of your card will be handled by the OS and wireless features are supplimented with our "NetworkSelector" utility.
 
-==What does NetworkSelector do?==
+==What is NetworkSelector?==
 
-This application also allows you to control power to your card if you do not have an external switch. It will display any unencrypted networks in the area and allow you to associate with them. You can change the state of the wireless LED (if equiped). 
+NetworkSelector is used to configured the wireless card. Read more [http://code.google.com/p/iwidarwin/networkselector here]
 
 ==When will WEP or 802.1x be supported?==
 
