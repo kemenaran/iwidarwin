@@ -55,7 +55,7 @@ First you must determine which driver is installed, either iwi2100, iwi3945 or i
   }}}
   # Driver is now uninstalled
 
-==How can I tell if the driver or wireless network is working?==
+==-Basic Troubleshooting-==
 
 {{{
 1) Make sure the card is listed in Network Preferences
