@@ -1,11 +1,18 @@
-
 1) Make sure the card is listed in Network Preferences
 
-2) Run the NetworkSelector utility and verify the card is turned on
+2) Run the NetworkSelector utility and verify the card is turned on. Wait a few moments and use option 0 to refresh the screen and verify the card is still shown as powered
 
-3) Make sure you are within range of an unencrypted 802.11b network and refresh the NetworkSelector screen to see if the network is listed and you are associated with the correct SSID.
+3) Make sure you are within range of an unencrypted 802.11b network and use option 0 to refresh the NetworkSelector screen to see if the network is listed and you are associated with the correct SSID.
 
-4) Open a terminal window and run the command "ifconfig en0" and verify an IP address has been assigned. *Note*- If you get a message "adapter not present" make note of the MAC address listed in Network Preferences and then run "ifconfig" and find the matching MAC and interface name
+4a) Open a terminal window and run the command "ifconfig en0" and verify an IP address has been assigned. 
+  * If you get a message "adapter not present" make note of the MAC address listed in Network Preferences and then run "ifconfig" and find the matching MAC and interface name
+  * If you see " media: autoselect (<unknown type>) status: inactive " or " media: autoselect (none) status: inactive " Then the card is either powered off or an unencrypted network was not detected.
+  * If you see "media: autoselect status: active" but no IP address then the card is connected to a wireless network but DHCP messages aren't being received
+
+
+4b) Open "System preferences" and choose "Network." Under the "Show" choose "Network Status." 
+  * If the message is "Built-in Ethernet = The cable for Built-in Ethernet is not plugged in" then the card is either powered down or an unencrypted network was not detected. 
+  * If the message is "Built-in Ethernet = The able for Built-in Ethernet is connected, but your computer does not have an IP address and cannot connect to the internet" then DHCP is not working properly
 
 5) If NetworkSelector says you are associated with a network and ifconfig shows no IP address try setting your address/subnet manually from within "NetworkPreferences" 
 
@@ -14,29 +21,3 @@
 7) If you can ping the gateway you should then try to ping an internet host "ping 67.17.144.1" 
 
 8) Last try "ping google.com" to verify DNS is working
-
-Built-in Ethernet = The cable for Built-in Ethernet is not plugged in
-
-or ifconfig says " media: autoselect (<unknown type>) status: inactive " or " media: autoselect (none) status: inactive " 
-
-then card is either turned off or cannot find an unencrypted wireless network
-
-
-
-Built-in Ethernet = The able for Built-in Ethernet is connected, but your computer does not have an IP address and cannot connect to the internet"
-
-Or ifconfig shows  "media: autoselect status: active" but no IP address then the card is connected to a wireless network but DHCP messages aren't being received
-
-
-
-Wellcome to the insanelyMac SpacePort 0.1
-Adapter [mode: 0 led: off]
-Associated: 'doublepowerb (00:06:25:10:19:97)' 
-
-1) Turn card off
-2) Network List 
-3) Switch led 
-4) Change mode
-5) Close Program 
-0) Refresh
-
