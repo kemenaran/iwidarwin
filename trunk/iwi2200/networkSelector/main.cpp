@@ -105,9 +105,15 @@ int main (int argc, char * const argv[]) {
 		sp=sizeof(*priv.ieee);
 		result = getsockopt( fd, SYSPROTO_CONTROL, 1, priv.ieee, &sp);
 		priv.ieee->networks = (struct ieee80211_network*)malloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
-		memset(priv.ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));		
+		memset(priv.ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
+		/*INIT_LIST_HEAD(&priv.ieee->network_free_list);
+		INIT_LIST_HEAD(&priv.ieee->network_list);
+		for (int ii = 0; ii < MAX_NETWORK_COUNT; ii++)
+		list_add_tail(&priv.ieee->networks[ii].list,
+			      &priv.ieee->network_free_list);*/
 		sp=sizeof(*priv.ieee->networks);
 		result = getsockopt( fd, SYSPROTO_CONTROL, 2, priv.ieee->networks, &sp);
+				
 		if (priv.status & STATUS_ASSOCIATED)
 		{
 			priv.assoc_network=&nets;
@@ -136,6 +142,7 @@ int main (int argc, char * const argv[]) {
 			default:
 				break;
 			case 3:
+				if (!(priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW))) break;
 				setsockopt(fd,SYSPROTO_CONTROL,3,NULL,0);
 				break;
 			case 4:
@@ -191,6 +198,7 @@ int main (int argc, char * const argv[]) {
 							setsockopt(fd,SYSPROTO_CONTROL,2,&priv.ieee->networks[ii], sizeof(priv.ieee->networks[ii]));
 						}
 					}
+					
 				}
 				else
 				if (priv.assoc_network)
@@ -202,7 +210,7 @@ int main (int argc, char * const argv[]) {
 				}
 				break;
 		}
-		
+		free(priv.ieee->networks);
 	}
 	
 	close(fd);

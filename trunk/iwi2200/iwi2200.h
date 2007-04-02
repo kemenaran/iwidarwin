@@ -1034,7 +1034,7 @@ protected:
 	 void ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_queue *rxq);
 	 int ipw_queue_reset(struct ipw_priv *priv);
 	 void ipw_tx_queue_free(struct ipw_priv *priv);
-	 void ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_queue *txq);
+	 void ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_queue *txq, int count);
 	 int ipw_queue_inc_wrap(int index, int n_bd);
 	 void ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 				  struct clx2_tx_queue *txq);
@@ -1099,7 +1099,7 @@ protected:
 			return;
 
 			if (network->ibss_dfs) {
-			kfree(network->ibss_dfs);
+			IOFree(network->ibss_dfs,sizeof(*network->ibss_dfs));
 			network->ibss_dfs = NULL;
 			}
 		}			  
