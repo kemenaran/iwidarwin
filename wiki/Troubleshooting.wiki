@@ -1,11 +1,13 @@
 #labels Featured,Troubleshooting
 1) Make sure the card is listed in Network Preferences
 
+1a) Unplug any network connections you might have (ethernet, usb). iwi's driver don't work if you're connected to a network (or internet) using other cards.
+
 2) Run the NetworkSelector utility and verify the card is turned on. Wait a few moments and use option 0 to refresh the screen and verify the card is still shown as powered
 
 3) Make sure you are within range of an unencrypted 802.11b network and use option 0 to refresh the NetworkSelector screen to see if the network is listed and you are associated with the correct SSID.
 
-4a) Open a terminal window and run the command "ifconfig en0" and verify an IP address has been assigned. 
+4a) Open a terminal window and run the command "ifconfig" and verify if an IP address has been assigned. 
   * If you get a message "adapter not present" make note of the MAC address listed in Network Preferences and then run "ifconfig" and find the matching MAC and interface name
   * If you see " media: autoselect (<unknown type>) status: inactive " or " media: autoselect (none) status: inactive " Then the card is either powered off or an unencrypted network was not detected.
   * If you see "media: autoselect status: active" but no IP address then the card is connected to a wireless network but DHCP messages aren't being received
