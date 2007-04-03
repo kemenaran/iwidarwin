@@ -111,9 +111,34 @@ int main (int argc, char * const argv[]) {
 		for (int ii = 0; ii < MAX_NETWORK_COUNT; ii++)
 		list_add_tail(&priv.ieee->networks[ii].list,
 			      &priv.ieee->network_free_list);*/
-		sp=sizeof(*priv.ieee->networks);
-		result = getsockopt( fd, SYSPROTO_CONTROL, 2, priv.ieee->networks, &sp);
-				
+		
+		int c=-1;
+		rep:
+		c++;
+		sp=sizeof(priv.ieee->networks[c]);
+		result = getsockopt( fd, SYSPROTO_CONTROL, 2, &priv.ieee->networks[c], &sp);
+		/*printf("net: '%s (%02x:%02x:%02x:%02x:%02x:%02x)' \n",
+						escape_essid((const char*)priv.ieee->networks[c].ssid, priv.ieee->networks[c].ssid_len),
+						MAC_ARG(priv.ieee->networks[c].bssid));*/
+
+		if (c>0)
+		if (!memcmp(priv.ieee->networks[c].bssid, priv.ieee->networks[c-1].bssid, sizeof(priv.ieee->networks[c].bssid)))
+		{
+			priv.ieee->networks[c].ssid_len=0;
+		}
+		/*if (c>0 && priv.ieee->networks[c].ssid_len>0)
+		{
+			if (!memcmp(priv.ieee->networks[c-1].bssid, priv.ieee->networks[c].bssid, sizeof(*priv.ieee->networks[c].bssid)))
+			{
+				c=c-1;
+				goto rep;
+			}
+		}*/
+		if (priv.ieee->networks[c].ssid_len>0) 
+		{
+			priv.ieee->networks[c+1]=priv.ieee->networks[c];
+			goto rep;
+		}
 		if (priv.status & STATUS_ASSOCIATED)
 		{
 			priv.assoc_network=&nets;
@@ -175,7 +200,7 @@ int main (int argc, char * const argv[]) {
 						if (priv.ieee->networks[ii].ssid_len>0)
 						{
 							cn++;
-							printf("[%0d] '%s (%02x:%02x:%02x:%02x:%02x:%02x)' \n",cn,
+							printf("[%d] '%s (%02x:%02x:%02x:%02x:%02x:%02x)' \n",cn,
 							escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len),
 							MAC_ARG(priv.ieee->networks[ii].bssid));
 						}
@@ -190,7 +215,7 @@ int main (int argc, char * const argv[]) {
 							if (priv.ieee->networks[ii].ssid_len>0)
 							{
 								vi++;
-								if (vi==cn) break;
+								if (vi==sel0) break;
 							}
 							printf("connecting to '%s (%02x:%02x:%02x:%02x:%02x:%02x)'...\n",
 							escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len),
