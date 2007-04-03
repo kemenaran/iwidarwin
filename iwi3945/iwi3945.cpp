@@ -1045,7 +1045,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		ipw_sw_reset(1);
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw_nic_init(priv);
-		//ipw_nic_reset(priv);
+		ipw_nic_reset(priv);
 		ipw_bg_resume_work();
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
@@ -1101,7 +1101,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		
 		
 		pl=1;
-		ipw_up(priv);
+		
 		return true;			// end start successfully
 	} while (false);
 		
@@ -3115,7 +3115,8 @@ int darwin_iwi3945::ipw_setup_bootstrap(struct ipw_priv *priv)
 
 int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 {
-			
+	pl++;
+	if (pl>MAX_HW_RESTARTS)	return 0;
 	int rc, i;
 
 	if (priv->status & STATUS_EXIT_PENDING) {
@@ -3205,6 +3206,10 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface * netif )
 	{
 	case false:
 		IWI_DEBUG("ifconfig going up\n ");
+		
+		if (pl==1) ipw_up(priv);
+		else
+		{
 		//super::enable(fNetif);
 		//fNetif->setPoweredOnByUser(true);
 		//fNetif->setLinkState(kIO80211NetworkLinkUp);
@@ -3214,7 +3219,7 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface * netif )
 		//fNetif->inputEvent(kIONetworkEventTypeLinkUp,NULL);
 		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->start();
-		
+		}
 		return kIOReturnSuccess;
 		break;
 	default:
