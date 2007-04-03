@@ -8506,11 +8506,11 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 finish:	
 	
 	/* free finished packet */
-	freePacket2(nm);
-	nm=NULL;
-	if (ret !=  kIOReturnOutputStall) { 
-		freePacket2(m);
-		m=NULL;
+	freePacket2(m);
+	m=NULL;
+	if (ret ==  kIOReturnOutputDropped) { 
+		freePacket2(nm);
+		nm=NULL;
 	}
 	return ret;	
 }
@@ -10462,12 +10462,13 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		
 		list_for_each_entry(network, &clone->priv->ieee->network_list, list) 
 		{
-			if (!memcmp(network->bssid,((struct ieee80211_network *)data)->bssid,sizeof(*network->bssid)))
+			if (!memcmp(network->bssid,((struct ieee80211_network *)data)->bssid,sizeof(network->bssid)))
 			{
 				clone->ipw_best_network(clone->priv, &match, network, 0);
-				break;
+				goto ex1;;
 			}
 		}
+		ex1:
 		network = match.network;
 		rates = &match.rates;
 		if (network == NULL)
@@ -10475,12 +10476,20 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			IWI_LOG("can't associate to this network\n");
 			return 1;
 		}
+		int rep=0;
 		while (!(clone->priv->status & STATUS_ASSOCIATED)) 
 		{
 			clone->ipw_adapter_restart(clone->priv);
 			IODelay(5000*1000);
 			clone->ipw_associate_network(clone->priv, network, rates, 0);
 			IODelay(5000*1000);
+			rep++;
+			if (rep==5) break;
+		}
+		if (rep == 5)
+		{
+			IWI_LOG("failed when associating to this network\n");
+			return 1;
 		}
 	}
 	if (opt==1) //HACK: start/stop the nic
@@ -10491,23 +10500,26 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
-				
-				if (clone->ipw_read32(0x30)==0x40000) clone->ipw_write32(0x30, 0x1);//0x0f0ff);
-				else 
+				if (clone->ipw_read32(0x30)==0x40001)// clone->ipw_write32(0x30, 0x1);//0x0f0ff);
+				//else 
 				clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
 				
 				if (clone->ipw_read32(0x30)!=0x50000)
 				{
 					UInt32 r1=0;
-					while ( clone->ipw_read32(0x30)!=0x50000 ) 
+					while (!((clone->priv->status & STATUS_SCANNING)))
+					//( clone->ipw_read32(0x30)!=0x50000 ) 
 					{
-						clone->ipw_write32(0x30, clone->ipw_read32(0x30) + 0x1);
+						clone->ipw_write32(0x30, 0x1);// clone->ipw_read32(0x30) + 0x1);
+						//if (clone->priv->status & STATUS_SCANNING) break;
 						r1++;
-						if (r1==5000000) break;
+						//if (r1==5000000) break;
 					}
-					UInt32 r=clone->ipw_read32(0x30)- 0x50000;
-					clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
-					if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
+					//UInt32 r=0x50001 - clone->ipw_read32(0x30);
+					clone->ipw_write32(0x30, 0x50001);//clone->ipw_read32(0x30) + r);
+					//UInt32 r=clone->ipw_read32(0x30)- 0x50000;
+					//clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
+					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
@@ -10558,14 +10570,27 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 	if (opt==1) memcpy(data,clone->priv->ieee,*len);
 	if (opt==2)
 	{
-		struct ieee80211_network *n=NULL;
+		struct ieee80211_network n0,*n=NULL,*n2=(struct ieee80211_network*)data;
 		int i=0;
 		list_for_each_entry(n, &clone->priv->ieee->network_list, list)
 		{
-			memcpy(&((struct ieee80211_network*)data)[i],n,sizeof(*n));
 			i++;
+			if (n2->ssid_len==0)
+			{
+				memcpy(data,n,*len);
+				goto ex;
+			}
+			else
+			{
+				if (!memcmp(n2->bssid,n->bssid,sizeof(*n->bssid)))
+				{
+					//memcpy(data,&n0,*len);
+					n2->ssid_len=0;
+					//n2=(struct ieee80211_network*)data;
+				}
+			}
 		}
-		
+		ex:
 		IWI_LOG("found %d networks\n",i);
 	}
 	if (opt==3) memcpy(data,clone->priv->assoc_network,*len);
