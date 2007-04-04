@@ -59,7 +59,10 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 	__list_add(new2, head->prev, head);
 }
 
-
+/* ip address formatting macros */
+#define IP_FORMAT	"%d.%d.%d.%d"
+#define IP_CH(ip)	((u_char *)ip)
+#define IP_LIST(ip)	IP_CH(ip)[2],IP_CH(ip)[3],IP_CH(ip)[4],IP_CH(ip)[5]
 
 	 
 using namespace std;
@@ -149,9 +152,23 @@ int main (int argc, char * const argv[]) {
 		printf("Adapter [mode: %d led: %s]\n",priv.ieee->iw_mode, priv.config & CFG_NO_LED ? "off" :	"on");
 		if ((priv.status & STATUS_ASSOCIATED) && priv.assoc_network)
 		{
-			printf("Associated: '%s (%02x:%02x:%02x:%02x:%02x:%02x)' \n",
+			printf("Associated: '%s (%02x:%02x:%02x:%02x:%02x:%02x)' ",
 						escape_essid((const char*)priv.assoc_network->ssid, priv.assoc_network->ssid_len),
 						MAC_ARG(priv.assoc_network->bssid));
+			char	sa_data[14];
+			sp=sizeof(sa_data);
+			result = getsockopt( fd, SYSPROTO_CONTROL, 4, sa_data, &sp);
+			if (result==-1) printf("[getting ip address...]\n");
+			else
+			{
+				printf("[" IP_FORMAT "]\n",IP_LIST(sa_data));
+				if (priv.ieee->iw_mode == IW_MODE_INFRA)
+				if ((int)(IP_CH(sa_data)[2])==169 && (int)(IP_CH(sa_data)[3])==254)
+				{
+					printf("no internet connection!\n");
+				}
+			}
+			
 		}
 		cout<<"\n1) Turn card ";
 		if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)) cout<<"on"; else cout<<"off"; 
