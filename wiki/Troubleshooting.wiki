@@ -1,9 +1,9 @@
 #labels Featured,Troubleshooting
 1) Make sure the card is listed in Network Preferences. Unplug any other network connections you might have (ethernet, usb). iwi's driver won't work properly if you're connected to multiple networks.
 
-2) Run the NetworkSelector utility and verify the card is turned on. Wait a few moments and use option 0 to refresh the screen and verify the card is still shown as powered
+2) Run the [http://code.google.com/p/iwidarwin/wiki/NetworkSelector NetworkSelector] utility and verify the card is turned on. Wait a few moments and use option 0 to refresh the screen and verify the card is still shown as powered
 
-3) Make sure you are within range of an unencrypted 802.11b network and use option 0 to refresh the NetworkSelector screen to see if the network is listed and you are associated with the correct SSID.
+3) Make sure you are within range of an unencrypted 802.11b network and use option 2 "network list" to see if the unencrypted network is listed. The network will have a number next to it and if you type that number [http://code.google.com/p/iwidarwin/wiki/NetworkSelector NetworkSelector] will try to connect. Wait a few moments and use option 0 to refresh and the network should now be listed as associated at the top of [http://code.google.com/p/iwidarwin/wiki/NetworkSelector NetworkSelector]. 
 
 4a) Open a terminal window and run the command "ifconfig" and verify if an IP address has been assigned. 
   * If you get a message "adapter not present" make note of the MAC address listed in Network Preferences and then run "ifconfig" and find the matching MAC and interface name
@@ -15,7 +15,7 @@
   * If the message is "Built-in Ethernet = The cable for Built-in Ethernet is not plugged in" then the card is either powered down or an unencrypted network was not detected. 
   * If the message is "Built-in Ethernet = The able for Built-in Ethernet is connected, but your computer does not have an IP address and cannot connect to the internet" then DHCP is not working properly
 
-5) If NetworkSelector says you are associated with a network and ifconfig shows no IP address try setting your address/subnet manually from within "NetworkPreferences" 
+5) If [http://code.google.com/p/iwidarwin/wiki/NetworkSelector NetworkSelector] says you are associated with a network and ifconfig shows no IP address try setting your address/subnet manually from within "NetworkPreferences" 
 
 6) From the terminal try to ping your default gateway. For example "ping 192.168.0.1" (realize the gateway could be any number and you have to find this yourself)
 
