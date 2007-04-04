@@ -10594,59 +10594,40 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 		IWI_LOG("found %d networks\n",i);
 	}
 	if (opt==3) memcpy(data,clone->priv->assoc_network,*len);
+	if (opt==4)
+	{	
+		if (clone->netStats->outputPackets<30 || !(clone->priv->status & STATUS_ASSOCIATED)) return 1;
+		ifaddr_t *addresses;
+		struct sockaddr *out_addr, ou0;
+		out_addr=&ou0;
+		int p=0;
+		if (ifnet_get_address_list_family(clone->fifnet, &addresses, AF_INET)==0)
+		{
+			if (!addresses[0]) p=1;
+			else
+			if (ifaddr_address(addresses[0], out_addr, sizeof(*out_addr))==0)
+			{
+				//IWI_LOG("my ip address: " IP_FORMAT "\n",IP_LIST(out_addr->sa_data));
+				memcpy(data,out_addr->sa_data,*len);
+				/*if (clone->priv->ieee->iw_mode == IW_MODE_INFRA)
+				if ((int)(IP_CH(out_addr->sa_data)[2])==169 && (int)(IP_CH(out_addr->sa_data)[3])==254)
+				{
+					IWI_LOG("no internet connection!\n");// dissasociate , invalidade this network, re-scan
+					clone->priv->assoc_network->exclude=1;
+				}*/
+			}
+			else p=1;
+			ifnet_free_address_list(addresses);
+		} else p=1;
+		if (p==1) return 1;
+	}
 	
 	return (0);
 }
 
 int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags)
 {
-/*	printf("hello world: associating function");
-	
-	ipw_priv *priv=clone->priv;
-	while (clone->status==STATUS_SCANNING) {};
-	struct ieee80211_network *network = NULL;
-	struct ipw_network_match match = {NULL};
-	
-	IWI_DEBUG("associate...\n");
-	if (priv->ieee->iw_mode == IW_MODE_MONITOR) {
-		IWI_DEBUG("Not attempting association (monitor mode)\n");
-		return 1;
-	}
 
-	if (priv->status & (STATUS_ASSOCIATED | STATUS_ASSOCIATING)) {
-		IWI_DEBUG("Not attempting association (already in "
-				"progress)\n");
-		return 2;
-	}
-
-	if (priv->status & STATUS_DISASSOCIATING) {
-		IWI_DEBUG("Not attempting association (in "
-				"disassociating)\n ");
-		while (priv->status & STATUS_DISASSOCIATING) {}
-	}
-
-	if (!clone->ipw_is_init(priv) || (priv->status & STATUS_SCANNING)) {
-		IWI_DEBUG("Not attempting association (scanning or not "
-				"initialized)\n");
-		return 3;
-	}
-
-	if (!(priv->config & CFG_ASSOCIATE) &&
-	    !(priv->config & (CFG_STATIC_ESSID |
-			      CFG_STATIC_CHANNEL | CFG_STATIC_BSSID))) {
-		IWI_DEBUG("Not attempting association (associate=0)\n");
-		return 4;
-	}
-
-	int i;
-	int index;
-	fscanf(m,&index);
-	list_for_each_entry_cap(network, &priv->ieee->network_list, list,*(int*)data) 
-	
-	network = match.network;
-	rates = &match.rates;
-	*/
-	return(0);
 }
 
 
