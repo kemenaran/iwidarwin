@@ -1,7 +1,5 @@
 #labels Featured,Troubleshooting
-1) Make sure the card is listed in Network Preferences
-
-1a) Unplug any network connections you might have (ethernet, usb). iwi's driver don't work if you're connected to a network (or internet) using other cards.
+1) Make sure the card is listed in Network Preferences. Unplug any other network connections you might have (ethernet, usb). iwi's driver won't work if you're connected to multiple networks.
 
 2) Run the NetworkSelector utility and verify the card is turned on. Wait a few moments and use option 0 to refresh the screen and verify the card is still shown as powered
 
