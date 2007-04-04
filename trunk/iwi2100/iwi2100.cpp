@@ -6955,14 +6955,14 @@ void darwin_iwi2100::write_nic_dword(struct net_device *dev, u32 addr, u32 val)
 void darwin_iwi2100::read_register(struct net_device *dev, u32 reg, u32 * val)
 {
 	//*val = readl((void __iomem *)(memBase + reg));
-	*val=OSReadLittleInt32(&dev->base_addr,reg);
+	*val=OSReadLittleInt32(memBase,reg);
 	//IOLog("r: 0x%08X => 0x%08X\n", reg, *val);
 }
 
 void darwin_iwi2100::write_register(struct net_device *dev, u32 reg, u32 val)
 {
 	//writel(val, (void __iomem *)(memBase + reg));
-	OSWriteLittleInt32(&dev->base_addr,reg,val);
+	OSWriteLittleInt32(memBase,reg,val);
 	//IOLog("w: 0x%08X <= 0x%08X\n", reg, val);
 }
 
@@ -6976,7 +6976,7 @@ void darwin_iwi2100::read_nic_dword(struct net_device *dev, u32 addr, u32 * val)
 void darwin_iwi2100::read_register_byte(struct net_device *dev, u32 reg, u8 * val)
 {
 	//*val = readb((void __iomem *)(memBase + reg));
-	*val= (UInt8)*((UInt8 *)&dev->base_addr + reg);
+	*val= (UInt8)*((UInt8 *)memBase + reg);
 	//IOLog("r: 0x%08X => %02X\n", reg, *val);
 }
 
