@@ -11,7 +11,7 @@ NetworkSelector controls all wireless aspects of your card.
 
 ==Caution==
 
-Each version of NetworkSelector is matched to the IWI driver it was included with. Un matched versions will not function properly. 
+Each version of NetworkSelector is matched to the IWI driver it was included with. Mismatched versions will not function properly. 
 
 ==Where to get it==
 NetworkSelector should be included in the DMG file of the driver you are installing along with the package file.
