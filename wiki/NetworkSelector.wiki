@@ -1,13 +1,14 @@
 #labels Featured
 ==Description==
 
-NetworkSelector controls all wireless aspects of your card.
+NetworkSelector controls all wireless aspects of your card. It can -
  
-  * You can use it to turn the card on or off if you do not have an external switch. 
-  * It can display the network you are associated with currently.
-  * It can display any unencrypted networks in the area.
-  * You can choose which network to associate with if there are many available
-  * You can change the state of the wireless LED (if equiped). 
+  * Turn the card on or off if you do not have an external switch. 
+  * Display the network you are associated with currently.
+  * Display any unencrypted networks in the area.
+  * Choose which network to associate with if there are many available
+  * Change the state of the wireless LED (if equiped). 
+  * Switch to Ad-Hoc or monitor mode.
 
 ==Caution==
 
