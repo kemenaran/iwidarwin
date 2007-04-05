@@ -11,7 +11,7 @@ NetworkSelector controls all wireless aspects of your card.
 
 ==Caution==
 
-Each version of NetworkSelector is matched to the IWI driver it was included with. Un matched versions will not function properly. 
+Each version of NetworkSelector is matched to the IWI driver it was included with. Mismatched versions will not function properly. 
 
 ==Where to get it==
 NetworkSelector should be included in the DMG file of the driver you are installing along with the package file.
@@ -36,6 +36,7 @@ Enter Option:
 ==Description of each option==
 ===Adapter [mode: 0 led: off]===
 Mode refers to either 1 Ad-Hoc, 2 Monitor or 0 Infrastructure (default)
+
 LED is only applicable if you have a light to display wireless status
 
 ===Associated: 'linksys (00:06:25:10:18:11)'===
