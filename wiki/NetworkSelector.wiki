@@ -11,7 +11,7 @@ NetworkSelector controls all wireless aspects of your card.
 
 ==Caution==
 
-Each version of NetworkSelector is matched to the IWI driver it was included with. Mismatched versions will not function properly. 
+Each version of NetworkSelector is matched to the IWI driver it was included with. Un matched versions will not function properly. 
 
 ==Where to get it==
 NetworkSelector should be included in the DMG file of the driver you are installing along with the package file.
@@ -35,9 +35,9 @@ Enter Option:
 
 ==Description of each option==
 ===Adapter [mode: 0 led: off]===
-Mode refers to either 1 Ad-Hoc, 2 Monitor or 0 Infrastructure (default)
+For information on "mode: 0" look below at "4) Change mode"
 
-LED is only applicable if you have a light to display wireless status
+For information on "led: off" look below at "3) Switch led"
 
 ===Associated: 'linksys (00:06:25:10:18:11)'===
 This line only appears when you are connected to a network. It shows the SSID of the network and the MAC address of the AP you are connected to.
@@ -46,7 +46,7 @@ This line only appears when you are connected to a network. It shows the SSID of
 This line will change depending on the state of your card. 
 
 ===2) Network List===
-Display detected networks and choose which you would like to associate with
+Display detected networks and choose which you would like to associate with by typing the number next to it. Choose 0 to skip association and return to the main screen.
 
 ===3) Switch led===
 Turn the wireless LED on your computer on or off
