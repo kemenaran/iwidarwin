@@ -1,6 +1,8 @@
 #labels Featured,Troubleshooting
 Before testing anything lets cover the basics. Did you run the installer iwi2200.pkg? Have you rebooted after installation? Can you verify the kext is loaded with the command "kexstat | grep iwi" from a terminal?
 
+
+
 1) Make sure the card is listed in Network Preferences for your current location. Unplug any other network connections you might have (ethernet, usb). iwi's driver won't work properly if you're connected to multiple networks.
 
 2) Run the [http://code.google.com/p/iwidarwin/wiki/NetworkSelector NetworkSelector] utility and verify the card is turned on. Wait a few moments and use option 0 to refresh the screen and verify the card is still shown as powered
