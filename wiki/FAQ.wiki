@@ -60,6 +60,13 @@ First you must determine which driver is installed, either iwi2100, iwi3945 or i
   }}}
   # Driver is now uninstalled
 
+==Error: Could not get ID for kernel control. 2==
+
+This error means one of the following
+  * The iwi2200 driver is not installed
+  * The driver is installed but you have not rebooted
+  * The kext did not load for some reason (are you in safe mode?)
+
 ==-Basic Troubleshooting-==
 
 Please see [http://code.google.com/p/iwidarwin/wiki/Troubleshooting Troubleshooting]
