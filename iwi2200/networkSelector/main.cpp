@@ -94,7 +94,7 @@ int main (int argc, char * const argv[]) {
 	socklen_t b,sp;
 
 	struct ipw_priv priv0,priv;
-	//struct net_device net_dev;
+	struct net_device net_dev;
 	struct ieee80211_device ieee;
 	struct ieee80211_network nets;
 																			
@@ -107,6 +107,9 @@ int main (int argc, char * const argv[]) {
 		priv.ieee = &ieee;			
 		sp=sizeof(*priv.ieee);
 		result = getsockopt( fd, SYSPROTO_CONTROL, 1, priv.ieee, &sp);
+		priv.ieee->dev = &net_dev;
+		sp=sizeof(*priv.ieee->dev);
+		result = getsockopt( fd, SYSPROTO_CONTROL, 5, priv.ieee->dev, &sp);
 		priv.ieee->networks = (struct ieee80211_network*)malloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 		memset(priv.ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 		/*INIT_LIST_HEAD(&priv.ieee->network_free_list);
@@ -125,7 +128,7 @@ int main (int argc, char * const argv[]) {
 						MAC_ARG(priv.ieee->networks[c].bssid));*/
 
 		if (c>0)
-		if (!memcmp(priv.ieee->networks[c].bssid, priv.ieee->networks[c-1].bssid, sizeof(priv.ieee->networks[c].bssid)))
+		if (!memcmp(priv.ieee->networks[c].bssid, priv.ieee->networks[c-1].bssid, sizeof(*priv.ieee->networks[c].bssid)))
 		{
 			priv.ieee->networks[c].ssid_len=0;
 		}
@@ -148,13 +151,16 @@ int main (int argc, char * const argv[]) {
 			sp=sizeof(*priv.assoc_network);
 			result = getsockopt( fd, SYSPROTO_CONTROL, 3, priv.assoc_network, &sp);
 		}
+		//Adapter EN0 (00:13:ce:b7:9c:00) [mode: 0 led: off]
+		//Associated: 'linksys (00:06:25:10:18:11) ch: 11'
 		cout<<"\nWellcome to the insanelyMac SpacePort 0.1\n";
-		printf("Adapter [mode: %d led: %s]\n",priv.ieee->iw_mode, priv.config & CFG_NO_LED ? "off" :	"on");
+		printf("Adapter %s (%02x:%02x:%02x:%02x:%02x:%02x) [mode: %d led: %s]\n", priv.ieee->dev->name,
+		MAC_ARG(priv.mac_addr), priv.ieee->iw_mode, priv.config & CFG_NO_LED ? "off" :	"on");
 		if ((priv.status & STATUS_ASSOCIATED) && priv.assoc_network)
 		{
-			printf("Associated: '%s (%02x:%02x:%02x:%02x:%02x:%02x)' ",
+			printf("'%s (%02x:%02x:%02x:%02x:%02x:%02x) ch: %d' ",
 						escape_essid((const char*)priv.assoc_network->ssid, priv.assoc_network->ssid_len),
-						MAC_ARG(priv.assoc_network->bssid));
+						MAC_ARG(priv.assoc_network->bssid), priv.assoc_network->channel);
 			char	sa_data[14];
 			sp=sizeof(sa_data);
 			result = getsockopt( fd, SYSPROTO_CONTROL, 4, sa_data, &sp);
