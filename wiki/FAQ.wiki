@@ -34,7 +34,7 @@ Please install the iwi2200 driver.
 We are aware of this issue. Please use 802.11b in the meantime.
 
 ==Do i need to update my version of OSX to 10.4.8+ to use this driver?==
-Nope, the iwi driver requires Apple80211.framework and IO80211.kext from 10.4.7
+Nope, the iwi driver works with 10.4.4 to 10.4.9
 
 
 ==How do I create log's to help development of the drivers?==
