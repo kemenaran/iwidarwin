@@ -2325,7 +2325,8 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 			( IPW_INTA_BIT_TX_QUEUE_1 | IPW_INTA_BIT_TX_QUEUE_2 | IPW_INTA_BIT_TX_QUEUE_3  | IPW_INTA_BIT_TX_QUEUE_4) ) 
 			&& (fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING) )
 		{
-			 IWI_DEBUG("fTrasmitQueue->service()\n");
+			 IWI_DEBUG("fTrasmitQueue->TX_QUEUE_CHECK()\n");
+			 fTransmitQueue->start();
 			 //fTransmitQueue->flush();//service(IOBasicOutputQueue::kServiceAsync);
 			 //fNetif->clearInputQueue();
 			 //ipw_send_cmd_simple(priv, IPW_CMD_TX_FLUSH);
@@ -10570,7 +10571,7 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 	if (opt==1) memcpy(data,clone->priv->ieee,*len);
 	if (opt==2)
 	{
-		struct ieee80211_network n0,*n=NULL,*n2=(struct ieee80211_network*)data;
+		struct ieee80211_network *n=NULL,*n2=(struct ieee80211_network*)data;
 		int i=0;
 		list_for_each_entry(n, &clone->priv->ieee->network_list, list)
 		{
@@ -10621,13 +10622,13 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 		} else p=1;
 		if (p==1) return 1;
 	}
-	
+	if (opt==5) memcpy(data,clone->priv->ieee->dev,*len);
 	return (0);
 }
 
 int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags)
 {
-
+return 0;
 }
 
 
