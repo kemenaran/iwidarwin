@@ -42,9 +42,87 @@
 
 #define IWI_DUMP_MBUF(...) do{ }while(0)
 
+inline void skb_reserve(mbuf_t skb, int len)
+{
+	//skb->data += len;
+	//skb->tail += len;
+	/*        if (mbuf_len(skb)==0)
+{
+		void *data=(UInt8*)mbuf_data(skb)+len;
+		mbuf_setdata(skb,data,mbuf_len(skb)+len);
+} */
+	IWI_DUMP_MBUF(1,skb,len); 
+	void *data = (UInt8*)mbuf_data(skb) + len;
+	IWI_DUMP_MBUF(2,skb,len);
+	mbuf_setdata(skb,data, mbuf_len(skb));// m_len is not changed.
+}
+
+inline void *skb_put(mbuf_t skb, unsigned int len)
+{
+	/*unsigned char *tmp = skb->tail;
+	SKB_LINEAR_ASSERT(skb);
+	skb->tail += len;
+	skb->len  += len;
+	return tmp;*/
+	void *data = (UInt8*)mbuf_data(skb) + mbuf_len(skb);
+	//mbuf_prepend(&skb,len,1); /* no prepend work */
+	IWI_DUMP_MBUF(1,skb,len);  
+	if(mbuf_trailingspace(skb) > len ){
+		mbuf_setlen(skb,mbuf_len(skb)+len);
+		if(mbuf_flags(skb) & MBUF_PKTHDR)
+			mbuf_pkthdr_setlen(skb,mbuf_pkthdr_len(skb)+len); 
+	}
+	IWI_DUMP_MBUF(2,skb,len);  
+	return data;
+}
+
+inline void *skb_push(mbuf_t skb, unsigned int len)
+{
+	/*skb->data -= len;
+	skb->len  += len;
+	if (unlikely(skb->data<skb->head))
+	skb_under_panic(skb, len, current_text_addr());
+	return skb->data;*/
+	/* void *data=(UInt8*)mbuf_data(skb)-len;
+	mbuf_setdata(skb,data,mbuf_len(skb)+len); */
+	IWI_DUMP_MBUF(1,skb,len); 
+	mbuf_prepend(&skb,len,0);
+	IWI_DUMP_MBUF(2,skb,len);
+	return  (UInt8 *)mbuf_data(skb);
+}
+
+inline void *skb_pull(mbuf_t skb, unsigned int len)
+{
+	/*skb->len -= len;
+	BUG_ON(skb->len < skb->data_len);
+	return skb->data += len;*/
+	IWI_DUMP_MBUF(1,skb,len);  
+	mbuf_adj(skb,len);
+	void *data=(UInt8*)mbuf_data(skb);
+	IWI_DUMP_MBUF(2,skb,len);		
+	return data;
+}
+
 /*
  * Driver API command-id
  */
+
+inline int is_multicast_ether_addr(const u8 *addr)
+{
+       return addr[0] & 0x01;
+}
+
+inline int is_broadcast_ether_addr(const u8 *addr)
+{
+        return (addr[0] & addr[1] & addr[2] & addr[3] & addr[4] & addr[5]) == 0xff;
+}
+
+typedef __u16 __be16;
+struct ethhdr {
+	unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
+	unsigned char	h_source[ETH_ALEN];	/* source ether addr	*/
+	__be16		h_proto;		/* packet type ID field	*/
+} __attribute__((packed));
 
 static const char ipw_modes[] = {
 	'a', 'b', 'g', '?'
@@ -131,6 +209,12 @@ static inline void __hlist_del(struct hlist_node *n)
 	*pprev = next;
 	if (next)
 		next->pprev = pprev;
+}
+
+static inline int ieee80211_get_morefrag(struct ieee80211_hdr *hdr)
+{
+	return (le16_to_cpu(hdr->frame_control) &
+		IEEE80211_FCTL_MOREFRAGS) != 0;
 }
 
 static inline void hlist_del(struct hlist_node *n)
@@ -569,7 +653,6 @@ virtual IOOptionBits getState( void ) const;
 	virtual void ipw_irq_handle_error(struct ipw_priv *priv);
 	virtual int ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
 					  struct ipw_rx_queue *q);
-	virtual void freePacket(mbuf_t m, IOOptionBits options=0);
 	virtual void ipw_clear_bits_restricted_reg(struct ipw_priv
 					  *priv, u32 reg, u32 mask);
 	virtual void ipw_bg_resume_work();
@@ -648,6 +731,38 @@ virtual IOOptionBits getState( void ) const;
 	virtual int reg_txpower_compensate_for_temperature_dif(struct ipw_priv *priv);
 	virtual int ipw3945_rxq_stop(struct ipw_priv *priv);
 	virtual void ipw_clear_free_frames(struct ipw_priv *priv);
+	virtual mbuf_t mergePacket(mbuf_t m);
+	virtual void freePacket2(mbuf_t m);
+	virtual UInt32 outputPacket(mbuf_t m, void * param);
+	virtual int ieee80211_xmit(mbuf_t skb, struct net_device *dev);
+	virtual struct ieee80211_txb *ieee80211_alloc_txb(int nr_frags, int txb_size,
+						 int headroom, int gfp_mask);
+	virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
+	virtual int ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
+				   struct net_device *dev, int pri);
+	virtual int ipw_tx_skb(struct ipw_priv *priv, mbuf_t skb, struct ieee80211_tx_control *ctl);
+	virtual u8 ipw_find_station(struct ipw_priv *priv, u8 * bssid);
+	virtual int ipw3945_tx_cmd(struct ipw_priv *priv, struct ipw_cmd *out_cmd,
+		   u8 sta_id, dma_addr_t scratch_phys,
+		   struct ieee80211_hdr *hdr, u8 hdr_len,
+		   struct ieee80211_tx_control *ctrl);
+	virtual int ipw_build_tx_cmd_basic(struct ipw_priv *priv,
+				  struct ipw_cmd *cmd,
+				  struct ieee80211_tx_control *ctrl,
+				  struct ieee80211_hdr *hdr,
+				  int is_unicast, u8 std_id, int tx_id);
+	virtual int ipw_build_tx_cmd_rate(struct ipw_priv *priv,
+				 struct ipw_cmd *cmd,
+				 struct ieee80211_tx_control *ctrl,
+				 struct ieee80211_hdr *hdr,
+				 int sta_id, int tx_id);
+	virtual void ipw_get_supported_rates(struct ipw_priv *priv,
+				    struct ieee80211_hdr *hdr,
+				    u16 * data_rate, u16 * ctrl_rate);
+	virtual int ipw_get_sta_id(struct ipw_priv *priv,
+			  struct ieee80211_hdr *hdr);
+	
+	
 	
 	
 	
