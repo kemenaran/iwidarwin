@@ -957,12 +957,30 @@ typedef unsigned char UInt8;
 #define PROBE_OPTION_MAX        0x4
 #define WLAN_EID_SSID 0
 #define PROBE_OPTION_MAX        0x4
-#define TX_CMD_FLG_SEQ_CTL_MSK  0x2000
+//#define TX_CMD_FLG_SEQ_CTL_MSK  0x2000
 #define TX_CMD_LIFE_TIME_INFINITE       0xFFFFFFFF
 #define IPW_GOOD_CRC_TH             (1)
 
 #define IPW_MAX_SCAN_SIZE 1024
 
+#define ieee80211_is_probe_response(fc) \
+   ((WLAN_FC_GET_TYPE(fc) == IEEE80211_FTYPE_MGMT) && \
+    ( WLAN_FC_GET_STYPE(fc) == IEEE80211_STYPE_PROBE_RESP ))
+
+#define ieee80211_is_management(fc) \
+   (WLAN_FC_GET_TYPE(fc) == IEEE80211_FTYPE_MGMT)
+
+#define ieee80211_is_control(fc) \
+   (WLAN_FC_GET_TYPE(fc) == IEEE80211_FTYPE_CTL)
+
+#define ieee80211_is_data(fc) \
+   (WLAN_FC_GET_TYPE(fc) == IEEE80211_FTYPE_DATA)
+
+#define ieee80211_is_assoc_request(fc) \
+   (WLAN_FC_GET_STYPE(fc) == IEEE80211__STYPE_ASSOC_REQ)
+
+#define ieee80211_is_reassoc_request(fc) \
+   (WLAN_FC_GET_STYPE(fc) == IEEE80211__STYPE_REASSOC_REQ)
 
 
 
