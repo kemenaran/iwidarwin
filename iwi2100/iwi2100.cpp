@@ -851,7 +851,7 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 	//ipw2100_initialize_ordinals(priv);
 	
 	IOLog(": Detected Intel PRO/Wireless 2100 Network Connection\n");
-
+	pl=1;
 	ipw2100_up(priv,1);
 	/*if (!(priv->status & STATUS_RF_KILL_MASK)) {
 		if (ipw2100_enable_adapter(priv)) {
@@ -1765,6 +1765,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw2100_sw_reset(1);
 		priv->status &= ~STATUS_POWERED; //keep power on!!
+		priv->status &= ~STATUS_RESET_PENDING;
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -1819,7 +1820,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		
 		
 		pl=1;
-		ipw2100_up(priv,0);
+		//ipw2100_up(priv,0);
 		return true;			// end start successfully
 	} while (false);
 		
@@ -3022,7 +3023,8 @@ int darwin_iwi2100::ipw2100_read_mac_address(struct ipw2100_priv *priv)
 		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
 	memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
-
+	memcpy(priv->mac_addr, mac, ETH_ALEN);
+	memcpy(priv->ieee->dev->dev_addr, mac, ETH_ALEN);
 	return 0;
 }
 
@@ -3530,7 +3532,9 @@ int darwin_iwi2100::ipw2100_set_tx_power(struct ipw2100_priv *priv, u32 tx_power
 #define MAX_HW_RESTARTS 2
 int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 {
-		unsigned long flags;
+	pl++;
+	if (pl>MAX_HW_RESTARTS) return 0;
+	unsigned long flags;
 	int rc = 0;
 	u32 lock;
 	u32 ord_len = sizeof(lock);
@@ -3613,6 +3617,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	/* Turn on the interrupt so that commands can be processed */
 	ipw2100_enable_interrupts(priv);
 
+if (!deferred) {
 	/* Send all of the commands that must be sent prior to
 	 * HOST_COMPLETE */
 	if (ipw2100_adapter_setup(priv)) {
@@ -3622,7 +3627,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		goto exit;
 	}
 
-	if (!deferred) {
+	
 		/* Enable the adapter - sends HOST_COMPLETE */
 		if (ipw2100_enable_adapter(priv)) {
 			IOLog( ": "
@@ -3659,6 +3664,11 @@ IOReturn darwin_iwi2100::enable( IONetworkInterface * netif )
 	{
 	case false:
 		IWI_DEBUG("ifconfig going up\n ");
+		if (pl==1)
+		{
+			ipw2100_up(priv,0);
+			return kIOReturnSuccess;
+		}
 		//super::enable(fNetif);
 		//fNetif->setPoweredOnByUser(true);
 		//fNetif->setLinkState(kIO80211NetworkLinkUp);
