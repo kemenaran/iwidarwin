@@ -128,7 +128,7 @@ int main (int argc, char * const argv[]) {
 						MAC_ARG(priv.ieee->networks[c].bssid));*/
 
 		if (c>0)
-		if (!memcmp(priv.ieee->networks[c].bssid, priv.ieee->networks[c-1].bssid, sizeof(*priv.ieee->networks[c].bssid)))
+		if (!memcmp(priv.ieee->networks[c].bssid, priv.ieee->networks[c-1].bssid, sizeof(priv.ieee->networks[c-1].bssid)))
 		{
 			priv.ieee->networks[c].ssid_len=0;
 		}
