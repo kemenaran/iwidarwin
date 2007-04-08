@@ -223,9 +223,9 @@ int main (int argc, char * const argv[]) {
 						if (priv.ieee->networks[ii].ssid_len>0)
 						{
 							cn++;
-							printf("[%d] '%s (%02x:%02x:%02x:%02x:%02x:%02x)' \n",cn,
+							printf("[%d] '%s (%02x:%02x:%02x:%02x:%02x:%02x) ch:%d' \n",cn,
 							escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len),
-							MAC_ARG(priv.ieee->networks[ii].bssid));
+							MAC_ARG(priv.ieee->networks[ii].bssid), priv.ieee->networks[ii].channel);
 						}
 					}
 					if (cn>0)
