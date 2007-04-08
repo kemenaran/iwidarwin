@@ -10583,7 +10583,7 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 			}
 			else
 			{
-				if (!memcmp(n2->bssid,n->bssid,sizeof(n->bssid)))
+				if (!memcmp(n2->bssid,n->bssid,sizeof(n->bssid)) && n->ssid_len>0)
 				{
 					//memcpy(data,&n0,*len);
 					n2->ssid_len=0;
