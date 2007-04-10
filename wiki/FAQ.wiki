@@ -74,7 +74,12 @@ This error means one of the following
   * The kext did not load for some reason (are you in safe mode?)
 
 ==My WIFI LED does not turn on==
+
 Right now the wireless LED has no relation to the state of the wireless card. Meaning your card could be on or off, connected or not and the LED will stay in its current state. You can manually turn the LED off and on using NetworkSelector if you wish.
+
+==When I try to connect with NetworkSelector nothing happens==
+
+Make sure you are not trying to associate with an encrypted network. If you choose an encrypted network from the list you will be retuned to the main menu in a short time and no connection is established. 
 
 ==-Basic Troubleshooting-==
 
