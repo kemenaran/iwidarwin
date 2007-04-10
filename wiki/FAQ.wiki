@@ -11,10 +11,12 @@ We do not have this card in house. We can write test code, but no release is cur
 Most likely never. Its hard to say because we must analyze the IO80211Family which is closed source and not well documented. Use NetworkSelector instead. 
 
 ==How do I install or upgrade my driver?==
+
 Please refer to the [http://code.google.com/p/iwidarwin/wiki/Installation installation guide.] Upgrades follow the same procedure as a new installation. 
 
 ==Where do I get the latest version of the driver?==
-Check the main page for download links of the latest versions.
+
+Check the [http://code.google.com/p/iwidarwin/ home page] for download links of the latest versions.
 
 ==Why is my card detected as an ethernet adapter instead of an Airport card?==
 
