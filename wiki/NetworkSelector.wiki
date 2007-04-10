@@ -52,7 +52,8 @@ Display detected networks and choose which you would like to associate with by t
 hello world: send network list
 [1] 'linksys (00:0c:41:d4:40:fb) ch:1' 
 [2] 'default (00:0d:72:55:19:d9) ch:6' 
-[3] 'netgear (00:06:25:10:b7:97) ch:11' 
+[3] 'netgear (00:06:25:10:b7:97) ch:9'
+[4] '2wire123 (00:09:5b:9e:66:24) ch:11'  
 select network or type 0 to return
 }}}
 
