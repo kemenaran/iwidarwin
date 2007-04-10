@@ -48,6 +48,14 @@ This line will change depending on the state of your card.
 
 ===2) Network List===
 Display detected networks and choose which you would like to associate with by typing the number next to it. Choose 0 to skip association and return to the main screen.
+{{{
+hello world: send network list
+[1] 'linksys (00:0c:41:d4:40:fb) ch:1' 
+[2] 'default (00:0d:72:55:19:d9) ch:6' 
+[3] 'netgear (00:06:25:10:b7:97) ch:11' 
+select network or type 0 to return
+}}}
+
 
 ===3) Switch led===
 Turn the wireless LED on your computer on or off
