@@ -67,6 +67,9 @@ This error means one of the following
   * The driver is installed but you have not rebooted
   * The kext did not load for some reason (are you in safe mode?)
 
+==My WIFI LED does not turn on==
+Right now the wireless LED has no relation to the state of the wireless card. Meaning your card could be on or off, connected or not and the LED will stay in its current state. You can manually turn the LED off and on using NetworkSelector if you wish.
+
 ==-Basic Troubleshooting-==
 
 Please see [http://code.google.com/p/iwidarwin/wiki/Troubleshooting Troubleshooting]
