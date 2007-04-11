@@ -67,6 +67,10 @@ Configure the wireless card for either Ad-Hoc(mode 1), Monitor (mode 2) or the d
 ===5) Close Program===
 Ill let you guess what this option does
 
-===6) Refresh===
+===0) Refresh===
 Update the display to show current SSID/Mode/Power/LED status
  
+===Note===
+Options (3), (4) only work when the card is powered off
+
+
