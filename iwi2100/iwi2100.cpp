@@ -1475,27 +1475,27 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	if (priv->fatal_error) {
 		IOLog
 		    ("Attempt to send command while hardware in fatal error condition.\n");
-		err = -EIO;
-		goto fail_unlock;
+		//err = -EIO;
+		//goto fail_unlock;
 	}
 
 	if (!(priv->status & STATUS_RUNNING)) {
 		IOLog
 		    ("Attempt to send command while hardware is not running.\n");
-		err = -EIO;
-		goto fail_unlock;
+		//err = -EIO;
+		//goto fail_unlock;
 	}
 
 	if (priv->status & STATUS_CMD_ACTIVE) {
 		IOLog
 		    ("Attempt to send command while another command is pending.\n");
-		err = -EBUSY;
-		goto fail_unlock;
+		//err = -EBUSY;
+		//goto fail_unlock;
 	}
 
 	if (list_empty(&priv->msg_free_list)) {
 		IOLog("no available msg buffers\n");
-		goto fail_unlock;
+		//goto fail_unlock;
 	}
 
 	priv->status |= STATUS_CMD_ACTIVE;
@@ -1550,16 +1550,16 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	if (err == HZ) {
 		IOLog("Command completion failed out \n");//;after %dms.\n",
 			      // 1000 * (HOST_COMPLETE_TIMEOUT / HZ));
-		priv->fatal_error = IPW2100_ERR_MSG_TIMEOUT;
-		priv->status &= ~STATUS_CMD_ACTIVE;
-		schedule_reset(priv);
-		return -EIO;
+		//priv->fatal_error = IPW2100_ERR_MSG_TIMEOUT;
+		//priv->status &= ~STATUS_CMD_ACTIVE;
+		//schedule_reset(priv);
+		//return -EIO;
 	}
 
 	if (priv->fatal_error) {
 		IOLog( ": %s: firmware fatal error\n",
 		       priv->net_dev->name);
-		return -EIO;
+		//return -EIO;
 	}
 
 	/* !!!!! HACK TEST !!!!!
@@ -1636,20 +1636,20 @@ int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 
 	if (rf_kill_active(priv)) {
 		IOLog("Command aborted due to RF kill active.\n");
-		goto fail_up;
+		//goto fail_up;
 	}
 
 	err = ipw2100_hw_send_command(priv, &cmd);
 	if (err) {
 		IOLog("Failed to send HOST_COMPLETE command\n");
-		goto fail_up;
+		//goto fail_up;
 	}
 
 	err = ipw2100_wait_for_card_state(priv, IPW_HW_STATE_ENABLED);
 	if (err) {
 		IOLog("%s: card not responding to init command.\n",
 			       priv->net_dev->name);
-		goto fail_up;
+		//goto fail_up;
 	}
 
 	if (priv->stop_hang_check) {
@@ -1764,8 +1764,6 @@ bool darwin_iwi2100::start(IOService *provider)
 		
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw2100_sw_reset(1);
-		priv->status &= ~STATUS_POWERED; //keep power on!!
-		priv->status &= ~STATUS_RESET_PENDING;
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -2659,7 +2657,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 		IOLog("%s: ipw2100_download_firmware called after "
 				"fatal error %d.  Interface must be brought down.\n",
 				priv->net_dev->name, priv->fatal_error);
-		return -EINVAL;
+		//return -EINVAL;
 	}
 	switch (priv->ieee->iw_mode) {
 	case IW_MODE_ADHOC:
@@ -2681,7 +2679,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 		       "(detected version id of %d). "
 		       "See Documentation/networking/README.ipw2100\n",
 		       h->version);
-		return 1;
+		//return 1;
 	}
 
 	ipw2100_firmware->version = h->version;
@@ -2705,13 +2703,13 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 	if (err) {
 		IOLog("%s: sw_reset_and_clock failed: %d\n",
 				priv->net_dev->name, err);
-		goto fail;
+		//goto fail;
 	}
 	err = ipw2100_verify(priv);
 	if (err) {
 		IOLog("%s: ipw2100_verify failed: %d\n",
 				priv->net_dev->name, err);
-		goto fail;
+		//goto fail;
 	}
 
 	/* Hold ARC */
@@ -2726,7 +2724,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 	if (err) {
 		IOLog(": %s: Error loading microcode: %d\n",
 		       priv->net_dev->name, err);
-		goto fail;
+		//goto fail;
 	}
 
 	/* release ARC */
@@ -2739,7 +2737,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 		IOLog(
 		       ": %s: sw_reset_and_clock failed: %d\n",
 		       priv->net_dev->name, err);
-		goto fail;
+		//goto fail;
 	}
 
 	/* load f/w */
@@ -2747,7 +2745,7 @@ int darwin_iwi2100::ipw2100_download_firmware(struct ipw2100_priv *priv)
 	if (err) {
 		IOLog("%s: Error loading firmware: %d\n",
 				priv->net_dev->name, err);
-		goto fail;
+		//goto fail;
 	}
 
 
@@ -2793,7 +2791,7 @@ int darwin_iwi2100::ipw2100_start_adapter(struct ipw2100_priv *priv)
 		IOLog(
 		       ": %s: Failed to power on the adapter.\n",
 		       priv->net_dev->name);
-		return -EIO;
+		//return -EIO;
 	}
 
 	/* Clear the Tx, Rx and Msg queues and the r/w indexes
@@ -2855,7 +2853,7 @@ int darwin_iwi2100::ipw2100_start_adapter(struct ipw2100_priv *priv)
 		IOLog(
 		       ": %s: Firmware did not initialize.\n",
 		       priv->net_dev->name);
-		return -EIO;
+		//return -EIO;
 	}
 
 	/* allow firmware to write to GPIO1 & GPIO3 */
@@ -3543,7 +3541,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("%s: Radio is disabled by Manual Disable "
 			       "switch\n", priv->net_dev->name);
-		return 0;
+		//return 0;
 	}
 
 	/* If the interrupt is enabled, turn it off... */
@@ -3558,8 +3556,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			IOLog(
 			       ": %s: Could not cycle adapter.\n",
 			       priv->net_dev->name);
-			rc = 1;
-			goto exit;
+			//rc = 1;
+			//goto exit;
 		}
 	} else
 		priv->status |= STATUS_POWERED;
@@ -3611,7 +3609,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill),priv,2,true);
 		}
 
-		deferred = 1;
+		//deferred = 1;
 	}
 
 	/* Turn on the interrupt so that commands can be processed */
@@ -3623,8 +3621,8 @@ if (!deferred) {
 	if (ipw2100_adapter_setup(priv)) {
 		IOLog( ": %s: Failed to start the card.\n",
 		       priv->net_dev->name);
-		rc = 1;
-		goto exit;
+		//rc = 1;
+		//goto exit;
 	}
 
 	
@@ -3634,8 +3632,8 @@ if (!deferred) {
 			       "%s: failed in call to enable adapter.\n",
 			       priv->net_dev->name);
 			ipw2100_hw_stop_adapter(priv);
-			rc = 1;
-			goto exit;
+			//rc = 1;
+			//goto exit;
 		}
 
 		/* Start a scan . . . */
