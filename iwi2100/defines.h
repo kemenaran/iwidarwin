@@ -966,3 +966,9 @@ typedef unsigned char UInt8;
 
 #define MAX_RESET_BACKOFF 10
 
+#define ETH_P_AARP	0x80F3		/* Appletalk AARP		*/
+#define ETH_P_IPX	0x8137		/* IPX over DIX			*/
+
+
+
+
