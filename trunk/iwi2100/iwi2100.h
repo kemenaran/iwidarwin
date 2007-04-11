@@ -6,44 +6,136 @@
 
 
 
+
+#define CONFIG_IPW2100_DEBUG
+//#define CONFIG_IPW2200_QOS
+#define TX_QUEUE_CHECK
+//#define IW_RX_REPLACING
 //#define IWI_NOLOG
 #define IWI_DEBUG_NORMAL
-//#define IWI_DEBUG_FULL
-#define CONFIG_IPW2100_DEBUG
+//#define IWI_DEBUG_FULL_MODE
+//#define IWI_WARNERR
 
 #if defined(IWI_NOLOG)
-	#define IWI_LOG(...) do{ }while(0)
+	#define IWI_LOG(...)
 #else
 	#define IWI_LOG(...) printf("iwi2100: " __VA_ARGS__)
 #endif
 
 #define IOLog(...) IWI_LOG(__VA_ARGS__)
 
-#if defined(IWI_DEBUG_FULL) || defined(IWI_DEBUG_NORMAL)
-	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
+#if defined(IWI_DEBUG_FULL_MODE) || defined(IWI_DEBUG_NORMAL)
+	#define IWI_DEBUG(fmt,...)IWI_LOG(" %s() " fmt, __FUNCTION__, ##__VA_ARGS__)
+//	#define IWI_DEBUG(fmt,...)  \
+//		do { IWI_LOG(" %s() " fmt, __FUNCTION__, ##__VA_ARGS__); \
+//		      if(priv->status){ IWI_LOG("priv->status 0x010x\n",priv->status); } \
+//		}while(0)
 #else
-	#define IWI_DEBUG(...) do{ }while(0)
+//	#define IWI_DEBUG(...) IWI_LOG(__VA_ARGS__)
+	#define IWI_DEBUG(...)
 #endif
 
-#if defined(IWI_DEBUG_FULL)
+#if defined(IWI_DEBUG_FULL_MODE)
 	#define IWI_DEBUG_FULL(...) IWI_DEBUG(__VA_ARGS__)
 #else
-          #define IWI_DEBUG_FULL(...) do{ }while(0)
+          #define IWI_DEBUG_FULL(...)
 #endif
 
 
-#define IEEE80211_DEBUG_MGMT(...) IWI_DEBUG("(80211_MGMT) "  __VA_ARGS__)
-#define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG("(80211_SCAN) "  __VA_ARGS__)
+#define IEEE80211_DEBUG_MGMT(...) IWI_DEBUG_FULL("(80211_MGMT) "  __VA_ARGS__)
+#define IEEE80211_DEBUG_SCAN(...) IWI_DEBUG_FULL("(80211_SCAN) "  __VA_ARGS__)
 
 
-#define IWI_WARNING(...) IWI_LOG(" W " __VA_ARGS__)
-#define IWI_ERR(...) IWI_LOG(" E " __VA_ARGS__)
+#if defined(IWI_DEBUG_NORMAL) || defined(IWI_WARNERR) || defined(IWI_DEBUG_FULL_MODE)
+	#define IWI_WARN(...) IWI_LOG(" W " __VA_ARGS__)
+	#define IWI_ERR(...) IWI_LOG(" E " __VA_ARGS__)
+#else
+	#define IWI_WARN(...)
+	#define IWI_ERR(...)
+#endif
 
-#define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
+
+#define IWI_DEBUG_FN(...) IWI_DEBUG(__VA_ARGS__)
+
+// #define IWI_DEBUG_FN(fmt,...) IWI_DEBUG(" %s " fmt, __FUNCTION__, ##__VA_ARGS__)
 
 
-#define IWI_DUMP_MBUF(...) do{ }while(0)
+//#define IWI_DEBUG_STATUS(priv)  IWI_DEBUG("priv->status 0x%08x\n",priv->status)
+#define IWI_DEBUG_STATUS(priv) do{ }while(0)
 
+#ifdef IWI_DEBUG_FULL_MODE
+	#define IWI_DEBUG_DUMP(...) printk_buf(__VA_ARGS__)
+#else
+	#define IWI_DEBUG_DUMP(...) do{ }while(0)
+#endif
+
+#define IWI_DUMP_MBUF(f, skb, len) \
+    IWI_DEBUG_FULL(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
+        f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
+
+
+inline void skb_reserve(mbuf_t skb, int len)
+{
+	//skb->data += len;
+	//skb->tail += len;
+	/*        if (mbuf_len(skb)==0)
+{
+		void *data=(UInt8*)mbuf_data(skb)+len;
+		mbuf_setdata(skb,data,mbuf_len(skb)+len);
+} */
+	IWI_DUMP_MBUF(1,skb,len); 
+	void *data = (UInt8*)mbuf_data(skb) + len;
+	IWI_DUMP_MBUF(2,skb,len);
+	mbuf_setdata(skb,data, mbuf_len(skb));// m_len is not changed.
+}
+
+inline void *skb_put(mbuf_t skb, unsigned int len)
+{
+	/*unsigned char *tmp = skb->tail;
+	SKB_LINEAR_ASSERT(skb);
+	skb->tail += len;
+	skb->len  += len;
+	return tmp;*/
+	void *data = (UInt8*)mbuf_data(skb) + mbuf_len(skb);
+	//mbuf_prepend(&skb,len,1); /* no prepend work */
+	IWI_DUMP_MBUF(1,skb,len);  
+	if(mbuf_trailingspace(skb) > len ){
+		mbuf_setlen(skb,mbuf_len(skb)+len);
+		if(mbuf_flags(skb) & MBUF_PKTHDR)
+			mbuf_pkthdr_setlen(skb,mbuf_pkthdr_len(skb)+len); 
+	}
+	IWI_DUMP_MBUF(2,skb,len);  
+	return data;
+}
+
+inline void *skb_push(mbuf_t skb, unsigned int len)
+{
+	/*skb->data -= len;
+	skb->len  += len;
+	if (unlikely(skb->data<skb->head))
+	skb_under_panic(skb, len, current_text_addr());
+	return skb->data;*/
+	/* void *data=(UInt8*)mbuf_data(skb)-len;
+	mbuf_setdata(skb,data,mbuf_len(skb)+len); */
+	IWI_DUMP_MBUF(1,skb,len); 
+	mbuf_prepend(&skb,len,0);
+	IWI_DUMP_MBUF(2,skb,len);
+	return  (UInt8 *)mbuf_data(skb);
+}
+
+inline void *skb_pull(mbuf_t skb, unsigned int len)
+{
+	/*skb->len -= len;
+	BUG_ON(skb->len < skb->data_len);
+	return skb->data += len;*/
+	IWI_DUMP_MBUF(1,skb,len);  
+	mbuf_adj(skb,len);
+	void *data=(UInt8*)mbuf_data(skb);
+	IWI_DUMP_MBUF(2,skb,len);		
+	return data;
+}
+
+#define kTransmitQueueCapacity 1024
 
 struct symbol_alive_response {
 	u8 cmd_id;
@@ -102,6 +194,11 @@ static inline void prefetch(const void *x) {;}
 #define LIST_POISON1  ((void *) 0x00100100)
 #define LIST_POISON2  ((void *) 0x00200200)
 
+ static unsigned char rfc1042_header[] = { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
+
+/* Bridge-Tunnel header (for EtherTypes ETH_P_AARP and ETH_P_IPX) */
+static unsigned char bridge_tunnel_header[] =   { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0xf8 };
+
 struct hlist_head {
 	struct hlist_node *first;
 };
@@ -154,6 +251,23 @@ static inline void list_del(struct list_head *entry)
 	(void*)entry->next = LIST_POISON1;
 	(void*)entry->prev = LIST_POISON2;
 }
+
+inline int is_multicast_ether_addr(const u8 *addr)
+{
+       return addr[0] & 0x01;
+}
+
+inline int is_broadcast_ether_addr(const u8 *addr)
+{
+        return (addr[0] & addr[1] & addr[2] & addr[3] & addr[4] & addr[5]) == 0xff;
+}
+
+typedef __u16 __be16;
+struct ethhdr {
+	unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
+	unsigned char	h_source[ETH_ALEN];	/* source ether addr	*/
+	__be16		h_proto;		/* packet type ID field	*/
+} __attribute__((packed));
 
 struct fw_header {
 	u32 version;
@@ -595,7 +709,23 @@ virtual IOOptionBits getState( void ) const;
 	virtual int ipw2100_set_ibss_beacon_interval(struct ipw2100_priv *priv,
 					    u32 interval, int batch_mode);												
 	virtual int ipw2100_set_tx_power(struct ipw2100_priv *priv, u32 tx_power);																		
-	
+	virtual void isr_rx(struct ipw2100_priv *priv, int i,
+			  struct ieee80211_rx_stats *stats);
+	virtual int ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
+		 struct ieee80211_rx_stats *rx_stats);		  
+	virtual UInt32 outputPacket(mbuf_t m, void * param);		  
+	virtual int ieee80211_xmit(mbuf_t skb, struct net_device *dev);		  
+	virtual struct ieee80211_txb *ieee80211_alloc_txb(int nr_frags, int txb_size,
+						 int headroom, int gfp_mask);		  
+	virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
+	virtual int ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
+				   struct net_device *dev, int pri);		  
+	virtual int ipw_tx_skb(struct ipw2100_priv *priv, struct ieee80211_txb *txb, int pri);				  
+	virtual void ipw2100_wx_event_work(struct ipw2100_priv *priv);						  
+				 
+												  								  
+											  
+													  		  
 	
 /*	
 	
@@ -775,7 +905,8 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual int ipw2100_msg_initialize(struct ipw2100_priv *priv);
 	virtual int ipw2100_set_scan_options(struct ipw2100_priv *priv);
 	virtual int ipw2100_start_scan(struct ipw2100_priv *priv);
-	virtual void freePacket(mbuf_t m, IOOptionBits options=0);
+	virtual void freePacket2(mbuf_t m);
+	virtual mbuf_t mergePacket(mbuf_t m);
 	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
 	virtual void schedule_reset(struct ipw2100_priv *priv);
 	virtual int ipw_set_geo(struct ieee80211_device *ieee,
