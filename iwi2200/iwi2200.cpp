@@ -2154,8 +2154,14 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(struct ipw_priv *priv,
 	    (qindex >= 0) &&
 	    (priv->status & STATUS_ASSOCIATED) && (fNetif->getFlags() & IFF_RUNNING)){ //&& netif_running(priv->net_dev)){
 		IWI_DEBUG("queue is available\n");
-		////fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		////fTransmitQueue->start();
+		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+		if (fTransmitQueue->start()==false)
+		{
+			IWI_ERR("queue->start error\n");
+			fTransmitQueue->stop();
+			fTransmitQueue->setCapacity(0);
+			fTransmitQueue->flush();
+		}
 	}
 #endif	
 	//netif_wake_queue(priv->net_dev);
@@ -2254,6 +2260,7 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 	{
 		IWI_DEBUG_FULL("IPW_INTA_BIT_RX_TRANSFER)\n");
 		ipw_rx(priv);
+		fNetif->clearInputQueue();
 		ret = IPW_INTA_BIT_RX_TRANSFER;
 	}
 
@@ -2326,8 +2333,15 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 			&& (fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING) )
 		{
 			 IWI_DEBUG("fTrasmitQueue->TX_QUEUE_CHECK()\n");
-			 fTransmitQueue->start();
-			 //fTransmitQueue->flush();//service(IOBasicOutputQueue::kServiceAsync);
+			//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+			//fTransmitQueue->start();
+			/*if (fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync)==false)
+			{
+				IWI_ERR("fTransmitQueue->service error\n");
+				fTransmitQueue->stop();
+				fTransmitQueue->setCapacity(0);
+				fTransmitQueue->flush();
+			}*/
 			 //fNetif->clearInputQueue();
 			 //ipw_send_cmd_simple(priv, IPW_CMD_TX_FLUSH);
 		}
@@ -8329,9 +8343,9 @@ frg:
 	//	netif_stop_queue(priv->net_dev);
 		// FIXME
 		IWI_ERR("no TransmitQueue space\n ");
-		//fTransmitQueue->stop();
-		////fTransmitQueue->setCapacity(0);
-		//fTransmitQueue->flush();
+		fTransmitQueue->stop();
+		fTransmitQueue->setCapacity(0);
+		fTransmitQueue->flush();
 		return kIOReturnOutputDropped;//kIOReturnOutputStall;
 	}
 #endif	
