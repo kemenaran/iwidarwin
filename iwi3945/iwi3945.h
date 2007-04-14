@@ -971,8 +971,17 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual int is_cmd_sync(struct ipw_host_cmd *cmd);
 	virtual int ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd);
 	virtual int is_cmd_small(struct ipw_host_cmd *cmd);
-	
-	
+	virtual void ipw_handle_data_packet(struct ipw_priv *priv, int is_data,
+				   struct ipw_rx_mem_buffer *rxb,
+				   struct ieee80211_rx_status *stats);
+	virtual int ieee80211_rx( mbuf_t skb,
+		 struct ieee80211_rx_stats *rx_stats);
+	virtual void ipw_bg_post_associate();
+	virtual int ipw_rate_scale_rxon_handle(struct ipw_priv *priv, s32 sta_id);
+	virtual struct ipw_tpt_entry *ipw_get_tpt_by_rssi(s32 rssi, u8 mode);
+	virtual u8 ipw_rate_scale2plcp(int x);
+	virtual u8 ipw_sync_station(struct ipw_priv *priv, int sta_id,
+			   u16 tx_rate, u8 flags);
 	
 	
 	
