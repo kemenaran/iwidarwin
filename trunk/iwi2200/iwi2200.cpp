@@ -2261,6 +2261,7 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 		IWI_DEBUG_FULL("IPW_INTA_BIT_RX_TRANSFER)\n");
 		ipw_rx(priv);
 		fNetif->clearInputQueue();
+		releaseFreePackets();
 		ret = IPW_INTA_BIT_RX_TRANSFER;
 	}
 
@@ -5044,6 +5045,8 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 				
 				//pci_unmap_single(priv->pci_dev, rxb->dma_addr, IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
 			}
+			else
+			mbuf_settype(rxb->skb,mbuf_type(rxb->skb) | MBUF_TYPE_FREE);
 		}
 		
 		list_add_tail(&rxb->list, &priv->rxq->rx_used);
@@ -5058,13 +5061,13 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		fNetif->flushInputQueue();		
 	}
 	//fNetif->clearInputQueue();
-	
+	//while (fNetif->clearInputQueue()!=0){};
+	//while (releaseFreePackets()!=0){};
 	/* Backtrack one entry */
 	priv->rxq->processed = (i ? i : RX_QUEUE_SIZE) - 1;
 
 
 	ipw_rx_queue_restock(priv);
-	//releasefreePackets();
 }
 
 
@@ -8411,7 +8414,7 @@ copy_packet:
 
 void darwin_iwi2200::freePacket2(mbuf_t m)
 {
-	if (m)
+	if (m && m!=0)
 	if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0)
 	{
 		if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0 && mbuf_data(m)!=NULL)
@@ -8523,10 +8526,11 @@ finish:
 	/* free finished packet */
 	freePacket2(m);
 	m=NULL;
-	if (ret ==  kIOReturnOutputDropped) { 
+	//if (ret ==  kIOReturnOutputDropped) { 
 		freePacket2(nm);
 		nm=NULL;
-	}
+	//}
+	fTransmitQueue->start();
 	return ret;	
 }
 
@@ -10515,6 +10519,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
+				
+				
 				if (clone->ipw_read32(0x30)==0x40001)// clone->ipw_write32(0x30, 0x1);//0x0f0ff);
 				//else 
 				clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
