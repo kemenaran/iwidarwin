@@ -5517,7 +5517,6 @@ void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 		priv->ieee->stats.rx_errors++;
 		return;
 	}
-
 	if (!(fNetif->getFlags() & IFF_RUNNING)) {
 		priv->ieee->stats.rx_errors++;
 		priv->wstats.discard.misc++;
@@ -6165,7 +6164,7 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 
 	read_register(dev, IPW_REG_INTA, &inta);
 
-	if (inta==0) goto skipi;
+	if (inta & 0) goto skipi;
 	
 	//IOLog("enter - INTA: 0x%08lX\n",
 	//	      (unsigned long)inta & IPW_INTERRUPT_MASK);
@@ -6964,10 +6963,23 @@ void darwin_iwi2100::ipw2100_set_hwcrypto_keys(struct ipw2100_priv *priv)
 bool darwin_iwi2100::configureInterface(IONetworkInterface * netif)
  {
     IONetworkData * data;
-    IOLog("configureInterface\n");
+    IWI_DEBUG("configureInterface\n");
     if (super::configureInterface(netif) == false)
             return false;
+    
+    // Get the generic network statistics structure.
 
+   data = netif->getParameter(kIONetworkStatsKey);
+    if (!data || !(netStats = (IONetworkStats *)data->getBuffer())) {
+            return false;
+    }
+
+    // Get the Ethernet statistics structure.
+
+    data = netif->getParameter(kIOEthernetStatsKey);
+    if (!data || !(etherStats = (IOEthernetStats *)data->getBuffer())) {
+            return false;
+    }
     return true;
 }
 
