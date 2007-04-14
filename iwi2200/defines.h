@@ -948,8 +948,9 @@ typedef unsigned char UInt8;
 #define IP_CH(ip)	((u_char *)ip)
 #define IP_LIST(ip)	IP_CH(ip)[2],IP_CH(ip)[3],IP_CH(ip)[4],IP_CH(ip)[5]
 
-#define IPW_RX_BUF_SIZE (1600)
-//#define IPW_RX_BUF_SIZE (2048)
+// 3000 is the size expected by firmware!!
+#define IPW_RX_BUF_SIZE (3000)
+//#define IPW_RX_BUF_SIZE (1600)
 
 #define memcpy_toio(a,b,c)	memcpy((void *)(a),(b),(c))
 
@@ -973,12 +974,11 @@ typedef unsigned char UInt8;
 #define ETH_P_AARP	0x80F3		/* Appletalk AARP		*/
 #define ETH_P_IPX	0x8137		/* IPX over DIX			*/
 
- #define FREE_FRAME_THRESHOLD 5
+#define FREE_FRAME_THRESHOLD 5
 #define IEEE80211_ERP_PRESENT                  (0x01)
 #define IEEE80211_ERP_USE_PROTECTION           (0x02)
 #define IEEE80211_ERP_BARKER_PREAMBLE_MODE     (0x04)
 #define IPW_SUPPORTED_RATES_IE_LEN         8
-
 
 
 
