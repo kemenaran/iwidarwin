@@ -2822,6 +2822,9 @@ struct ipw_priv {
 	//struct daemon_rx_config rxon;
 	struct ipw_alive_resp card_alive;
 
+	struct ipw_rxon_time_cmd rxon_timing;
+
+	
 	/* LED related variables */
 	struct ipw_activity_blink activity;
 	unsigned long led_packets;

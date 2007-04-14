@@ -1125,6 +1125,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_led_activity_off),NULL,NULL,false);
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_alive_start),NULL,NULL,false);
 		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),NULL,NULL,false);
+		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_post_associate),NULL,NULL,false);
 		
 		
 		
@@ -3137,21 +3138,21 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 	if (priv->status & STATUS_EXIT_PENDING) {
 		IOLog("Exit pending will not bring the NIC up\n");
-		return -EIO;
+		//return -EIO;
 	}
 
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("Radio disabled by module parameter.\n");
 		return 0;
-	} else if (priv->status & STATUS_RF_KILL_HW)
-		return 0;
+	};// else if (priv->status & STATUS_RF_KILL_HW)
+		//return 0;
 
 	ipw_write32( CSR_INT, 0xFFFFFFFF);
 
 	rc = ipw_nic_init(priv);
 	if (rc) {
 		IOLog("Unable to init nic\n");
-		return rc;
+		//return rc;
 	}
 
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
@@ -5048,8 +5049,8 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 
 	/* If this is an asynchronous command, and we are in a shutdown
 	 * process then don't let it start */
-	if (!is_cmd_sync(cmd) && (priv->status & STATUS_EXIT_PENDING))
-		return -EBUSY;
+	//if (!is_cmd_sync(cmd) && (priv->status & STATUS_EXIT_PENDING))
+	//	return -EBUSY;
 
 	/*
 	 * The following BUG_ONs are meant to catch programming API misuse
@@ -5057,18 +5058,18 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 	 */
 
 	/* A command can not be asynchronous AND expect an SKB to be set */
-	if((cmd->meta.flags & CMD_ASYNC)
-	       && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
+	//if((cmd->meta.flags & CMD_ASYNC)
+	  //     && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
 
 	/* The skb/callback union must be NULL if an SKB is requested */
-	if(cmd->meta.u.skb && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
+	//if(cmd->meta.u.skb && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
 
 	/* A command can not be synchronous AND have a callback set */
-	if(is_cmd_sync(cmd) && cmd->meta.u.callback) return -1;
+	//if(is_cmd_sync(cmd) && cmd->meta.u.callback) return -1;
 
 	/* An asynchronous command MUST have a callback */
-	if((cmd->meta.flags & CMD_ASYNC)
-	       && !cmd->meta.u.callback) return -1;
+	//if((cmd->meta.flags & CMD_ASYNC)
+	  //     && !cmd->meta.u.callback) return -1;
 
 	/* A command can not be synchronous AND not use locks */
 	if(is_cmd_sync(cmd) && (cmd->meta.flags & CMD_NO_LOCK)) return -1;
@@ -5082,7 +5083,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 			  get_cmd_string(cmd->id));
 		//if (cmd_needs_lock(cmd))
 		//	spin_unlock_irqrestore(&priv->lock, flags);
-		return -EBUSY;
+		//return -EBUSY;
 	}
 
 	if (is_cmd_sync(cmd))
@@ -5107,7 +5108,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 			  "ipw_queue_tx_hcmd failed: %d\n",
 			  get_cmd_string(cmd->id), rc);
 
-		return -ENOSPC;
+		//return -ENOSPC;
 	}
 	//if (cmd_needs_lock(cmd))
 	//	spin_unlock_irqrestore(&priv->lock, flags);
@@ -5141,7 +5142,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 				//if (cmd_needs_lock(cmd))
 				//	spin_unlock_irqrestore(&priv->
 				//			       lock, flags);
-				return -ETIMEDOUT;
+				//return -ETIMEDOUT;
 			}
 
 			//if (cmd_needs_lock(cmd))
@@ -5159,7 +5160,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 		IOLog("Command %s aborted: RF KILL Switch\n",
 			       get_cmd_string(cmd->id));
 
-		return -ECANCELED;
+		//return -ECANCELED;
 	}
 
 	if (priv->status & STATUS_FW_ERROR) {
@@ -5172,13 +5173,13 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 		IOLog("Command %s failed: FW Error\n",
 			       get_cmd_string(cmd->id));
 
-		return -EIO;
+		//return -EIO;
 	}
 
 	if ((cmd->meta.flags & CMD_WANT_SKB) && !cmd->meta.u.skb) {
 		IOLog("Error: Response NULL in '%s'\n",
 			  get_cmd_string(cmd->id));
-		return -EIO;
+		//return -EIO;
 	}
 
 	return 0;
@@ -7437,6 +7438,363 @@ int darwin_iwi3945::is_network_packet(struct ipw_priv *priv,
 	return 1;
 }
 
+static const unsigned char rfc1042_header[] =
+	{ 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
+
+/* Bridge-Tunnel header (for EtherTypes ETH_P_AARP and ETH_P_IPX) */
+static const unsigned char bridge_tunnel_header[] =
+	{ 0xaa, 0xaa, 0x03, 0x00, 0x00, 0xf8 };
+	
+int darwin_iwi3945::ieee80211_rx( mbuf_t skb,
+		 struct ieee80211_rx_stats *rx_stats)
+{
+	struct ieee80211_hdr_4addr *hdr;
+	size_t hdrlen;
+	u16 fc, type, stype, sc;
+	struct net_device_stats *stats;
+	unsigned int frag;
+	u8 *payload;
+	u16 ethertype;
+	
+	u8 dst[ETH_ALEN];
+	u8 src[ETH_ALEN];
+
+	hdr = (struct ieee80211_hdr_4addr *)mbuf_data(skb);
+	//stats = &ieee->stats;
+
+	if (mbuf_pkthdr_len(skb) < 10) {
+	//	IWI_DEBUG( "%s: SKB length < 10\n", ieee->dev->name);
+		goto rx_dropped;
+	}
+
+	fc = le16_to_cpu(hdr->frame_ctl);
+	type = WLAN_FC_GET_TYPE(fc);
+	stype = WLAN_FC_GET_STYPE(fc);
+	sc = le16_to_cpu(hdr->seq_ctl);
+	frag = WLAN_GET_SEQ_FRAG(sc);
+	hdrlen = ieee80211_get_hdrlen(fc);
+
+
+//	if (ieee->iw_mode == IW_MODE_MONITOR) {
+		//stats->rx_packets++;
+		//stats->rx_bytes += mbuf_pkthdr_len(skb);
+		//ieee80211_monitor_rx(ieee, skb, rx_stats);
+//		return 1;
+//	}
+
+	/*can_be_decrypted = (is_multicast_ether_addr(hdr->addr1) ||
+			    is_broadcast_ether_addr(hdr->addr2)) ?
+	    ieee->host_mc_decrypt : ieee->host_decrypt;
+
+	if (can_be_decrypted) {
+		int idx = 0;
+		if (mbuf_len(skb) >= hdrlen + 3) {
+			idx = ((UInt8*)(mbuf_data(skb)))[hdrlen + 3] >> 6;
+		}
+
+
+		crypt = ieee->crypt[idx];
+
+		if (crypt && (crypt->ops == NULL ||
+			      crypt->ops->decrypt_mpdu == NULL))
+			crypt = NULL;
+
+		if (!crypt && (fc & IEEE80211_FCTL_PROTECTED)) {
+			IWI_DEBUG("Decryption failed (not set)"
+					     " (SA=" MAC_FMT ")\n",
+					     MAC_ARG(hdr->addr2));
+			ieee->ieee_stats.rx_discards_undecryptable++;
+			goto rx_dropped;
+		}
+	}*/
+
+	/* Data frame - extract src/dst addresses */
+	if (mbuf_pkthdr_len(skb) < IEEE80211_3ADDR_LEN)
+		goto rx_dropped;
+
+	switch (fc & (IEEE80211_FCTL_FROMDS | IEEE80211_FCTL_TODS)) {
+	case IEEE80211_FCTL_FROMDS:
+		memcpy(dst, hdr->addr1, ETH_ALEN);
+		memcpy(src, hdr->addr3, ETH_ALEN);
+		break;
+	case IEEE80211_FCTL_TODS:
+		memcpy(dst, hdr->addr3, ETH_ALEN);
+		memcpy(src, hdr->addr2, ETH_ALEN);
+		break;
+	case IEEE80211_FCTL_FROMDS | IEEE80211_FCTL_TODS:
+		if (mbuf_pkthdr_len(skb) < IEEE80211_4ADDR_LEN)
+			goto rx_dropped;
+		memcpy(dst, hdr->addr3, ETH_ALEN);
+		memcpy(src, hdr->addr4, ETH_ALEN);
+		break;
+	case 0:
+		memcpy(dst, hdr->addr1, ETH_ALEN);
+		memcpy(src, hdr->addr2, ETH_ALEN);
+		break;
+	}
+	
+
+
+	//dev->last_rx = jiffies;
+
+
+	/* Nullfunc frames may have PS-bit set, so they must be passed to
+	 * hostap_handle_sta_rx() before being dropped here. */
+
+	stype &= ~IEEE80211_STYPE_QOS_DATA;
+
+	if (stype != IEEE80211_STYPE_DATA &&
+	    stype != IEEE80211_STYPE_DATA_CFACK &&
+	    stype != IEEE80211_STYPE_DATA_CFPOLL &&
+	    stype != IEEE80211_STYPE_DATA_CFACKPOLL) {
+		if (stype != IEEE80211_STYPE_NULLFUNC)
+			IWI_DEBUG("RX: dropped data frame "
+					     "with no data (type=0x%02x, "
+					     "subtype=0x%02x, len=%d)\n",
+					     type, stype, mbuf_pkthdr_len(skb));
+		goto rx_dropped;
+	}
+
+	/* skb: hdr + (possibly fragmented, possibly encrypted) payload */
+
+	//if ((fc & IEEE80211_FCTL_PROTECTED) && can_be_decrypted  /* &&
+	  //  (keyidx = ieee80211_rx_frame_decrypt(ieee, skb, crypt)) < 0 */ )
+	//	goto rx_dropped;
+
+	//hdr = (struct ieee80211_hdr_4addr *)mbuf_data(skb);
+
+	// skb: hdr + (possibly fragmented) plaintext payload 
+	// PR: FIXME: hostap has additional conditions in the "if" below:
+	// ieee->host_decrypt && (fc & IEEE80211_FCTL_PROTECTED) &&
+	/*if ((frag != 0) || (fc & IEEE80211_FCTL_MOREFRAGS)) {
+		int flen;
+		mbuf_t frag_skb = ieee80211_frag_cache_get(ieee, hdr);
+		IWI_DEBUG_FULL("Rx Fragment received (%u)\n", frag);
+
+		if (!frag_skb) {
+			IWI_DEBUG("Rx cannot get skb from fragment "
+					"cache (morefrag=%d seq=%u frag=%u)\n",
+					(fc & IEEE80211_FCTL_MOREFRAGS) != 0,
+					WLAN_GET_SEQ_SEQ(sc), frag);
+			goto rx_dropped;
+		}
+
+		flen = mbuf_len(skb);
+		if (frag != 0)
+			flen -= hdrlen;
+		
+		//if (frag_skb->tail + flen > frag_skb->end) { 
+		// skb->tail  := mbuf_data(skb)+mbuf_len(skb) 
+		// skb->end := mbuf_datastart(skb)+mbuf_maxlen(skb) 
+		if (  (UInt8*)mbuf_data(frag_skb) + mbuf_len(frag_skb)  + flen > (UInt8*)mbuf_datastart(frag_skb) + mbuf_maxlen(frag_skb)  ) {
+			IWI_DEBUG( "%s: host decrypted and "
+			       "reassembled frame did not fit skb\n",
+			       dev->name);
+			ieee80211_frag_cache_invalidate(ieee, hdr);
+			goto rx_dropped;
+		}
+
+		if (frag == 0) {
+			// copy first fragment (including full headers) into
+			 // beginning of the fragment cache skb 
+			memcpy(skb_put(frag_skb, flen), (UInt8*)mbuf_data(skb), flen);
+		} else {
+			// append frame payload to the end of the fragment
+			 // cache skb 
+			memcpy(skb_put(frag_skb, flen), (UInt8*)mbuf_data(skb) + hdrlen,
+			       flen);
+		}
+		//dev_kfree_skb_any(skb);
+		if (skb != NULL) {
+			freePacket2(skb);
+		}
+		skb = NULL;
+
+		if (fc & IEEE80211_FCTL_MOREFRAGS) {
+			// more fragments expected - leave the skb in fragment
+			 // cache for now; it will be delivered to upper layers
+			 //after all fragments have been received 
+			goto rx_exit;
+		}
+
+		// this was the last fragment and the frame will be
+		 // delivered, so remove skb from fragment cache 
+		skb = frag_skb;
+		hdr = (struct ieee80211_hdr_4addr *)(mbuf_data(skb));
+		ieee80211_frag_cache_invalidate(ieee, hdr);
+	}*/
+
+	/* skb: hdr + (possible reassembled) full MSDU payload; possibly still
+	  encrypted/authenticated  */
+	//if ((fc & IEEE80211_FCTL_PROTECTED) && can_be_decrypted /*&&
+	  //  ieee80211_rx_frame_decrypt_msdu(ieee, skb, keyidx, crypt) */   )
+		//goto rx_dropped;
+
+	/*hdr = (struct ieee80211_hdr_4addr *)(mbuf_data(skb));
+	if (crypt && !(fc & IEEE80211_FCTL_PROTECTED) && !ieee->open_wep) {
+		if (		
+			   ieee80211_is_eapol_frame(ieee, skb)) {
+			// pass unencrypted EAPOL frames even if encryption is
+			 // configured 
+		} else {
+			IWI_DEBUG("encryption configured, but RX "
+					     "frame not encrypted (SA=" MAC_FMT
+					     ")\n", MAC_ARG(hdr->addr2));
+			goto rx_dropped;
+		}
+	}
+
+	if (crypt && !(fc & IEEE80211_FCTL_PROTECTED) && !ieee->open_wep &&
+	    !ieee80211_is_eapol_frame(ieee, skb)) {
+		IWI_DEBUG("dropped unencrypted RX data "
+				     "frame from " MAC_FMT
+				     " (drop_unencrypted=1)\n",
+				     MAC_ARG(hdr->addr2));
+		goto rx_dropped;
+	}*/
+
+	/* skb: hdr + (possible reassembled) full plaintext payload */
+
+	payload = ((UInt8*)mbuf_data(skb) + hdrlen);
+	ethertype = (payload[6] << 8) | payload[7];
+
+
+
+	/* convert hdr + possible LLC headers into Ethernet header */
+	if ( mbuf_pkthdr_len(skb) - hdrlen >= 8 &&
+	    ((memcmp(payload, rfc1042_header, SNAP_SIZE) == 0 &&
+	      ethertype != ETH_P_AARP && ethertype != ETH_P_IPX) ||
+	     memcmp(payload, bridge_tunnel_header, SNAP_SIZE) == 0)) {
+		/* remove RFC1042 or Bridge-Tunnel encapsulation and
+		 * replace EtherType */
+		skb_pull(skb, hdrlen + SNAP_SIZE);
+		//mbuf_adj(skb, hdrlen + SNAP_SIZE);
+		memcpy(skb_push(skb, ETH_ALEN), src, ETH_ALEN);
+		memcpy(skb_push(skb, ETH_ALEN), dst, ETH_ALEN);
+		//memcpy(((UInt8*)mbuf_data(skb) + ETH_ALEN), src, ETH_ALEN);
+		//memcpy(((UInt8*)mbuf_data(skb) +ETH_ALEN), dst, ETH_ALEN);
+	} else {
+		u16 len;
+		/* Leave Ethernet header part of hdr and full payload */
+		skb_pull(skb, hdrlen);
+		//mbuf_adj(skb, hdrlen);
+		len = htons(mbuf_pkthdr_len(skb));
+		memcpy(skb_push(skb, 2), &len, 2);
+		memcpy(skb_push(skb, ETH_ALEN), src, ETH_ALEN);
+		memcpy(skb_push(skb, ETH_ALEN), dst, ETH_ALEN);
+		//memcpy(((UInt8*)mbuf_data(skb) + 2), &len, 2);
+		//memcpy(((UInt8*)mbuf_data(skb) + ETH_ALEN), src, ETH_ALEN);
+		//memcpy(((UInt8*)mbuf_data(skb) + ETH_ALEN), dst, ETH_ALEN);
+	}
+
+	netStats->inputPackets++;
+	//stats->rx_packets++;
+	//stats->rx_bytes += mbuf_pkthdr_len(skb);
+
+
+	if (skb) {
+		//skb->protocol = eth_type_trans(skb, dev);
+		//memset(skb->cb, 0, sizeof(skb->cb));
+		//skb->dev = dev;
+		//skb->ip_summed = CHECKSUM_NONE;	/* 802.11 crc not sufficient */
+		if( mbuf_flags(skb) & MBUF_PKTHDR){
+		
+			//if (ifnet_input(fifnet,skb,NULL)!=0) goto rx_dropped;
+			fNetif->inputPacket(skb,mbuf_pkthdr_len(skb),IONetworkInterface::kInputOptionQueuePacket);
+		}else{
+			IWI_ERR("this packet dont have MBUF_PKTHDR\n");
+			//fNetif->inputPacket(skb,mbuf_len(skb),IONetworkInterface::kInputOptionQueuePacket);
+			goto rx_dropped;
+		}
+		//if (netif_rx(skb) == NET_RX_DROP) {
+			/* netif_rx always succeeds, but it might drop
+			 * the packet.  If it drops the packet, we log that
+			 * in our stats. */
+		//	IWI_DEBUG ("RX: netif_rx dropped the packet\n");
+		//	stats->rx_dropped++;
+		//}
+	}
+
+      rx_exit:
+
+	return 1;
+
+      rx_dropped:
+	IWI_DEBUG("rx dropped %d\n",stats->rx_dropped);
+	//stats->rx_dropped++;
+	netStats->inputErrors++;
+	/* Returning 0 indicates to caller that we have not handled the SKB--
+	 * so it is still allocated and can be used again by underlying
+	 * hardware as a DMA target */
+	return 0;
+}
+
+#define IPW_RX_HDR(x) ((struct ipw_rx_frame_hdr *)(\
+                       x->u.rx_frame.stats.payload + \
+                       x->u.rx_frame.stats.mib_count))
+#define IPW_RX_END(x) ((struct ipw_rx_frame_end *)(\
+                       IPW_RX_HDR(x)->payload + \
+                       le16_to_cpu(IPW_RX_HDR(x)->len)))
+#define IPW_RX_STATS(x) (&x->u.rx_frame.stats)
+#define IPW_RX_DATA(x) (IPW_RX_HDR(x)->payload)
+
+void darwin_iwi3945::ipw_handle_data_packet(struct ipw_priv *priv, int is_data,
+				   struct ipw_rx_mem_buffer *rxb,
+				   struct ieee80211_rx_status *stats)
+{
+	struct ieee80211_hdr *hdr;
+	struct ipw_rx_packet *pkt = (struct ipw_rx_packet *)mbuf_data(rxb->skb);
+	struct ipw_rx_frame_hdr *rx_hdr = IPW_RX_HDR(pkt);
+	struct ipw_rx_frame_end *rx_end = IPW_RX_END(pkt);
+	short len = le16_to_cpu(rx_hdr->len);
+
+	/* We received data from the HW, so stop the watchdog */
+	//ieee80211_netif_oper(priv->ieee, NETIF_UPDATE_TX_START);
+	if (unlikely((len + IPW_RX_FRAME_SIZE) > mbuf_pkthdr_len(rxb->skb))) {
+		priv->wstats.discard.misc++;
+		IOLog("Corruption detected! Oh no!\n");
+		return;
+	}
+
+	/* We only process data packets if the interface is open */
+	if (!(fNetif->getFlags() & IFF_RUNNING)) {
+		priv->wstats.discard.misc++;
+		IOLog("Dropping packet while interface is not up.\n");
+		return;
+	}
+	if (priv->iw_mode == IEEE80211_IF_TYPE_MNTR) {
+		/*if (param_hwcrypto)
+			ipw_set_decrypted_flag(priv, rxb->skb, rx_end->status,
+					       stats);
+		ipw_handle_data_packet_monitor(priv, rxb, IPW_RX_DATA(pkt), len,
+					       stats);*/
+		return;
+	}
+
+	stats->flag = 0;
+//	skb_reserve(rxb->skb, (void *)rx_hdr->payload - (void *)pkt);
+	/* Set the size of the skb to the size of the frame */
+//	skb_put(rxb->skb, le16_to_cpu(rx_hdr->len));
+//todo check iwi2200 code
+mbuf_setdata(rxb->skb, 
+	                      (UInt8*)mbuf_data(rxb->skb) + ((UInt8*)rx_hdr->payload - (UInt8*)pkt),
+			  le16_to_cpu(rx_hdr->len));
+
+	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
+			mbuf_pkthdr_setlen(rxb->skb, le16_to_cpu(rx_hdr->len));
+			
+	hdr = (struct ieee80211_hdr*)mbuf_data(rxb->skb);
+	priv->rx_bytes += mbuf_pkthdr_len(rxb->skb) -
+	    ieee80211_get_hdrlen(le16_to_cpu(hdr->frame_control));
+
+	//if (param_hwcrypto)
+	//	ipw_set_decrypted_flag(priv, rxb->skb, rx_end->status, stats);
+
+	ieee80211_rx(rxb->skb, NULL);
+	rxb->skb = NULL;
+	priv->led_packets += rx_hdr->len;
+	//ipw_setup_activity_timer(priv);
+}
 
 #define IPW_RX_HDR(x) ((struct ipw_rx_frame_hdr *)(\
                        x->u.rx_frame.stats.payload + \
@@ -7457,7 +7815,300 @@ int darwin_iwi3945::is_network_packet(struct ipw_priv *priv,
 #define WLAN_FC_GET_STYPE(fc)   (((fc) & IEEE80211_FCTL_STYPE))
 #define WLAN_GET_SEQ_FRAG(seq)  ((seq) & 0x000f)
 #define WLAN_GET_SEQ_SEQ(seq)   ((seq) >> 4)
-		
+	
+#define NUM_RATES 12
+
+static u8 ipw_lower_rate_g[NUM_RATES] = {
+	RATE_SCALE_5_5M_INDEX, RATE_SCALE_5_5M_INDEX,
+	RATE_SCALE_11M_INDEX, RATE_SCALE_12M_INDEX,
+	RATE_SCALE_18M_INDEX, RATE_SCALE_24M_INDEX,
+	RATE_SCALE_36M_INDEX, RATE_SCALE_48M_INDEX,
+	255, RATE_SCALE_1M_INDEX, RATE_SCALE_2M_INDEX,
+	RATE_SCALE_5_5M_INDEX,
+
+};
+
+static u8 ipw_higher_rate_g[NUM_RATES] = {
+	RATE_SCALE_11M_INDEX, RATE_SCALE_11M_INDEX,
+	RATE_SCALE_18M_INDEX,
+	RATE_SCALE_24M_INDEX, RATE_SCALE_36M_INDEX,
+	RATE_SCALE_48M_INDEX,
+	RATE_SCALE_54M_INDEX, 255, RATE_SCALE_2M_INDEX,
+	RATE_SCALE_5_5M_INDEX, RATE_SCALE_11M_INDEX,
+	RATE_SCALE_12M_INDEX
+};
+
+static s32 ipw_expected_tpt_g[NUM_RATES] = {
+	0, 0, 76, 104, 130, 168, 191, 202, 7, 13, 35, 58
+};
+
+static s32 ipw_expected_tpt_g_prot[NUM_RATES] = {
+	0, 0, 0, 80, 93, 113, 123, 125, 7, 13, 35, 58
+};
+
+static s32 ipw_expected_tpt_a[NUM_RATES] = {
+	40, 57, 72, 98, 121, 154, 177, 186, 0, 0, 0, 0
+};
+
+static s32 ipw_expected_tpt_b[NUM_RATES] = {
+	0, 0, 0, 0, 0, 0, 0, 0, 7, 13, 35, 58
+};
+	
+
+static u8 ipw_lower_rate_g_prot[NUM_RATES] = {
+	RATE_SCALE_5_5M_INDEX, RATE_SCALE_5_5M_INDEX,
+	RATE_SCALE_11M_INDEX,
+	RATE_SCALE_11M_INDEX, RATE_SCALE_18M_INDEX,
+	RATE_SCALE_24M_INDEX,
+	RATE_SCALE_36M_INDEX, RATE_SCALE_48M_INDEX, 255,
+	RATE_SCALE_1M_INDEX, RATE_SCALE_2M_INDEX,
+	RATE_SCALE_5_5M_INDEX,
+};
+
+static u8 ipw_higher_rate_g_prot[NUM_RATES] = {
+	RATE_SCALE_11M_INDEX, RATE_SCALE_11M_INDEX,
+	RATE_SCALE_18M_INDEX,
+	RATE_SCALE_24M_INDEX, RATE_SCALE_36M_INDEX,
+	RATE_SCALE_48M_INDEX,
+	RATE_SCALE_54M_INDEX, 255, RATE_SCALE_2M_INDEX,
+	RATE_SCALE_5_5M_INDEX, RATE_SCALE_11M_INDEX,
+	RATE_SCALE_18M_INDEX
+};
+
+static struct ipw_tpt_entry ipw_tpt_table_a[] = {
+	{-60, 22000, 0, 0, RATE_SCALE_54M_INDEX},
+	{-64, 20000, 0, 0, RATE_SCALE_48M_INDEX},
+	{-72, 18000, 0, 0, RATE_SCALE_36M_INDEX},
+	{-80, 16000, 0, 0, RATE_SCALE_24M_INDEX},
+	{-84, 12000, 0, 0, RATE_SCALE_18M_INDEX},
+	{-85, 8000, 0, 0, RATE_SCALE_12M_INDEX},
+	{-87, 7000, 0, 0, RATE_SCALE_9M_INDEX},
+	{-89, 5000, 0, 0, RATE_SCALE_6M_INDEX}
+};
+
+static struct ipw_tpt_entry ipw_tpt_table_b[] = {
+	{-86, 6000, 0, 0, RATE_SCALE_11M_INDEX},
+	{-88, 3000, 0, 0, RATE_SCALE_5_5M_INDEX},
+	{-90, 1000, 0, 0, RATE_SCALE_2M_INDEX},
+	{-92, 800, 0, 0, RATE_SCALE_1M_INDEX}
+
+};
+
+static struct ipw_tpt_entry ipw_tpt_table_g[] = {
+	{-60, 22000, 12000, 14000, RATE_SCALE_54M_INDEX},
+	{-64, 20000, 11000, 13000, RATE_SCALE_48M_INDEX},
+	{-68, 18000, 10000, 14000, RATE_SCALE_36M_INDEX},
+	{-80, 16000, 9000, 11000, RATE_SCALE_24M_INDEX},
+	{-84, 12000, 7000, 10000, RATE_SCALE_18M_INDEX},
+	{-85, 8000, 5000, 8000, RATE_SCALE_12M_INDEX},
+	{-86, 6000, 6000, 6000, RATE_SCALE_11M_INDEX},
+	{-88, 3000, 3000, 3000, RATE_SCALE_5_5M_INDEX},
+	{-90, 1000, 1000, 1000, RATE_SCALE_2M_INDEX},
+	{-92, 800, 800, 800, RATE_SCALE_1M_INDEX}
+};
+	
+struct ipw_tpt_entry *darwin_iwi3945::ipw_get_tpt_by_rssi(s32 rssi, u8 mode)
+{
+	u32 index = 0;
+	u32 table_size = 0;
+	struct ipw_tpt_entry *tpt_table = NULL;
+
+	if ((rssi < IPW_MIN_RSSI_VAL) || (rssi > IPW_MAX_RSSI_VAL))
+		rssi = IPW_MIN_RSSI_VAL;
+
+	switch (mode) {
+	case MODE_IEEE80211G:
+		tpt_table = ipw_tpt_table_g;
+		table_size = ARRAY_SIZE(ipw_tpt_table_g);
+		break;
+
+	case MODE_IEEE80211B:
+		tpt_table = ipw_tpt_table_b;
+		table_size = ARRAY_SIZE(ipw_tpt_table_b);
+		break;
+
+	case MODE_IEEE80211A:
+		tpt_table = ipw_tpt_table_a;
+		table_size = ARRAY_SIZE(ipw_tpt_table_a);
+		break;
+
+	default:
+		return NULL;
+	}
+
+	while ((index < table_size)
+	       && (rssi < tpt_table[index].min_rssi))
+		index++;
+
+	index = min(index, (table_size - 1));
+
+	return &tpt_table[index];
+}
+
+u8 darwin_iwi3945::ipw_rate_scale2plcp(int x)
+{
+	int i;
+	for (i = 0; i < ARRAY_SIZE(rate_table_info); i++) {
+		if (rate_table_info[i].rate_scale_index == x)
+			return rate_table_info[i].rate_plcp;
+	}
+	return IPW_INVALID_RATE;
+}
+
+u8 darwin_iwi3945::ipw_sync_station(struct ipw_priv *priv, int sta_id,
+			   u16 tx_rate, u8 flags)
+{
+
+	if (sta_id != IPW_INVALID_STATION) {
+		unsigned long flags_spin;
+
+		//spin_lock_irqsave(&priv->sta_lock, flags_spin);
+
+		priv->stations[sta_id].sta.sta.modify_mask =
+		    STA_CONTROL_MODIFY_MSK;
+		priv->stations[sta_id].sta.tx_rate.rate_n_flags = tx_rate;
+		priv->stations[sta_id].current_rate.rate_n_flags = tx_rate;
+		priv->stations[sta_id].sta.ctrlAddModify =
+		    STA_CONTROL_MODIFY_MSK;
+
+		//spin_unlock_irqrestore(&priv->sta_lock, flags_spin);
+
+		ipw_send_add_station(priv, &priv->stations[sta_id].sta, flags);
+		IOLog("SCALE sync station %d to rate %d\n",
+			       sta_id, tx_rate);
+		return sta_id;
+	}
+
+	return IPW_INVALID_STATION;
+}
+	
+int darwin_iwi3945::ipw_rate_scale_rxon_handle(struct ipw_priv *priv, s32 sta_id)
+{
+	int rc = 0;
+	int i;
+	s32 rssi = 0;
+	struct ipw_tpt_entry *entry = NULL;
+	unsigned long flags;
+	struct ieee80211_conf *conf = NULL;
+
+	conf = &priv->active_conf;//ieee80211_get_hw_conf(priv->ieee);
+
+	if (!ipw_is_associated(priv))
+		return 0;
+
+	//spin_lock_irqsave(&priv->lq_mngr.lock, flags);
+
+	priv->lq_mngr.next_lower_rate = ipw_lower_rate_g;
+	priv->lq_mngr.next_higher_rate = ipw_higher_rate_g;
+
+	switch (priv->active_conf.phymode) {
+	case MODE_IEEE80211G:
+		if (priv->active_rxon.flags & RXON_FLG_TGG_PROTECT_MSK) {
+			priv->lq_mngr.expected_tpt = ipw_expected_tpt_g_prot;
+			priv->lq_mngr.next_higher_rate =
+				ipw_higher_rate_g_prot;
+			priv->lq_mngr.next_lower_rate = ipw_lower_rate_g_prot;
+		} else {
+			priv->lq_mngr.expected_tpt = ipw_expected_tpt_g;
+			priv->lq_mngr.next_lower_rate = ipw_lower_rate_g;
+			priv->lq_mngr.next_higher_rate = ipw_higher_rate_g;
+		}
+		break;
+
+	case MODE_IEEE80211B:
+		priv->lq_mngr.expected_tpt = ipw_expected_tpt_b;
+		break;
+
+	case MODE_IEEE80211A:
+		priv->lq_mngr.expected_tpt = ipw_expected_tpt_a;
+		break;
+	default:
+		IOLog( "Invalid mode in rxon_handle\n");
+		return -EINVAL;
+	}
+
+	rssi = priv->last_rx_rssi;
+	if (rssi == 0)
+		rssi = IPW_MIN_RSSI_VAL;
+
+	IOLog("Network RSSI: %d\n", rssi);
+
+	IOLog("Network RSSI: %d\n", rssi);
+	entry = ipw_get_tpt_by_rssi(rssi, priv->active_conf.phymode);
+	if (entry)
+		i = entry->rate_scale_index;
+	else if (priv->active_conf.phymode == MODE_IEEE80211A)
+		i = RATE_SCALE_6M_INDEX;
+	else
+		i = RATE_SCALE_1M_INDEX;
+
+	priv->stations[sta_id].current_rate.s.rate =
+		ipw_rate_scale2plcp(i);
+
+	ipw_sync_station(priv, sta_id,
+			 priv->stations[sta_id].current_rate.rate_n_flags,
+			 CMD_ASYNC | CMD_NO_LOCK);
+
+	IOLog
+		("for rssi %d assign rate scale index %d plcp %x\n", rssi,
+		 i, priv->stations[sta_id].sta.tx_rate.rate_n_flags);
+
+	//spin_unlock_irqrestore(&priv->lq_mngr.lock, flags);
+
+	return rc;
+}
+
+void darwin_iwi3945::ipw_bg_post_associate()
+{
+	//struct ipw_priv *priv = container_of(work, struct ipw_priv, post_associate);
+	struct ieee80211_conf *conf = NULL;
+
+	if (priv->status & STATUS_EXIT_PENDING)
+		return;
+
+	//mutex_lock(&priv->mutex);
+
+	conf = &priv->active_conf;//ieee80211_get_hw_conf(priv->ieee);
+
+	memset(&priv->rxon_timing, 0, sizeof(struct ipw_rxon_time_cmd));
+/*	ipw_setup_rxon_timing(priv);
+	ipw_send_cmd_pdu(priv, REPLY_RXON_TIMING,
+			 sizeof(priv->rxon_timing), &priv->rxon_timing);
+*/
+	priv->staging_rxon.assoc_id = priv->assoc_id;
+	ipw_commit_rxon(priv);
+
+	switch (priv->iw_mode) {
+	case IEEE80211_IF_TYPE_STA:
+		if (ipw_rxon_add_station(priv, priv->bssid, 1) ==
+		    IPW_INVALID_STATION) {
+			IOLog("Could not add STA " MAC_FMT "\n",
+				    MAC_ARG(priv->bssid));
+			break;
+		}
+
+		ipw_rate_scale_rxon_handle(priv, AP_ID);
+
+		break;
+
+	case IEEE80211_IF_TYPE_IBSS:
+
+		/* clear out the station table */
+		ipw_clear_stations_table(priv);
+
+		ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
+		ipw_rxon_add_station(priv, priv->bssid, 0);
+		ipw_rate_scale_rxon_handle(priv, STA_ID);
+		//ipw_send_beacon_cmd(priv);
+
+		break;
+	}
+
+	ipw_link_up(priv);
+
+	//mutex_unlock(&priv->mutex);
+}
+			
 void darwin_iwi3945::ipw_handle_reply_rx(struct ipw_priv *priv,
 				struct ipw_rx_mem_buffer *rxb)
 {
@@ -7499,8 +8150,7 @@ void darwin_iwi3945::ipw_handle_reply_rx(struct ipw_priv *priv,
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_MNTR) {
-		IOLog("todo: ipw_handle_data_packet\n");
-		//ipw_handle_data_packet(priv, 1, rxb, &stats);
+		ipw_handle_data_packet(priv, 1, rxb, &stats);
 		return;
 	}
 
@@ -7590,13 +8240,14 @@ void darwin_iwi3945::ipw_handle_reply_rx(struct ipw_priv *priv,
 			case IEEE80211_STYPE_ASSOC_RESP:
 			case IEEE80211_STYPE_REASSOC_RESP:
 			{
+				IOLog("associating\n");
 				struct ieee80211_mgmt *mgnt =
 					(struct ieee80211_mgmt *)header;
 				priv->assoc_id = (~((1 << 15) | (1 << 14))
 						  & mgnt->u.assoc_resp.aid);
 				priv->assoc_capability =
 					le16_to_cpu(mgnt->u.assoc_resp.capab_info);
-				IOLog("todo: post_associate\n");
+				queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_post_associate),NULL,NULL,true);
 				//queue_work(priv->workqueue, &priv->post_associate);
 				break;
 			}
@@ -7613,8 +8264,7 @@ void darwin_iwi3945::ipw_handle_reply_rx(struct ipw_priv *priv,
 				return;
 			}
 		}
-		IOLog("todo: ipw_handle_data_packet\n");
-		//ipw_handle_data_packet(priv, 0, rxb, &stats);
+		ipw_handle_data_packet(priv, 0, rxb, &stats);
 		break;
 
 		case IEEE80211_FTYPE_CTL:
@@ -7628,8 +8278,7 @@ void darwin_iwi3945::ipw_handle_reply_rx(struct ipw_priv *priv,
 					MAC_ARG(header->addr2),
 					MAC_ARG(header->addr3));
 		else*/
-		IOLog("todo: ipw_handle_data_packet\n");
-			 //ipw_handle_data_packet(priv, 1, rxb, &stats);
+			ipw_handle_data_packet(priv, 1, rxb, &stats);
 		break;
 	}
 	
@@ -7699,7 +8348,7 @@ int darwin_iwi3945::ipw_queue_tx_reclaim(struct ipw_priv *priv, int fifo, int in
 		IOLog
 		    ("Read index for DMA queue (%d) is out of range [0-%d) %d %d\n",
 		     index, q->n_bd, q->first_empty, q->last_used);
-		goto done;
+		//goto done;
 	}
 	//if (!index) index=0;//hack index
 	index = ipw_queue_inc_wrap(index, q->n_bd);
@@ -8063,13 +8712,13 @@ void darwin_iwi3945::RxQueueIntr()
 				     "Off" : "On",
 				     (flags & SW_CARD_DISABLED) ? "Off" : "On");
 
-				if (flags & HW_CARD_DISABLED) {
+				/*if (flags & HW_CARD_DISABLED) {
 					ipw_write32(
 						    CSR_UCODE_DRV_GP1_SET,
 						    CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
 
 					priv->status |= STATUS_RF_KILL_HW;
-				} else
+				} else*/
 					priv->status &= ~STATUS_RF_KILL_HW;
 
 				if (flags & SW_CARD_DISABLED)
@@ -8082,7 +8731,7 @@ void darwin_iwi3945::RxQueueIntr()
 
 			//	ipw_scan_cancel(priv);
 
-				if (((status & STATUS_RF_KILL_HW) !=
+				/*if (((status & STATUS_RF_KILL_HW) !=
 				     (priv->status & STATUS_RF_KILL_HW))
 				    || ((status & STATUS_RF_KILL_SW)
 					!= (priv->status & STATUS_RF_KILL_SW))) {
@@ -8092,7 +8741,7 @@ void darwin_iwi3945::RxQueueIntr()
 				};// else
 					//wake_up_interruptible(&priv->
 					//		      wait_command_queue);
-
+				*/
 				break;
 			}
 		default:
@@ -8852,13 +9501,18 @@ void darwin_iwi3945::ipw_link_up(struct ipw_priv *priv)
 		IOLog("starting queue\n");
 		netif_start_queue(priv->net_dev);
 	}*/
+	
+	enable(fNetif);
+	
 	queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan));	
 	queue_td(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan_check));
-	ipw_reset_stats(priv);
+	//ipw_reset_stats(priv);
 	/* Ensure the rate is updated immediately */
 	priv->last_rate = ipw_get_current_rate(priv);
-	ipw_gather_stats(priv);
-	ipw_led_link_on(priv);
+	setLinkStatus(kIONetworkLinkValid | (priv->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_AUTO],priv->last_rate);
+
+	//ipw_gather_stats(priv);
+	//ipw_led_link_on(priv);
 	//notify_wx_assoc_event(priv);
 
 	if (priv->config & CFG_BACKGROUND_SCAN)
@@ -8888,21 +9542,15 @@ u32 darwin_iwi3945::ipw_get_max_rate(struct ipw_priv *priv)
 
 u32 darwin_iwi3945::ipw_get_current_rate(struct ipw_priv *priv)
 {
-	u32 rate, len = sizeof(rate);
-	int err;
+	u32 rate;
+	unsigned long flags;
 
-	if (!(priv->status & STATUS_ASSOCIATED))
-		return 0;
-
-	if (priv->tx_packets > IPW_REAL_RATE_RX_PACKET_THRESHOLD) {
-		err = ipw_get_ordinal(priv, IPW_ORD_STAT_TX_CURR_RATE, &rate,
-				      &len);
-		if (err) {
-			IOLog("failed querying ordinals.\n");
-			return 0;
-		}
-	} else
-		return ipw_get_max_rate(priv);
+	//spin_lock_irqsave(&priv->sta_lock, flags);
+	if (priv->iw_mode == IEEE80211_IF_TYPE_IBSS)
+		rate = priv->stations[STA_ID].current_rate.s.rate;
+	else
+		rate = priv->stations[AP_ID].current_rate.s.rate;
+	//spin_unlock_irqrestore(&priv->sta_lock, flags);
 
 	switch (rate) {
 	case IPW_TX_RATE_1MB:

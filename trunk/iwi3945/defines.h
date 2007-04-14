@@ -836,9 +836,9 @@ typedef unsigned char UInt8;
 #define IPW_RSSI_TO_DBM 112
 
 
-#define IPW_RX_NOTIFICATION_SIZE sizeof(struct ipw_rx_header) + 12
-#define IPW_RX_FRAME_SIZE        (unsigned int)(sizeof(struct ipw_rx_header) + \
-                                 sizeof(struct ipw_rx_frame))
+//#define IPW_RX_NOTIFICATION_SIZE sizeof(struct ipw_rx_header) + 12
+//#define IPW_RX_FRAME_SIZE        (unsigned int)(sizeof(struct ipw_rx_header) + \
+//                                 sizeof(struct ipw_rx_frame))
 
 #define DEPTH_RSSI 8
 #define DEPTH_NOISE 16
@@ -982,7 +982,8 @@ typedef unsigned char UInt8;
 #define ieee80211_is_reassoc_request(fc) \
    (WLAN_FC_GET_STYPE(fc) == IEEE80211__STYPE_REASSOC_REQ)
 
-
+#define ETH_P_AARP	0x80F3		/* Appletalk AARP		*/
+#define ETH_P_IPX	0x8137		/* IPX over DIX			*/
 
 
 
