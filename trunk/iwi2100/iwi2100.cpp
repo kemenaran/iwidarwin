@@ -6164,7 +6164,7 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 
 	read_register(dev, IPW_REG_INTA, &inta);
 
-	if (inta & 0) goto skipi;
+	if ((inta & IPW_INTERRUPT_MASK )== 0) goto skipi;
 	
 	//IOLog("enter - INTA: 0x%08lX\n",
 	//	      (unsigned long)inta & IPW_INTERRUPT_MASK);
