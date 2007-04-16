@@ -1430,7 +1430,7 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 				  (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
 				   CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
 		if (rc < 0) {
-			IOLog("MAC is in deep sleep!\n");
+			//IOLog("MAC is in deep sleep!\n");
 			return -EIO;
 		}
 	//}
@@ -2379,7 +2379,7 @@ void darwin_iwi3945::ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 	/* sanity check */
 	counter = TFD_CTL_COUNT_GET(le32_to_cpu(bd->control_flags));
 	if (counter > NUM_TFD_CHUNKS) {
-		IOLog("Too many chunks: %i\n", counter);
+		IOLog("Too many chunks: %d\n", counter);
 		/** @todo issue fatal error, it is quite serious situation */
 		return;
 	}
