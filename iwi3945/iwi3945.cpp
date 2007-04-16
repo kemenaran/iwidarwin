@@ -1431,7 +1431,7 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 				   CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
 		if (rc < 0) {
 			IOLog("MAC is in deep sleep!\n");
-			//return -EIO;
+			return -EIO;
 		}
 	//}
 
@@ -3473,6 +3473,10 @@ void darwin_iwi3945::ipw_down(struct ipw_priv *priv)
 	ipw_disable_interrupts(priv);
 
 	if (priv->netdev_registered) {
+		setLinkStatus(kIONetworkLinkValid);
+		fTransmitQueue->stop();
+		fTransmitQueue->setCapacity(0);
+		fTransmitQueue->flush();
 		//netif_carrier_off(priv->net_dev);
 		//ieee80211_stop_queues(priv->ieee);
 	}
@@ -3704,7 +3708,7 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 	inta_mask = ipw_read32( CSR_INT_MASK);
 	if (inta == 0xFFFFFFFF) {
 		/* Hardware disappeared */
-		IOLog("IRQ INTA == 0xFFFFFFFF\n");
+		//IOLog("IRQ INTA == 0xFFFFFFFF\n");
 		return false;
 	}
 
