@@ -1126,8 +1126,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_alive_start),NULL,NULL,false);
 		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),NULL,NULL,false);
 		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_post_associate),NULL,NULL,false);
-		
-		
+		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),NULL,NULL,false);
 		
 		pl=1;
 		
@@ -1342,7 +1341,7 @@ void darwin_iwi3945::ipw_adapter_restart(ipw_priv *adapter)
 	//priv->status |= STATUS_RF_KILL_HW;
 	//queue_td(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_led_link_on));
 	//priv->status  &= ~(STATUS_RF_KILL_HW);
-	ipw_down(priv);
+	queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 	
 	if (priv->assoc_network &&
 	    (priv->assoc_network->capability & WLAN_CAPABILITY_IBSS))
@@ -1375,7 +1374,7 @@ void darwin_iwi3945::ipw_rf_kill(ipw_priv *priv)
 			IOLog("HW RF Kill no longer active, restarting "
 			  "device\n");
 		if (!(priv->status & STATUS_EXIT_PENDING))
-			ipw_down(priv);
+			queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 	} else {
 		priv->led_state = IPW_LED_LINK_RADIOOFF;
 
@@ -3197,7 +3196,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	}
 
 	priv->status |= STATUS_EXIT_PENDING;
-	ipw_down(priv);
+	queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 
 	/* tried to restart and config the device for as long as our
 	 * patience could withstand */
@@ -3612,7 +3611,7 @@ void darwin_iwi3945::ipw_irq_handle_error(struct ipw_priv *priv)
 	priv->status &= ~STATUS_READY;
 	if (!(priv->status & STATUS_EXIT_PENDING)) {
 		IOLog( "Restarting adapter due to uCode error.\n");
-			  ipw_down(priv);
+		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 		//queue_work(priv->workqueue, &priv->down);
 	}
 }
@@ -5210,7 +5209,7 @@ void darwin_iwi3945::ipw_scan_check(ipw_priv *priv)
 			  "adapter (%dms).\n",
 			  0);
 		if (!(priv->status & STATUS_EXIT_PENDING))
-			ipw_down(priv);
+		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 	}
 }
 
@@ -6781,7 +6780,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 		/* We had an error bringing up the hardware, so take it
 		 * all the way back down so we can try again */
 		IOLog("Alive failed.\n");
-		ipw_down(priv);
+		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 		//mutex_unlock(&priv->mutex);
 		return;
 	}
@@ -6791,7 +6790,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 		/* Runtime instruction load was bad;
 		 * take it all the way back down so we can try again */
 		IOLog("Bad runtime uCode load.\n");
-		ipw_down(priv);
+		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 		//mutex_unlock(&priv->mutex);
 		return;
 	}
