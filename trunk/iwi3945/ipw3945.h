@@ -2924,7 +2924,7 @@ struct ipw_priv {
 	/* eeprom */
 	//u8 eeprom[EEPROM_IMAGE_SIZE];	/* 1024 bytes of eeprom */
 
-	struct iw_statistics wstats;
+	//struct iw_statistics wstats;
 
 	/* Driver and iwconfig driven work queue */
 

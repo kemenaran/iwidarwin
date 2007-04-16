@@ -1073,7 +1073,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		ipw_sw_reset(1);
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw_nic_init(priv);
-		//ipw_nic_reset(priv);
+		ipw_nic_reset(priv);
 		ipw_bg_resume_work();
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
@@ -2320,7 +2320,6 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		break;
 	}
 	
-//return 0;// TODO check rxq
 
 	/* Allocate the RX queue, or reset if it is already allocated */
 	IOLog("Allocate the RX queue\n");
@@ -6777,7 +6776,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 		/* Runtime instruction load was bad;
 		 * take it all the way back down so we can try again */
 		IOLog("Bad runtime uCode load.\n");
-		//ipw_down(priv);
+		ipw_down(priv);
 		//mutex_unlock(&priv->mutex);
 		return;
 	}
@@ -7742,6 +7741,7 @@ void darwin_iwi3945::ipw_handle_data_packet(struct ipw_priv *priv, int is_data,
 				   struct ipw_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_status *stats)
 {
+	IOLog("ipw_handle_data_packet\n");
 	struct ieee80211_hdr *hdr;
 	struct ipw_rx_packet *pkt = (struct ipw_rx_packet *)mbuf_data(rxb->skb);
 	struct ipw_rx_frame_hdr *rx_hdr = IPW_RX_HDR(pkt);
@@ -7751,14 +7751,14 @@ void darwin_iwi3945::ipw_handle_data_packet(struct ipw_priv *priv, int is_data,
 	/* We received data from the HW, so stop the watchdog */
 	//ieee80211_netif_oper(priv->ieee, NETIF_UPDATE_TX_START);
 	if (unlikely((len + IPW_RX_FRAME_SIZE) > mbuf_pkthdr_len(rxb->skb))) {
-		priv->wstats.discard.misc++;
+		//priv->wstats.discard.misc++;
 		IOLog("Corruption detected! Oh no!\n");
 		return;
 	}
 
 	/* We only process data packets if the interface is open */
 	if (!(fNetif->getFlags() & IFF_RUNNING)) {
-		priv->wstats.discard.misc++;
+		//priv->wstats.discard.misc++;
 		IOLog("Dropping packet while interface is not up.\n");
 		return;
 	}
@@ -7776,9 +7776,7 @@ void darwin_iwi3945::ipw_handle_data_packet(struct ipw_priv *priv, int is_data,
 	/* Set the size of the skb to the size of the frame */
 //	skb_put(rxb->skb, le16_to_cpu(rx_hdr->len));
 //todo check iwi2200 code
-mbuf_setdata(rxb->skb, 
-	                      (UInt8*)mbuf_data(rxb->skb) + ((UInt8*)rx_hdr->payload - (UInt8*)pkt),
-			  le16_to_cpu(rx_hdr->len));
+//mbuf_setdata(rxb->skb,(UInt8*)mbuf_data(rxb->skb) + ((UInt8*)rx_hdr->payload - (UInt8*)pkt), le16_to_cpu(rx_hdr->len));
 
 	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(rxb->skb, le16_to_cpu(rx_hdr->len));
@@ -8138,14 +8136,14 @@ void darwin_iwi3945::ipw_handle_reply_rx(struct ipw_priv *priv,
 		IOLog
 			("dsp size out of range [0,20]: "
 			 "%d/n", rx_stats->mib_count);
-		priv->wstats.discard.misc++;
+		//priv->wstats.discard.misc++;
 		return;
 	}
 
 	if (!(rx_end->status & RX_RES_STATUS_NO_CRC32_ERROR)
 	    || !(rx_end->status & RX_RES_STATUS_NO_RXE_OVERFLOW)) {
 		IOLog("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
-		priv->wstats.discard.misc++;
+		//priv->wstats.discard.misc++;
 		return;
 	}
 
@@ -8502,10 +8500,14 @@ void darwin_iwi3945::RxQueueIntr()
 				/* We delay the ALIVE response by 5ms to
 				 * give the HW RF Kill time to activate... */
 				if (priv->card_alive.is_valid == UCODE_VALID_OK)
-					queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_alive_start),priv,1,true);
+				{
+					queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_alive_start),priv,NULL,true);
 					/*queue_delayed_work(priv->workqueue,
 							   &priv->alive_start,
 							   msecs_to_jiffies(5));*/
+					//hack: force scan
+					ipw_scan_initiate(priv,0);
+				}
 				else
 					IOLog
 					    ("uCode did not respond OK.\n");
