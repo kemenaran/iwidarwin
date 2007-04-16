@@ -8360,7 +8360,7 @@ int darwin_iwi3945::ipw_queue_tx_reclaim(struct ipw_priv *priv, int fifo, int in
 		IOLog
 		    ("Read index for DMA queue (%d) is out of range [0-%d) %d %d\n",
 		     index, q->n_bd, q->first_empty, q->last_used);
-		//goto done;
+		goto done;
 	}
 	//if (!index) index=0;//hack index
 	index = ipw_queue_inc_wrap(index, q->n_bd);
@@ -8369,6 +8369,7 @@ int darwin_iwi3945::ipw_queue_tx_reclaim(struct ipw_priv *priv, int fifo, int in
 		if (is_next) {
 			IOLog("XXXL we have skipped command\n");
 			//queue_delayed_work(priv->workqueue, &priv->down, 0);
+			queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 		}
 		if (fifo != CMD_QUEUE_NUM) {
 			ipw_queue_tx_free_tfd(priv, txq);
