@@ -5507,7 +5507,7 @@ void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 	struct ipw2100_status *status = &priv->status_queue.drv[i];
 	struct ipw2100_rx_packet *packet = &priv->rx_buffers[i];
 
-	//IPW_DEBUG_RX("Handler...\n");
+	IOLog("isr_rx...\n");
 			 
 	if (unlikely(status->frame_size > mbuf_pkthdr_len(packet->skb))) {
 		IOLog("%s: frame_size (%u) > mbuf_pkthdr_len (%u)!"
@@ -5519,7 +5519,7 @@ void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 	}
 	if (!(fNetif->getFlags() & IFF_RUNNING)) {
 		priv->ieee->stats.rx_errors++;
-		priv->wstats.discard.misc++;
+		//priv->wstats.discard.misc++;
 		IOLog("Dropping packet while interface is not up.\n");
 		return;
 	}
@@ -5527,7 +5527,7 @@ void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 	if (unlikely(priv->ieee->iw_mode != IW_MODE_MONITOR &&
 		     !(priv->status & STATUS_ASSOCIATED))) {
 		IOLog("Dropping packet while not associated.\n");
-		priv->wstats.discard.misc++;
+		//priv->wstats.discard.misc++;
 		return;
 	}
 
@@ -5537,8 +5537,10 @@ void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 
 	//todo: check if works
 	packet->dma_addr=NULL;
-	skb_put(packet->skb, status->frame_size);
-
+	//skb_put(packet->skb, status->frame_size);
+//mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw2100_rx_packet, rxp->rx_data), status->frame_size);
+	if( mbuf_flags(packet->skb) & MBUF_PKTHDR)
+			mbuf_pkthdr_setlen(packet->skb, status->frame_size);
 			
 	if (!ieee80211_rx(priv->ieee, packet->skb, stats)) {
 		IOLog("%s: Non consumed packet:\n",
