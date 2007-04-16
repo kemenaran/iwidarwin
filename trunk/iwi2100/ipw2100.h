@@ -505,7 +505,7 @@ struct ipw2100_priv {
 	struct proc_dir_entry *dir_dev;
 
 	struct net_device *net_dev;
-	struct iw_statistics wstats;
+	//struct iw_statistics wstats;
 
 #if IW_HANDLER_VERSION > 6
 	struct iw_public_data wireless_data;
