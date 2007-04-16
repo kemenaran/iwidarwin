@@ -1073,7 +1073,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		ipw_sw_reset(1);
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw_nic_init(priv);
-		ipw_nic_reset(priv);
+		//ipw_nic_reset(priv);
 		ipw_bg_resume_work();
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
@@ -4520,10 +4520,25 @@ void darwin_iwi3945::ipw_set_hwcrypto_keys(struct ipw_priv *priv)
 bool darwin_iwi3945::configureInterface(IONetworkInterface * netif)
  {
     IONetworkData * data;
-    IOLog("configureInterface\n");
+    IWI_DEBUG("configureInterface\n");
     if (super::configureInterface(netif) == false)
             return false;
+    
+    // Get the generic network statistics structure.
+
+   data = netif->getParameter(kIONetworkStatsKey);
+    if (!data || !(netStats = (IONetworkStats *)data->getBuffer())) {
+            return false;
+    }
+
+    // Get the Ethernet statistics structure.
+
+    data = netif->getParameter(kIOEthernetStatsKey);
+    if (!data || !(etherStats = (IOEthernetStats *)data->getBuffer())) {
+            return false;
+    }
     return true;
+
 }
 
 int darwin_iwi3945::configu(struct ipw_priv *priv)
@@ -7776,7 +7791,7 @@ void darwin_iwi3945::ipw_handle_data_packet(struct ipw_priv *priv, int is_data,
 	/* Set the size of the skb to the size of the frame */
 //	skb_put(rxb->skb, le16_to_cpu(rx_hdr->len));
 //todo check iwi2200 code
-//mbuf_setdata(rxb->skb,(UInt8*)mbuf_data(rxb->skb) + ((UInt8*)rx_hdr->payload - (UInt8*)pkt), le16_to_cpu(rx_hdr->len));
+mbuf_setdata(rxb->skb,(UInt8*)mbuf_data(rxb->skb) + ((UInt8*)rx_hdr->payload - (UInt8*)pkt), le16_to_cpu(rx_hdr->len));
 
 	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(rxb->skb, le16_to_cpu(rx_hdr->len));
@@ -9682,7 +9697,7 @@ void darwin_iwi3945::freePacket2(mbuf_t m)
 
 UInt32 darwin_iwi3945::outputPacket(mbuf_t m, void * param)
 {
-
+	IOLog("outputPacket\n");
 	if(!(fNetif->getFlags() & IFF_RUNNING) || mbuf_pkthdr_len(m)==0 || m==NULL)
 	{
 		freePacket2(m);
