@@ -4791,7 +4791,7 @@ void darwin_iwi2100::ieee80211_process_probe_response(struct ieee80211_device *i
 
 UInt32 darwin_iwi2100::outputPacket(mbuf_t m, void * param)
 {
-
+	IOLog("outputPacket\n");
 	if(!(fNetif->getFlags() & IFF_RUNNING) || mbuf_pkthdr_len(m)==0 || m==NULL)
 	{
 		freePacket2(m);
@@ -5538,7 +5538,7 @@ void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 	//todo: check if works
 	packet->dma_addr=NULL;
 	//skb_put(packet->skb, status->frame_size);
-//mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw2100_rx_packet, rxp->rx_data), status->frame_size);
+mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw2100_rx_packet, rxp->rx_data), status->frame_size);
 	if( mbuf_flags(packet->skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(packet->skb, status->frame_size);
 			
