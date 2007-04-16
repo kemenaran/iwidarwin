@@ -1199,7 +1199,8 @@ protected:
 	IOEthernetAddress			fEnetAddr;		// holds the mac address currently hardcoded
 	IOWorkLoop *				fWorkLoop;		// the workloop
     //IO80211Interface*			fNetif;			// ???
-	IOEthernetInterface*			fNetif;
+	//IOEthernetInterface*			fNetif;
+	IONetworkInterface*			fNetif;
 	IOInterruptEventSource *	fInterruptSrc;	// ???
 //	IOTimerEventSource *		fWatchdogTimer;	// ???
 	IOOutputQueue *				fTransmitQueue;	// ???
@@ -1300,7 +1301,8 @@ protected:
 	//open link to user interface application flag:
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
-
+	
+	
 };
 
 
