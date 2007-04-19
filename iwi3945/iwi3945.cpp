@@ -3205,6 +3205,11 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 		//memcpy(priv->ieee->perm_addr, priv->mac_addr, ETH_ALEN);
 
+		//begin hack
+		priv->card_alive.is_valid = 1;
+		ipw_bg_alive_start();
+		ipw_scan_initiate(priv, 0);
+		//end hack
 		return 0;
 	}
 
