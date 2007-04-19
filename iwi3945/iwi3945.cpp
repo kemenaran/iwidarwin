@@ -3163,6 +3163,19 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 
+	//begin hack
+	ipw_disable_interrupts(priv);
+	ipw_clear_bit( CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+	if (!ipw_grab_restricted_access(priv)) {
+		_ipw_write_restricted_reg(priv, ALM_APMG_CLK_DIS,
+					 APMG_CLK_REG_VAL_DMA_CLK_RQT);
+		_ipw_release_restricted_access(priv);
+	}
+	udelay(5);
+	ipw_nic_reset(priv);
+	ipw_enable_interrupts(priv);
+	//end hACK
+	
 	for (i = 0; i < MAX_HW_RESTARTS; i++) {
 
 		ipw_clear_stations_table(priv);
