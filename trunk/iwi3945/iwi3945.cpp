@@ -3145,7 +3145,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	};// else if (priv->status & STATUS_RF_KILL_HW)
 		//return 0;
 
-	ipw_write32( CSR_INT, 0xFFFFFFFF);
+	/*ipw_write32( CSR_INT, 0xFFFFFFFF);
 
 	rc = ipw_nic_init(priv);
 	if (rc) {
@@ -3161,20 +3161,9 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	ipw_enable_interrupts(priv);
 
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
-	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);*/
 
-	//begin hack
-	ipw_disable_interrupts(priv);
-	ipw_clear_bit( CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
-	if (!ipw_grab_restricted_access(priv)) {
-		_ipw_write_restricted_reg(priv, ALM_APMG_CLK_DIS,
-					 APMG_CLK_REG_VAL_DMA_CLK_RQT);
-		_ipw_release_restricted_access(priv);
-	}
-	udelay(5);
-	ipw_nic_reset(priv);
-	ipw_enable_interrupts(priv);
-	//end hACK
+	ipw_bg_resume_work();	
 	
 	for (i = 0; i < MAX_HW_RESTARTS; i++) {
 
@@ -3205,11 +3194,6 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 		//memcpy(priv->ieee->perm_addr, priv->mac_addr, ETH_ALEN);
 
-		//begin hack
-		priv->card_alive.is_valid = 1;
-		ipw_bg_alive_start();
-		ipw_scan_initiate(priv, 0);
-		//end hack
 		return 0;
 	}
 
