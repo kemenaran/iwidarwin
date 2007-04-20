@@ -5504,10 +5504,11 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
 void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 			  struct ieee80211_rx_stats *stats)
 {
+	IOLog("isr_rx...\n");
 	struct ipw2100_status *status = &priv->status_queue.drv[i];
 	struct ipw2100_rx_packet *packet = &priv->rx_buffers[i];
 
-	IOLog("isr_rx...\n");
+	
 			 
 	if (unlikely(status->frame_size > mbuf_pkthdr_len(packet->skb))) {
 		IOLog("%s: frame_size (%u) > mbuf_pkthdr_len (%u)!"
