@@ -3145,7 +3145,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	};// else if (priv->status & STATUS_RF_KILL_HW)
 		//return 0;
 
-	/*ipw_write32( CSR_INT, 0xFFFFFFFF);
+	ipw_write32( CSR_INT, 0xFFFFFFFF);
 
 	rc = ipw_nic_init(priv);
 	if (rc) {
@@ -3161,10 +3161,12 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	ipw_enable_interrupts(priv);
 
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
-	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);*/
+	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 
+	//hack
+	ipw_nic_reset(priv);
 	ipw_bg_resume_work();	
-	
+	//end
 	for (i = 0; i < MAX_HW_RESTARTS; i++) {
 
 		ipw_clear_stations_table(priv);
