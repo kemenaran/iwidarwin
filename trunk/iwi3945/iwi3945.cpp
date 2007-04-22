@@ -1073,7 +1073,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		ipw_sw_reset(1);
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw_nic_init(priv);
-		//ipw_nic_reset(priv);
+		ipw_nic_reset(priv);
 		//ipw_bg_resume_work();
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
@@ -3147,11 +3147,11 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 	ipw_write32( CSR_INT, 0xFFFFFFFF);
 
-	/*rc = ipw_nic_init(priv);
+	rc = ipw_nic_init(priv);
 	if (rc) {
 		IOLog("Unable to init nic\n");
 		//return rc;
-	}*/
+	}
 
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR,
