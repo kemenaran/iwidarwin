@@ -3147,11 +3147,11 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 	ipw_write32( CSR_INT, 0xFFFFFFFF);
 
-	rc = ipw_nic_init(priv);
+	/*rc = ipw_nic_init(priv);
 	if (rc) {
 		IOLog("Unable to init nic\n");
 		//return rc;
-	}
+	}*/
 
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR,
@@ -3163,7 +3163,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 
-	for (i = 0; i < MAX_HW_RESTARTS; i++) {
+	for (i = 1; i < MAX_HW_RESTARTS; i++) {
 
 		ipw_clear_stations_table(priv);
 
@@ -3192,7 +3192,6 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 		//memcpy(priv->ieee->perm_addr, priv->mac_addr, ETH_ALEN);
 
-		ipw_bg_resume_work();
 		return 0;
 	}
 
