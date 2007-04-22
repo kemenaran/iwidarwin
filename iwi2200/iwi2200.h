@@ -62,7 +62,8 @@
 
 #define min_t(type,x,y) \
         ({ type __x = (x); type __y = (y); __x < __y ? __x: __y; })
-		
+
+
 inline static int snprint_line(char *buf, size_t count,
 			const u8 * data, u32 len, u32 ofs)
 {
@@ -1191,7 +1192,10 @@ protected:
 			CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
 			return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
 		}
-
+	bool _fillFragment(volatile gt_fragment *f, mbuf_t packet, UInt16 flags=0);
+	bool _allocPacketForFragment(mbuf_t *packet, volatile gt_fragment *f);
+	bool _freePacketForFragment(mbuf_t *packet, volatile gt_fragment *f);
+	
 
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
 
@@ -1301,7 +1305,7 @@ protected:
 	//open link to user interface application flag:
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
-	
+	IOMbufLittleMemoryCursor *_mbufCursor;
 	
 };
 
