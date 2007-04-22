@@ -689,11 +689,11 @@ struct ipw_rx_packet {
 #define IPW_RX_NOTIFICATION_SIZE sizeof(struct ipw_rx_header) + 12
 #define IPW_RX_FRAME_SIZE        (unsigned int)(sizeof(struct ipw_rx_header) + \
                                  sizeof(struct ipw_rx_frame))
-
 struct ipw_rx_mem_buffer {
 	dma_addr_t dma_addr;
 	//IOBufferMemoryDescriptor *memD;
 	mbuf_t skb;
+	gt_fragment fskb;
 	struct list_head list;
 };				/* Not transferred over network, so not  __attribute__ ((packed)) */
 
