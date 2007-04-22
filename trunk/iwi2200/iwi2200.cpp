@@ -2181,7 +2181,7 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(struct ipw_priv *priv,
 	    (qindex >= 0) &&
 	    (priv->status & STATUS_ASSOCIATED) && (fNetif->getFlags() & IFF_RUNNING)){ //&& netif_running(priv->net_dev)){
 		IWI_DEBUG("queue is available\n");
-		ipw_send_cmd_simple(priv, IPW_CMD_TX_FLUSH);
+		//ipw_send_cmd_simple(priv, IPW_CMD_TX_FLUSH);
 		//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
 		//fTransmitQueue->start();
 		//fTransmitQueue->service();
@@ -5101,6 +5101,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 	if(doFlushQueue){
 		IWI_DEBUG("flushing Input Queue\n");
 		fNetif->flushInputQueue();		
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 	}
 	//fNetif->clearInputQueue();
 	//releaseFreePackets();
