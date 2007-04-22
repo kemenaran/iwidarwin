@@ -400,7 +400,7 @@ int darwin_iwi2100::ipw2100_rx_allocate(struct ipw2100_priv *priv)
 
 	for (j = 0; j < i; j++) {
 		priv->rx_buffers[j].dma_addr=NULL;
-		freePacket2(priv->rx_buffers[j].skb);
+		freePacket(priv->rx_buffers[j].skb);
 		/*pci_unmap_single(priv->pci_dev, priv->rx_buffers[j].dma_addr,
 				 sizeof(struct ipw2100_rx_packet),
 				 PCI_DMA_FROMDEVICE);
@@ -482,7 +482,7 @@ void darwin_iwi2100::ieee80211_txb_free(struct ieee80211_txb *txb)
 	for (i = 0; i < txb->nr_frags; i++)
 		if (txb->fragments[i]) 
 		{
-			freePacket2(txb->fragments[i]);
+			freePacket(txb->fragments[i]);
 			txb->fragments[i]=NULL;
 			
 		}
@@ -545,7 +545,7 @@ void darwin_iwi2100::ipw2100_rx_free(struct ipw2100_priv *priv)
 					 sizeof(struct ipw2100_rx),
 					 PCI_DMA_FROMDEVICE);
 			dev_kfree_skb(priv->rx_buffers[i].skb);*/
-			freePacket2(priv->rx_buffers[i].skb);
+			freePacket(priv->rx_buffers[i].skb);
 		}
 	}
 
@@ -1090,7 +1090,7 @@ mbuf_t darwin_iwi2100::mergePacket(mbuf_t m)
 	IWI_WARN("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
 					mbuf_len(m),mbuf_pkthdr_len(m),
 					mbuf_len(nm),mbuf_pkthdr_len(nm) );
-	freePacket2(nm);
+	freePacket(nm);
 	nm=NULL;
 	return NULL;
 
@@ -4794,7 +4794,7 @@ UInt32 darwin_iwi2100::outputPacket(mbuf_t m, void * param)
 	IOLog("outputPacket\n");
 	if(!(fNetif->getFlags() & IFF_RUNNING) || mbuf_pkthdr_len(m)==0 || m==NULL)
 	{
-		freePacket2(m);
+		freePacket(m);
 		m=NULL;
 		netStats->outputErrors++;
 		return kIOReturnOutputDropped;
@@ -4841,10 +4841,10 @@ UInt32 darwin_iwi2100::outputPacket(mbuf_t m, void * param)
 finish:	
 	
 	/* free finished packet */
-	freePacket2(m);
+	freePacket(m);
 	m=NULL;
 	if (ret ==  kIOReturnOutputDropped) { 
-		freePacket2(nm);
+		freePacket(nm);
 		nm=NULL;
 	}
 	return ret;	
@@ -4911,7 +4911,7 @@ struct ieee80211_txb *darwin_iwi2100::ieee80211_alloc_txb(int nr_frags, int txb_
 		{
 			i--;
 			if (txb->fragments[i]!=NULL){
-				freePacket2(txb->fragments[i]);
+				freePacket(txb->fragments[i]);
 				 txb->fragments[i]=NULL;
 			}
 			//txb->fragments[i--]=NULL;
@@ -5055,13 +5055,13 @@ int darwin_iwi2100::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		if (res < 0) {
 			IWI_DEBUG("msdu encryption failed\n");
 			//dev_kfree_skb_any(skb_new);
-			//freePacket2(skb);
-			if (skb_new!=NULL) freePacket2(skb_new);
+			//freePacket(skb);
+			if (skb_new!=NULL) freePacket(skb_new);
 			skb_new=NULL;
 			goto failed;
 		}
 		//dev_kfree_skb_any(skb);
-		 if (skb!=NULL) freePacket2(skb);
+		 if (skb!=NULL) freePacket(skb);
 		skb=NULL;
 		
 		skb = skb_new;
@@ -5244,7 +5244,7 @@ int darwin_iwi2100::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//skb=NULL;
 	if (skb!=NULL) 
 	{
-	     freePacket2(skb);
+	     freePacket(skb);
                skb=NULL;
 	}
 
@@ -5262,7 +5262,7 @@ int darwin_iwi2100::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		}
 
 		ieee80211_txb_free(txb);
-		freePacket2(skb_frag);
+		freePacket(skb_frag);
 		skb_frag=NULL;
 	}
 
@@ -5273,10 +5273,10 @@ int darwin_iwi2100::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//IOLockUnlock(mutex);
 	//netif_stop_queue(dev);
 	IWI_WARN("TX drop\n");
-	freePacket2(skb);
+	freePacket(skb);
 	skb=NULL;
 	ieee80211_txb_free(txb);
-	freePacket2(skb_frag);
+	freePacket(skb_frag);
 	skb_frag=NULL;
 	//fTransmitQueue->stop();
 	////fTransmitQueue->setCapacity(0);
@@ -5550,7 +5550,7 @@ mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw21
 		priv->ieee->stats.rx_errors++;
 
 		/* ieee80211_rx failed, so it didn't free the SKB */
-		freePacket2(packet->skb);
+		freePacket(packet->skb);
 		packet->skb = NULL;
 	}
 
@@ -5728,7 +5728,7 @@ int darwin_iwi2100::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		}
 		//dev_kfree_skb_any(skb);
 		if (skb != NULL) {
-			freePacket2(skb);
+			freePacket(skb);
 		}
 		skb = NULL;
 
@@ -5874,8 +5874,8 @@ void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
 	i = (rxq->next + 1) % rxq->entries;
 	s = i;
 	while (i != r) {
-		/* IPW_DEBUG_RX("r = %d : w = %d : processing = %d\n",
-		   r, rxq->next, i); */
+		 IOLog("r = %d : w = %d : processing = %d\n",
+		   r, rxq->next, i); 
 
 		packet = &priv->rx_buffers[i];
 
@@ -5973,7 +5973,7 @@ int darwin_iwi2100::__ipw2100_tx_process(struct ipw2100_priv *priv)
 	int descriptors_used;
 	int e, i;
 	u32 r, w, frag_num = 0;
-
+	IOLog("__ipw2100_tx_process\n");
 	if (list_empty(&priv->fw_pend_list))
 		return 0;
 
@@ -6167,7 +6167,7 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 
 	read_register(dev, IPW_REG_INTA, &inta);
 
-	if ((inta & IPW_INTERRUPT_MASK )== 0) goto skipi;
+	//if ((inta & IPW_INTERRUPT_MASK )== 0) goto skipi;
 	
 	//IOLog("enter - INTA: 0x%08lX\n",
 	//	      (unsigned long)inta & IPW_INTERRUPT_MASK);
