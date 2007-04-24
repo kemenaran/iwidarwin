@@ -1876,7 +1876,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter),NULL,NULL,false);
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),NULL,NULL,false);
 		
-		
+		disable(fNetif);
 		pl=1;
 		//ipw2100_up(priv,0);
 		return true;			// end start successfully
@@ -4844,8 +4844,8 @@ finish:
 	freePacket(m);
 	m=NULL;
 	if (ret ==  kIOReturnOutputDropped) { 
-		freePacket(nm);
-		nm=NULL;
+		//freePacket(nm);
+		//nm=NULL;
 	}
 	return ret;	
 }
