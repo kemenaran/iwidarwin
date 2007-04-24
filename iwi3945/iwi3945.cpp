@@ -1074,7 +1074,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw_nic_init(priv);
 		ipw_nic_reset(priv);
-		//ipw_bg_resume_work();
+		ipw_bg_resume_work();
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -1127,7 +1127,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),NULL,NULL,false);
 		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_post_associate),NULL,NULL,false);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),NULL,NULL,false);
-		
+		disable(fNetif);
 		pl=1;
 		
 		return true;			// end start successfully
@@ -9756,8 +9756,8 @@ finish:
 	freePacket2(m);
 	m=NULL;
 	if (ret ==  kIOReturnOutputDropped) { 
-		freePacket2(nm);
-		nm=NULL;
+		//freePacket2(nm);
+		//nm=NULL;
 	}
 	return ret;	
 }
