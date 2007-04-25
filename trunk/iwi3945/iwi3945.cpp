@@ -5048,8 +5048,8 @@ int darwin_iwi3945::ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd
 	q->first_empty = ipw_queue_inc_wrap(q->first_empty, q->n_bd);
 	ipw_tx_queue_update_write_ptr(priv, txq, priv->hw_setting.cmd_queue_no);
 
-	if (rc)
-		return rc;
+	//if (rc)
+	//	return rc;
 
 	return 0;
 }
