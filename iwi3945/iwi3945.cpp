@@ -5154,7 +5154,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 				//if (cmd_needs_lock(cmd))
 				//	spin_unlock_irqrestore(&priv->
 				//			       lock, flags);
-				//return -ETIMEDOUT;
+				return -ETIMEDOUT;
 			}
 
 			//if (cmd_needs_lock(cmd))
@@ -5185,13 +5185,13 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 		IOLog("Command %s failed: FW Error\n",
 			       get_cmd_string(cmd->id));
 
-		//return -EIO;
+		return -EIO;
 	}
 
 	if ((cmd->meta.flags & CMD_WANT_SKB) && !cmd->meta.u.skb) {
 		IOLog("Error: Response NULL in '%s'\n",
 			  get_cmd_string(cmd->id));
-		//return -EIO;
+		return -EIO;
 	}
 
 	return 0;
