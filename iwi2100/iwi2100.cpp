@@ -1876,9 +1876,8 @@ bool darwin_iwi2100::start(IOService *provider)
 		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter),NULL,NULL,false);
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),NULL,NULL,false);
 		
-		disable(fNetif);
 		pl=1;
-		//ipw2100_up(priv,0);
+		ipw2100_up(priv,0);
 		return true;			// end start successfully
 	} while (false);
 		
@@ -3722,11 +3721,6 @@ IOReturn darwin_iwi2100::enable( IONetworkInterface * netif )
 	{
 	case false:
 		IWI_DEBUG("ifconfig going up\n ");
-		if (pl==1)
-		{
-			ipw2100_up(priv,0);
-			return kIOReturnSuccess;
-		}
 		//super::enable(fNetif);
 		//fNetif->setPoweredOnByUser(true);
 		//fNetif->setLinkState(kIO80211NetworkLinkUp);
