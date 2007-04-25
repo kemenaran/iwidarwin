@@ -4784,7 +4784,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 
 	if (!ipw_is_ready(priv)) {
 		IOLog("request scan called when driver not ready.\n");
-		return -1;
+		//return -1;
 	}
 
 	//mutex_lock(&priv->mutex);
@@ -4814,7 +4814,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 	if (priv->status & STATUS_RF_KILL_MASK) {
 		IOLog("Aborting scan due to RF Kill activation\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		goto done;
+		//goto done;
 	}
 
 	if (!(priv->status & STATUS_READY)) {
@@ -6878,6 +6878,9 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	reg_txpower_periodic(priv);
 
 	//mutex_unlock(&priv->mutex);
+	
+	//hack: force scan
+	ipw_scan_initiate(priv,0);
 }
 
 #define IPW_TEMPERATURE_LIMIT_TIMER   6
@@ -8519,8 +8522,6 @@ void darwin_iwi3945::RxQueueIntr()
 					/*queue_delayed_work(priv->workqueue,
 							   &priv->alive_start,
 							   msecs_to_jiffies(5));*/
-					//hack: force scan
-					ipw_scan_initiate(priv,0);
 				}
 				else
 					IOLog
