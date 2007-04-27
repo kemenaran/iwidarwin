@@ -5132,10 +5132,10 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 	{
 		rc++;
 		IODelay(HZ);
-		if (rc==100*HZ) break;
+		if (rc==HZ) break;
 	}
 
-		if (rc == 100*HZ) {
+		if (rc == HZ) {
 			//if (cmd_needs_lock(cmd))
 			//	spin_lock_irqsave(&priv->lock, flags);
 
@@ -5154,9 +5154,9 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 				//if (cmd_needs_lock(cmd))
 				//	spin_unlock_irqrestore(&priv->
 				//			       lock, flags);
-				return -ETIMEDOUT;
+				//return -ETIMEDOUT;
 			}
-
+			rc=0;
 			//if (cmd_needs_lock(cmd))
 			//	spin_unlock_irqrestore(&priv->lock, flags);
 		}
@@ -6880,7 +6880,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//mutex_unlock(&priv->mutex);
 	
 	//hack: force scan
-	ipw_scan_initiate(priv,0);
+	//ipw_scan_initiate(priv,0);
 }
 
 #define IPW_TEMPERATURE_LIMIT_TIMER   6
