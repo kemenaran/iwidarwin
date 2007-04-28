@@ -7,7 +7,7 @@ This is development information to port Intel Wireless Driver  to Darwin and Mac
 
 == Current support Hardware.==
 
- * 2200BG/2945ABG
+ * 2200BG/2915ABG
 
 == Current dont suport Hardware ==
  * 2100
