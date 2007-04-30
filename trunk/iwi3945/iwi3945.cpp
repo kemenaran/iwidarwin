@@ -796,10 +796,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	
 	ipw_read_ucode(priv);
 
-	MemoryDmaAlloc(sizeof(struct ipw_shared_t), &priv->shared_phys, &priv->shared_virt);
-
-	
-
+	MemoryDmaAlloc(sizeof(struct ipw_shared_t), &priv->hw_setting.shared_phys, &priv->hw_setting.shared_virt);
 
 #define IPW3945_CMD_QUEUE_NUM         4
 #define IPW3945_NUM_OF_STATIONS 25
@@ -809,8 +806,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 #define IPW3945_BROADCAST_ID    24
 #define IPW3945_RX_BUF_SIZE 3000
 
-	priv->hw_setting.shared_virt =priv->shared_virt;
-	priv->hw_setting.shared_phys=priv->shared_phys;
+
 
 	priv->hw_setting.eeprom_size = sizeof(struct ipw_eeprom);
 	priv->hw_setting.cmd_queue_no = IPW3945_CMD_QUEUE_NUM;
@@ -1385,8 +1381,8 @@ void darwin_iwi3945::ipw_rf_kill(ipw_priv *priv)
 		{	IOLog
 			    ("Radio Frequency Kill Switch is On:\n"
 			     "Kill switch must be turned off for "
-			     "wireless networking to work.\n");
-				 queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
+			     "wireless networking to work. Press wireless button if you have it\n");
+				 //queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
 		}
 	}
 	//mutex_unlock(&priv->mutex);
@@ -2507,7 +2503,7 @@ int darwin_iwi3945::ipw_tx_reset(struct ipw_priv *priv)
 	_ipw_write_restricted_reg(priv, SCD_TXF4MF_REG, 0x000004);
 	_ipw_write_restricted_reg(priv, SCD_TXF5MF_REG, 0x000005);
 
-	_ipw_write_restricted(priv, FH_TSSR_CBB_BASE, priv->shared_phys);
+	_ipw_write_restricted(priv, FH_TSSR_CBB_BASE, priv->hw_setting.shared_phys);
 
 	_ipw_write_restricted(priv,
 			     FH_TSSR_MSG_CONFIG,
@@ -2619,7 +2615,7 @@ int darwin_iwi3945::ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
 	
 	
 	struct ipw_shared_t *shared_data =
-	    (struct ipw_shared_t *)priv->shared_virt;
+	    (struct ipw_shared_t *)priv->hw_setting.shared_virt;
 
 	shared_data->tx_base_ptr[id] = (u32) q->dma_addr;
 
@@ -2718,7 +2714,7 @@ int darwin_iwi3945::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 
 	_ipw_write_restricted(priv, FH_RCSR_RBD_BASE(0), rxq->dma_addr);
 	_ipw_write_restricted(priv, FH_RCSR_RPTR_ADDR(0),
-			     priv->shared_phys +
+			     priv->hw_setting.shared_phys +
 			     offsetof(struct ipw_shared_t, rx_read_ptr[0]));
 	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), 0);
 	_ipw_write_restricted(priv, FH_RCSR_CONFIG(0),
@@ -3436,7 +3432,7 @@ void darwin_iwi3945::ipw_down(struct ipw_priv *priv)
 
 	IOLog("ipw going down \n");
 
-	conf = &priv->active_conf;//ieee80211_get_hw_conf(priv->ieee);
+	conf = ieee80211_get_hw_conf(priv->ieee);
 
 	priv->status |= STATUS_EXIT_PENDING;
 
@@ -6020,7 +6016,7 @@ struct ipw_channel_info *darwin_iwi3945::ipw_get_channel_info(struct ipw_priv *p
 
 void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 {
-	//struct ieee80211_local *local = hw_to_local(priv->ieee);
+	struct ieee80211_local *local = hw_to_local(priv->ieee);
 	struct ipw_channel_info *ch;
 	struct ieee80211_hw_mode *modes;
 	struct ieee80211_channel *channels;
@@ -6033,8 +6029,8 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 		G = 2,
 	};
 
-	//if (!list_empty(&local->modes_list))
-	//	return;
+	if (!list_empty(&local->modes_list))
+		return;
 
 	(void*)modes = (void*)kmalloc(sizeof(struct ieee80211_hw_mode) * 3, GFP_ATOMIC);
 	if (!modes)
@@ -6166,12 +6162,12 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 	       ": Tunable channels: %d 802.11bg, %d 802.11a channels\n",
 	       modes[G].num_channels, modes[A].num_channels);
 
-	/*if (modes[A].num_channels)
+	if (modes[A].num_channels)
 		ieee80211_register_hwmode(priv->ieee, &modes[A]);
 	if (modes[B].num_channels)
 		ieee80211_register_hwmode(priv->ieee, &modes[B]);
 	if (modes[G].num_channels)
-		ieee80211_register_hwmode(priv->ieee, &modes[G]);*/
+		ieee80211_register_hwmode(priv->ieee, &modes[G]);
 
 	priv->status |= STATUS_GEO_CONFIGURED;
 }
@@ -6203,7 +6199,7 @@ int darwin_iwi3945::ieee80211_rate_control_register(struct rate_control_ops *ops
 
 void darwin_iwi3945::ipw_reset_channel_flag(struct ipw_priv *priv)
 {
-	/*int i;
+	int i;
 	struct ieee80211_channel *chan;
 	struct ieee80211_hw_mode *hw_mode;
 	struct ieee80211_local *local = hw_to_local(priv->ieee);
@@ -6213,7 +6209,7 @@ void darwin_iwi3945::ipw_reset_channel_flag(struct ipw_priv *priv)
 			chan = &(hw_mode->channels[i]);
 			chan->flag = chan->val;
 		}
-	}*/
+	}
 }
 
 int darwin_iwi3945::ipw_is_alive(struct ipw_priv *priv)
@@ -6764,6 +6760,221 @@ int darwin_iwi3945::ipw_init_rate_scaling(struct ipw_priv *priv)
 	return rc;
 }
 
+int darwin_iwi3945::ieee80211_register_hwmode(struct ieee80211_hw *hw,
+			      struct ieee80211_hw_mode *mode)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	struct ieee80211_rate *rate;
+	int i;
+
+	INIT_LIST_HEAD(&mode->list);
+	list_add_tail(&mode->list, &local->modes_list);
+
+	local->hw_modes |= (1 << mode->mode);
+	for (i = 0; i < mode->num_rates; i++) {
+		rate = &(mode->rates[i]);
+		rate->rate_inv = CHAN_UTIL_RATE_LCM / rate->rate;
+	}
+
+	if (!local->curr_rates) {
+		/* Default to this mode */
+		local->hw.conf.phymode = mode->mode;
+		local->oper_hw_mode = local->scan_hw_mode = mode;
+		local->oper_channel = local->scan_channel = &mode->channels[0];
+		local->curr_rates = mode->rates;
+		local->num_curr_rates = mode->num_rates;
+		ieee80211_prepare_rates(local);
+	}
+
+	//ieee80211_init_client(local->mdev);
+
+	return 0;
+}
+
+int darwin_iwi3945::rate_list_match(const int *rate_list, int rate)
+{
+	int i;
+
+	if (!rate_list)
+		return 0;
+
+	for (i = 0; rate_list[i] >= 0; i++)
+		if (rate_list[i] == rate)
+			return 1;
+
+	return 0;
+}
+
+void darwin_iwi3945::ieee80211_prepare_rates(struct ieee80211_local *local)
+{
+	int i;
+
+	for (i = 0; i < local->num_curr_rates; i++) {
+		struct ieee80211_rate *rate = &local->curr_rates[i];
+
+		rate->flags &= ~(IEEE80211_RATE_SUPPORTED |
+				 IEEE80211_RATE_BASIC);
+
+		if (local->supp_rates[local->hw.conf.phymode]) {
+			if (!rate_list_match(local->supp_rates
+					     [local->hw.conf.phymode],
+					     rate->rate))
+				continue;
+		}
+
+		rate->flags |= IEEE80211_RATE_SUPPORTED;
+
+		/* Use configured basic rate set if it is available. If not,
+		 * use defaults that are sane for most cases. */
+		if (local->basic_rates[local->hw.conf.phymode]) {
+			if (rate_list_match(local->basic_rates
+					    [local->hw.conf.phymode],
+					    rate->rate))
+				rate->flags |= IEEE80211_RATE_BASIC;
+		} else switch (local->hw.conf.phymode) {
+		case MODE_IEEE80211A:
+			if (rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_IEEE80211B:
+			if (rate->rate == 10 || rate->rate == 20)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_ATHEROS_TURBO:
+			if (rate->rate == 120 || rate->rate == 240 ||
+			    rate->rate == 480)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_IEEE80211G:
+			if (rate->rate == 10 || rate->rate == 20 ||
+			    rate->rate == 55 || rate->rate == 110)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		}
+
+		/* Set ERP and MANDATORY flags based on phymode */
+		switch (local->hw.conf.phymode) {
+		case MODE_IEEE80211A:
+			if (rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			break;
+		case MODE_IEEE80211B:
+			if (rate->rate == 10)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			break;
+		case MODE_ATHEROS_TURBO:
+			break;
+		case MODE_IEEE80211G:
+			if (rate->rate == 10 || rate->rate == 20 ||
+			    rate->rate == 55 || rate->rate == 110 ||
+			    rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			if (rate->rate != 10 && rate->rate != 20 &&
+			    rate->rate != 55 && rate->rate != 110)
+				rate->flags |= IEEE80211_RATE_ERP;
+			break;
+		}
+	}
+}
+
+int darwin_iwi3945::ieee80211_register_hw(struct ieee80211_hw *hw)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	struct net_device *sta_dev;
+	int result;
+
+	/*result = wiphy_register(local->hw.wiphy);
+	if (result < 0)
+		return result;
+
+	result = ieee80211_dev_sysfs_add(local);
+	if (result < 0)
+		goto fail_sysfs;*/
+
+	local->hw.conf.beacon_int = 1000;
+
+	local->wstats_flags |= local->hw.max_rssi ?
+			       IW_QUAL_LEVEL_UPDATED : IW_QUAL_LEVEL_INVALID;
+	local->wstats_flags |= local->hw.max_signal ?
+			       IW_QUAL_QUAL_UPDATED : IW_QUAL_QUAL_INVALID;
+	local->wstats_flags |= local->hw.max_noise ?
+			       IW_QUAL_NOISE_UPDATED : IW_QUAL_NOISE_INVALID;
+	if (local->hw.max_rssi < 0 || local->hw.max_noise < 0)
+		local->wstats_flags |= IW_QUAL_DBM;
+
+	/*result = sta_info_start(local);
+	if (result < 0)
+		goto fail_sta_info;
+
+	rtnl_lock();
+	result = dev_alloc_name(local->mdev, local->mdev->name);
+	if (result < 0) {
+		rtnl_unlock();
+		goto fail_dev;
+	}
+
+	memcpy(local->mdev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN);
+	SET_NETDEV_DEV(local->mdev, wiphy_dev(local->hw.wiphy));
+
+	result = register_netdevice(local->mdev);
+	if (result < 0) {
+		rtnl_unlock();
+		goto fail_dev;
+	}
+	result = ieee80211_sysfs_add_netdevice(local->mdev);
+	if (result < 0) {
+		rtnl_unlock();
+		goto fail_if_sysfs;
+	}*/
+
+	/*result = ieee80211_init_rate_ctrl_alg(local, NULL);
+	rtnl_unlock();
+	if (result < 0) {
+		printk(KERN_DEBUG "%s: Failed to initialize rate control "
+		       "algorithm\n", local->mdev->name);
+		goto fail_rate;
+	}
+
+	result = ieee80211_wep_init(local);
+
+	if (result < 0) {
+		printk(KERN_DEBUG "%s: Failed to initialize wep\n",
+		       local->mdev->name);
+		goto fail_wep;
+	}
+
+	ieee80211_install_qdisc(local->mdev);
+
+	rtnl_lock();
+	result = ieee80211_if_add(local->mdev, "wlan%d", 1, &sta_dev);
+	if (result == 0)
+		ieee80211_if_set_type(sta_dev, IEEE80211_IF_TYPE_STA);
+
+	local->reg_state = IEEE80211_DEV_REGISTERED;
+	rtnl_unlock();
+
+	ieee80211_led_init(local);*/
+
+	return 0;
+/*
+fail_wep:
+	rate_control_deinitialize(local);
+fail_rate:
+	ieee80211_sysfs_remove_netdevice(local->mdev);
+fail_if_sysfs:
+	unregister_netdev(local->mdev);
+fail_dev:
+	sta_info_stop(local);
+fail_sta_info:
+	ieee80211_dev_sysfs_del(local);
+fail_sysfs:
+	wiphy_unregister(local->hw.wiphy);*/
+	return result;
+}
+
 void darwin_iwi3945::ipw_bg_alive_start()
 {
 	//struct ipw_priv *priv =
@@ -6813,42 +7024,44 @@ void darwin_iwi3945::ipw_bg_alive_start()
 				       thermal_spin * 10);
 	}
 
-	rc = ipw_init_channel_map(priv);
+	/*rc = ipw_init_channel_map(priv);
 	if (rc) {
 		IOLog("initializing regulatory failed: %d\n", rc);
 		//mutex_unlock(&priv->mutex);
 		return;
-	}
-
+	}*/
+	IOLog("ipw_init_geos\n");
 	ipw_init_geos(priv);
 
 	if (!priv->netdev_registered) {
 	//	mutex_unlock(&priv->mutex);
+	IOLog("ieee80211_rate_control_register\n");
 		ieee80211_rate_control_register(&priv->rate_control);
-
-		//rc = ieee80211_register_hw(priv->ieee);
+	IOLog("ieee80211_register_hw\n");
+		rc = ieee80211_register_hw(priv->ieee);
 		if (rc) {
 			IOLog("Failed to register network "
 				  "device (error %d)\n", rc);
-			//return;
+			return;
 		}
 
 	//	module_put(THIS_MODULE);
 
 	//	mutex_lock(&priv->mutex);
 		priv->netdev_registered = 1;
-
-		ipw_reset_channel_flag(priv);
+	IOLog("ipw_reset_channel_flag\n");
+		//ipw_reset_channel_flag(priv);
 	}
 
-	//memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
+	memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 
 	priv->rates_mask = IEEE80211_DEFAULT_RATES_MASK;
+	IOLog("ipw_set_supported_rates_mask\n");
 	ipw_set_supported_rates_mask(priv, priv->rates_mask);
-
-	ipw_set_rate(priv);
-
-	ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
+	//IOLog("ipw_set_rate\n");
+	//ipw_set_rate(priv);
+	//IOLog("ipw_send_power_mode\n");
+	//ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
 
 /*
  * ipw_qos_activate(priv, NULL);
@@ -6856,26 +7069,31 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
 
 	/* Initialize our rx_config data */
-	ipw_connection_init_rx_config(priv);
+	//IOLog("ipw_connection_init_rx_config\n");
+	//ipw_connection_init_rx_config(priv);
 	memcpy(priv->staging_rxon.node_addr, priv->net_dev->dev_addr, ETH_ALEN);
 
 	/* Configure BT coexistence */
-	ipw_send_bt_config(priv);
+	//IOLog("ipw_send_bt_config\n");
+	//ipw_send_bt_config(priv);
 
+	//IOLog("ipw_commit_rxon\n");
 	/* Configure the adapter for unassociated operation */
-	ipw_commit_rxon(priv);
+	//ipw_commit_rxon(priv);
 
 	/* Add the broadcast address so we can send probe requests */
-	ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
-	ipw_init_rate_scaling(priv);
+	//IOLog("ipw_rxon_add_station\n");
+	//ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
+	//IOLog("ipw_init_rate_scaling\n");
+	//ipw_init_rate_scaling(priv);
 
 	/* At this point, the NIC is initialized and operational */
 	priv->notif_missed_beacons = 0;
 	priv->status |= STATUS_READY;
 
 //	ipw_update_link_led(priv);
-
-	reg_txpower_periodic(priv);
+	//IOLog("reg_txpower_periodic\n");
+	//reg_txpower_periodic(priv);
 
 	//mutex_unlock(&priv->mutex);
 	
@@ -7219,6 +7437,18 @@ int darwin_iwi3945::ipw_rate_plcp2index(u8 x)
 	return -1;
 }
 
+struct ieee80211_hw_mode *darwin_iwi3945::ipw_get_current_hw(struct ipw_priv *priv)
+{
+	struct ieee80211_hw_mode *hw_mode;
+	struct ieee80211_local *local = hw_to_local(priv->ieee);
+
+	list_for_each_entry(hw_mode, &local->modes_list, list)
+		if (hw_mode->mode == priv->active_conf.phymode)
+			return hw_mode;
+
+	return NULL;
+}
+
 void darwin_iwi3945::ipw_set_supported_rates(struct ipw_priv *priv)
 {
 	struct ieee80211_hw_mode *hw = NULL;
@@ -7228,7 +7458,7 @@ void darwin_iwi3945::ipw_set_supported_rates(struct ipw_priv *priv)
 	priv->active_rate = 0;
 	priv->active_rate_basic = 0;
 
-	hw = priv->modes;//ipw_get_current_hw(priv);
+	hw = ipw_get_current_hw(priv);
 	if (!hw || !hw->rates)
 		return;
 
@@ -7412,12 +7642,6 @@ void darwin_iwi3945::ipw_handle_reply_tx(struct ipw_priv *priv, void *data, u16 
 	//}
 
 	return;
-}
-
-static inline int ipw_is_broadcast_ether_addr(const u8 * addr)
-{
-	return (addr[0] & addr[1] & addr[2] & addr[3] & addr[4] &
-		addr[5]) == 0xff;
 }
 
 int darwin_iwi3945::is_network_packet(struct ipw_priv *priv,
@@ -8005,7 +8229,7 @@ int darwin_iwi3945::ipw_rate_scale_rxon_handle(struct ipw_priv *priv, s32 sta_id
 	unsigned long flags;
 	struct ieee80211_conf *conf = NULL;
 
-	conf = &priv->active_conf;//ieee80211_get_hw_conf(priv->ieee);
+	conf = ieee80211_get_hw_conf(priv->ieee);
 
 	if (!ipw_is_associated(priv))
 		return 0;
@@ -8082,7 +8306,7 @@ void darwin_iwi3945::ipw_bg_post_associate()
 
 	//mutex_lock(&priv->mutex);
 
-	conf = &priv->active_conf;//ieee80211_get_hw_conf(priv->ieee);
+	conf = ieee80211_get_hw_conf(priv->ieee);
 
 	memset(&priv->rxon_timing, 0, sizeof(struct ipw_rxon_time_cmd));
 /*	ipw_setup_rxon_timing(priv);
@@ -8462,7 +8686,7 @@ void darwin_iwi3945::RxQueueIntr()
 	struct ipw_rx_packet *pkt;
 	u32 r, i;
 	int pkt_from_hardware;
-	r = priv->shared_virt->rx_read_ptr[0];
+	r = ((struct ipw_shared_t*)(priv->hw_setting.shared_virt))->rx_read_ptr[0];
 	i = priv->rxq->read;
 	while (i != r) {
 		rxb = priv->rxq->queue[i];
@@ -8488,6 +8712,7 @@ void darwin_iwi3945::RxQueueIntr()
 		case REPLY_ALIVE:
 		case REPLY_ADD_STA:
 		case REPLY_ERROR:
+			IOLog("Received %s (#%x)\n",get_cmd_string(pkt->hdr.cmd));
 			break;
 		default:
 			IOLog
@@ -8518,6 +8743,7 @@ void darwin_iwi3945::RxQueueIntr()
 				 * give the HW RF Kill time to activate... */
 				if (priv->card_alive.is_valid == UCODE_VALID_OK)
 				{
+					udelay(5);
 					queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_alive_start),priv,NULL,true);
 					/*queue_delayed_work(priv->workqueue,
 							   &priv->alive_start,
@@ -8729,13 +8955,13 @@ void darwin_iwi3945::RxQueueIntr()
 				     "Off" : "On",
 				     (flags & SW_CARD_DISABLED) ? "Off" : "On");
 
-				/*if (flags & HW_CARD_DISABLED) {
+				if (flags & HW_CARD_DISABLED) {
 					ipw_write32(
 						    CSR_UCODE_DRV_GP1_SET,
 						    CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
 
 					priv->status |= STATUS_RF_KILL_HW;
-				} else*/
+				} else
 					priv->status &= ~STATUS_RF_KILL_HW;
 
 				if (flags & SW_CARD_DISABLED)
@@ -8748,17 +8974,17 @@ void darwin_iwi3945::RxQueueIntr()
 
 			//	ipw_scan_cancel(priv);
 
-				/*if (((status & STATUS_RF_KILL_HW) !=
+				if (((status & STATUS_RF_KILL_HW) !=
 				     (priv->status & STATUS_RF_KILL_HW))
 				    || ((status & STATUS_RF_KILL_SW)
 					!= (priv->status & STATUS_RF_KILL_SW))) {
-					queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
+					queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,NULL,true);
 					//queue_delayed_work(priv->workqueue,
 					//		   &priv->rf_kill, 0);
 				};// else
 					//wake_up_interruptible(&priv->
 					//		      wait_command_queue);
-				*/
+				
 				break;
 			}
 		default:
@@ -8783,7 +9009,7 @@ void darwin_iwi3945::RxQueueIntr()
 		if (rxb->skb != NULL) {
 			//dev_kfree_skb_any(rxb->skb);
 			//freePacket(rxb->skb);
-			rxb->skb = NULL;
+			//rxb->skb = NULL;
 		}
 		rxb->dma_addr=NULL;
 		//pci_unmap_single(priv->pci_dev, rxb->dma_addr,
@@ -8792,6 +9018,11 @@ void darwin_iwi3945::RxQueueIntr()
 		i = (i + 1) % RX_QUEUE_SIZE;
 	}
 
+		//if(doFlushQueue){
+		IWI_DEBUG("flushing Input Queue\n");
+		fNetif->flushInputQueue();		
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		//}
 	/* Backtrack one entry */
 	priv->rxq->read = i;
 	ipw_rx_queue_restock(priv);

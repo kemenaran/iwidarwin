@@ -2816,7 +2816,7 @@ struct ipw_priv {
 	struct fw_image_desc ucode_boot;
 	struct fw_image_desc ucode_boot_data;
 	
-	struct ipw_shared_t *shared_virt;
+	void *shared_virt;
 	dma_addr_t shared_phys;
 	//struct ipw_rxon_time_cmd rxon_timing;
 	//struct daemon_rx_config rxon;
@@ -3005,7 +3005,207 @@ struct ipw_scan_cmd {
 	 */
 } __attribute__ ((packed));
 
+struct ieee80211_local {
+	/* embed the driver visible part.
+	 * don't cast (use the static inlines below), but we keep
+	 * it first anyway so they become a no-op */
+	struct ieee80211_hw hw;
 
+	const struct ieee80211_ops *ops;
+
+	/* List of registered struct ieee80211_hw_mode */
+	struct list_head modes_list;
+
+	struct net_device *mdev; /* wmaster# - "master" 802.11 device */
+	struct net_device *apdev; /* wlan#ap - management frames (hostapd) */
+	int open_count;
+	int monitors;
+	struct iw_statistics wstats;
+	u8 wstats_flags;
+
+	enum {
+		IEEE80211_DEV_UNINITIALIZED = 0,
+		IEEE80211_DEV_REGISTERED,
+		IEEE80211_DEV_UNREGISTERED,
+	} reg_state;
+
+	/* Tasklet and skb queue to process calls from IRQ mode. All frames
+	 * added to skb_queue will be processed, but frames in
+	 * skb_queue_unreliable may be dropped if the total length of these
+	 * queues increases over the limit. */
+#define IEEE80211_IRQSAFE_QUEUE_LIMIT 128
+	//struct tasklet_struct tasklet;
+	//struct sk_buff_head skb_queue;
+	//struct sk_buff_head skb_queue_unreliable;
+	enum {
+		ieee80211_rx_msg = 1,
+		ieee80211_tx_status_msg = 2
+	} ieee80211_msg_enum;
+
+	/* Station data structures */
+	//struct kset sta_kset;
+	//spinlock_t sta_lock; /* mutex for STA data structures */
+	int num_sta; /* number of stations in sta_list */
+	struct list_head sta_list;
+	struct list_head deleted_sta_list;
+	//struct sta_info *sta_hash[STA_HASH_SIZE];
+	//struct timer_list sta_cleanup;
+
+	//unsigned long state[NUM_TX_DATA_QUEUES];
+	//struct ieee80211_tx_stored_packet pending_packet[NUM_TX_DATA_QUEUES];
+	//struct tasklet_struct tx_pending_tasklet;
+
+	int mc_count;	/* total count of multicast entries in all interfaces */
+	int iff_allmultis, iff_promiscs;
+			/* number of interfaces with corresponding IFF_ flags */
+
+	/* Current rate table. This is a pointer to hw->modes structure. */
+	struct ieee80211_rate *curr_rates;
+	int num_curr_rates;
+
+	struct rate_control_ref *rate_ctrl;
+
+	int next_mode; /* MODE_IEEE80211*
+			* The mode preference for next channel change. This is
+			* used to select .11g vs. .11b channels (or 4.9 GHz vs.
+			* .11a) when the channel number is not unique. */
+
+	/* Supported and basic rate filters for different modes. These are
+	 * pointers to -1 terminated lists and rates in 100 kbps units. */
+	int *supp_rates[NUM_IEEE80211_MODES];
+	int *basic_rates[NUM_IEEE80211_MODES];
+
+	int rts_threshold;
+	int cts_protect_erp_frames;
+	int fragmentation_threshold;
+	int short_retry_limit; /* dot11ShortRetryLimit */
+	int long_retry_limit; /* dot11LongRetryLimit */
+	int short_preamble; /* use short preamble with IEEE 802.11b */
+
+	struct crypto_blkcipher *wep_tx_tfm;
+	struct crypto_blkcipher *wep_rx_tfm;
+	u32 wep_iv;
+	int key_tx_rx_threshold; /* number of times any key can be used in TX
+				  * or RX before generating a rekey
+				  * notification; 0 = notification disabled. */
+
+	int bridge_packets; /* bridge packets between associated stations and
+			     * deliver multicast frames both back to wireless
+			     * media and to the local net stack */
+
+	//struct ieee80211_passive_scan scan;
+
+
+	//ieee80211_rx_handler *rx_pre_handlers;
+	//ieee80211_rx_handler *rx_handlers;
+	//ieee80211_tx_handler *tx_handlers;
+
+	//spinlock_t sub_if_lock; /* mutex for STA data structures */
+	struct list_head sub_if_list;
+	int sta_scanning;
+	int scan_channel_idx;
+	enum { SCAN_SET_CHANNEL, SCAN_SEND_PROBE } scan_state;
+	unsigned long last_scan_completed;
+	//struct delayed_work scan_work;
+	//struct net_device *scan_dev;
+	struct ieee80211_channel *oper_channel, *scan_channel;
+	struct ieee80211_hw_mode *oper_hw_mode, *scan_hw_mode;
+	//u8 scan_ssid[IEEE80211_MAX_SSID_LEN];
+	size_t scan_ssid_len;
+	struct list_head sta_bss_list;
+	//struct ieee80211_sta_bss *sta_bss_hash[STA_HASH_SIZE];
+	//spinlock_t sta_bss_lock;
+#define IEEE80211_SCAN_MATCH_SSID BIT(0)
+#define IEEE80211_SCAN_WPA_ONLY BIT(1)
+#define IEEE80211_SCAN_EXTRA_INFO BIT(2)
+	int scan_flags;
+
+#ifdef CONFIG_HOSTAPD_WPA_TESTING
+	u32 wpa_trigger;
+#endif /* CONFIG_HOSTAPD_WPA_TESTING */
+	/* SNMP counters */
+	/* dot11CountersTable */
+	u32 dot11TransmittedFragmentCount;
+	u32 dot11MulticastTransmittedFrameCount;
+	u32 dot11FailedCount;
+	u32 dot11RetryCount;
+	u32 dot11MultipleRetryCount;
+	u32 dot11FrameDuplicateCount;
+	u32 dot11ReceivedFragmentCount;
+	u32 dot11MulticastReceivedFrameCount;
+	u32 dot11TransmittedFrameCount;
+	u32 dot11WEPUndecryptableCount;
+
+#ifdef CONFIG_MAC80211_LEDS
+	int tx_led_counter, rx_led_counter;
+	struct led_trigger *tx_led, *rx_led;
+	char tx_led_name[32], rx_led_name[32];
+#endif
+
+	u32 channel_use;
+	u32 channel_use_raw;
+	u32 stat_time;
+	//struct timer_list stat_timer;
+
+	//struct work_struct sta_proc_add;
+
+	enum {
+		STA_ANTENNA_SEL_AUTO = 0,
+		STA_ANTENNA_SEL_SW_CTRL = 1,
+		STA_ANTENNA_SEL_SW_CTRL_DEBUG = 2
+	} sta_antenna_sel;
+
+	int rate_ctrl_num_up, rate_ctrl_num_down;
+
+#ifdef CONFIG_MAC80211_DEBUG_COUNTERS
+	/* TX/RX handler statistics */
+	unsigned int tx_handlers_drop;
+	unsigned int tx_handlers_queued;
+	unsigned int tx_handlers_drop_unencrypted;
+	unsigned int tx_handlers_drop_fragment;
+	unsigned int tx_handlers_drop_wep;
+	unsigned int tx_handlers_drop_not_assoc;
+	unsigned int tx_handlers_drop_unauth_port;
+	unsigned int rx_handlers_drop;
+	unsigned int rx_handlers_queued;
+	unsigned int rx_handlers_drop_nullfunc;
+	unsigned int rx_handlers_drop_defrag;
+	unsigned int rx_handlers_drop_short;
+	unsigned int rx_handlers_drop_passive_scan;
+	unsigned int tx_expand_skb_head;
+	unsigned int tx_expand_skb_head_cloned;
+	unsigned int rx_expand_skb_head;
+	unsigned int rx_expand_skb_head2;
+	unsigned int rx_handlers_fragments;
+	unsigned int tx_status_drop;
+	unsigned int wme_rx_queue[NUM_RX_DATA_QUEUES];
+	unsigned int wme_tx_queue[NUM_RX_DATA_QUEUES];
+#define I802_DEBUG_INC(c) (c)++
+#else /* CONFIG_MAC80211_DEBUG_COUNTERS */
+#define I802_DEBUG_INC(c) do { } while (0)
+#endif /* CONFIG_MAC80211_DEBUG_COUNTERS */
+
+
+	int default_wep_only; /* only default WEP keys are used with this
+			       * interface; this is used to decide when hwaccel
+			       * can be used with default keys */
+	int total_ps_buffered; /* total number of all buffered unicast and
+				* multicast packets for power saving stations
+				*/
+	int allow_broadcast_always; /* whether to allow TX of broadcast frames
+				     * even when there are no associated STAs
+				     */
+
+	int wifi_wme_noack_test;
+	unsigned int wmm_acm; /* bit field of ACM bits (BIT(802.1D tag)) */
+
+	unsigned int enabled_modes; /* bitfield of allowed modes;
+				      * (1 << MODE_*) */
+	unsigned int hw_modes; /* bitfield of supported hardware modes;
+				* (1 << MODE_*) */
+
+	int user_space_mlme;
+};
 
 
 

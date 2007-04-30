@@ -982,7 +982,20 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual u8 ipw_rate_scale2plcp(int x);
 	virtual u8 ipw_sync_station(struct ipw_priv *priv, int sta_id,
 			   u16 tx_rate, u8 flags);
-	
+	virtual int ieee80211_register_hw(struct ieee80211_hw *hw);
+	virtual struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw)
+	{
+	return container_of(hw, struct ieee80211_local, hw);
+	}
+	virtual int ieee80211_register_hwmode(struct ieee80211_hw *hw,
+			      struct ieee80211_hw_mode *mode);
+	virtual void ieee80211_prepare_rates(struct ieee80211_local *local);
+	virtual int rate_list_match(const int *rate_list, int rate);
+	struct ieee80211_conf *ieee80211_get_hw_conf(struct ieee80211_hw *hw)
+	{
+	return &hw->conf;
+	}
+	virtual struct ieee80211_hw_mode *ipw_get_current_hw(struct ipw_priv *priv);
 	
 	
 	
