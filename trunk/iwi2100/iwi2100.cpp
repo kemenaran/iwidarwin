@@ -2466,7 +2466,7 @@ int darwin_iwi2100::sw_reset_and_clock(struct ipw2100_priv *priv)
 {
 	int i;
 	u32 r;
-
+	//return 0;
 	// assert s/w reset
 	write_register(priv->net_dev, IPW_REG_RESET_REG,
 		       IPW_AUX_HOST_RESET_REG_SW_RESET);
@@ -3076,12 +3076,12 @@ int darwin_iwi2100::ipw2100_read_mac_address(struct ipw2100_priv *priv)
 		IOLog("MAC address read failed\n");
 		return -EIO;
 	}
-	IOLog("card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
+	/*IOLog("card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
 		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
 	memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
 	memcpy(priv->mac_addr, mac, ETH_ALEN);
-	memcpy(priv->ieee->dev->dev_addr, mac, ETH_ALEN);
+	memcpy(priv->ieee->dev->dev_addr, mac, ETH_ALEN);*/
 	return 0;
 }
 
@@ -3492,13 +3492,13 @@ int darwin_iwi2100::ipw2100_adapter_setup(struct ipw2100_priv *priv)
 	}
 #endif				
 
-	err = ipw2100_read_mac_address(priv);
+	/*err = ipw2100_read_mac_address(priv);
 	if (err)
 		return -EIO;
 
 	err = ipw2100_set_mac_address(priv, batch_mode);
 	if (err)
-		return err;
+		return err;*/
 
 	err = ipw2100_set_port_type(priv, priv->ieee->iw_mode, batch_mode);
 	if (err)
@@ -3600,7 +3600,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("%s: Radio is disabled by Manual Disable "
 			       "switch\n", priv->net_dev->name);
-		//return 0;
+		return 0;
 	}
 
 	/* If the interrupt is enabled, turn it off... */
@@ -4472,6 +4472,7 @@ int darwin_iwi2100::ieee80211_parse_info_param(struct ieee80211_info_element
 int darwin_iwi2100::ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
 				       *frame, struct ieee80211_rx_stats *stats)
 {
+	IOLog("ieee80211_handle_assoc_resp\n");
 	struct ieee80211_network network_resp; 
 		network_resp.ibss_dfs = NULL;
 	
@@ -4535,7 +4536,8 @@ int darwin_iwi2100::ieee80211_network_init(struct ieee80211_device *ieee, struct
 					 struct ieee80211_network *network,
 					 struct ieee80211_rx_stats *stats)
 {
-    // add by kazu expire qos routine
+   IOLog("ieee80211_network_init\n");
+	 // add by kazu expire qos routine
 	network->qos_data.active = 0;
 	network->qos_data.supported = 0;
 	network->qos_data.param_count = 0;
@@ -5379,12 +5381,12 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
 									header, stats); 
 		break;
 	case IEEE80211_STYPE_REASSOC_RESP:
-			IEEE80211_DEBUG_MGMT("received REASSOCIATION RESPONSE (%d)\n",
+			IWI_DEBUG("received REASSOCIATION RESPONSE (%d)\n",
 								 WLAN_FC_GET_STYPE(le16_to_cpu
 													(header->frame_ctl)));
 		break;
 	case IEEE80211_STYPE_PROBE_REQ:
-			IEEE80211_DEBUG_MGMT("received auth (%d)\n",
+			IWI_DEBUG("received auth (%d)\n",
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));
 			IWI_DEBUG("but not impletented \n");										   
@@ -5396,7 +5398,7 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
                                                    header, stats); */
 		break;
 	case IEEE80211_STYPE_PROBE_RESP:
-			IEEE80211_DEBUG_MGMT("received PROBE RESPONSE (%d)\n",
+			IWI_DEBUG("received PROBE RESPONSE (%d)\n",
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));	
 			/*ipw_handle_probe_request(ieee->dev, (struct
@@ -5408,7 +5410,7 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
                                                  header, stats); 
 		break;
 	case IEEE80211_STYPE_BEACON:
-                IEEE80211_DEBUG_MGMT("received BEACON (%d)\n",
+                IWI_DEBUG("received BEACON (%d)\n",
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));
                 ieee80211_process_probe_response(ieee,
@@ -5418,7 +5420,7 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
                 break;
 	case IEEE80211_STYPE_AUTH:
 
-                IEEE80211_DEBUG_MGMT("received auth (%d)\n",
+                IWI_DEBUG("received auth (%d)\n",
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));
                 IWI_DEBUG("but not impletented \n"); 
@@ -5437,7 +5439,7 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
                                               header); */
                 break;
 	case IEEE80211_STYPE_ACTION:
-                IEEE80211_DEBUG_MGMT("ACTION\n");
+                IWI_DEBUG("ACTION\n");
 				IWI_DEBUG("ACTION: but not impletented \n");
 				/* 
                 if (ieee->handle_action)
@@ -5447,11 +5449,11 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
                 break;
 
 	case IEEE80211_STYPE_REASSOC_REQ:
-                IEEE80211_DEBUG_MGMT("received reassoc (%d)\n",
+                IWI_DEBUG("received reassoc (%d)\n",
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));
 
-                IEEE80211_DEBUG_MGMT("%s: IEEE80211_REASSOC_REQ received\n",
+                IWI_DEBUG("%s: IEEE80211_REASSOC_REQ received\n",
 									 ieee->dev->name);
 				IWI_DEBUG("REASSOC: but not impletented \n");
 				/*
@@ -5461,7 +5463,7 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
                                                      header); */
                 break;
 	case IEEE80211_STYPE_ASSOC_REQ:
-                IEEE80211_DEBUG_MGMT("received assoc (%d)\n",
+                IWI_DEBUG("received assoc (%d)\n",
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));
 				ieee80211_handle_assoc_resp(ieee,
@@ -5476,7 +5478,7 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
                 break;
 
 	case IEEE80211_STYPE_DEAUTH:
-                IEEE80211_DEBUG_MGMT("DEAUTH\n");
+                IWI_DEBUG("DEAUTH\n");
 				IWI_DEBUG("DEAUTH: but not impletented \n");
                 /*if (ieee->handle_deauth != NULL)
                         ieee->handle_deauth(ieee->dev,
@@ -5484,10 +5486,10 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
                                             header); */
                 break;
 	default:
-                IEEE80211_DEBUG_MGMT("received UNKNOWN (%d)\n",
+                IWI_DEBUG("received UNKNOWN (%d)\n",
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));
-                IEEE80211_DEBUG_MGMT("%s: Unknown management packet: %d\n",
+                IWI_DEBUG("%s: Unknown management packet: %d\n",
 									ieee->dev->name,
                                      WLAN_FC_GET_STYPE(le16_to_cpu
                                                        (header->frame_ctl)));
@@ -5544,7 +5546,7 @@ mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw21
 		priv->ieee->stats.rx_errors++;
 
 		/* ieee80211_rx failed, so it didn't free the SKB */
-		//freePacket(packet->skb);
+		freePacket(packet->skb);
 		packet->skb = NULL;
 	}
 
@@ -5949,6 +5951,11 @@ void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
 		i = (i + 1) % rxq->entries;
 	}
 
+	//if(doFlushQueue){
+		IWI_DEBUG("flushing Input Queue\n");
+		fNetif->flushInputQueue();		
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		//}
 	if (i != s) {
 		/* backtrack one entry, wrapping to end if at 0 */
 		rxq->next = (i ? i : rxq->entries) - 1;
@@ -6039,7 +6046,7 @@ int darwin_iwi2100::__ipw2100_tx_process(struct ipw2100_priv *priv)
 
 	list_del(element);
 	DEC_STAT(&priv->fw_pend_stat);
-
+/*
 #ifdef CONFIG_IPW2100_DEBUG
 	{
 		int i = txq->oldest;
@@ -6060,7 +6067,7 @@ int darwin_iwi2100::__ipw2100_tx_process(struct ipw2100_priv *priv)
 		}
 	}
 #endif
-
+*/
 	switch (packet->type) {
 	case DATA:
 		if (txq->drv[txq->oldest].status.info.fields.txType != 0)
@@ -6351,7 +6358,7 @@ IOReturn darwin_iwi2100::getHardwareAddress( IOEthernetAddress * addr )
 					   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
 			memcpy(fEnetAddr.bytes, mac, ETH_ALEN);
-			ifnet_set_lladdr(fifnet, &fEnetAddr.bytes, ETH_ALEN);
+			//ifnet_set_lladdr(fifnet, &fEnetAddr.bytes, ETH_ALEN);
 		}
 	}
 	memcpy(addr, &fEnetAddr, sizeof(*addr));
