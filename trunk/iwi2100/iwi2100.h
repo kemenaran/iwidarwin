@@ -74,6 +74,32 @@
         f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
 
 
+inline unsigned int
+__div(unsigned long long n, unsigned int base)
+{
+	return n / base;
+}
+#undef jiffies
+#define jiffies		\
+({		\
+	uint64_t m;		\
+	clock_get_uptime(&m);		\
+	__div(m , 10000000)*5;		\
+})
+
+inline unsigned int jiffies_to_msecs(const unsigned long j)
+{
+#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
+	return (MSEC_PER_SEC / HZ) * j;
+#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
+	return (j + (HZ / MSEC_PER_SEC) - 1)/(HZ / MSEC_PER_SEC);
+#else
+	return (j * MSEC_PER_SEC) / HZ;
+#endif
+}
+
+#define time_after(a,b)	((long)(b) - (long)(a) < 0)
+
 inline void skb_reserve(mbuf_t skb, int len)
 {
 	//skb->data += len;
@@ -620,13 +646,13 @@ virtual IOOptionBits getState( void ) const;
 	virtual void ipw2100_led_link_down(struct ipw2100_priv *priv);
 	virtual void ipw2100_rf_kill(ipw2100_priv *priv);
 	virtual int ipw2100_best_network(struct ipw2100_priv *priv,
-			    struct ipw2100_network_match *match,
+			    struct ipw_network_match *match,
 			    struct ieee80211_network *network, int roaming);
 	virtual int ipw2100_compatible_rates(struct ipw2100_priv *priv,
 				const struct ieee80211_network *network,
-				struct ipw2100_supported_rates *rates);
-	virtual void ipw2100_copy_rates(struct ipw2100_supported_rates *dest,
-			   const struct ipw2100_supported_rates *src);
+				struct ipw_supported_rates *rates);
+	virtual void ipw2100_copy_rates(struct ipw_supported_rates *dest,
+			   const struct ipw_supported_rates *src);
 	virtual int ipw2100_is_rate_in_mask(struct ipw2100_priv *priv, int ieee_mode, u8 rate);
 	virtual void ipw2100_adhoc_create(struct ipw2100_priv *priv,
 			     struct ieee80211_network *network);		   
@@ -724,7 +750,14 @@ virtual IOOptionBits getState( void ) const;
 	virtual void ipw2100_wx_event_work(struct ipw2100_priv *priv);						  
 				 
 												  								  
-											  
+			//kext control functions:
+	
+	friend  int 		sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len); //send network list to network selector app.
+	friend  int 		setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags); //get slected network from network selector app.
+	friend  int			ConnectClient(kern_ctl_ref kctlref,struct sockaddr_ctl *sac,void **unitinfo); //connect to network selector app.
+	friend  int 		disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo); //disconnect network selector app.
+	friend	int			configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len);
+										  
 													  		  
 	
 /*	
@@ -813,18 +846,18 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
                               void * argument);
 	virtual int ipw2100_associate_network(struct ipw2100_priv *priv,
 				 struct ieee80211_network *network,
-				 struct ipw2100_supported_rates *rates, int roaming);
+				 struct ipw_supported_rates *rates, int roaming);
 	virtual void ipw2100_remove_current_network(struct ipw2100_priv *priv);
 	virtual void ipw2100_abort_scan(struct ipw2100_priv *priv);
 	virtual int ipw2100_disassociate(struct ipw2100_priv *data);
 	virtual int ipw2100_set_tx_power(struct ipw2100_priv *priv);
 	virtual void init_sys_config(struct ipw2100_sys_config *sys_config);
 	virtual int init_supported_rates(struct ipw2100_priv *priv,
-				struct ipw2100_supported_rates *rates);
+				struct ipw_supported_rates *rates);
 	virtual void ipw2100_set_hwcrypto_keys(struct ipw2100_priv *priv);
-	virtual void ipw2100_add_cck_scan_rates(struct ipw2100_supported_rates *rates,
+	virtual void ipw2100_add_cck_scan_rates(struct ipw_supported_rates *rates,
 				   u8 modulation, u32 rate_mask);
-	virtual void ipw2100_add_ofdm_scan_rates(struct ipw2100_supported_rates *rates,
+	virtual void ipw2100_add_ofdm_scan_rates(struct ipw_supported_rates *rates,
 				    u8 modulation, u32 rate_mask);
 	virtual void ipw2100_send_tgi_tx_key(struct ipw2100_priv *priv, int type, int index);
 	virtual void ipw2100_send_wep_keys(struct ipw2100_priv *priv, int type);
@@ -1068,7 +1101,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	 int hwcrypto;
 	 int roaming;
 	int antenna;
-	//struct ipw2100_supported_rates rates;
+	//struct ipw_supported_rates rates;
 	u32 power;
 	lck_mtx_t *mutex;
 	IOSimpleLock *spin;
@@ -1103,6 +1136,9 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
     thread_call_t           _powerOffThreadCall;
     thread_call_t           _powerOnThreadCall;
 	UInt16 *					memBase;
+	//open link to user interface application flag:
+	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
+							//the user is connected to the driver.
 	
 };
 

@@ -7,19 +7,6 @@ struct ipw2100_priv;
 struct ipw2100_tx_packet;
 struct ipw2100_rx_packet;
 
-struct ipw_supported_rates {
-	u8 ieee_mode;
-	u8 num_rates;
-	u8 purpose;
-	u8 reserved;
-	u8 supported_rates[IPW_MAX_RATES];
-} __attribute__ ((packed));
-
-struct ipw_network_match {
-	struct ieee80211_network *network;
-	struct ipw_supported_rates rates;
-};
-
 #define IPW_DL_UNINIT    0x80000000
 #define IPW_DL_NONE      0x00000000
 #define IPW_DL_ALL       0x7FFFFFFF
@@ -385,7 +372,6 @@ enum {
 #define STATUS_INITIALIZED      (1<<5)	/* Card is ready for external calls */
 #define STATUS_ASSOCIATING      (1<<9)	/* Associated, but no BSSID yet */
 #define STATUS_ASSOCIATED       (1<<10)	/* Associated and BSSID valid */
-#define STATUS_INT_ENABLED      (1<<11)
 #define STATUS_RF_KILL_HW       (1<<12)
 #define STATUS_RF_KILL_SW       (1<<13)
 #define STATUS_RF_KILL_MASK     (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)
@@ -748,7 +734,7 @@ struct ipw2100_priv {
         (sizeof(struct ieee80211_hdr_3addr) + \
          sizeof(struct ieee80211_snap_hdr))
 
-struct ipw2100_rx {
+/*struct ipw2100_rx {
 	union {
 		unsigned char payload[IPW_RX_NIC_BUFFER_LENGTH];
 		struct ieee80211_hdr_4addr header;
@@ -756,7 +742,7 @@ struct ipw2100_rx {
 		struct ipw2100_notification notification;
 		struct ipw2100_cmd_header command;
 	} rx_data;
-} __attribute__ ((packed));
+} __attribute__ ((packed));*/
 
 /* Bit 0-7 are for 802.11b tx rates - .  Bit 5-7 are reserved */
 #define TX_RATE_1_MBIT              0x0001
