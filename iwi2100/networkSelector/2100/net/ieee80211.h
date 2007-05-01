@@ -26,6 +26,13 @@
 #ifndef IEEE80211_H
 #define IEEE80211_H
 
+#include "../defines.h"
+#define min(a,b) ((a) < (b) ? (a) : (b))
+struct timer_list {
+        unsigned long expires;
+        void (*function)(unsigned long);
+        unsigned long data;
+};
 #ifdef __KERNEL__
 #include <linux/netdevice.h>
 #include <linux/if_ether.h>	/* ETH_ALEN */
@@ -147,7 +154,7 @@ struct net_device
 	 * (i.e. as seen by users in the "Space.c" file).  It is the name
 	 * the interface.
 	 */
-	char			name[IFNAMSIZ];
+	char			name[16];
 
 	/*
 	 *	I/O specific fields
@@ -228,7 +235,7 @@ struct net_device
 	int			allmulti;
 
 	int			watchdog_timeo;
-	struct timer_list	watchdog_timer;
+	//struct timer_list	watchdog_timer;
 
 	/* Protocol specific pointers */
 	
@@ -424,6 +431,8 @@ static inline int ieee80211_is_empty_essid(const char *essid, int essid_len)
 	return 1;
 }
 
+
+		
 /* escape_essid() is intended to be used in debug (and possibly error)
  * messages. It should never be used for passing essid to user space. */
 static const char *escape_essid(const char *essid, u8 essid_len)
@@ -1032,12 +1041,6 @@ struct ieee80211_assoc_response {
 	/* supported rates */
 	struct ieee80211_info_element info_element[0];
 } __attribute__ ((packed));
-
-typedef struct {
-    volatile UInt32 address;                        // physical address on host
-    volatile UInt16 size;                           // packet size
-    volatile UInt16 flags;                          // set of bit-wise flags
-} gt_fragment;
 
 struct ieee80211_txb {
 	u8 nr_frags;

@@ -1,65 +1,21 @@
-
-#include <IOKit/assert.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IODeviceMemory.h>
-#include <IOKit/IOInterruptEventSource.h>
-#include <IOKit/IOBufferMemoryDescriptor.h>
-#include <IOKit/pci/IOPCIDevice.h>
-//#include <IOKit/network/IONetworkController.h>
-//#include <IOKit/network/IONetworkInterface.h>
-#include <IOKit/network/IOEthernetController.h>
-#include <IOKit/network/IOEthernetInterface.h>
-#include <IOKit/network/IOGatedOutputQueue.h>
-#include <IOKit/network/IOMbufMemoryCursor.h>
-#include <libkern/OSByteOrder.h>
-#include <IOKit/pccard/IOPCCard.h>
-//#include <IOKit/apple80211/IO80211Controller.h>
-//#include <IOKit/apple80211/IO80211Interface.h>
-#include <IOKit/network/IOPacketQueue.h>
-#include <IOKit/network/IONetworkMedium.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IODeviceMemory.h>
-#include <IOKit/assert.h>
-#include <IOKit/IODataQueue.h>
-
-
-
-//includes for fifnet functions
-extern "C" {
-#include <net/if_var.h>
-#include <sys/vm.h>
-#include <sys/param.h>
-#include <sys/errno.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <net/if_var.h>
-#include <net/ethernet.h>
-#include <net/if_arp.h>
-#include <net/if_dl.h>
-#include <net/if_types.h>
-#include <net/dlil.h>
-#include <net/bpf.h>
-#include <netinet/if_ether.h>
-#include <netinet/in_arp.h>
-#include <sys/sockio.h>
-#include <sys/malloc.h>
-#include <sys/queue.h>
-#include <sys/kern_control.h>
-}
-
-#include "iwi2100.h"
-#include "ipw2100.h"
+#include <IOKit/IOTypes.h>
 #include "net/ieee80211.h"
-
-
+#include "net/ieee80211_crypt.h"
+#include "ipw2100.h"
+		 
+#define        __iomem
+typedef unsigned int mbuf_t;
+typedef unsigned char	u8;
+typedef unsigned short	u16;
+typedef unsigned int	u32;
+typedef unsigned short __le16;
 #define le16_to_cpu(x)	OSSwapLittleToHostInt16(x)
 #define le32_to_cpu(x)	OSSwapLittleToHostInt32(x)
 #define cpu_to_le16(x)	OSSwapLittleToHostInt16(x)
 #define cpu_to_le32(x)	OSSwapLittleToHostInt32(x)
 typedef unsigned long long u64;
-typedef signed short	s16;
-typedef signed int	s32;
-
+typedef signed short s16;
+typedef signed int s32;
 
 #pragma mark -
 #pragma mark еее Misc Macros еее
@@ -746,26 +702,17 @@ typedef unsigned char UInt8;
 
 #define STATUS_HCMD_ACTIVE      (1<<0)	/**< host command in progress */
 
-#define STATUS_INT_ENABLED      (1<<1)
-#define STATUS_RF_KILL_HW       (1<<2)
-#define STATUS_RF_KILL_SW       (1<<3)
 #define STATUS_RF_KILL_MASK     (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)
 
 #define STATUS_INIT             (1<<5)
 #define STATUS_AUTH             (1<<6)
-#define STATUS_ASSOCIATED       (1<<7)
 #define STATUS_STATE_MASK       (STATUS_INIT | STATUS_AUTH | STATUS_ASSOCIATED)
 
-#define STATUS_ASSOCIATING      (1<<8)
 #define STATUS_DISASSOCIATING   (1<<9)
 #define STATUS_ROAMING          (1<<10)
-#define STATUS_EXIT_PENDING     (1<<11)
 #define STATUS_DISASSOC_PENDING (1<<12)
 #define STATUS_STATE_PENDING    (1<<13)
 
-#define STATUS_SCAN_PENDING     (1<<20)
-#define STATUS_SCANNING         (1<<21)
-#define STATUS_SCAN_ABORTING    (1<<22)
 #define STATUS_SCAN_FORCED      (1<<23)
 
 #define STATUS_LED_LINK_ON      (1<<24)
@@ -775,7 +722,6 @@ typedef unsigned char UInt8;
 #define STATUS_INDIRECT_DWORD   (1<<29)	/* sysfs entry configured for access */
 #define STATUS_DIRECT_DWORD     (1<<30)	/* sysfs entry configured for access */
 
-#define STATUS_SECURITY_UPDATED (1<<31)	/* Security sync needed */
 
 #define CFG_STATIC_CHANNEL      (1<<0)	/* Restrict assoc. to single channel */
 #define CFG_STATIC_ESSID        (1<<1)	/* Restrict assoc. to single SSID */
@@ -870,7 +816,6 @@ typedef unsigned char UInt8;
 #define HOST_NOTIFICATION_S36_MEASUREMENT_REFUSED       31
 
 #define HOST_NOTIFICATION_STATUS_BEACON_MISSING         1
-#define DEFAULT_RTS_THRESHOLD     2304U
 #define BEACON_THRESHOLD 5
 
 
@@ -921,7 +866,6 @@ typedef unsigned char UInt8;
 #define LD_TIME_ACT_ON 250
 
 
-#define DEFAULT_RTS_THRESHOLD     2304U
 #define MIN_RTS_THRESHOLD         1U
 #define MAX_RTS_THRESHOLD         2304U
 #define DEFAULT_BEACON_INTERVAL   100U
@@ -946,7 +890,6 @@ typedef unsigned char UInt8;
 /* ip address formatting macros */
 #define IP_FORMAT	"%d.%d.%d.%d"
 #define IP_CH(ip)	((u_char *)ip)
-#define IP_LIST(ip)	IP_CH(ip)[0],IP_CH(ip)[1],IP_CH(ip)[2],IP_CH(ip)[3]
 
 #define IPW_RATE_SCALE_MAX_WINDOW 62
 #define IPW_INVALID_VALUE  -1
@@ -970,14 +913,6 @@ typedef unsigned char UInt8;
 #define ETH_P_AARP	0x80F3		/* Appletalk AARP		*/
 #define ETH_P_IPX	0x8137		/* IPX over DIX			*/
 
-#undef MSEC_PER_SEC		
-#undef USEC_PER_SEC		
-#undef NSEC_PER_SEC		
-#undef NSEC_PER_USEC		
 
-#define MSEC_PER_SEC		1000L
-#define USEC_PER_SEC		1000000L
-#define NSEC_PER_SEC		1000000000L
-#define NSEC_PER_USEC		1000L
 
 

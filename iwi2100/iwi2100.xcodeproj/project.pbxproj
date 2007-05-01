@@ -254,7 +254,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#cd /private/var/root/svn/trunk/iwi2100\n#cd \"$SRCROOT\"\n\nsudo chown -R root:wheel build/Debug/iwi2100.kext\n\n#rm -rf /System/Library/Extensions/iwi2100.kext\n\ncp -rf build/Debug/iwi2100.kext /System/Library/Extensions\n\nrm -rf iwi2100.pkg\n\n# build only if no .dmg exists\nif [ -e iwi2100.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi2100.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi2100.pkg -proj iwi2100.pmproj\n\nhdiutil create -format UDZO -srcfolder iwi2100.pkg iwi2100.dmg\n\nsleep 1\n\nrm -rf iwi2100.pkg\n";
+			shellScript = "#cd /private/var/root/svn/trunk/iwi2100\n#cd \"$SRCROOT\"\n\nsudo chown -R root:wheel build/Debug/iwi2100.kext\n\n#rm -rf /System/Library/Extensions/iwi2100.kext\n\ncp -rf build/Debug/iwi2100.kext /System/Library/Extensions\n\nrm -rf iwi2100.pkg\n\n# build only if no .dmg exists\nif [ -e iwi2100.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi2100.dmg\nrm -rf iwi2100/iwi2100.pkg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi2100/iwi2100.pkg -proj iwi2100.pmproj\n\ncp -f networkSelector/build/Release/networkSelector iwi2100\n\nhdiutil create -format UDZO -srcfolder iwi2100 iwi2100.dmg\n\nrm -rf iwi2100/iwi2100.pkg\nrm -f iwi2100/networkSelector\n\nsleep 1\n\nrm -rf iwi2100.pkg\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

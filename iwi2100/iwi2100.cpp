@@ -14,6 +14,11 @@
 // second parameter. You must use the literal name of the superclass.
 OSDefineMetaClassAndStructors(darwin_iwi2100, IOEthernetController);//IO80211Controller);
 
+//clone of the driver class, used in all the kext control functions.
+
+static darwin_iwi2100 *clone;
+
+
 static const char *frame_types[] = {
 	"COMMAND_STATUS_VAL",
 	"STATUS_CHANGE_VAL",
@@ -714,7 +719,7 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 		IOLog("Unable to network device.\n");
 		return -1;
 	}
-	(UInt16*)net_dev->base_addr=memBase;
+	//(UInt16*)net_dev->base_addr=memBase;
 	//ieee = (struct ieee80211_device*)netdev_priv(net_dev);
 	ieee=&ieee2;
 	ieee->dev = net_dev;
@@ -1732,7 +1737,9 @@ IOOptionBits darwin_iwi2100::getState( void ) const
 bool darwin_iwi2100::start(IOService *provider)
 {
 	UInt16	reg;
-
+//linking the kext control clone to the driver:
+		clone=this;
+		
 	do {
 				
 		if ( super::start(provider) == 0) {
@@ -1849,7 +1856,23 @@ bool darwin_iwi2100::start(IOService *provider)
 		
 		registerService();
 		
+		//kext control registration:
+		//these functions registers the control which enables
+		//the user to interact with the driver
 		
+		struct kern_ctl_reg		ep_ctl; // Initialize control
+		kern_ctl_ref	kctlref;
+		bzero(&ep_ctl, sizeof(ep_ctl));
+		ep_ctl.ctl_id = 0; /* OLD STYLE: ep_ctl.ctl_id = kEPCommID; */
+		ep_ctl.ctl_unit = 0;
+		strcpy(ep_ctl.ctl_name,"insanelymac.iwidarwin.control");
+		ep_ctl.ctl_flags = 0;
+		ep_ctl.ctl_connect = ConnectClient;
+		ep_ctl.ctl_disconnect = disconnectClient;
+		ep_ctl.ctl_send = setSelectedNetwork;
+		ep_ctl.ctl_setopt = configureConnection;
+		ep_ctl.ctl_getopt = sendNetworkList;
+		errno_t error = ctl_register(&ep_ctl, &kctlref);
 	
 		/*lck_grp_attr_t	*ga=lck_grp_attr_alloc_init();
 		lck_grp_t		*gr=lck_grp_alloc_init("mut",ga);
@@ -3596,12 +3619,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	u32 lock;
 	u32 ord_len = sizeof(lock);
 
-	/* Quite if manually disabled. */
-	if (priv->status & STATUS_RF_KILL_SW) {
-		IOLog("%s: Radio is disabled by Manual Disable "
-			       "switch\n", priv->net_dev->name);
-		return 0;
-	}
+
 
 	/* If the interrupt is enabled, turn it off... */
 	ipw2100_disable_interrupts(priv);
@@ -3674,6 +3692,13 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	/* Turn on the interrupt so that commands can be processed */
 	ipw2100_enable_interrupts(priv);
 
+	/* Quite if manually disabled. */
+	if (priv->status & STATUS_RF_KILL_SW) {
+		IOLog("%s: Radio is disabled by Manual Disable "
+			       "switch\n", priv->net_dev->name);
+		return 0;
+	}
+	
 if (!deferred) {
 	/* Send all of the commands that must be sent prior to
 	 * HOST_COMPLETE */
@@ -3974,6 +3999,7 @@ void darwin_iwi2100::ipw2100_wx_event_work(struct ipw2100_priv *priv)
 	if (priv->status & STATUS_STOPPING)
 		return;
 
+	if (!(priv->config & CFG_ASSOCIATE)) return;
 	//mutex_lock(&priv->action_mutex);
 
 	IOLog("associating\n");
@@ -6921,20 +6947,20 @@ void darwin_iwi2100::init_sys_config(struct ipw2100_sys_config *sys_config)
 	
 }
 
-void darwin_iwi2100::ipw2100_add_cck_scan_rates(struct ipw2100_supported_rates *rates,
+void darwin_iwi2100::ipw2100_add_cck_scan_rates(struct ipw_supported_rates *rates,
 				   u8 modulation, u32 rate_mask)
 {
 	
 }
 
-void darwin_iwi2100::ipw2100_add_ofdm_scan_rates(struct ipw2100_supported_rates *rates,
+void darwin_iwi2100::ipw2100_add_ofdm_scan_rates(struct ipw_supported_rates *rates,
 				    u8 modulation, u32 rate_mask)
 {
 	
 }
 
 int darwin_iwi2100::init_supported_rates(struct ipw2100_priv *priv,
-				struct ipw2100_supported_rates *rates)
+				struct ipw_supported_rates *rates)
 {
 	
 }
@@ -7793,22 +7819,238 @@ int darwin_iwi2100::ipw2100_is_rate_in_mask(struct ipw2100_priv *priv, int ieee_
 
 int darwin_iwi2100::ipw2100_compatible_rates(struct ipw2100_priv *priv,
 				const struct ieee80211_network *network,
-				struct ipw2100_supported_rates *rates)
+				struct ipw_supported_rates *rates)
 {
 	
 }
 
-void darwin_iwi2100::ipw2100_copy_rates(struct ipw2100_supported_rates *dest,
-			   const struct ipw2100_supported_rates *src)
+void darwin_iwi2100::ipw2100_copy_rates(struct ipw_supported_rates *dest,
+			   const struct ipw_supported_rates *src)
 {
 	
 }
+
+
 
 int darwin_iwi2100::ipw2100_best_network(struct ipw2100_priv *priv,
-			    struct ipw2100_network_match *match,
+			    struct ipw_network_match *match,
 			    struct ieee80211_network *network, int roaming)
 {
+	struct ipw_supported_rates rates;
+	IWI_DEBUG("ipw_best_network\n");
 	
+	/* dump information */
+	IWI_DEBUG("iw_mode[%d] capability[%d] flag[%d] scan_age[%d]\n",priv->ieee->iw_mode,
+	  network->capability,network->flags,priv->ieee->scan_age);
+	IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' \n",
+	  escape_essid((const char*)network->ssid, network->ssid_len),
+	  MAC_ARG(network->bssid));
+
+
+	//check if the network should be excluded
+	/*if (priv->ieee->iw_mode == IW_MODE_INFRA)
+	if (network->bssid)
+	{
+		for (int i=0;i<20;i++) 
+		{
+			if (nonets[i].bssid)
+			if (!memcmp(nonets[i].bssid, network->bssid, ETH_ALEN)) 
+			{
+				IWI_LOG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' in exclude list. "
+				"restart card to include.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid));
+				//return 0;
+			}
+		}
+	}*/
+
+	/* Verify that this network's capability is compatible with the
+	 * current mode (AdHoc or Infrastructure) */
+
+	 //BUG: kernel panic - the driver attach to a bss network when p_mode=0 !!
+	if ((priv->ieee->iw_mode == IW_MODE_INFRA &&
+	     !(network->capability & WLAN_CAPABILITY_ESS)) ||
+	    (priv->ieee->iw_mode == IW_MODE_ADHOC &&
+	     !(network->capability & WLAN_CAPABILITY_IBSS))) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded due to "
+				"capability mismatch.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid));
+		return 0;
+	}
+
+	/* If we do not have an ESSID for this AP, we can not associate with
+	 * it */
+	if (network->flags & NETWORK_EMPTY_ESSID) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of hidden ESSID.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid));
+		return 0;
+	}
+
+	if (unlikely(roaming)) {
+		/* If we are roaming, then ensure check if this is a valid
+		 * network to try and roam to */
+		if ((network->ssid_len != match->network->ssid_len) ||
+		    memcmp(network->ssid, match->network->ssid,
+			   network->ssid_len)) {
+			IWI_DEBUG("Netowrk '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+					"because of non-network ESSID.\n",
+					escape_essid((const char*)network->ssid,
+						     network->ssid_len),
+					MAC_ARG(network->bssid));
+			return 0;
+		}
+	} else {
+		/* If an ESSID has been configured then compare the broadcast
+		 * ESSID to ours */
+		if ((priv->config & CFG_STATIC_ESSID) &&
+		    ((network->ssid_len != priv->essid_len) ||
+		     memcmp(network->ssid, priv->essid,
+			    min(network->ssid_len, priv->essid_len)))) {
+			char escaped[IW_ESSID_MAX_SIZE * 2 + 1];
+			strncpy(escaped,
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				sizeof(escaped));
+			IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+					"because of ESSID mismatch: '%s'.\n",
+					escaped, MAC_ARG(network->bssid),
+					escape_essid((const char*)priv->essid,
+						     priv->essid_len));
+			return 0;
+		}
+	}
+
+	/* If the old network rate is better than this one, don't bother
+	 * testing everything else. */
+	if (match->network && match->network->stats.rssi > network->stats.rssi) {
+		char escaped[IW_ESSID_MAX_SIZE * 2 + 1];
+		strncpy(escaped,
+			escape_essid((const char*)network->ssid, network->ssid_len),
+			sizeof(escaped));
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded because "
+				"'%s (%02x:%02x:%02x:%02x:%02x:%02x)' has a stronger signal.\n",
+				escaped, MAC_ARG(network->bssid),
+				escape_essid((const char*)match->network->ssid,
+					     match->network->ssid_len),
+				MAC_ARG(match->network->bssid));
+		return 0;
+	}
+
+	/* If this network has already had an association attempt within the
+	 * last 3 seconds, do not try and associate again... */
+	if (network->last_associate &&
+	    time_after(network->last_associate + (HZ * 3UL), jiffies)) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of storming (%ums since last "
+				"assoc attempt).\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid),
+				jiffies_to_msecs(jiffies -
+						 network->last_associate));
+		return 0;
+	}
+
+	/* Now go through and see if the requested network is valid... */
+	if (priv->ieee->scan_age != 0 &&
+	    time_after(jiffies, network->last_scanned + priv->ieee->scan_age)) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of age: %ums.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid),
+				jiffies_to_msecs(jiffies -
+						 network->last_scanned));
+		//return 0;
+	}
+
+	if ((priv->config & CFG_STATIC_CHANNEL) &&
+	    (network->channel != priv->channel)) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of channel mismatch: %d != %d.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid),
+				network->channel, priv->channel);
+		return 0;
+	}
+
+	/* Verify privacy compatability */
+	if (((priv->capability & CAP_PRIVACY_ON) ? 1 : 0) !=
+	    ((network->capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of privacy mismatch: %s != %s.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid),
+				priv->capability & CAP_PRIVACY_ON ? "on" :
+				"off",
+				network->capability &
+				WLAN_CAPABILITY_PRIVACY ? "on" : "off");
+		return 0;
+	}
+
+	if ((priv->config & CFG_STATIC_BSSID) &&
+	    memcmp(network->bssid, priv->bssid, ETH_ALEN)) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of BSSID mismatch: %02x:%02x:%02x:%02x:%02x:%02x.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid), MAC_ARG(priv->bssid));
+		return 0;
+	}
+
+	/* Filter out any incompatible freq / mode combinations */
+	if (!ieee80211_is_valid_mode(priv->ieee, network->mode)) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of invalid frequency/mode "
+				"combination.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid));
+		return 0;
+	}
+
+	/* Filter out invalid channel in current GEO */
+	// if ignored the association can be done
+	// we should build a list of excluded networks and allow the user to choose the desired network -> interface
+	if (!ipw2100_is_valid_channel(priv->ieee, network->channel)) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of invalid channel in current GEO\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid));
+		//return 0;
+	}
+
+	/* Ensure that the rates supported by the driver are compatible with
+	 * this AP, including verification of basic rates (mandatory) */
+	if (!ipw2100_compatible_rates(priv, network, &rates)) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because configured rate mask excludes "
+				"AP mandatory rate.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid));
+		return 0;
+	}
+
+	if (rates.num_rates == 0) {
+		IWI_DEBUG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' excluded "
+				"because of no compatible rates.\n",
+				escape_essid((const char*)network->ssid, network->ssid_len),
+				MAC_ARG(network->bssid));
+		return 0;
+	}
+
+	/* TODO: Perform any further minimal comparititive tests.  We do not
+	 * want to put too much policy logic here; intelligent scan selection
+	 * should occur within a generic IEEE 802.11 user space tool.  */
+
+	/* Set up 'new' AP to this network */
+	ipw2100_copy_rates(&match->rates, &rates);
+	match->network = network;
+
+	IWI_LOG("Network '%s (%02x:%02x:%02x:%02x:%02x:%02x)' is a viable match.\n",
+			escape_essid((const char*)network->ssid, network->ssid_len),
+			MAC_ARG(network->bssid));
+
+	return 1;	
 }
 
 int darwin_iwi2100::ipw2100_associate(ipw2100_priv *data)
@@ -7823,9 +8065,74 @@ void darwin_iwi2100::ipw2100_set_fixed_rate(struct ipw2100_priv *priv, int mode)
 
 int darwin_iwi2100::ipw2100_associate_network(struct ipw2100_priv *priv,
 				 struct ieee80211_network *network,
-				 struct ipw2100_supported_rates *rates, int roaming)
+				 struct ipw_supported_rates *rates, int roaming)
 {
+	IOLog("ipw2100_associate_network\n");
+	
+	int ret, len, essid_len;
+	char essid[IW_ESSID_MAX_SIZE];
+	u32 txrate;
+	u32 chan;
+	char *txratename;
+	u8 bssid[ETH_ALEN];
 
+	priv->config |= CFG_ASSOCIATE;
+	ipw2100_set_essid(priv, (char*)network->ssid, network->ssid_len,0);
+		
+	txrate=network->rates[network->rates_len];
+	ipw2100_set_tx_rates(priv, txrate, 0);
+
+	chan=network->channel;
+	ipw2100_set_channel(priv, chan, 0);
+	
+
+	ret=ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_AP_BSSID, &bssid, (u32*)&len);
+	if (ret) {
+		IOLog("failed querying ordinals at line %d\n",
+			       __LINE__);
+		return 0;
+	}
+	memcpy(priv->ieee->bssid, bssid, ETH_ALEN);
+
+	switch (txrate) {
+	case TX_RATE_1_MBIT:
+		txratename = "1Mbps";
+		break;
+	case TX_RATE_2_MBIT:
+		txratename = "2Mbsp";
+		break;
+	case TX_RATE_5_5_MBIT:
+		txratename = "5.5Mbps";
+		break;
+	case TX_RATE_11_MBIT:
+		txratename = "11Mbps";
+		break;
+	default:
+		IOLog("Unknown rate: %d\n", txrate);
+		txratename = "unknown rate";
+		break;
+	}
+
+	IOLog("%s: Associated with '%s' at %s, channel %d (BSSID="
+		       MAC_FMT ")\n",
+		       priv->net_dev->name, escape_essid((char*)network->ssid, network->ssid_len),
+		       txratename, chan, MAC_ARG(bssid));
+
+	/* now we copy read ssid into dev */
+	if (!(priv->config & CFG_STATIC_ESSID)) {
+		priv->essid_len = min((u8) network->ssid_len, (u8) IW_ESSID_MAX_SIZE);
+		memcpy(priv->essid, network->ssid, priv->essid_len);
+	}
+	priv->channel = chan;
+	memcpy(priv->bssid, bssid, ETH_ALEN);
+
+	priv->status |= STATUS_ASSOCIATING;
+	priv->connect_start = jiffies;//get_seconds();
+
+	//queue_delayed_work(priv->workqueue, &priv->wx_event_work, HZ / 10);
+	//queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),priv,NULL,true);
+	ipw2100_wx_event_work(priv);
+	priv->config &= ~CFG_ASSOCIATE;
 }
 
 void darwin_iwi2100::ipw2100_reset_stats(struct ipw2100_priv *priv)
@@ -8089,3 +8396,196 @@ void darwin_iwi2100::read_nic_memory(struct net_device *dev, u32 addr, u32 len, 
 		read_register_byte(dev, IPW_REG_INDIRECT_ACCESS_DATA + i, buf);
 }
 
+int ConnectClient(kern_ctl_ref kctlref,struct sockaddr_ctl *sac,void **unitinfo)
+{
+	IWI_LOG("connect\n");
+	clone->userInterfaceLink=1;
+	return(0);
+}
+
+int disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo)
+{
+	clone->userInterfaceLink=0;
+	IWI_LOG("disconnect\n");
+	return(0);
+}
+
+int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len)
+{
+	IOLog("configureConnection op %d\n",opt);
+	//int i=*((int*)data);
+	if (opt==4)// mode
+	{
+		int m=*((int*)data);
+		m=m-1;
+		IWI_LOG("setting mode to %d\n",m);
+		if (clone->priv->config & CFG_NO_LED) clone->led=0; else clone->led=1;
+		clone->associate=0;
+		clone->mode=m;
+		clone->ipw2100_sw_reset(0);
+		clone->schedule_reset(clone->priv);
+	}
+	if (opt==3)// led
+	{
+		if (clone->priv->config & CFG_NO_LED)
+			clone->priv->config &= ~CFG_NO_LED;
+		else
+			clone->priv->config |= CFG_NO_LED;
+			
+		//if (clone->priv->config & CFG_NO_LED) clone->ipw_led_shutdown(clone->priv);
+		//else clone->ipw_led_link_on(clone->priv);
+	}
+	if (opt==2) //associate network.
+	{
+		//todo: check other priv status
+		clone->priv->status |= STATUS_RF_KILL_HW;
+		clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+		clone->setLinkStatus(kIONetworkLinkValid);
+		//if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
+		clone->schedule_reset(clone->priv);
+		clone->priv->status &= ~STATUS_RF_KILL_HW;
+		struct ieee80211_network *network = NULL;	
+		struct ipw_network_match match = {NULL};
+		struct ipw_supported_rates *rates;
+		
+		list_for_each_entry(network, &clone->priv->ieee->network_list, list) 
+		{
+			if (!memcmp(network->bssid,((struct ieee80211_network *)data)->bssid,sizeof(network->bssid)))
+			{
+				clone->ipw2100_best_network(clone->priv, &match, network, 0);
+				goto ex1;;
+			}
+		}
+		ex1:
+		network = match.network;
+		rates = &match.rates;
+		if (network == NULL)
+		{
+			IWI_LOG("can't associate to this network\n");
+			return 1;
+		}
+		int rep=0;
+		while (!(clone->priv->status & STATUS_ASSOCIATED)) 
+		{
+			//clone->ipw_adapter_restart(clone->priv);
+			clone->schedule_reset(clone->priv);
+			IODelay(5000*1000);
+			clone->ipw2100_associate_network(clone->priv, network, rates, 0);
+			IODelay(5000*1000);
+			rep++;
+			if (rep==5) break;
+		}
+		if (rep == 5)
+		{
+			IWI_LOG("failed when associating to this network\n");
+			return 1;
+		}
+	}
+	if (opt==1) //HACK: start/stop the nic
+	{
+		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
+		{
+			clone->priv->config &= ~CFG_ASSOCIATE;
+			int q=0;
+			if (clone->rf_kill_active(clone->priv)) 
+			{	
+				u32 reg;
+				clone->read_register(clone->priv->net_dev, IPW_REG_GPIO, &reg);
+				reg = reg &~ IPW_BIT_GPIO_RF_KILL;
+				clone->write_register(clone->priv->net_dev, IPW_REG_GPIO, reg);			
+			} else q=1;
+			clone->priv->status &= ~STATUS_RF_KILL_HW;
+			clone->priv->status &= ~STATUS_RF_KILL_SW;
+			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+			if (q==1) clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2100::ipw2100_rf_kill),clone->priv,2000,true);
+			IWI_LOG("radio on \n");
+		}
+		else
+		{
+			if (!(clone->rf_kill_active(clone->priv))) 
+			{
+				u32 reg;
+				clone->read_register(clone->priv->net_dev, IPW_REG_GPIO, &reg);
+				reg = reg | IPW_BIT_GPIO_RF_KILL;
+				clone->write_register(clone->priv->net_dev, IPW_REG_GPIO, reg);
+			}
+			clone->priv->status |= STATUS_RF_KILL_HW;
+			clone->priv->status &= ~STATUS_RF_KILL_SW;
+			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+			clone->setLinkStatus(kIONetworkLinkValid);
+			//if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
+			//clone->schedule_reset(clone->priv);
+			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2100::ipw2100_rf_kill),clone->priv,2000,true);
+			IWI_LOG("radio off \n");
+		}	
+	}
+
+	return(0);
+}
+
+int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len)
+{
+	IOLog("sendNetworkList op %d\n",opt);
+	if (opt==0) memcpy(data,clone->priv,*len);
+	if (opt==1) memcpy(data,clone->priv->ieee,*len);
+	if (opt==2)
+	{
+		struct ieee80211_network *n=NULL,*n2=(struct ieee80211_network*)data;
+		int i=0;
+		list_for_each_entry(n, &clone->priv->ieee->network_list, list)
+		{
+			i++;
+			if (n2->ssid_len==0)
+			{
+				memcpy(data,n,*len);
+				goto ex;
+			}
+			else
+			{
+				if (!memcmp(n2->bssid,n->bssid,sizeof(n->bssid)) && n->ssid_len>0)
+				{
+					//memcpy(data,&n0,*len);
+					n2->ssid_len=0;
+					//n2=(struct ieee80211_network*)data;
+				}
+			}
+		}
+		ex:
+		IWI_LOG("found %d networks\n",i);
+	}
+	//if (opt==3) memcpy(data,clone->priv->assoc_network,*len);
+	if (opt==4)
+	{	
+		if (clone->netStats->outputPackets<30 || !(clone->priv->status & STATUS_ASSOCIATED)) return 1;
+		ifaddr_t *addresses;
+		struct sockaddr *out_addr, ou0;
+		out_addr=&ou0;
+		int p=0;
+		if (ifnet_get_address_list_family(clone->fifnet, &addresses, AF_INET)==0)
+		{
+			if (!addresses[0]) p=1;
+			else
+			if (ifaddr_address(addresses[0], out_addr, sizeof(*out_addr))==0)
+			{
+				//IWI_LOG("my ip address: " IP_FORMAT "\n",IP_LIST(out_addr->sa_data));
+				memcpy(data,out_addr->sa_data,*len);
+				/*if (clone->priv->ieee->iw_mode == IW_MODE_INFRA)
+				if ((int)(IP_CH(out_addr->sa_data)[2])==169 && (int)(IP_CH(out_addr->sa_data)[3])==254)
+				{
+					IWI_LOG("no internet connection!\n");// dissasociate , invalidade this network, re-scan
+					clone->priv->assoc_network->exclude=1;
+				}*/
+			}
+			else p=1;
+			ifnet_free_address_list(addresses);
+		} else p=1;
+		if (p==1) return 1;
+	}
+	if (opt==5) memcpy(data,clone->priv->ieee->dev,*len);
+	return (0);
+}
+
+int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags)
+{
+return 0;
+}
