@@ -655,7 +655,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	u32 length, val;
 	int i;
 	struct ieee80211_hw *ieee;
-	
+	struct ieee80211_local *local;
 	
 	//net_dev=(struct net_device*)fifnet;
 	net_dev=&net_dev2;
@@ -671,17 +671,31 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	ieee->flags = IEEE80211_HW_WEP_INCLUDE_IV;
 	ieee->queues = 4;
 	
+	local = hw_to_local(ieee);
+	local->hw.queues = 1;
+	local->bridge_packets = 1;
+
+	//local->rts_threshold = IEEE80211_MAX_RTS_THRESHOLD;
+	//local->fragmentation_threshold = IEEE80211_MAX_FRAG_THRESHOLD;
+	local->short_retry_limit = 7;
+	local->long_retry_limit = 4;
+	local->hw.conf.radio_enabled = 1;
+	//local->rate_ctrl_num_up = RATE_CONTROL_NUM_UP;
+	//local->rate_ctrl_num_down = RATE_CONTROL_NUM_DOWN;
+
+	//local->scan.in_scan = 0;
+	local->enabled_modes = (unsigned int) -1;
+	INIT_LIST_HEAD(&local->modes_list);
+	INIT_LIST_HEAD(&local->sta_list);
+	INIT_LIST_HEAD(&local->deleted_sta_list);
 	
 	priv = &priv2;
 	//priv=(struct ipw_priv*)ieee80211_priv(net_dev);
 	priv->ieee = ieee;
-
+	//local->scan_flags |= IEEE80211_SCAN_EXTRA_INFO;
 	priv->ieee_channels = NULL;
 	priv->ieee_rates = NULL;
-	priv->num_stations = 0;
-	memset(priv->stations, 0,
-	       priv->hw_setting.number_of_stations * sizeof(struct ipw_station_entry));
-		   
+ 
 	priv->net_dev = net_dev;
 		
 	priv->rxq = NULL;
@@ -696,16 +710,15 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 
 	INIT_LIST_HEAD(&priv->free_frames);
 
-	//INIT_LIST_HEAD(&priv->daemon_in_list);
-	//INIT_LIST_HEAD(&priv->daemon_out_list);
-	//INIT_LIST_HEAD(&priv->daemon_free_list);
-
+	ipw_clear_stations_table(priv);
+	
 	memset(&(priv->txq[0]), 0, sizeof(struct ipw_tx_queue) * 6);
 	memset(&priv->card_alive, 0, sizeof(struct ipw_alive_resp));
 	priv->data_retry_limit = -1;
 	priv->auth_state = AUTH_INIT;
-
-	priv->hw_base = memBase;
+	priv->ieee_channels = NULL;
+	priv->ieee_rates = NULL;
+	//priv->hw_base = memBase;
 
 
 	/* Initialize module parameter values here */
@@ -5397,7 +5410,7 @@ int darwin_iwi3945::ipw_init_channel_map(struct ipw_priv *priv)
 
 	IOLog("Parsing data for %d channels.\n", priv->channel_count);
 
-	kfree(priv->channel_info);
+	//kfree(priv->channel_info);
 	(void*)priv->channel_info = (void*)kmalloc(sizeof(struct ipw_channel_info) *
 				     priv->channel_count, NULL);
 	if (!priv->channel_info)
@@ -7023,13 +7036,13 @@ void darwin_iwi3945::ipw_bg_alive_start()
 			IOLog("Thermal calibration took %dus\n",
 				       thermal_spin * 10);
 	}
-
-	/*rc = ipw_init_channel_map(priv);
+	IOLog("ipw_init_channel_map\n");
+	rc = ipw_init_channel_map(priv);
 	if (rc) {
 		IOLog("initializing regulatory failed: %d\n", rc);
 		//mutex_unlock(&priv->mutex);
 		return;
-	}*/
+	}
 	IOLog("ipw_init_geos\n");
 	ipw_init_geos(priv);
 
@@ -7049,8 +7062,8 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 	//	mutex_lock(&priv->mutex);
 		priv->netdev_registered = 1;
-	IOLog("ipw_reset_channel_flag\n");
-		//ipw_reset_channel_flag(priv);
+		IOLog("ipw_reset_channel_flag\n");
+		ipw_reset_channel_flag(priv);
 	}
 
 	memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
@@ -7058,10 +7071,10 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	priv->rates_mask = IEEE80211_DEFAULT_RATES_MASK;
 	IOLog("ipw_set_supported_rates_mask\n");
 	ipw_set_supported_rates_mask(priv, priv->rates_mask);
-	//IOLog("ipw_set_rate\n");
-	//ipw_set_rate(priv);
-	//IOLog("ipw_send_power_mode\n");
-	//ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
+	IOLog("ipw_set_rate\n");
+	ipw_set_rate(priv);
+	IOLog("ipw_send_power_mode\n");
+	ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
 
 /*
  * ipw_qos_activate(priv, NULL);
@@ -7069,31 +7082,31 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
 
 	/* Initialize our rx_config data */
-	//IOLog("ipw_connection_init_rx_config\n");
-	//ipw_connection_init_rx_config(priv);
+	IOLog("ipw_connection_init_rx_config\n");
+	ipw_connection_init_rx_config(priv);
 	memcpy(priv->staging_rxon.node_addr, priv->net_dev->dev_addr, ETH_ALEN);
 
 	/* Configure BT coexistence */
-	//IOLog("ipw_send_bt_config\n");
-	//ipw_send_bt_config(priv);
+	IOLog("ipw_send_bt_config\n");
+	ipw_send_bt_config(priv);
 
-	//IOLog("ipw_commit_rxon\n");
+	IOLog("ipw_commit_rxon\n");
 	/* Configure the adapter for unassociated operation */
-	//ipw_commit_rxon(priv);
+	ipw_commit_rxon(priv);
 
 	/* Add the broadcast address so we can send probe requests */
-	//IOLog("ipw_rxon_add_station\n");
-	//ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
-	//IOLog("ipw_init_rate_scaling\n");
-	//ipw_init_rate_scaling(priv);
+	IOLog("ipw_rxon_add_station\n");
+	ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
+	IOLog("ipw_init_rate_scaling\n");
+	ipw_init_rate_scaling(priv);
 
 	/* At this point, the NIC is initialized and operational */
 	priv->notif_missed_beacons = 0;
 	priv->status |= STATUS_READY;
 
 //	ipw_update_link_led(priv);
-	//IOLog("reg_txpower_periodic\n");
-	//reg_txpower_periodic(priv);
+	IOLog("reg_txpower_periodic\n");
+	reg_txpower_periodic(priv);
 
 	//mutex_unlock(&priv->mutex);
 	
