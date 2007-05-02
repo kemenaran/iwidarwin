@@ -761,9 +761,14 @@ virtual IOOptionBits getState( void ) const;
 				    u16 * data_rate, u16 * ctrl_rate);
 	virtual int ipw_get_sta_id(struct ipw_priv *priv,
 			  struct ieee80211_hdr *hdr);
-	
-	
-	
+	virtual int ieee80211_unmask_channels(struct net_device *dev);
+	virtual int ieee80211_init_client(struct net_device *dev);
+	virtual void ieee80211_unmask_channel(struct net_device *dev, int mode,
+				     struct ieee80211_channel *chan);
+					 
+					 
+					 
+					 
 	
 	
 	

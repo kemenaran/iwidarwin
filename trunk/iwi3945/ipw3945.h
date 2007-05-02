@@ -29,6 +29,13 @@
 
 #include "defines.h"
 
+struct ieee80211_channel_range {
+	short start_freq;
+	short end_freq;
+	unsigned char power_level;
+	unsigned char antenna_max;
+};
+
 static LIST_HEAD(rate_ctrl_algs);
 
 struct rate_control_ops {
