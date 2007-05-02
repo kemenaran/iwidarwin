@@ -2574,7 +2574,7 @@ int darwin_iwi3945::ipw3945_queue_tx_init(struct ipw_priv *priv,
 	//struct pci_dev *dev = priv->pci_dev;
 
 	if (id != priv->hw_setting.cmd_queue_no) {
-		(void*)q->txb = (void*)kmalloc(sizeof(q->txb[0]) *
+		q->txb = (struct ipw_tx_info*)kmalloc(sizeof(q->txb[0]) *
 				 TFD_QUEUE_SIZE_MAX, GFP_ATOMIC);
 		if (!q->txb) {
 			IOLog("kmalloc for auxilary BD "
@@ -2914,7 +2914,7 @@ struct ipw_rx_queue *darwin_iwi3945::ipw_rx_queue_alloc(struct ipw_priv *priv)
 	struct ipw_rx_queue *rxq;
 	//struct pci_dev *dev = priv->pci_dev;
 	int i;
-	(void*)rxq = (void*)kmalloc(sizeof(*rxq), GFP_ATOMIC);
+	rxq = (struct ipw_rx_queue*)kmalloc(sizeof(*rxq), GFP_ATOMIC);
 	memset(rxq, 0, sizeof(*rxq));
 
 	//spin_lock_init(&rxq->lock);
@@ -4749,7 +4749,15 @@ int darwin_iwi3945::ipw_fill_probe_req(struct ipw_priv *priv,
 struct ieee80211_hw_mode *darwin_iwi3945::ipw_get_hw_mode(struct ipw_priv *priv,
 						  int mode)
 {
-	return priv->modes;
+	struct ieee80211_hw_mode *hw_mode;
+	struct ieee80211_local *local = hw_to_local(priv->ieee);
+
+	list_for_each_entry(hw_mode, &local->modes_list, list) {
+		if (hw_mode->mode == mode)
+			return hw_mode;
+	}
+
+	return NULL;
 }
 
 int darwin_iwi3945::ipw_get_antenna_flags(struct ipw_priv *priv)
@@ -4838,7 +4846,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 	}
 
 	if (!priv->scan) {
-		(void*)priv->scan = (void*)kmalloc(sizeof(struct ipw_scan_cmd) +
+		priv->scan = (struct ipw_scan_cmd*)kmalloc(sizeof(struct ipw_scan_cmd) +
 				     IPW_MAX_SCAN_SIZE, GFP_ATOMIC);
 		if (!priv->scan) {
 			rc = -ENOMEM;
@@ -5411,7 +5419,7 @@ int darwin_iwi3945::ipw_init_channel_map(struct ipw_priv *priv)
 	IOLog("Parsing data for %d channels.\n", priv->channel_count);
 
 	//kfree(priv->channel_info);
-	(void*)priv->channel_info = (void*)kmalloc(sizeof(struct ipw_channel_info) *
+	priv->channel_info = (struct ipw_channel_info*)kmalloc(sizeof(struct ipw_channel_info) *
 				     priv->channel_count, NULL);
 	if (!priv->channel_info)
 		return -ENOMEM;
@@ -6045,18 +6053,18 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 	if (!list_empty(&local->modes_list))
 		return;
 
-	(void*)modes = (void*)kmalloc(sizeof(struct ieee80211_hw_mode) * 3, GFP_ATOMIC);
+	modes = (struct ieee80211_hw_mode*)kmalloc(sizeof(struct ieee80211_hw_mode) * 3, GFP_ATOMIC);
 	if (!modes)
 		return;
 
-	(void*)channels = (void*)kmalloc(sizeof(struct ieee80211_channel) *
+	channels = (struct ieee80211_channel*)kmalloc(sizeof(struct ieee80211_channel) *
 			   priv->channel_count, GFP_ATOMIC);
 	if (!channels) {
 		kfree(modes);
 		return;
 	}
 
-	(void*)rates = (void*)kmalloc((sizeof(struct ieee80211_rate) * (IPW_MAX_RATES + 1)),
+	rates = (struct ieee80211_rate*)kmalloc((sizeof(struct ieee80211_rate) * (IPW_MAX_RATES + 1)),
 			GFP_ATOMIC);
 	if (!rates) {
 		kfree(modes);
@@ -6799,8 +6807,94 @@ int darwin_iwi3945::ieee80211_register_hwmode(struct ieee80211_hw *hw,
 		ieee80211_prepare_rates(local);
 	}
 
-	//ieee80211_init_client(local->mdev);
+	ieee80211_init_client(local->mdev);
 
+	return 0;
+}
+
+static const struct ieee80211_channel_range ieee80211_fcc_channels[] = {
+	{ 2412, 2462, 27, 6 } /* IEEE 802.11b/g, channels 1..11 */,
+	{ 5180, 5240, 17, 6 } /* IEEE 802.11a, channels 36..48 */,
+	{ 5260, 5320, 23, 6 } /* IEEE 802.11a, channels 52..64 */,
+	{ 5745, 5825, 30, 6 } /* IEEE 802.11a, channels 149..165, outdoor */,
+	{ 0 }
+};
+
+static const struct ieee80211_channel_range *channel_range =
+	ieee80211_fcc_channels;
+	
+void darwin_iwi3945::ieee80211_unmask_channel(struct net_device *dev, int mode,
+				     struct ieee80211_channel *chan)
+{
+	int i;
+
+	chan->flag = 0;
+
+	/*if (ieee80211_regdom == 64 &&
+	    (mode == MODE_ATHEROS_TURBO || mode == MODE_ATHEROS_TURBOG)) {
+		return;
+	}*/
+
+	for (i = 0; channel_range[i].start_freq; i++) {
+		const struct ieee80211_channel_range *r = &channel_range[i];
+		if (r->start_freq <= chan->freq && r->end_freq >= chan->freq) {
+			/*if (ieee80211_regdom == 64 && !ieee80211_japan_5ghz &&
+			    chan->freq >= 5260 && chan->freq <= 5320) {
+				continue;
+			}*/
+
+			if (/*ieee80211_regdom == 0x10 &&*/
+			    (chan->freq == 5190 || chan->freq == 5210 ||
+			     chan->freq == 5230)) {
+				    /* Skip MKK channels when in FCC domain. */
+				    continue;
+			}
+
+			chan->flag |= IEEE80211_CHAN_W_SCAN |
+				IEEE80211_CHAN_W_ACTIVE_SCAN |
+				IEEE80211_CHAN_W_IBSS;
+			chan->power_level = r->power_level;
+			chan->antenna_max = r->antenna_max;
+
+			/*if (ieee80211_regdom == 64 &&
+			    (chan->freq == 5170 || chan->freq == 5190 ||
+			     chan->freq == 5210 || chan->freq == 5230)) {
+
+				chan->flag &= ~IEEE80211_CHAN_W_ACTIVE_SCAN;
+			}
+
+			if (ieee80211_regdom == 64 &&
+			    (chan->freq == 5260 || chan->freq == 5280 ||
+			     chan->freq == 5300 || chan->freq == 5320)) {
+				chan->flag &= ~IEEE80211_CHAN_W_IBSS;
+			}*/
+
+			break;
+		}
+	}
+}
+
+int darwin_iwi3945::ieee80211_unmask_channels(struct net_device *dev)
+{
+	struct ieee80211_local *local = hw_to_local(priv->ieee);
+	//wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_hw_mode *mode;
+	int c;
+
+	list_for_each_entry(mode, &local->modes_list, list) {
+		for (c = 0; c < mode->num_channels; c++) {
+			ieee80211_unmask_channel(dev, mode->mode,
+						 &mode->channels[c]);
+		}
+	}
+	return 0;
+}
+
+int darwin_iwi3945::ieee80211_init_client(struct net_device *dev)
+{
+	//if (ieee80211_regdom == 0x40)
+	//	channel_range = ieee80211_mkk_channels;
+	ieee80211_unmask_channels(dev);
 	return 0;
 }
 
