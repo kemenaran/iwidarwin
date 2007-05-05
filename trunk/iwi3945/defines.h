@@ -996,6 +996,14 @@ typedef unsigned char UInt8;
 #define IW_QUAL_DBM             0x08    /* Level + Noise are dBm */
 #define CHAN_UTIL_RATE_LCM 95040
 
+#define IPW_ACTIVE_DWELL_TIME_24    (20)	/* all times in msec */
+#define IPW_ACTIVE_DWELL_TIME_52    (10)
+#define IPW_PASSIVE_DWELL_TIME_24   (20)	/* all times in msec */
+#define IPW_PASSIVE_DWELL_TIME_52   (10)
+#define IPW_PASSIVE_DWELL_BASE      (100)
+#define IPW_CHANNEL_TUNE_TIME       5
+
+
 
 
 

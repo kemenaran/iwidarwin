@@ -685,9 +685,9 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 
 	//local->scan.in_scan = 0;
 	local->enabled_modes = (unsigned int) -1;
-	INIT_LIST_HEAD(&local->modes_list);
+	/*INIT_LIST_HEAD(&local->modes_list);
 	INIT_LIST_HEAD(&local->sta_list);
-	INIT_LIST_HEAD(&local->deleted_sta_list);
+	INIT_LIST_HEAD(&local->deleted_sta_list);*/
 	
 	priv = &priv2;
 	//priv=(struct ipw_priv*)ieee80211_priv(net_dev);
@@ -4797,7 +4797,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 	u8 direct_mask;
 	int phymode;
 
-	conf = &priv->ieee->conf;
+	conf = ieee80211_get_hw_conf(priv->ieee);
 
 	if (!ipw_is_ready(priv)) {
 		IOLog("request scan called when driver not ready.\n");
@@ -4950,9 +4950,9 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 	else
 		IOLog("Initiating indirect scan.\n");
 
-//	scan->channel_count = ipw_get_channels_for_scan(
-//		priv, phymode, 1 /* active */ , direct_mask,
-//		(void *)&scan->data[scan->tx_cmd.len]);
+	scan->channel_count = ipw_get_channels_for_scan(
+		priv, phymode, 1 /* active */ , direct_mask,
+		(struct ipw_scan_channel*)&scan->data[scan->tx_cmd.len]);
 
 	cmd.len += scan->tx_cmd.len +
 	    scan->channel_count * sizeof(struct ipw_scan_channel);
@@ -6039,10 +6039,10 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 {
 	struct ieee80211_local *local = hw_to_local(priv->ieee);
 	struct ipw_channel_info *ch;
-	struct ieee80211_hw_mode *modes;
-	struct ieee80211_channel *channels;
+	//struct ieee80211_hw_mode *modes;
+	//struct ieee80211_channel *channels;
 	struct ieee80211_channel *geo_ch;
-	struct ieee80211_rate *rates;
+	//struct ieee80211_rate *rates;
 	int i = 0;
 	enum {
 		A = 0,
@@ -6051,24 +6051,26 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 	};
 
 	if (!list_empty(&local->modes_list))
+	{
+		IOLog("ipw_init_geos error\n");
+		return;
+	}
+	modes0 = (struct ieee80211_hw_mode*)kmalloc(sizeof(struct ieee80211_hw_mode) * 3, GFP_ATOMIC);
+	if (!modes0)
 		return;
 
-	modes = (struct ieee80211_hw_mode*)kmalloc(sizeof(struct ieee80211_hw_mode) * 3, GFP_ATOMIC);
-	if (!modes)
-		return;
-
-	channels = (struct ieee80211_channel*)kmalloc(sizeof(struct ieee80211_channel) *
+	channels0 = (struct ieee80211_channel*)kmalloc(sizeof(struct ieee80211_channel) *
 			   priv->channel_count, GFP_ATOMIC);
-	if (!channels) {
-		kfree(modes);
+	if (!channels0) {
+		kfree(modes0);
 		return;
 	}
 
-	rates = (struct ieee80211_rate*)kmalloc((sizeof(struct ieee80211_rate) * (IPW_MAX_RATES + 1)),
+	rates0 = (struct ieee80211_rate*)kmalloc((sizeof(struct ieee80211_rate) * (IPW_MAX_RATES + 1)),
 			GFP_ATOMIC);
-	if (!rates) {
-		kfree(modes);
-		kfree(channels);
+	if (!rates0) {
+		kfree(modes0);
+		kfree(channels0);
 		return;
 	}
 
@@ -6078,30 +6080,30 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 	 */
 
 	/* 5.2Ghz channels start after the 2.4Ghz channels */
-	modes[A].mode = MODE_IEEE80211A;
-	modes[A].channels = &channels[ARRAY_SIZE(ipw_eeprom_band_1)];
-	modes[A].rates = &rates[4];
-	modes[A].num_rates = 8; /* just OFDM */
-	modes[A].num_channels = 0;
+	modes0[A].mode = MODE_IEEE80211A;
+	modes0[A].channels = &channels0[ARRAY_SIZE(ipw_eeprom_band_1)];
+	modes0[A].rates = &rates0[4];
+	modes0[A].num_rates = 8; /* just OFDM */
+	modes0[A].num_channels = 0;
 
-	modes[B].mode = MODE_IEEE80211B;
-	modes[B].channels = channels;
-	modes[B].rates = rates;
-	modes[B].num_rates = 4; /* just CCK */
-	modes[B].num_channels = 0;
+	modes0[B].mode = MODE_IEEE80211B;
+	modes0[B].channels = channels0;
+	modes0[B].rates = rates0;
+	modes0[B].num_rates = 4; /* just CCK */
+	modes0[B].num_channels = 0;
 
-	modes[G].mode = MODE_IEEE80211G;
-	modes[G].channels = channels;
-	modes[G].rates = rates;
-	modes[G].num_rates = 12; /* OFDM & CCK */
-	modes[G].num_channels = 0;
+	modes0[G].mode = MODE_IEEE80211G;
+	modes0[G].channels = channels0;
+	modes0[G].rates = rates0;
+	modes0[G].num_rates = 12; /* OFDM & CCK */
+	modes0[G].num_channels = 0;
 
-	priv->ieee_channels = channels;
-	priv->ieee_rates = rates;
+	priv->ieee_channels = channels0;
+	priv->ieee_rates = rates0;
 
-	ipw_init_hw_rates(priv, rates);
+	ipw_init_hw_rates(priv, rates0);
 
-	for (i = 0, geo_ch = channels; i < priv->channel_count; i++) {
+	for (i = 0, geo_ch = channels0; i < priv->channel_count; i++) {
 		ch = &priv->channel_info[i];
 
 		if (!is_channel_valid(ch)) {
@@ -6120,7 +6122,7 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 				continue;
 			}
 
-			geo_ch = &modes[A].channels[modes[A].num_channels++];
+			geo_ch = &modes0[A].channels[modes0[A].num_channels++];
 		} else {
 			if (ch->channel < IEEE80211_24GHZ_MIN_CHANNEL ||
 			    ch->channel > IEEE80211_24GHZ_MAX_CHANNEL) {
@@ -6130,8 +6132,8 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 				continue;
 			}
 
-			geo_ch = &modes[B].channels[modes[B].num_channels++];
-			modes[G].num_channels++;
+			geo_ch = &modes0[B].channels[modes0[B].num_channels++];
+			modes0[G].num_channels++;
 		}
 
 		geo_ch->freq = ieee80211chan2mhz((ch->channel));
@@ -6157,10 +6159,9 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 		}
 
 		geo_ch->val = ch->flags;
-
 	}
 
-	if ((modes[A].num_channels == 0) && priv->is_abg) {
+	if ((modes0[A].num_channels == 0) && priv->is_abg) {
 		IOLog( 
 		       ": Incorrectly detected BG card as ABG.  Please send "
 		       "your PCI  to maintainer.\n");
@@ -6181,14 +6182,14 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 
 	IOLog( 
 	       ": Tunable channels: %d 802.11bg, %d 802.11a channels\n",
-	       modes[G].num_channels, modes[A].num_channels);
+	       modes0[G].num_channels, modes0[A].num_channels);
 
-	if (modes[A].num_channels)
-		ieee80211_register_hwmode(priv->ieee, &modes[A]);
-	if (modes[B].num_channels)
-		ieee80211_register_hwmode(priv->ieee, &modes[B]);
-	if (modes[G].num_channels)
-		ieee80211_register_hwmode(priv->ieee, &modes[G]);
+	if (modes0[A].num_channels>0)
+		ieee80211_register_hwmode(priv->ieee, &modes0[A]);
+	if (modes0[B].num_channels>0)
+		ieee80211_register_hwmode(priv->ieee, &modes0[B]);
+	if (modes0[G].num_channels>0)
+		ieee80211_register_hwmode(priv->ieee, &modes0[G]);
 
 	priv->status |= STATUS_GEO_CONFIGURED;
 }
@@ -6216,6 +6217,129 @@ int darwin_iwi3945::ieee80211_rate_control_register(struct rate_control_ops *ops
 	//mutex_unlock(&rate_ctrl_mutex);
 
 	return 0;
+}
+
+u16 darwin_iwi3945::ipw_get_active_dwell_time(struct ipw_priv *priv, int phymode)
+{
+	if (phymode == MODE_IEEE80211A)
+		return IPW_ACTIVE_DWELL_TIME_52;
+	else
+		return IPW_ACTIVE_DWELL_TIME_24;
+}
+
+u16 darwin_iwi3945::ipw_get_passive_dwell_time(struct ipw_priv *priv, int phymode)
+{
+	u16 active = ipw_get_active_dwell_time(priv, phymode);
+	u16 passive = (phymode != MODE_IEEE80211A) ?
+		IPW_PASSIVE_DWELL_BASE + IPW_PASSIVE_DWELL_TIME_24 :
+		IPW_PASSIVE_DWELL_BASE + IPW_PASSIVE_DWELL_TIME_52;
+
+	if (ipw_is_associated(priv)) {
+		struct ieee80211_conf *conf = NULL;
+
+		conf = ieee80211_get_hw_conf(priv->ieee);
+
+		/* If we're associated, we clamp the maximum passive
+		 * dwell time to be 98% of the beacon interval (minus
+		 * 2 * channel tune time) */
+		passive = conf->beacon_int;
+		if (passive > IPW_PASSIVE_DWELL_BASE)
+			passive = IPW_PASSIVE_DWELL_BASE;
+		passive = (passive * 98) / 100 - IPW_CHANNEL_TUNE_TIME * 2;
+	}
+
+	if (passive <= active)
+		passive = active + 1;
+
+	return passive;
+}
+
+int darwin_iwi3945::ipw_get_channels_for_scan(struct ipw_priv *priv, int phymode,
+				     u8 is_active, u8 direct_mask,
+				     struct ipw_scan_channel *scan_ch)
+{
+	const struct ieee80211_channel *channels = NULL;
+	const struct ieee80211_hw_mode *hw_mode;
+	struct ipw_channel_info *ch_info;
+	u16 passive_dwell = 0;
+	u16 active_dwell = 0;
+	int added, i;
+
+	hw_mode = ipw_get_hw_mode(priv, phymode);
+	if (!hw_mode)
+		return 0;
+
+	channels = hw_mode->channels;
+
+	active_dwell = ipw_get_active_dwell_time(priv, phymode);
+	passive_dwell = ipw_get_passive_dwell_time(priv, phymode);
+
+	for (i = 0, added = 0; i < hw_mode->num_channels; i++) {
+		if (channels[i].chan == priv->active_conf.channel) {
+			if (ipw_is_associated(priv)) {
+				IPW_DEBUG_SCAN
+				    ("Skipping current channel %d\n",
+				     priv->active_conf.channel);
+				continue;
+			}
+		} else if (priv->only_active_channel)
+			continue;
+
+		scan_ch->channel = channels[i].chan;
+
+		ch_info = ipw_get_channel_info(priv, phymode, scan_ch->channel);
+		if (!is_channel_valid(ch_info)) {
+			IOLog("Channel %d is INVALID for this SKU.\n",
+				       scan_ch->channel);
+			continue;
+		}
+
+		if (!is_active || is_channel_passive(ch_info) ||
+		    !(channels[i].flag & IEEE80211_CHAN_W_ACTIVE_SCAN))
+			scan_ch->type = 0;	/* passive */
+		else
+			scan_ch->type = 1;	/* active */
+
+		if (scan_ch->type & 1)
+			scan_ch->type |= (direct_mask << 1);
+
+		if (is_channel_narrow(ch_info))
+			scan_ch->type |= (1 << 7);
+
+		scan_ch->active_dwell = active_dwell;
+		scan_ch->passive_dwell = passive_dwell;
+
+		/* Set power levels to defaults */
+		scan_ch->tpc.dsp_atten = 110;	/*scan_pwr_info->tpc.dsp_atten; */
+
+		/*scan_pwr_info->tpc.tx_gain; */
+		if (phymode == MODE_IEEE80211A) {
+			scan_ch->tpc.tx_gain = ((1 << 5) | (3 << 3)) | 3;
+		} else {
+			scan_ch->tpc.tx_gain = ((1 << 5) | (5 << 3));
+			/* NOTE: if we were doing 6Mb OFDM for scans we'd use
+			 * power level
+			 scan_ch->tpc.tx_gain = ((1<<5) | (2 << 3)) | 3;
+			 */
+		}
+
+		IOLog("Scanning %d [%s %d]\n",
+			       scan_ch->channel,
+			       (scan_ch->type & 1) ? "ACTIVE" : "PASSIVE",
+			       (scan_ch->
+				type & 1) ? active_dwell : passive_dwell);
+
+		scan_ch++;
+		added++;
+	}
+
+	IOLog("total channels to scan %d \n", added);
+	return added;
+}
+
+int darwin_iwi3945::is_channel_narrow(const struct ipw_channel_info *ch_info)
+{
+	return (ch_info->flags & IPW_CHANNEL_NARROW) ? 1 : 0;
 }
 
 void darwin_iwi3945::ipw_reset_channel_flag(struct ipw_priv *priv)
@@ -7140,6 +7264,8 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	IOLog("ipw_init_geos\n");
 	ipw_init_geos(priv);
 
+	if (!(priv->status & STATUS_GEO_CONFIGURED)) return;
+	
 	if (!priv->netdev_registered) {
 	//	mutex_unlock(&priv->mutex);
 	IOLog("ieee80211_rate_control_register\n");
@@ -7173,7 +7299,8 @@ void darwin_iwi3945::ipw_bg_alive_start()
 /*
  * ipw_qos_activate(priv, NULL);
  */
-	//ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
+	IOLog("ipw_send_power_mode2\n");
+	ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
 
 	/* Initialize our rx_config data */
 	IOLog("ipw_connection_init_rx_config\n");

@@ -2796,7 +2796,7 @@ struct ipw_priv {
 	u8 direct_ssid[IW_ESSID_MAX_SIZE];
 //#endif
 	struct ipw_scan_cmd *scan;
-	
+	u8 only_active_channel;
 	/* spinlock */
 	//spinlock_t lock;
 
