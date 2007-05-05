@@ -7334,7 +7334,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//mutex_unlock(&priv->mutex);
 	
 	//hack: force scan
-	//ipw_scan_initiate(priv,0);
+	ipw_scan_initiate(priv,0);
 }
 
 #define IPW_TEMPERATURE_LIMIT_TIMER   6
