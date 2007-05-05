@@ -685,8 +685,8 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 
 	//local->scan.in_scan = 0;
 	local->enabled_modes = (unsigned int) -1;
-	/*INIT_LIST_HEAD(&local->modes_list);
-	INIT_LIST_HEAD(&local->sta_list);
+	INIT_LIST_HEAD(&local->modes_list);
+	/*INIT_LIST_HEAD(&local->sta_list);
 	INIT_LIST_HEAD(&local->deleted_sta_list);*/
 	
 	priv = &priv2;
@@ -6052,9 +6052,11 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 
 	if (!list_empty(&local->modes_list))
 	{
-		IOLog("ipw_init_geos error\n");
-		return;
+		IOLog("ipw_init_geos error - fixing\n");
+		INIT_LIST_HEAD(&local->modes_list);
+		//return;
 	}
+
 	modes0 = (struct ieee80211_hw_mode*)kmalloc(sizeof(struct ieee80211_hw_mode) * 3, GFP_ATOMIC);
 	if (!modes0)
 		return;
