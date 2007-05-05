@@ -1001,10 +1001,12 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	return &hw->conf;
 	}
 	virtual struct ieee80211_hw_mode *ipw_get_current_hw(struct ipw_priv *priv);
-	
-	
-	
-	
+	virtual int ipw_get_channels_for_scan(struct ipw_priv *priv, int phymode,
+				     u8 is_active, u8 direct_mask,
+				     struct ipw_scan_channel *scan_ch);
+	virtual u16 ipw_get_active_dwell_time(struct ipw_priv *priv, int phymode);
+	virtual u16 ipw_get_passive_dwell_time(struct ipw_priv *priv, int phymode);
+	virtual int is_channel_narrow(const struct ipw_channel_info *ch_info);
 	
 	
 	
@@ -1128,6 +1130,9 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	UInt32                  _pmPowerState;
     thread_call_t           _powerOffThreadCall;
     thread_call_t           _powerOnThreadCall;
+	struct ieee80211_hw_mode *modes0;
+	struct ieee80211_channel *channels0;
+	struct ieee80211_rate *rates0;
 	
 };
 
