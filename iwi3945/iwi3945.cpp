@@ -5078,8 +5078,8 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 
 	/* If this is an asynchronous command, and we are in a shutdown
 	 * process then don't let it start */
-	//if (!is_cmd_sync(cmd) && (priv->status & STATUS_EXIT_PENDING))
-	//	return -EBUSY;
+	if (!is_cmd_sync(cmd) && (priv->status & STATUS_EXIT_PENDING))
+		return -EBUSY;
 
 	/*
 	 * The following BUG_ONs are meant to catch programming API misuse
@@ -5087,18 +5087,18 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 	 */
 
 	/* A command can not be asynchronous AND expect an SKB to be set */
-	//if((cmd->meta.flags & CMD_ASYNC)
-	  //     && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
+	if((cmd->meta.flags & CMD_ASYNC)
+	       && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
 
 	/* The skb/callback union must be NULL if an SKB is requested */
-	//if(cmd->meta.u.skb && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
+	if(cmd->meta.u.skb && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
 
 	/* A command can not be synchronous AND have a callback set */
-	//if(is_cmd_sync(cmd) && cmd->meta.u.callback) return -1;
+	if(is_cmd_sync(cmd) && cmd->meta.u.callback) return -1;
 
 	/* An asynchronous command MUST have a callback */
-	//if((cmd->meta.flags & CMD_ASYNC)
-	  //     && !cmd->meta.u.callback) return -1;
+	if((cmd->meta.flags & CMD_ASYNC)
+	       && !cmd->meta.u.callback) return -1;
 
 	/* A command can not be synchronous AND not use locks */
 	if(is_cmd_sync(cmd) && (cmd->meta.flags & CMD_NO_LOCK)) return -1;
@@ -5151,8 +5151,8 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 		IODelay(HZ);
 		if (rc==HZ) break;
 	}
-
-		if (rc == HZ) {
+		rc=0;
+		/*if (rc == HZ) {
 			//if (cmd_needs_lock(cmd))
 			//	spin_lock_irqsave(&priv->lock, flags);
 
@@ -5176,7 +5176,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 			rc=0;
 			//if (cmd_needs_lock(cmd))
 			//	spin_unlock_irqrestore(&priv->lock, flags);
-		}
+		}*/
 	}
 
 	if (priv->status & STATUS_RF_KILL_HW) {
@@ -5189,7 +5189,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 		IOLog("Command %s aborted: RF KILL Switch\n",
 			       get_cmd_string(cmd->id));
 
-		//return -ECANCELED;
+		return -ECANCELED;
 	}
 
 	if (priv->status & STATUS_FW_ERROR) {
