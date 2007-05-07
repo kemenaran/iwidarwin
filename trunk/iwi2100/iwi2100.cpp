@@ -1037,7 +1037,7 @@ int darwin_iwi2100::ipw2100_start_scan(struct ipw2100_priv *priv)
 	cmd.host_command_parameters[0] = 0;
 
 	/* No scanning if in monitor mode */
-	if (priv->ieee->iw_mode == IW_MODE_MONITOR)
+	if (priv->ieee->iw_mode == IW_MODE_MONITOR || priv->status & STATUS_RF_KILL_SW)
 		return 1;
 
 	if (priv->status & STATUS_SCANNING) {
@@ -3999,7 +3999,7 @@ void darwin_iwi2100::ipw2100_wx_event_work(struct ipw2100_priv *priv)
 	if (priv->status & STATUS_STOPPING)
 		return;
 
-	if (!(priv->config & CFG_ASSOCIATE)) return;
+	if (!(priv->config & CFG_ASSOCIATE) || priv->status & STATUS_RF_KILL_SW) return;
 	//mutex_lock(&priv->action_mutex);
 
 	IOLog("associating\n");

@@ -319,7 +319,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61CEFBC30BE783F60027D264</string>
+										<string>61195FE50BEF807B007CF57A</string>
 										<key>history</key>
 										<array>
 											<string>61B06DA80B58946B000DD1AE</string>
@@ -336,10 +336,10 @@
 											<string>61D3E7BC0BE41BAE000C6E2F</string>
 											<string>61D0D5930BE765D7002A86B9</string>
 											<string>61D0D5950BE765D7002A86B9</string>
-											<string>61D0D61A0BE77338002A86B9</string>
 											<string>61D0D61B0BE77338002A86B9</string>
 											<string>61CEFBBF0BE783F60027D264</string>
-											<string>61CEFBC00BE783F60027D264</string>
+											<string>61D3E8480BE83526004FDD3D</string>
+											<string>61195FDB0BEF7FC2007CF57A</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -361,8 +361,6 @@
 											<string>61B4149D0BAF6E4A00B5A161</string>
 											<string>61DE9BDD0BB01B4B004764E5</string>
 											<string>61D3E7BF0BE41BAE000C6E2F</string>
-											<string>61CEFBC10BE783F60027D264</string>
-											<string>61CEFBC20BE783F60027D264</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -420,9 +418,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61CEFBC40BE783F60027D264</string>
+				<string>61195FE00BEF7FD6007CF57A</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61CEFBC50BE783F60027D264</string>
+				<string>61195FE10BEF7FD6007CF57A</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -556,6 +554,8 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>61B069860B5885D6000DD1AE</string>
+		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>/var/root/svn/trunk/iwi2100/iwi2100.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -636,7 +636,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B069860B5885D6000DD1AE</string>
-				<string>61CEFBB40BE783210027D264</string>
+				<string>61195FE40BEF8036007CF57A</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -830,8 +830,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61CEFBB50BE783210027D264</string>
-				<string>61CEFBB60BE783210027D264</string>
+				<string>61195FDD0BEF7FC2007CF57A</string>
+				<string>61195FDE0BEF7FC2007CF57A</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
@@ -840,7 +840,7 @@
 			<key>WindowToolGUID</key>
 			<string>1C530D57069F1CE1000CFCEE</string>
 			<key>WindowToolIsVisible</key>
-			<true/>
+			<false/>
 		</dict>
 		<dict>
 			<key>Identifier</key>
