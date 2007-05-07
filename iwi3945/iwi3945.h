@@ -766,6 +766,13 @@ virtual IOOptionBits getState( void ) const;
 	virtual void ieee80211_unmask_channel(struct net_device *dev, int mode,
 				     struct ieee80211_channel *chan);
 					 
+		//kext control functions:
+	
+	friend  int 		sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len); //send network list to network selector app.
+	friend  int 		setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags); //get slected network from network selector app.
+	friend  int			ConnectClient(kern_ctl_ref kctlref,struct sockaddr_ctl *sac,void **unitinfo); //connect to network selector app.
+	friend  int 		disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo); //disconnect network selector app.
+	friend	int			configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len);
 					 
 					 
 					 
@@ -1133,7 +1140,11 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	struct ieee80211_hw_mode *modes0;
 	struct ieee80211_channel *channels0;
 	struct ieee80211_rate *rates0;
-	
+	//open link to user interface application flag:
+	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
+							//the user is connected to the driver.
+							
+							
 };
 
 #endif

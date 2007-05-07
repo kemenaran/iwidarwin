@@ -16,9 +16,10 @@ ipw3945: sizeof(*ucode):  16
 // second parameter. You must use the literal name of the superclass.
 OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);//IO80211Controller);
 
-#define IPW_MAX_GAIN_ENTRIES 78
-#define IPW_CCK_FROM_OFDM_POWER_DIFF  -5
-#define IPW_CCK_FROM_OFDM_INDEX_DIFF (10)
+//clone of the driver class, used in all the kext control functions.
+
+static darwin_iwi3945 *clone;
+
 static struct ipw_tx_power power_gain_table[2][IPW_MAX_GAIN_ENTRIES] = {
 	{
 	 {251, 127},		/* 2.4 GHz, highest power */
@@ -237,7 +238,7 @@ enum {
 	TX_STATUS_FAIL_NO_BEACON_ON_RADAR = 0x91,
 };
 
-#define TX_STATUS_ENTRY(x) case TX_STATUS_FAIL_ ## x: return #x
+
 
 static const char *get_tx_fail_reason(u32 status)
 {
@@ -266,15 +267,7 @@ static const char *get_tx_fail_reason(u32 status)
 }
 
 
-#define REPLY_RXON  0x10
-#define	REPLY_RXON_ASSOC  0x11
-#define REPLY_RXON_TIMING  0x14
-#define REPLY_SCAN_CMD  0x80
-#define REPLY_TX_PWR_TABLE_CMD  0x97
-#define REPLY_TX_LINK_QUALITY_CMD  0x4e
 
-#define IPW_CMD(x) case x : return #x
-#define IPW_CMD3945(x) case REPLY_ ## x : return #x
 static const char *get_cmd_string(u8 cmd)
 {
 	switch (cmd) {
@@ -628,7 +621,7 @@ config = 0;
   channel = 0;
   mode = 0;
   disable2=1;
-  associate = 1;
+  associate = 0;
   auto_create = 1;
   led = 1;
   bt_coexist = 1;
@@ -811,13 +804,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 
 	MemoryDmaAlloc(sizeof(struct ipw_shared_t), &priv->hw_setting.shared_phys, &priv->hw_setting.shared_virt);
 
-#define IPW3945_CMD_QUEUE_NUM         4
-#define IPW3945_NUM_OF_STATIONS 25
-#define AP_ID           0
-#define MULTICAST_ID    1
-#define STA_ID          2
-#define IPW3945_BROADCAST_ID    24
-#define IPW3945_RX_BUF_SIZE 3000
+
 
 
 
@@ -988,7 +975,9 @@ IOOptionBits darwin_iwi3945::getState( void ) const
 bool darwin_iwi3945::start(IOService *provider)
 {
 	UInt16	reg;
-
+//linking the kext control clone to the driver:
+		clone=this;
+		
 	do {
 				
 		if ( super::start(provider) == 0) {
@@ -1122,6 +1111,25 @@ bool darwin_iwi3945::start(IOService *provider)
 		
 		if (!spin) return false;
 		if (!mutex) return false;*/
+		
+		//kext control registration:
+		//these functions registers the control which enables
+		//the user to interact with the driver
+		
+		struct kern_ctl_reg		ep_ctl; // Initialize control
+		kern_ctl_ref	kctlref;
+		bzero(&ep_ctl, sizeof(ep_ctl));
+		ep_ctl.ctl_id = 0; /* OLD STYLE: ep_ctl.ctl_id = kEPCommID; */
+		ep_ctl.ctl_unit = 0;
+		strcpy(ep_ctl.ctl_name,"insanelymac.iwidarwin.control");
+		ep_ctl.ctl_flags = 0;
+		ep_ctl.ctl_connect = ConnectClient;
+		ep_ctl.ctl_disconnect = disconnectClient;
+		ep_ctl.ctl_send = setSelectedNetwork;
+		ep_ctl.ctl_setopt = configureConnection;
+		ep_ctl.ctl_getopt = sendNetworkList;
+		errno_t error = ctl_register(&ep_ctl, &kctlref);
+		
 		//IW_SCAN_TYPE_ACTIVE
 		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan),NULL,NULL,false);
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_adapter_restart),NULL,NULL,false);
@@ -1853,7 +1861,7 @@ int darwin_iwi3945::ipw_card_show_info(struct ipw_priv *priv)
 
 }
 
-#define PCI_LINK_CTRL      0x0F0
+
 
 int darwin_iwi3945::ipw_power_init_handle(struct ipw_priv *priv)
 {
@@ -3220,7 +3228,7 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface * netif )
 		char ii[4];
 		sprintf(ii,"%s%d" ,fNetif->getNamePrefix(), fNetif->getUnitNumber());
 		ifnet_find_by_name(ii,&fifnet);
-		//memcpy(&priv->ieee->dev->name,ii,sizeof(ii));
+		memcpy(&priv->net_dev->name,ii,sizeof(ii));
 		IWI_DEBUG("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	}
 	if ((priv->status & STATUS_RF_KILL_HW)) return -1;
@@ -4630,7 +4638,7 @@ static struct ipw_rate_info rate_table_info[] = {
 	{110, 22, 11, 0, 11, 15, 11, 111},	/*  11mbps */
 };
 
-#define IPW_INVALID_RATE     0xFF
+
 
 u8 darwin_iwi3945::ipw_rate_index2ieee(int x)
 {
@@ -5392,9 +5400,7 @@ int darwin_iwi3945::is_channel_radar(const struct ipw_channel_info *ch_info)
 	return (ch_info->flags & IPW_CHANNEL_RADAR) ? 1 : 0;
 }
 
-#define IPW_INVALID_CHANNEL                   0xFF
-#define IPW_INVALID_TX_CHANNEL                0xFE
-#define CHECK_AND_PRINT(x) ((eeprom_ch_info[c].flags & IPW_CHANNEL_##x) ? # x " " : "")
+
 
 int darwin_iwi3945::ipw_init_channel_map(struct ipw_priv *priv)
 {
@@ -5638,9 +5644,7 @@ int darwin_iwi3945::reg_adjust_power_by_temp(int new_reading, int old_reading)
 	return (new_reading - old_reading) * (-11) / 100;
 }
 
-#define IPW_CCK_RATES  4
-#define IPW_OFDM_RATES 8
-#define IPW_MAX_RATES  (IPW_CCK_RATES + IPW_OFDM_RATES)
+
 
 int darwin_iwi3945::reg_get_matched_power_index(struct ipw_priv *priv,
 				       s8 requested_power,
@@ -5880,37 +5884,7 @@ void darwin_iwi3945::reg_set_scan_power(struct ipw_priv *priv, u32 scan_tbl_inde
 	    power_gain_table[band_index][power_index].dsp_atten;
 }
 
-// OFDM rates mask values
-#define RATE_SCALE_6M_INDEX  0
-#define RATE_SCALE_9M_INDEX  1
-#define RATE_SCALE_12M_INDEX 2
-#define RATE_SCALE_18M_INDEX 3
-#define RATE_SCALE_24M_INDEX 4
-#define RATE_SCALE_36M_INDEX 5
-#define RATE_SCALE_48M_INDEX 6
-#define RATE_SCALE_54M_INDEX 7
 
-// CCK rate mask values
-#define RATE_SCALE_1M_INDEX   8
-#define RATE_SCALE_2M_INDEX   9
-#define RATE_SCALE_5_5M_INDEX 10
-#define RATE_SCALE_11M_INDEX  11
-
-// OFDM rates  plcp values
-#define RATE_SCALE_6M_PLCP  13
-#define RATE_SCALE_9M_PLCP  15
-#define RATE_SCALE_12M_PLCP 5
-#define RATE_SCALE_18M_PLCP 7
-#define RATE_SCALE_24M_PLCP 9
-#define RATE_SCALE_36M_PLCP 11
-#define RATE_SCALE_48M_PLCP 1
-#define RATE_SCALE_54M_PLCP 3
-
-// CCK rate plcp values
-#define RATE_SCALE_1M_PLCP    10
-#define RATE_SCALE_2M_PLCP    20
-#define RATE_SCALE_5_5M_PLCP  55
-#define RATE_SCALE_11M_PLCP   110
 
 void darwin_iwi3945::ipw_init_hw_rates(struct ipw_priv *priv, struct ieee80211_rate *rates)
 {
@@ -7337,7 +7311,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//ipw_scan_initiate(priv,0);
 }
 
-#define IPW_TEMPERATURE_LIMIT_TIMER   6
+
 
 int darwin_iwi3945::is_temp_calib_needed(struct ipw_priv *priv)
 {
@@ -8204,14 +8178,7 @@ int darwin_iwi3945::ieee80211_rx( mbuf_t skb,
 	return 0;
 }
 
-#define IPW_RX_HDR(x) ((struct ipw_rx_frame_hdr *)(\
-                       x->u.rx_frame.stats.payload + \
-                       x->u.rx_frame.stats.mib_count))
-#define IPW_RX_END(x) ((struct ipw_rx_frame_end *)(\
-                       IPW_RX_HDR(x)->payload + \
-                       le16_to_cpu(IPW_RX_HDR(x)->len)))
-#define IPW_RX_STATS(x) (&x->u.rx_frame.stats)
-#define IPW_RX_DATA(x) (IPW_RX_HDR(x)->payload)
+
 
 void darwin_iwi3945::ipw_handle_data_packet(struct ipw_priv *priv, int is_data,
 				   struct ipw_rx_mem_buffer *rxb,
@@ -8270,27 +8237,7 @@ mbuf_setdata(rxb->skb,(UInt8*)mbuf_data(rxb->skb) + ((UInt8*)rx_hdr->payload - (
 	//ipw_setup_activity_timer(priv);
 }
 
-#define IPW_RX_HDR(x) ((struct ipw_rx_frame_hdr *)(\
-                       x->u.rx_frame.stats.payload + \
-                       x->u.rx_frame.stats.mib_count))
-#define IPW_RX_END(x) ((struct ipw_rx_frame_end *)(\
-                       IPW_RX_HDR(x)->payload + \
-                       le16_to_cpu(IPW_RX_HDR(x)->len)))
-#define IPW_RX_STATS(x) (&x->u.rx_frame.stats)
-#define IPW_RX_DATA(x) (IPW_RX_HDR(x)->payload)
 
-#define ieee80211chan2mhz(x) \
-        (((x) <= 14) ? \
-        (((x) == 14) ? 2484 : ((x) * 5) + 2407) : \
-        ((x) + 1000) * 5)
-#define IEEE80211_FCTL_FTYPE		0x000c
-#define IEEE80211_FCTL_STYPE		0x00f0		
-#define WLAN_FC_GET_TYPE(fc)    (((fc) & IEEE80211_FCTL_FTYPE))
-#define WLAN_FC_GET_STYPE(fc)   (((fc) & IEEE80211_FCTL_STYPE))
-#define WLAN_GET_SEQ_FRAG(seq)  ((seq) & 0x000f)
-#define WLAN_GET_SEQ_SEQ(seq)   ((seq) >> 4)
-	
-#define NUM_RATES 12
 
 static u8 ipw_lower_rate_g[NUM_RATES] = {
 	RATE_SCALE_5_5M_INDEX, RATE_SCALE_5_5M_INDEX,
@@ -11112,3 +11059,174 @@ void darwin_iwi3945::notifIntr(struct ipw_priv *priv,
 	
 }
 
+int ConnectClient(kern_ctl_ref kctlref,struct sockaddr_ctl *sac,void **unitinfo)
+{
+	IWI_LOG("connect\n");
+	clone->userInterfaceLink=1;
+	return(0);
+}
+
+int disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo)
+{
+	clone->userInterfaceLink=0;
+	IWI_LOG("disconnect\n");
+	return(0);
+}
+
+int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len)
+{
+	//int i=*((int*)data);
+	if (opt==4)// mode
+	{
+		int m=*((int*)data);
+		m=m-1;
+		IWI_LOG("setting mode to %d\n",m);
+		if (clone->priv->config & CFG_NO_LED) clone->led=0; else clone->led=1;
+		clone->associate=0;
+		clone->mode=m;
+		clone->ipw_sw_reset(0);
+		clone->ipw_down(clone->priv);
+	}
+	if (opt==3)// led
+	{
+		/*if (clone->priv->config & CFG_NO_LED)
+			clone->priv->config &= ~CFG_NO_LED;
+		else
+			clone->priv->config |= CFG_NO_LED;
+			
+		if (clone->priv->config & CFG_NO_LED) clone->ipw_led_shutdown(clone->priv);
+		else clone->ipw_led_link_on(clone->priv);*/
+	}
+	if (opt==2) //associate network.
+	{
+		//todo: check other priv status
+		/*clone->priv->status |= STATUS_RF_KILL_HW;
+		clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+		clone->setLinkStatus(kIONetworkLinkValid);
+		if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
+		clone->priv->status &= ~STATUS_RF_KILL_HW;
+		struct ieee80211_network *network = NULL;	
+		struct ipw_network_match match = {NULL};
+		struct ipw_supported_rates *rates;
+		
+		list_for_each_entry(network, &clone->priv->ieee->network_list, list) 
+		{
+			if (!memcmp(network->bssid,((struct ieee80211_network *)data)->bssid,sizeof(network->bssid)))
+			{
+				clone->ipw_best_network(clone->priv, &match, network, 0);
+				goto ex1;;
+			}
+		}
+		ex1:
+		network = match.network;
+		rates = &match.rates;
+		if (network == NULL)
+		{
+			IWI_LOG("can't associate to this network\n");
+			return 1;
+		}
+		int rep=0;
+		while (!(clone->priv->status & STATUS_ASSOCIATED)) 
+		{
+			clone->ipw_adapter_restart(clone->priv);
+			IODelay(5000*1000);
+			clone->ipw_associate_network(clone->priv, network, rates, 0);
+			IODelay(5000*1000);
+			rep++;
+			if (rep==5) break;
+		}
+		if (rep == 5)
+		{
+			IWI_LOG("failed when associating to this network\n");
+			return 1;
+		}*/
+	}
+	if (opt==1) //HACK: start/stop the nic
+	{
+		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
+		{
+			clone->priv->config &= ~CFG_ASSOCIATE;
+			int q=0;
+			clone->priv->status &= ~STATUS_RF_KILL_HW;
+			clone->priv->status &= ~STATUS_RF_KILL_SW;
+			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+			clone->ipw_up(clone->priv);
+		}
+		else
+		{
+			clone->priv->status |= STATUS_RF_KILL_HW;
+			clone->priv->status &= ~STATUS_RF_KILL_SW;
+			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+			clone->setLinkStatus(kIONetworkLinkValid);
+			clone->ipw_down(clone->priv);
+		}	
+	}
+
+	return(0);
+}
+
+int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len)
+{
+	if (opt==0) memcpy(data,clone->priv,*len);
+	if (opt==1) memcpy(data,clone->priv->ieee,*len);
+	if (opt==2)
+	{
+		/*struct ieee80211_network *n=NULL,*n2=(struct ieee80211_network*)data;
+		int i=0;
+		list_for_each_entry(n, &clone->priv->ieee->network_list, list)
+		{
+			i++;
+			if (n2->ssid_len==0)
+			{
+				memcpy(data,n,*len);
+				goto ex;
+			}
+			else
+			{
+				if (!memcmp(n2->bssid,n->bssid,sizeof(n->bssid)) && n->ssid_len>0)
+				{
+					//memcpy(data,&n0,*len);
+					n2->ssid_len=0;
+					//n2=(struct ieee80211_network*)data;
+				}
+			}
+		}
+		ex:
+		IWI_LOG("found %d networks\n",i);*/
+	}
+	if (opt==3) memcpy(data,clone->priv->assoc_network,*len);
+	if (opt==4)
+	{	
+		if (clone->netStats->outputPackets<30 || !(clone->priv->status & STATUS_ASSOCIATED)) return 1;
+		ifaddr_t *addresses;
+		struct sockaddr *out_addr, ou0;
+		out_addr=&ou0;
+		int p=0;
+		if (ifnet_get_address_list_family(clone->fifnet, &addresses, AF_INET)==0)
+		{
+			if (!addresses[0]) p=1;
+			else
+			if (ifaddr_address(addresses[0], out_addr, sizeof(*out_addr))==0)
+			{
+				//IWI_LOG("my ip address: " IP_FORMAT "\n",IP_LIST(out_addr->sa_data));
+				memcpy(data,out_addr->sa_data,*len);
+				/*if (clone->priv->ieee->iw_mode == IW_MODE_INFRA)
+				if ((int)(IP_CH(out_addr->sa_data)[2])==169 && (int)(IP_CH(out_addr->sa_data)[3])==254)
+				{
+					IWI_LOG("no internet connection!\n");// dissasociate , invalidade this network, re-scan
+					clone->priv->assoc_network->exclude=1;
+				}*/
+			}
+			else p=1;
+			ifnet_free_address_list(addresses);
+		} else p=1;
+		if (p==1) return 1;
+	}
+	if (opt==5) memcpy(data,clone->priv->net_dev,*len);
+	return (0);
+}
+
+int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags)
+{
+return 0;
+}
