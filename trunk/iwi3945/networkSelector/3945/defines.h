@@ -1,68 +1,22 @@
 
-#include <IOKit/assert.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IODeviceMemory.h>
-#include <IOKit/IOInterruptEventSource.h>
-#include <IOKit/IOBufferMemoryDescriptor.h>
-#include <IOKit/pci/IOPCIDevice.h>
-//#include <IOKit/network/IONetworkController.h>
-//#include <IOKit/network/IONetworkInterface.h>
-#include <IOKit/network/IOEthernetController.h>
-#include <IOKit/network/IOEthernetInterface.h>
-#include <IOKit/network/IOGatedOutputQueue.h>
-#include <IOKit/network/IOMbufMemoryCursor.h>
-#include <libkern/OSByteOrder.h>
-#include <IOKit/pccard/IOPCCard.h>
-//#include <IOKit/apple80211/IO80211Controller.h>
-//#include <IOKit/apple80211/IO80211Interface.h>
-#include <IOKit/network/IOPacketQueue.h>
-#include <IOKit/network/IONetworkMedium.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IODeviceMemory.h>
-#include <IOKit/assert.h>
-#include <IOKit/IODataQueue.h>
-
-
-
-//includes for fifnet functions
-extern "C" {
-#include <net/if_var.h>
-#include <sys/vm.h>
-#include <sys/param.h>
-#include <sys/errno.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <net/if_var.h>
-#include <net/ethernet.h>
-#include <net/if_arp.h>
-#include <net/if_dl.h>
-#include <net/if_types.h>
-#include <net/dlil.h>
-#include <net/bpf.h>
-#include <netinet/if_ether.h>
-#include <netinet/in_arp.h>
-#include <sys/sockio.h>
-#include <sys/malloc.h>
-#include <sys/queue.h>
-#include <sys/kern_control.h>
-
-}
-
-
-#include "iwi3945.h"
-#include "ipw3945.h"
+#include <IOKit/IOTypes.h>
 #include "net/ieee80211.h"
-#include "net/ieee80211_radiotap.h"
+#include "net/ieee80211_crypt.h"
+#include "ipw3945.h"
 
-
+#define	IFNAMSIZ	16		 
+#define        __iomem
+typedef unsigned int mbuf_t;
+typedef unsigned char	u8;
+typedef unsigned short	u16;
+typedef unsigned int	u32;
 #define le16_to_cpu(x)	OSSwapLittleToHostInt16(x)
 #define le32_to_cpu(x)	OSSwapLittleToHostInt32(x)
 #define cpu_to_le16(x)	OSSwapLittleToHostInt16(x)
 #define cpu_to_le32(x)	OSSwapLittleToHostInt32(x)
 typedef unsigned long long u64;
-typedef signed short	s16;
-typedef signed int	s32;
-
+typedef signed short s16;
+typedef signed int s32;
 
 #pragma mark -
 #pragma mark еее Misc Macros еее
@@ -1097,6 +1051,13 @@ typedef unsigned char UInt8;
 #define RATE_SCALE_5_5M_PLCP  55
 #define RATE_SCALE_11M_PLCP   110
 #define TX_STATUS_ENTRY(x) case TX_STATUS_FAIL_ ## x: return #x
+
+#define 	MODE_IEEE80211A  0
+#define 	MODE_IEEE80211B  1
+#define 	MODE_ATHEROS_TURBO  2
+#define 	MODE_IEEE80211G  3
+#define 	MODE_ATHEROS_TURBOG  4
+#define 	NUM_IEEE80211_MODES  5
 
 
 
