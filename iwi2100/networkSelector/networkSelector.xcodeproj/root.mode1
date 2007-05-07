@@ -320,7 +320,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61CEFB9F0BE783010027D264</string>
+										<string>61D3E8380BE83488004FDD3D</string>
 										<key>history</key>
 										<array>
 											<string>6131B3AB0BB20C00001B2298</string>
@@ -344,7 +344,7 @@
 											<string>61D0D5F60BE77324002A86B9</string>
 											<string>61D0D5F80BE77324002A86B9</string>
 											<string>61CEFB7E0BE782540027D264</string>
-											<string>61CEFB810BE782540027D264</string>
+											<string>61CEFB9F0BE783010027D264</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -427,9 +427,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61CEFBA00BE783010027D264</string>
+				<string>61D3E8390BE83488004FDD3D</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61CEFBA10BE783010027D264</string>
+				<string>61D3E83A0BE83488004FDD3D</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -563,10 +563,13 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>61D3E8460BE83488004FDD3D</string>
+		<string>61D3E8470BE83488004FDD3D</string>
 		<string>6131B3D40BB20CF7001B2298</string>
-		<string>61CEFBA90BE783010027D264</string>
-		<string>1CD10A99069EF8BA00B06720</string>
+		<string>61D3E8420BE83488004FDD3D</string>
 		<string>1C0AD2B3069F1EA900FABCE6</string>
+		<string>1CD10A99069EF8BA00B06720</string>
+		<string>61AD66870BB42F6000DBD3F1</string>
 		<string>/var/root/svn/trunk/iwi2100/networkSelector/networkSelector.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -647,7 +650,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>6131B3D40BB20CF7001B2298</string>
-				<string>61CEFBA20BE783010027D264</string>
+				<string>61D3E83B0BE83488004FDD3D</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -753,14 +756,14 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1CD10A99069EF8BA00B06720</string>
-				<string>61CEFBA30BE783010027D264</string>
+				<string>61D3E83C0BE83488004FDD3D</string>
 				<string>1C162984064C10D400B95A72</string>
-				<string>61CEFBA40BE783010027D264</string>
-				<string>61CEFBA50BE783010027D264</string>
-				<string>61CEFBA60BE783010027D264</string>
-				<string>61CEFBA70BE783010027D264</string>
-				<string>61CEFBA80BE783010027D264</string>
-				<string>61CEFBA90BE783010027D264</string>
+				<string>61D3E83D0BE83488004FDD3D</string>
+				<string>61D3E83E0BE83488004FDD3D</string>
+				<string>61D3E83F0BE83488004FDD3D</string>
+				<string>61D3E8400BE83488004FDD3D</string>
+				<string>61D3E8410BE83488004FDD3D</string>
+				<string>61D3E8420BE83488004FDD3D</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.debug</string>
@@ -916,7 +919,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61AD66870BB42F6000DBD3F1</string>
-				<string>61AFF4520BC952C0000B6F41</string>
+				<string>61D3E8430BE83488004FDD3D</string>
 				<string>1C78EAAC065D492600B07095</string>
 			</array>
 			<key>WindowString</key>
@@ -1011,9 +1014,9 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C0AD2B3069F1EA900FABCE6</string>
-				<string>61CEFBAA0BE783010027D264</string>
+				<string>61D3E8440BE83488004FDD3D</string>
 				<string>1CD0528B0623707200166675</string>
-				<string>61CEFBAB0BE783010027D264</string>
+				<string>61D3E8450BE83488004FDD3D</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.run</string>
