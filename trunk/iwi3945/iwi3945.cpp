@@ -6887,7 +6887,9 @@ int darwin_iwi3945::ieee80211_register_hwmode(struct ieee80211_hw *hw,
 	struct ieee80211_local *local = hw_to_local(hw);
 	struct ieee80211_rate *rate;
 	int i;
-
+	
+	IOLog("ieee80211_register_hwmode\n");
+	
 	INIT_LIST_HEAD(&mode->list);
 	list_add_tail(&mode->list, &local->modes_list);
 
@@ -6927,7 +6929,7 @@ void darwin_iwi3945::ieee80211_unmask_channel(struct net_device *dev, int mode,
 				     struct ieee80211_channel *chan)
 {
 	int i;
-
+	IOLog("ieee80211_unmask_channel\n");
 	chan->flag = 0;
 
 	/*if (ieee80211_regdom == 64 &&
@@ -6978,6 +6980,7 @@ int darwin_iwi3945::ieee80211_unmask_channels(struct net_device *dev)
 {
 	struct ieee80211_local *local = hw_to_local(priv->ieee);
 	//wdev_priv(dev->ieee80211_ptr);
+	IOLog("ieee80211_unmask_channels\n");
 	struct ieee80211_hw_mode *mode;
 	int c;
 
@@ -6994,6 +6997,7 @@ int darwin_iwi3945::ieee80211_init_client(struct net_device *dev)
 {
 	//if (ieee80211_regdom == 0x40)
 	//	channel_range = ieee80211_mkk_channels;
+	IOLog("ieee80211_init_client\n");
 	ieee80211_unmask_channels(dev);
 	return 0;
 }
@@ -7015,7 +7019,7 @@ int darwin_iwi3945::rate_list_match(const int *rate_list, int rate)
 void darwin_iwi3945::ieee80211_prepare_rates(struct ieee80211_local *local)
 {
 	int i;
-
+	IOLog("ieee80211_prepare_rates\n");
 	for (i = 0; i < local->num_curr_rates; i++) {
 		struct ieee80211_rate *rate = &local->curr_rates[i];
 
