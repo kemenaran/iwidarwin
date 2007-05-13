@@ -4820,20 +4820,20 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 		IOLog
 		    ("Multiple concurrent scan requests in parallel. "
 		     "Ignoring second request.\n");
-		rc = -EIO;
-		goto done;
+		//rc = -EIO;
+		//goto done;
 	}
 
 	if (priv->status & STATUS_EXIT_PENDING) {
 		IOLog("Aborting scan due to device shutdown\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		goto done;
+		//goto done;
 	}
 
 	if (priv->status & STATUS_SCAN_ABORTING) {
 		IOLog("Scan request while abort pending.  Queuing.\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		goto done;
+		//goto done;
 	}
 
 	if (priv->status & STATUS_RF_KILL_MASK) {
@@ -4850,7 +4850,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 
 	if (!priv->scan_bands) {
 		IOLog("Aborting scan due to no requested bands.\n");
-		goto done;
+		//goto done;
 	}
 
 	if (!priv->scan) {
@@ -7314,7 +7314,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//mutex_unlock(&priv->mutex);
 	
 	//hack: force scan
-	//ipw_scan_initiate(priv,0);
+	ipw_scan_initiate(priv,0);
 }
 
 
