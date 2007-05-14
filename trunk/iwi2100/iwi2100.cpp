@@ -4710,7 +4710,7 @@ void darwin_iwi2100::ieee80211_process_probe_response(struct ieee80211_device *i
 	struct ieee80211_network *target;
 	struct ieee80211_network *oldest = NULL;
 	
-	IEEE80211_DEBUG_SCAN("'%s' (" MAC_FMT
+	IOLog("'%s' (" MAC_FMT
 			     "): %c%c%c%c %c%c%c%c-%c%c%c%c %c%c%c%c\n",
 			     escape_essid((const char*)beacon->info_element->data,
 					  beacon->info_element->len),
@@ -4733,7 +4733,7 @@ void darwin_iwi2100::ieee80211_process_probe_response(struct ieee80211_device *i
 			     (beacon->capability & (1 << 0x0)) ? '1' : '0');
 
 	if (ieee80211_network_init(ieee, beacon, &network, stats)) {
-		IEEE80211_DEBUG_SCAN("Dropped '%s' (" MAC_FMT ") via %s.\n",
+		IOLog("Dropped '%s' (" MAC_FMT ") via %s.\n",
 				     escape_essid((const char*)beacon->info_element->data,
 						  beacon->info_element->len),
 				     MAC_ARG(beacon->header.addr3),
@@ -4770,7 +4770,7 @@ void darwin_iwi2100::ieee80211_process_probe_response(struct ieee80211_device *i
 			/* If there are no more slots, expire the oldest */
 			list_del(&oldest->list);
 			target = oldest;
-			IEEE80211_DEBUG_SCAN("Expired '%s' (" MAC_FMT ") from "
+			IOLog("Expired '%s' (" MAC_FMT ") from "
 					     "network list.\n",
 					     escape_essid((const char*)target->ssid,
 							  target->ssid_len),
@@ -4787,7 +4787,7 @@ void darwin_iwi2100::ieee80211_process_probe_response(struct ieee80211_device *i
 		network.ibss_dfs = NULL;
 		list_add_tail(&target->list, &ieee->network_list);
 	} else {
-		IEEE80211_DEBUG_SCAN("Updating '%s' (" MAC_FMT ") via %s.\n",
+		IOLog("Updating '%s' (" MAC_FMT ") via %s.\n",
 				     escape_essid((const char*)target->ssid,
 						  target->ssid_len),
 				     MAC_ARG(target->bssid),

@@ -977,6 +977,14 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 		{
 			return (WLAN_FC_GET_STYPE(le16_to_cpu(fc)) == IEEE80211_STYPE_BEACON);
 		}
+	 unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
+		{
+			const u16 *a = (const u16 *) _a;
+			const u16 *b = (const u16 *) _b;
+
+			if(ETH_ALEN != 6) return -1;
+			return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
+		}	
 	 int is_same_network(struct ieee80211_network *src,
 				  struct ieee80211_network *dst)
 		{
@@ -985,14 +993,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 			!compare_ether_addr(src->bssid, dst->bssid) &&
 			!memcmp(src->ssid, dst->ssid, src->ssid_len));
 		}
-	 unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
-		{
-			const u16 *a = (const u16 *) _a;
-			const u16 *b = (const u16 *) _b;
-
-			if(ETH_ALEN != 6) return -1;
-			return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
-		}				 
+	 
 	virtual void update_network(struct ieee80211_network *dst,
 				  struct ieee80211_network *src);
 	 void ieee80211_network_reset(struct ieee80211_network *network)
