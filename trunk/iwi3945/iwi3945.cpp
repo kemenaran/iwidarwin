@@ -7028,23 +7028,23 @@ void darwin_iwi3945::ieee80211_prepare_rates(struct ieee80211_local *local)
 		rate->flags &= ~(IEEE80211_RATE_SUPPORTED |
 				 IEEE80211_RATE_BASIC);
 
-		if (local->supp_rates[local->hw.conf.phymode]) {
+		/*if (local->supp_rates[local->hw.conf.phymode]) { // hack
 			if (!rate_list_match(local->supp_rates
 					     [local->hw.conf.phymode],
 					     rate->rate))
 				continue;
-		}
+		}*/
 
 		rate->flags |= IEEE80211_RATE_SUPPORTED;
 
 		/* Use configured basic rate set if it is available. If not,
 		 * use defaults that are sane for most cases. */
-		if (local->basic_rates[local->hw.conf.phymode]) {
+		/*if (local->basic_rates[local->hw.conf.phymode]) { //hack
 			if (rate_list_match(local->basic_rates
 					    [local->hw.conf.phymode],
 					    rate->rate))
 				rate->flags |= IEEE80211_RATE_BASIC;
-		} else switch (local->hw.conf.phymode) {
+		} else */switch (local->hw.conf.phymode) {
 		case MODE_IEEE80211A:
 			if (rate->rate == 60 || rate->rate == 120 ||
 			    rate->rate == 240)
