@@ -4481,6 +4481,7 @@ int darwin_iwi2100::ieee80211_parse_info_param(struct ieee80211_info_element
 		default:
 			IOLog
 			    ("Unsupported info element: %d\n",0);
+				return 0; // hack
 			   //  get_info_element_string(info_element->id),
 			     //info_element->id);
 			break;
