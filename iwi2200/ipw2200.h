@@ -693,7 +693,7 @@ struct ipw_rx_mem_buffer {
 	dma_addr_t dma_addr;
 	//IOBufferMemoryDescriptor *memD;
 	mbuf_t skb;
-	gt_fragment fskb;
+	//gt_fragment fskb;
 	struct list_head list;
 };				/* Not transferred over network, so not  __attribute__ ((packed)) */
 

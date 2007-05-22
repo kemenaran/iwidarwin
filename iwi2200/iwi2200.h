@@ -1192,9 +1192,9 @@ protected:
 			CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
 			return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
 		}
-	bool _fillFragment(volatile gt_fragment *f, mbuf_t packet, UInt16 flags=0);
+/*	bool _fillFragment(volatile gt_fragment *f, mbuf_t packet, UInt16 flags=0);
 	bool _allocPacketForFragment(mbuf_t *packet, volatile gt_fragment *f);
-	bool _freePacketForFragment(mbuf_t *packet, volatile gt_fragment *f);
+	bool _freePacketForFragment(mbuf_t *packet, volatile gt_fragment *f);*/
 	
 
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
