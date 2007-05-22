@@ -1033,6 +1033,12 @@ struct ieee80211_assoc_response {
 	struct ieee80211_info_element info_element[0];
 } __attribute__ ((packed));
 
+/*typedef struct {
+    volatile UInt32 address;                        // physical address on host
+    volatile UInt16 size;                           // packet size
+    volatile UInt16 flags;                          // set of bit-wise flags
+} gt_fragment;*/
+
 struct ieee80211_txb {
 	u8 nr_frags;
 	u8 encrypted;
