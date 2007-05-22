@@ -1263,10 +1263,10 @@ void darwin_iwi2200::ipw_rx_queue_replenish(void *data)
 		element = rxq->rx_used.next;
 		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
 		//rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
-		//rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
-		if (!_allocPacketForFragment(&rxb->skb,&rxb->fskb)) {
+		rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
+		//if (!_allocPacketForFragment(&rxb->skb,&rxb->fskb)) {
 		//if (mbuf_getpacket(MBUF_WAITOK , &rxb->skb)!=0) {
-		//if (rxb->skb==0) {
+		if (rxb->skb==0) {
 			IWI_ERR( "%s: Can not allocate SKB buffers.\n",
 			       priv->net_dev->name);
 			/* We don't reschedule replenish work here -- we will
@@ -1282,8 +1282,8 @@ void darwin_iwi2200::ipw_rx_queue_replenish(void *data)
 		//_mbufCursor->getPhysicalSegmentsWithCoalesce(rxb->skb, &vector, 1);
 	    //rxb->dma_addr = vector.location;
 			
-		rxb->dma_addr = rxb->fskb.address;
-		// rxb->dma_addr = mbuf_data_to_physical(mbuf_data(rxb->skb));	
+		//rxb->dma_addr = rxb->fskb.address;
+		rxb->dma_addr = mbuf_data_to_physical(mbuf_data(rxb->skb));	
 		//(IOMemoryDescriptor*)rxb->memD=//IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,IPW_RX_BUF_SIZE,kIODirectionOutIn);
 		//rxb->memD->map();
 		list_add_tail(&rxb->list, &rxq->rx_free);
@@ -5080,8 +5080,8 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		{
 			if (!doFlushQueue) {
 				//dev_kfree_skb_any(rxb->skb);
-				//freePacket(rxb->skb);
-				_freePacketForFragment(&rxb->skb,&rxb->fskb);
+				freePacket(rxb->skb);
+				//_freePacketForFragment(&rxb->skb,&rxb->fskb);
 				rxb->dma_addr=NULL;
 				//rxb->skb = NULL;			
 			}
@@ -8545,7 +8545,7 @@ finish:
 	return ret;	
 }
 
-bool darwin_iwi2200::_fillFragment(volatile gt_fragment *f, mbuf_t packet, UInt16 flags) 
+/*bool darwin_iwi2200::_fillFragment(volatile gt_fragment *f, mbuf_t packet, UInt16 flags) 
 {
     struct IOPhysicalSegment vector;
     UInt32 count;
@@ -8595,7 +8595,7 @@ bool darwin_iwi2200::_allocPacketForFragment(mbuf_t *packet, volatile gt_fragmen
     }
     
     return _fillFragment(f, (*packet));
-}
+}*/
 
 int darwin_iwi2200::ipw_qos_set_tx_queue_command(struct ipw_priv *priv,
 					u16 priority, struct tfd_data *tfd)
@@ -10595,8 +10595,6 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
-				
-				
 				if (clone->ipw_read32(0x30)==0x40001)// clone->ipw_write32(0x30, 0x1);//0x0f0ff);
 				//else 
 				clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
@@ -10629,7 +10627,6 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		{
 			if (!(clone->rf_kill_active(clone->priv))) 
 			{
-			
 				if (clone->ipw_read32(0x30)==0x50000) clone->ipw_write32(0x30, 0x1);
 				else 
 				clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
@@ -10646,7 +10643,6 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					UInt32 r=clone->ipw_read32(0x30)- 0x40000;
 					clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
 				}
-
 			}
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
