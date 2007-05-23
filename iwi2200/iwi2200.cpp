@@ -1026,7 +1026,7 @@ void darwin_iwi2200::ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_que
 			//dev_kfree_skb(rxq->pool[i].skb);
 			//IOMemoryDescriptor::withPhysicalAddress(rxq->pool[i].dma_addr,IPW_RX_BUF_SIZE,kIODirectionOutIn)->release();
 			
-			freePacket(rxq->pool[i].skb);
+			if (!(mbuf_type(rxq->pool[i].skb) & MBUF_TYPE_FREE) && mbuf_len(rxq->pool[i].skb)!=0) freePacket(rxq->pool[i].skb);
 			rxq->pool[i].dma_addr=NULL;
 			//rxq->pool[i].skb = NULL;
 			
@@ -1263,10 +1263,10 @@ void darwin_iwi2200::ipw_rx_queue_replenish(void *data)
 		element = rxq->rx_used.next;
 		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
 		//rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
-		rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
+		//rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
 		//if (!_allocPacketForFragment(&rxb->skb,&rxb->fskb)) {
-		//if (mbuf_getpacket(MBUF_WAITOK , &rxb->skb)!=0) {
-		if (rxb->skb==0) {
+		if (mbuf_getpacket(MBUF_WAITOK , &rxb->skb)!=0) {
+		//if (rxb->skb==0) {
 			IWI_ERR( "%s: Can not allocate SKB buffers.\n",
 			       priv->net_dev->name);
 			/* We don't reschedule replenish work here -- we will
@@ -5080,7 +5080,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		{
 			if (!doFlushQueue) {
 				//dev_kfree_skb_any(rxb->skb);
-				freePacket(rxb->skb);
+				if (!(mbuf_type(rxb->skb) & MBUF_TYPE_FREE) && mbuf_len(rxb->skb)!=0) freePacket(rxb->skb);
 				//_freePacketForFragment(&rxb->skb,&rxb->fskb);
 				rxb->dma_addr=NULL;
 				//rxb->skb = NULL;			
@@ -8108,7 +8108,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//skb=NULL;
 	if (skb!=NULL) 
 	{
-	    freePacket(skb);
+	    if (!(mbuf_type(skb) & MBUF_TYPE_FREE) && mbuf_len(skb)!=0) freePacket(skb);
 		//skb=NULL;
 	}
 	
@@ -8416,7 +8416,8 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 	for (nm2 = m; nm2;  nm2 = mbuf_next(nm2)) {
 		memcpy (skb_put (nm, mbuf_len(nm2)), (UInt8*)mbuf_data(nm2), mbuf_len(nm2));
 	}
-	freePacket(m);
+	if (m)
+	if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
 	/* checking if merged or not. */
 	if( mbuf_len(nm) == mbuf_pkthdr_len(m) ) 
 		return nm;
@@ -8426,17 +8427,20 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 	IWI_WARN("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
 					mbuf_len(m),mbuf_pkthdr_len(m),
 					mbuf_len(nm),mbuf_pkthdr_len(nm) );
-	freePacket(nm);
+	if (nm)
+	if (!(mbuf_type(nm) & MBUF_TYPE_FREE) && mbuf_len(nm)!=0) freePacket(nm);
 	//nm=NULL;
 	return NULL;
 
 copy_packet: 
 		if (mbuf_dup(m, MBUF_WAITOK , &nm)!=0)
 		{
-			freePacket(m);
+			if (m)
+			if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
 			return NULL;
 		}
-		freePacket(m);
+		if (m)
+		if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
 		return nm;
 		//return copyPacket(m, 0); 
 }
@@ -8484,7 +8488,8 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 {
 	if(!(fNetif->getFlags() & IFF_RUNNING))
 	{
-		freePacket(m);
+		if (m)
+		if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
 		//m=NULL;
 		netStats->outputErrors++;
 		return kIOReturnOutputDropped;
@@ -8500,7 +8505,8 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	//drop mbuf is not PKTHDR
 	if (!(mbuf_flags(m) & MBUF_PKTHDR) ){
 		IWI_ERR("BUG: dont support mbuf without pkthdr and dropped \n");
-		freePacket(m);
+		if (m)
+		if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
 		//m=NULL;
 		netStats->outputErrors++;
 		return kIOReturnOutputDropped;
@@ -8631,7 +8637,7 @@ struct ieee80211_frag_entry *darwin_iwi2200::ieee80211_frag_cache_find(struct
 					     "seq=%u last_frag=%u\n",
 					     entry->seq, entry->last_frag);
 			//dev_kfree_skb_any(entry->skb);
-			freePacket(entry->skb);
+			if (!(mbuf_type(entry->skb) & MBUF_TYPE_FREE) && mbuf_len(entry->skb)!=0) freePacket(entry->skb);
 			//entry->skb = NULL;
 		}
 
@@ -8685,7 +8691,7 @@ mbuf_t darwin_iwi2200::ieee80211_frag_cache_get(struct ieee80211_device *ieee,
 
 		if (entry->skb != NULL)
 		{
-			freePacket(entry->skb);
+			if (!(mbuf_type(entry->skb) & MBUF_TYPE_FREE) && mbuf_len(entry->skb)!=0) freePacket(entry->skb);
 			//entry->skb = NULL;
 		}
 		//entry->first_frag_time = jiffies;
