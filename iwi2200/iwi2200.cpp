@@ -1026,7 +1026,7 @@ void darwin_iwi2200::ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_que
 			//dev_kfree_skb(rxq->pool[i].skb);
 			//IOMemoryDescriptor::withPhysicalAddress(rxq->pool[i].dma_addr,IPW_RX_BUF_SIZE,kIODirectionOutIn)->release();
 			
-			if (!(mbuf_type(rxq->pool[i].skb) & MBUF_TYPE_FREE) && mbuf_len(rxq->pool[i].skb)!=0) freePacket(rxq->pool[i].skb);
+			if (!(mbuf_type(rxq->pool[i].skb) == MBUF_TYPE_FREE)) freePacket(rxq->pool[i].skb);
 			rxq->pool[i].dma_addr=NULL;
 			//rxq->pool[i].skb = NULL;
 			
@@ -5080,7 +5080,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		{
 			if (!doFlushQueue) {
 				//dev_kfree_skb_any(rxb->skb);
-				if (!(mbuf_type(rxb->skb) & MBUF_TYPE_FREE) && mbuf_len(rxb->skb)!=0) freePacket(rxb->skb);
+				if (!(mbuf_type(rxb->skb) == MBUF_TYPE_FREE) ) freePacket(rxb->skb);
 				//_freePacketForFragment(&rxb->skb,&rxb->fskb);
 				rxb->dma_addr=NULL;
 				//rxb->skb = NULL;			
@@ -8108,7 +8108,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//skb=NULL;
 	if (skb!=NULL) 
 	{
-	    if (!(mbuf_type(skb) & MBUF_TYPE_FREE) && mbuf_len(skb)!=0) freePacket(skb);
+	    if (!(mbuf_type(skb) == MBUF_TYPE_FREE)) freePacket(skb);
 		//skb=NULL;
 	}
 	
@@ -8417,7 +8417,7 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 		memcpy (skb_put (nm, mbuf_len(nm2)), (UInt8*)mbuf_data(nm2), mbuf_len(nm2));
 	}
 	if (m)
-	if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
+	if (!(mbuf_type(m) == MBUF_TYPE_FREE)) freePacket(m);
 	/* checking if merged or not. */
 	if( mbuf_len(nm) == mbuf_pkthdr_len(m) ) 
 		return nm;
@@ -8428,7 +8428,7 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 					mbuf_len(m),mbuf_pkthdr_len(m),
 					mbuf_len(nm),mbuf_pkthdr_len(nm) );
 	if (nm)
-	if (!(mbuf_type(nm) & MBUF_TYPE_FREE) && mbuf_len(nm)!=0) freePacket(nm);
+	if (!(mbuf_type(nm) == MBUF_TYPE_FREE) ) freePacket(nm);
 	//nm=NULL;
 	return NULL;
 
@@ -8436,11 +8436,11 @@ copy_packet:
 		if (mbuf_dup(m, MBUF_WAITOK , &nm)!=0)
 		{
 			if (m)
-			if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
+			if (!(mbuf_type(m) == MBUF_TYPE_FREE)) freePacket(m);
 			return NULL;
 		}
 		if (m)
-		if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
+		if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 		return nm;
 		//return copyPacket(m, 0); 
 }
@@ -8448,9 +8448,9 @@ copy_packet:
 void darwin_iwi2200::freePacket2(mbuf_t m)
 {
 	if (m && m!=0)
-	if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0)
+	if (!(mbuf_type(m) == MBUF_TYPE_FREE) )
 	{
-		if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0 && mbuf_data(m)!=NULL)
+		if (!(mbuf_type(m) == MBUF_TYPE_FREE) && mbuf_data(m)!=NULL)
 		if (!mbuf_next(m))
 		{
 			//if (mbuf_flags(m) & MBUF_PKTHDR) mbuf_pkthdr_setheader(m,NULL);
@@ -8461,7 +8461,7 @@ void darwin_iwi2200::freePacket2(mbuf_t m)
 		mbuf_t nm=m;
 		while (nm) 
 		{
-			if (!(mbuf_type(nm) & MBUF_TYPE_FREE) && mbuf_len(nm)!=0 && mbuf_data(nm)!=NULL) 
+			if (!(mbuf_type(nm) == MBUF_TYPE_FREE) && mbuf_data(nm)!=NULL) 
 			{
 				//if (mbuf_flags(m) & MBUF_PKTHDR) mbuf_pkthdr_setheader(m,NULL);
 				//mbuf_setdata(m,mbuf_data(m),0);
@@ -8489,7 +8489,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	if(!(fNetif->getFlags() & IFF_RUNNING))
 	{
 		if (m)
-		if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
+		if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 		//m=NULL;
 		netStats->outputErrors++;
 		return kIOReturnOutputDropped;
@@ -8506,7 +8506,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	if (!(mbuf_flags(m) & MBUF_PKTHDR) ){
 		IWI_ERR("BUG: dont support mbuf without pkthdr and dropped \n");
 		if (m)
-		if (!(mbuf_type(m) & MBUF_TYPE_FREE) && mbuf_len(m)!=0) freePacket(m);
+		if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 		//m=NULL;
 		netStats->outputErrors++;
 		return kIOReturnOutputDropped;
@@ -8637,7 +8637,7 @@ struct ieee80211_frag_entry *darwin_iwi2200::ieee80211_frag_cache_find(struct
 					     "seq=%u last_frag=%u\n",
 					     entry->seq, entry->last_frag);
 			//dev_kfree_skb_any(entry->skb);
-			if (!(mbuf_type(entry->skb) & MBUF_TYPE_FREE) && mbuf_len(entry->skb)!=0) freePacket(entry->skb);
+			if (!(mbuf_type(entry->skb) == MBUF_TYPE_FREE) ) freePacket(entry->skb);
 			//entry->skb = NULL;
 		}
 
@@ -8691,7 +8691,7 @@ mbuf_t darwin_iwi2200::ieee80211_frag_cache_get(struct ieee80211_device *ieee,
 
 		if (entry->skb != NULL)
 		{
-			if (!(mbuf_type(entry->skb) & MBUF_TYPE_FREE) && mbuf_len(entry->skb)!=0) freePacket(entry->skb);
+			if (!(mbuf_type(entry->skb) == MBUF_TYPE_FREE) ) freePacket(entry->skb);
 			//entry->skb = NULL;
 		}
 		//entry->first_frag_time = jiffies;
