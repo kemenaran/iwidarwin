@@ -1540,27 +1540,27 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	if (priv->fatal_error) {
 		IOLog
 		    ("Attempt to send command while hardware in fatal error condition.\n");
-		//err = -EIO;
-		//goto fail_unlock;
+		err = -EIO;
+		goto fail_unlock;
 	}
 
 	if (!(priv->status & STATUS_RUNNING)) {
 		IOLog
 		    ("Attempt to send command while hardware is not running.\n");
-		//err = -EIO;
-		//goto fail_unlock;
+		err = -EIO;
+		goto fail_unlock;
 	}
 
 	if (priv->status & STATUS_CMD_ACTIVE) {
 		IOLog
 		    ("Attempt to send command while another command is pending.\n");
-		//err = -EBUSY;
-		//goto fail_unlock;
+		err = -EBUSY;
+		goto fail_unlock;
 	}
 
 	if (list_empty(&priv->msg_free_list)) {
 		IOLog("no available msg buffers\n");
-		//goto fail_unlock;
+		goto fail_unlock;
 	}
 
 	priv->status |= STATUS_CMD_ACTIVE;
@@ -1624,7 +1624,7 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 	if (priv->fatal_error) {
 		IOLog( ": %s: firmware fatal error\n",
 		       priv->net_dev->name);
-		//return -EIO;
+		return -EIO;
 	}
 
 	/* !!!!! HACK TEST !!!!!
@@ -5953,6 +5953,7 @@ void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
 				break;
 			}
 #endif
+			if (priv->status & STATUS_RF_KILL_SW) break;
 			if (stats.len < sizeof(struct ieee80211_hdr_3addr))
 				break;
 			switch (WLAN_FC_GET_TYPE(u->rx_data.header.frame_ctl)) {
@@ -5994,6 +5995,8 @@ void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
 
 int darwin_iwi2100::__ipw2100_tx_process(struct ipw2100_priv *priv)
 {
+	if (priv->status & STATUS_RF_KILL_SW) return 0;
+	
 	struct ipw2100_bd_queue *txq = &priv->tx_queue;
 	struct ipw2100_bd *tbd;
 	struct list_head *element;
@@ -6002,6 +6005,8 @@ int darwin_iwi2100::__ipw2100_tx_process(struct ipw2100_priv *priv)
 	int e, i;
 	u32 r, w, frag_num = 0;
 	IOLog("__ipw2100_tx_process\n");
+	
+	
 	if (list_empty(&priv->fw_pend_list))
 		return 0;
 
