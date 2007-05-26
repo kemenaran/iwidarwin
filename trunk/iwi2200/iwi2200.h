@@ -742,12 +742,36 @@ typedef enum {
     MEDIUM_TYPE_INVALID
 } mediumType_t;
 
+//added from ieee80211 crypto files:
+static inline int timer_pending(const struct timer_list * timer)
+{
+          return timer->expires != NULL;
+}
+
+static LIST_HEAD(ieee80211_crypto_algs);
+
+struct ieee80211_crypto_alg {
+	struct list_head list;
+	struct ieee80211_crypto_ops *ops;
+};
+//end
 
 class darwin_iwi2200 : public IOEthernetController//IO80211Controller
 {
 	OSDeclareDefaultStructors(darwin_iwi2200)
 
 public:
+
+	//ieee80211_crypt functions:
+	void ieee80211_crypt_deinit_entries(struct ieee80211_device *ieee, int force);
+	void ieee80211_crypt_quiescing(struct ieee80211_device *ieee);
+	void ieee80211_crypt_delayed_deinit(struct ieee80211_device *ieee, struct ieee80211_crypt_data **crypt);
+	int ieee80211_register_crypto_ops(struct ieee80211_crypto_ops *ops);
+	int ieee80211_unregister_crypto_ops(struct ieee80211_crypto_ops *ops);
+	struct ieee80211_crypto_ops *ieee80211_get_crypto_ops(const char *name);
+	
+	//end of ieee80211_crypt functions.
+
 	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
 	virtual bool		init(OSDictionary *dictionary = 0);
 	virtual void		free(void);
