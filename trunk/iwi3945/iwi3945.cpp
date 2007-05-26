@@ -11153,6 +11153,31 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
 			int q=0;
+			if (clone->rf_kill_active(clone->priv)) 
+			{	
+				if (clone->ipw_read32(0x05c)==0x40001)// clone->ipw_write32(0x30, 0x1);//0x0f0ff);
+				//else 
+				clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - 0x1);
+				
+				if (clone->ipw_read32(0x05c)!=0x50000)
+				{
+					UInt32 r1=0;
+					while (!((clone->priv->status & STATUS_SCANNING)))
+					//( clone->ipw_read32(0x30)!=0x50000 ) 
+					{
+						clone->ipw_write32(0x05c, 0x1);// clone->ipw_read32(0x30) + 0x1);
+						//if (clone->priv->status & STATUS_SCANNING) break;
+						r1++;
+						//if (r1==5000000) break;
+					}
+					//UInt32 r=0x50001 - clone->ipw_read32(0x30);
+					clone->ipw_write32(0x05c, 0x50001);//clone->ipw_read32(0x30) + r);
+					//UInt32 r=clone->ipw_read32(0x30)- 0x50000;
+					//clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
+					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
+				}
+			} else q=1;
+			IWI_LOG("radio on 0x40000 = 0x%x\n",clone->ipw_read32(0x05c));
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
@@ -11161,6 +11186,26 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}
 		else
 		{
+			if (!(clone->rf_kill_active(clone->priv))) 
+			{
+				if (clone->ipw_read32(0x05c)==0x50000) clone->ipw_write32(0x05c, 0x1);
+				else 
+				clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - 0x1);
+				
+				if (clone->ipw_read32(0x05c)!=0x40000)
+				{
+					UInt32 r1=0;
+					while ( clone->ipw_read32(0x05c)!=0x40000 ) 
+					{
+						clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) + 0x1);
+						r1++;
+						if (r1==5000000) break;
+					}
+					UInt32 r=clone->ipw_read32(0x05c)- 0x40000;
+					clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - r+1);
+				}
+			}
+			IWI_LOG("radio off 0x40000 = 0x%x\n",clone->ipw_read32(0x05c));
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
