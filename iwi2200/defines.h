@@ -980,11 +980,33 @@ typedef unsigned char UInt8;
 #define IEEE80211_ERP_BARKER_PREAMBLE_MODE     (0x04)
 #define IPW_SUPPORTED_RATES_IE_LEN         8
 
+		
+#define list_for_each_entry_safe(pos, n, head, member)			\
+	for (pos = list_entry((head)->next, typeof(*pos), member),	\
+		n = list_entry(pos->member.next, typeof(*pos), member);	\
+	     &pos->member != (head); 					\
+	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+		 
 
+#define atomic_read(v)          ((v)->counter)
+#define IS_ERR(ptr)     ((unsigned long)(ptr) > (unsigned long)(-1000))
 
+//linux crypto lib defines:
 
+#define CRYPTO_ALG_TYPE_MASK            0x0000000f
+#define CRYPTO_ALG_TYPE_CIPHER          0x00000001
+#define CRYPTO_ALG_TYPE_DIGEST          0x00000002
+#define CRYPTO_ALG_TYPE_HASH            0x00000003
+#define CRYPTO_ALG_TYPE_BLKCIPHER       0x00000004
+#define CRYPTO_ALG_TYPE_COMPRESS        0x00000005
+#define CRYPTO_ALG_TYPE_HASH_MASK       0x0000000e
 
-
+#define CRYPTO_ALG_LARVAL               0x00000010
+#define CRYPTO_ALG_DEAD                 0x00000020
+#define CRYPTO_ALG_DYING                0x00000040
+#define CRYPTO_ALG_ASYNC                0x00000080
+ 
+			 
 
 
 

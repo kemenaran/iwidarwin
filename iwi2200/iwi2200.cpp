@@ -10731,4 +10731,163 @@ return 0;
 
 
 
+//ieee80211_crypt functions:
+
+void darwin_iwi2200::ieee80211_crypt_deinit_entries(struct ieee80211_device *ieee, int force)
+{
+	struct ieee80211_crypt_data *entry, *next;
+//	unsigned long flags;
+
+//	spin_lock_irqsave(&ieee->lock, flags);
+	list_for_each_entry_safe(entry, next, &ieee->crypt_deinit_list,list) {
+		if (atomic_read(&entry->refcnt) != 0 && !force)
+			continue;
+
+		list_del(&entry->list);
+
+		if (entry->ops) {
+			entry->ops->deinit(entry->priv);
+		//	module_put(entry->ops->owner);
+		}
+		kfree(entry);
+	}
+//	spin_unlock_irqrestore(&ieee->lock, flags);
+}
+
+void darwin_iwi2200::ieee80211_crypt_quiescing(struct ieee80211_device *ieee)
+{
+//	unsigned long flags;
+
+//	spin_lock_irqsave(&ieee->lock, flags);
+	ieee->crypt_quiesced = 1;
+//	spin_unlock_irqrestore(&ieee->lock, flags);
+}
+
+void darwin_iwi2200::ieee80211_crypt_delayed_deinit(struct ieee80211_device *ieee,
+				    struct ieee80211_crypt_data **crypt)
+{
+	struct ieee80211_crypt_data *tmp;
+//	unsigned long flags;
+
+	if (*crypt == NULL)
+		return;
+
+	tmp = *crypt;
+	*crypt = NULL;
+
+	/* must not run ops->deinit() while there may be pending encrypt or
+	 * decrypt operations. Use a list of delayed deinits to avoid needing
+	 * locking. */
+
+	//spin_lock_irqsave(&ieee->lock, flags);
+	if (!ieee->crypt_quiesced) {
+		list_add(&tmp->list, &ieee->crypt_deinit_list);
+		if (!timer_pending(&ieee->crypt_deinit_timer)) {
+			ieee->crypt_deinit_timer.expires = jiffies + HZ;
+			add_timer(&ieee->crypt_deinit_timer);
+		}
+	}
+	//spin_unlock_irqrestore(&ieee->lock, flags);
+}
+
+
+int darwin_iwi2200::ieee80211_register_crypto_ops(struct ieee80211_crypto_ops *ops)
+{
+//	unsigned long flags;
+	struct ieee80211_crypto_alg *alg;
+
+	alg = (ieee80211_crypto_alg*) IOMalloc(sizeof(*alg));
+	if (alg == NULL)
+		return -ENOMEM;
+
+	alg->ops = ops;
+
+//	spin_lock_irqsave(&ieee80211_crypto_lock, flags);
+	list_add(&alg->list, &ieee80211_crypto_algs);
+//	spin_unlock_irqrestore(&ieee80211_crypto_lock, flags);
+
+	printk(KERN_DEBUG "ieee80211_crypt: registered algorithm '%s'\n",
+	       ops->name);
+
+	return 0;
+}
+
+
+int darwin_iwi2200::ieee80211_unregister_crypto_ops(struct ieee80211_crypto_ops *ops)
+{
+	struct ieee80211_crypto_alg *alg;
+//	unsigned long flags;
+
+//	spin_lock_irqsave(&ieee80211_crypto_lock, flags);
+	list_for_each_entry(alg, &ieee80211_crypto_algs, list) {
+		if (alg->ops == ops)
+			goto found;
+	}
+//	spin_unlock_irqrestore(&ieee80211_crypto_lock, flags);
+	return -EINVAL;
+
+      found:
+	printk(KERN_DEBUG "ieee80211_crypt: unregistered algorithm "
+	       "'%s'\n", ops->name);
+	list_del(&alg->list);
+//	spin_unlock_irqrestore(&ieee80211_crypto_lock, flags);
+	kfree(alg);
+	return 0;
+}
+
+
+struct ieee80211_crypto_ops* darwin_iwi2200::ieee80211_get_crypto_ops(const char *name)
+{
+	struct ieee80211_crypto_alg *alg;
+//	unsigned long flags;
+
+//	spin_lock_irqsave(&ieee80211_crypto_lock, flags);
+	list_for_each_entry(alg, &ieee80211_crypto_algs, list) {
+		if (strcmp(alg->ops->name, name) == 0)
+			goto found;
+	}
+//	spin_unlock_irqrestore(&ieee80211_crypto_lock, flags);
+	return NULL;
+
+      found:
+//	spin_unlock_irqrestore(&ieee80211_crypto_lock, flags);
+	return alg->ops;
+}
+
+static void *ieee80211_crypt_null_init(int keyidx)
+{
+	return (void *)1;
+}
+
+static void ieee80211_crypt_null_deinit(void *priv)
+{
+}
+/*
+static struct ieee80211_crypto_ops ieee80211_crypt_null = {
+	"NULL",
+	ieee80211_crypt_null_init,
+	ieee80211_crypt_null_deinit,
+	THIS_MODULE,
+};*/
+
+static int __init ieee80211_crypto_init(void)
+{
+	struct ieee80211_crypto_ops ieee80211_crypt_null;
+	ieee80211_crypt_null.name="NULL";
+	ieee80211_crypt_null.init=ieee80211_crypt_null_init;
+	ieee80211_crypt_null.deinit=ieee80211_crypt_null_deinit;
+	return ieee80211_register_crypto_ops(&ieee80211_crypt_null);
+}
+
+static void __exit ieee80211_crypto_deinit(void)
+{
+	struct ieee80211_crypto_ops ieee80211_crypt_null;
+	ieee80211_crypt_null.name="NULL";
+	ieee80211_crypt_null.init=ieee80211_crypt_null_init;
+	ieee80211_crypt_null.deinit=ieee80211_crypt_null_deinit;
+	ieee80211_unregister_crypto_ops(&ieee80211_crypt_null);
+//	BUG_ON(!list_empty(&ieee80211_crypto_algs));
+}
+
+
 
