@@ -1332,8 +1332,7 @@ inline void darwin_iwi3945::ipw_enable_interrupts(struct ipw_priv *priv)
 	if (priv->status & STATUS_INT_ENABLED)
 		return;
 	priv->status |= STATUS_INT_ENABLED;
-	ipw_write32(IPW_INTA_MASK_R, IPW_INTA_MASK_ALL);
-}
+	ipw_write32(CSR_INT_MASK, CSR_INI_SET_MASK);}
 
 int darwin_iwi3945::ipw_load(struct ipw_priv *priv)
 {
@@ -7314,7 +7313,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//mutex_unlock(&priv->mutex);
 	
 	//hack: force scan
-	ipw_scan_initiate(priv,0);
+	//ipw_scan_initiate(priv,0);
 }
 
 
