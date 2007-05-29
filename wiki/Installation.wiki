@@ -7,7 +7,7 @@ This is the current installation document for iwi2200.
  * Intel Pro/wireless 2200BG/2945ABG MiniPCI
 
 == System Requirements ==
- * Apple80211.framework and IO80211.kext from 10.4.7 . All iwi driver's no longer need this files
+ * ~~Apple80211.framework and IO80211.kext from 10.4.7~~ . iwi drivers no longer need these files.
 
 
 = Steps =
