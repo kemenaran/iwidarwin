@@ -3,9 +3,9 @@
 
 = Introduction =
 
-This is development information to port Intel Wireless Driver  to Darwin and Mac OS X.
+This is development information related to porting Intel Wireless Driver to Darwin and Mac OS X.
 
-== Currently supports ==
+== Currently Supported ==
 
  * 2200BG/2915ABG
 
@@ -14,7 +14,7 @@ This is development information to port Intel Wireless Driver  to Darwin and Mac
  * 3945ABG
 
 == Requirement ==
- * Mac OS X *10.4.7*-
+ * Mac OS X *10.4.7*
 
 = Installation =
  * [Installation]
