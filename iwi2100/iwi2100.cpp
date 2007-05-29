@@ -2071,7 +2071,7 @@ inline void darwin_iwi2100::ipw2100_enable_interrupts(struct ipw2100_priv *priv)
 	if (priv->status & STATUS_INT_ENABLED)
 		return;
 	priv->status |= STATUS_INT_ENABLED;
-	ipw2100_write32(IPW_INTA_MASK_R, IPW_INTA_MASK_ALL);
+	write_register(priv->net_dev, IPW_REG_INTA_MASK, IPW_INTERRUPT_MASK);
 }
 
 int darwin_iwi2100::ipw2100_load(struct ipw2100_priv *priv)
@@ -3895,7 +3895,7 @@ inline void darwin_iwi2100::ipw2100_disable_interrupts(struct ipw2100_priv *priv
 	if (!(priv->status & STATUS_INT_ENABLED))
 		return;
 	priv->status &= ~STATUS_INT_ENABLED;
-	ipw2100_write32( IPW_INTA_MASK_R, ~IPW_INTA_MASK_ALL);
+	write_register(priv->net_dev, IPW_REG_INTA_MASK, 0x0);
 }
 
 void darwin_iwi2100::ipw2100_down(struct ipw2100_priv *priv)
@@ -6200,7 +6200,7 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 
 	read_register(dev, IPW_REG_INTA, &inta);
 
-	//if ((inta & IPW_INTERRUPT_MASK )== 0) goto skipi;
+	if ((inta & IPW_INTERRUPT_MASK )== 0) goto skipi;
 	
 	//IOLog("enter - INTA: 0x%08lX\n",
 	//	      (unsigned long)inta & IPW_INTERRUPT_MASK);
