@@ -10784,7 +10784,7 @@ void darwin_iwi2200::ieee80211_crypt_delayed_deinit(struct ieee80211_device *iee
 		list_add(&tmp->list, &ieee->crypt_deinit_list);
 		if (!timer_pending(&ieee->crypt_deinit_timer)) {
 			ieee->crypt_deinit_timer.expires = jiffies + HZ;
-			add_timer(&ieee->crypt_deinit_timer);
+			//add_timer(&ieee->crypt_deinit_timer); // bug with k_compat.h
 		}
 	}
 	//spin_unlock_irqrestore(&ieee->lock, flags);
