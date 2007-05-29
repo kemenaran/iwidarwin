@@ -1,4 +1,4 @@
-#summary _*read me first.*_
+#summary *read me first.*
 #labels top,Featured
 
 = Introduction =
