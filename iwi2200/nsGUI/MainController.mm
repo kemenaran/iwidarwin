@@ -177,7 +177,7 @@ static int networkMenuCount = 0;
 							NSString *sMAC = [NSString stringWithCString:MAC];
 							NSString *sch = [NSString stringWithCString:ch];
 							NSImage *sig = [NSImage new];
-
+							
 							NSString* imageName;
 							
 							int signal = priv.ieee->networks[ii].stats.signal;
@@ -188,7 +188,7 @@ static int networkMenuCount = 0;
 							
 							sig = [[NSImage alloc] initWithContentsOfFile:imageName];
 							
-
+							
 							NSMutableArray *data = [NSMutableArray new];
 							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];[data addObject:sig];
 							
@@ -200,6 +200,8 @@ static int networkMenuCount = 0;
 							
 							NSMenuItem *menuItem = [[NSMenuItem alloc] initWithTitle:sSSID 
 								action:@selector (ConnectFromMenu:) keyEquivalent:@""];
+							
+							
 							
 							
 							[menuItem setTag:ii];
