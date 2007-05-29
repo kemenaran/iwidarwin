@@ -1,4 +1,4 @@
-#summary *read me first.*
+#summary *_ read me first. _*
 #labels top,Featured
 
 = Introduction =
@@ -32,3 +32,4 @@ This is development information to port Intel Wireless Driver  to Darwin and Mac
 irc.macspeak.net
 
  * #darwin_iwi
+
