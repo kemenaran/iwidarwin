@@ -29,8 +29,6 @@
 
 #include "defines.h"
 
-
-
 struct ieee80211_channel_range {
 	short start_freq;
 	short end_freq;
@@ -641,7 +639,7 @@ struct ipw_tx_cmd {
 	} u2;
 	u16 driver_txop;	//byte 55:54
 	u8 payload[0];
-	//struct ieee80211_hdr hdr[0];
+	struct ieee80211_hdr hdr[0];
 } __attribute__ ((packed));
 
 /*
@@ -820,7 +818,7 @@ struct ipw_tx_beacon_cmd {
 	u16 tim_idx;		//byte 57:56
 	u8 tim_size;		//byte 58
 	u8 reserved1;		//byte 59
-	//struct ieee80211_hdr frame[0];
+	struct ieee80211_hdr frame[0];
 	// Beacon Frame
 } __attribute__ ((packed));
 
@@ -1760,7 +1758,7 @@ struct ipw_rx_queue {
 	struct list_head rx_free;	/* Own an SKBs */
 	struct list_head rx_used;	/* No SKB allocated */
 	int need_update;	/* flag to indicate we need to update read/write index */
-	//spinlock_t lock;
+	spinlock_t lock;
 };				/* Not transferred over network, so not  __attribute__ ((packed)) */
 
 struct ipw_multicast_addr {
@@ -1906,7 +1904,7 @@ struct ipw_rate_scaling_cmd_specifics {
 } __attribute__ ((packed));
 
 struct ipw_lq_mngr {
-	//spinlock_t lock;
+	spinlock_t lock;
 	s32 max_window_size;
 	struct ipw_rate_scaling_cmd_specifics scale_rate_cmd;
 	s32 *expected_tpt;
@@ -2039,7 +2037,7 @@ struct ipw_power_vec_entry {
 #define IPW_POWER_RANGE_1  (1)
 
 struct ipw_power_mgr {
-	//spinlock_t lock;
+	spinlock_t lock;
 	struct ipw_power_vec_entry pwr_range_0[IPW_POWER_AC];
 	struct ipw_power_vec_entry pwr_range_1[IPW_POWER_AC];
 	u8 active_index;
@@ -2081,7 +2079,7 @@ struct ipw_link_blink {
 	u8 on;			/* ON time in interval units - 0 == OFF */
 };
 
-/*struct ipw_frame {
+struct ipw_frame {
 	int len;
 	union {
 		struct ieee80211_hdr frame;
@@ -2089,7 +2087,7 @@ struct ipw_link_blink {
 		u8 cmd[360];
 	} u;
 	struct list_head list;
-};*/
+};
 
 #ifdef CONFIG_IPW3945_PROMISCUOUS
 enum ipw_prom_filter {
@@ -2686,7 +2684,8 @@ enum {
 struct ipw_clip_group {
 	/* maximum power level to prevent clipping for each rate, derived by
 	 *   us from this band's saturation power in EEPROM */
-	const s8 clip_powers[IPW_MAX_RATES];
+	// const s8 clip_powers[IPW_MAX_RATES];
+	s8 clip_powers[IPW_MAX_RATES];
 };
 
 
@@ -2883,6 +2882,7 @@ struct ipw_priv {
 	struct ipw_channel_info *channel_info;	/* channel info array */
 	u8 channel_count;	/* # of channels */
 	//const struct ipw_clip_group clip_groups[5];
+	struct ipw_clip_group clip_groups[5];
 	
 	int curr_temperature;
 	int last_temperature;
@@ -3163,7 +3163,7 @@ struct ieee80211_local {
 	struct net_device *apdev; /* wlan#ap - management frames (hostapd) */
 	int open_count;
 	int monitors;
-	//struct iw_statistics wstats;
+	struct iw_statistics wstats;
 	u8 wstats_flags;
 
 	enum {
