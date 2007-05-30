@@ -9240,13 +9240,14 @@ int darwin_iwi3945::resetTxQueue()
 void darwin_iwi3945::free(void)
 {
 	IOLog("todo: Freeing\n");
-	return;
 	
-	if (pl==0)
+	/*if (pl==0)
 	{
-		stop(NULL);
+		stop(NULL);*/
 		super::free();
-	}
+	//}
+	
+	return;
 }
 
 void darwin_iwi3945::stop(IOService *provider)
