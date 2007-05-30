@@ -143,7 +143,7 @@ int main (int argc, char * const argv[]) {
 		}*/
 		//Adapter EN0 (00:13:ce:b7:9c:00) [mode: 0 led: off]
 		//Associated: 'linksys (00:06:25:10:18:11) ch: 11'
-		cout<<"\nWellcome to the insanelyMac SpacePort 0.1\n";
+		cout<<"\nWelcome to the insanelyMac SpacePort 0.1\n";
 		printf("Adapter %s (%02x:%02x:%02x:%02x:%02x:%02x) [mode: %d led: %s]\n", priv.net_dev->name,
 		MAC_ARG(priv.mac_addr), priv.iw_mode, priv.config & CFG_NO_LED ? "off" :	"on");
 		if ((priv.status & STATUS_ASSOCIATED) && priv.assoc_network)
@@ -203,7 +203,11 @@ int main (int argc, char * const argv[]) {
 				break;
 			case (2):
 				//TODO: use ipw_bestnetwork...
-				if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)) break;
+				if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)) {
+					printf("The card is disabled. Try to enable the card with the software" \
+						"and/or hardware switch.\n");
+					break;
+				}
 				printf("hello world: send network list\n");
 				/*if (priv.ieee->networks)
 				{

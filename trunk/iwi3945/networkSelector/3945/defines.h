@@ -1,8 +1,8 @@
 
 #include <IOKit/IOTypes.h>
+#include "ipw3945.h"
 #include "net/ieee80211.h"
 #include "net/ieee80211_crypt.h"
-#include "ipw3945.h"
 
 #define	IFNAMSIZ	16		 
 #define        __iomem
