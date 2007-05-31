@@ -10528,6 +10528,16 @@ int disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo)
 int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len)
 {
 	//int i=*((int*)data);
+	
+	//experimental encryption functions:
+	if (opt==5) //enable 
+	{
+		clone->priv->capability |= CAP_PRIVACY_ON;
+		clone->priv->ieee->sec.enabled=1;
+		clone->priv->ieee->sec.active_key = *(u16*)userdata;
+	}
+	
+	
 	if (opt==4)// mode
 	{
 		int m=*((int*)data);
@@ -10632,6 +10642,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		else
 		{
 			if (!(clone->rf_kill_active(clone->priv))) 
+			
 			{
 				if (clone->ipw_read32(0x30)==0x50000) clone->ipw_write32(0x30, 0x1);
 				else 
@@ -10650,6 +10661,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
 				}
 			}
+			
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
