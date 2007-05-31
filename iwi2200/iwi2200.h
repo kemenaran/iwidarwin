@@ -209,6 +209,10 @@ inline void *skb_pull(mbuf_t skb, unsigned int len)
 #define kTransmitQueueCapacity 1024
 //64
 
+
+
+
+
 typedef __u16 __be16;
 struct ethhdr {
 	unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
@@ -654,7 +658,7 @@ struct iwi_tx_desc {
 #define IWI_DATA_CMD_TX	0x0b
 
 	UInt8		seq;
-	UInt16	len;
+	UInt16	    len;
 	UInt8		priority;
 	UInt8		flags;
 #define IWI_DATA_FLAG_SHPREAMBLE	0x04
@@ -665,7 +669,8 @@ struct iwi_tx_desc {
 #define IWI_DATA_XFLAG_QOS	0x10
 
 	UInt8		wep_txkey;
-//	UInt8		wepkey[IEEE80211_KEYBUF_SIZE];
+#define WEP_KEY_LEN 13
+	UInt8		wepkey[WEP_KEY_LEN+1];
 	UInt8		rate;
 	UInt8		antenna;
 	UInt8		reserved3[10];
