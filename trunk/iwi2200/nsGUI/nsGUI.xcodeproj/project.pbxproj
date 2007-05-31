@@ -13,6 +13,7 @@
 		400A31910C01E54A007BE2A8 /* sig3s.tif in Resources */ = {isa = PBXBuildFile; fileRef = 400A31900C01E54A007BE2A8 /* sig3s.tif */; };
 		400A31930C01E54D007BE2A8 /* sig4s.tif in Resources */ = {isa = PBXBuildFile; fileRef = 400A31920C01E54D007BE2A8 /* sig4s.tif */; };
 		400B93D80BFE7DF8005504F4 /* Connected.png in Resources */ = {isa = PBXBuildFile; fileRef = 400B93D70BFE7DF8005504F4 /* Connected.png */; };
+		40138DF80BBBE165007E4177 /* enc.tif in Resources */ = {isa = PBXBuildFile; fileRef = 40138DF70BBBE165007E4177 /* enc.tif */; };
 		402F07C00BF934E600038DCA /* icons.icns in Resources */ = {isa = PBXBuildFile; fileRef = 402F07BF0BF934E600038DCA /* icons.icns */; };
 		406E55DC0BECD5B800AB0131 /* MainController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 406E55DB0BECD5B800AB0131 /* MainController.mm */; };
 		611AA9590C0C974200A4B5DA /* NetworkSelector icon 64x64.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA94D0C0C974200A4B5DA /* NetworkSelector icon 64x64.png */; };
@@ -48,6 +49,7 @@
 		400A31900C01E54A007BE2A8 /* sig3s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig3s.tif; path = GFX/sig3s.tif; sourceTree = "<group>"; };
 		400A31920C01E54D007BE2A8 /* sig4s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig4s.tif; path = GFX/sig4s.tif; sourceTree = "<group>"; };
 		400B93D70BFE7DF8005504F4 /* Connected.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Connected.png; path = GFX/Connected.png; sourceTree = "<group>"; };
+		40138DF70BBBE165007E4177 /* enc.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = enc.tif; path = GFX/enc.tif; sourceTree = "<group>"; };
 		402F07BF0BF934E600038DCA /* icons.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icons.icns; sourceTree = "<group>"; };
 		406E55DA0BECD5B800AB0131 /* MainController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = MainController.h; sourceTree = "<group>"; };
 		406E55DB0BECD5B800AB0131 /* MainController.mm */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.objcpp; path = MainController.mm; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 				400A318E0C01E544007BE2A8 /* sig2s.tif */,
 				400A31900C01E54A007BE2A8 /* sig3s.tif */,
 				400A31920C01E54D007BE2A8 /* sig4s.tif */,
+				40138DF70BBBE165007E4177 /* enc.tif */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -235,6 +238,7 @@
 				611AA9620C0C974200A4B5DA /* Signal Meter 3.png in Resources */,
 				611AA9630C0C974200A4B5DA /* Splash Screen BMP.jpg in Resources */,
 				611AA9640C0C974200A4B5DA /* statusIcon.png in Resources */,
+				40138DF80BBBE165007E4177 /* enc.tif in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -176,8 +176,15 @@ static int networkMenuCount = 0;
 							NSString *sSSID = [NSString stringWithCString:SSID];
 							NSString *sMAC = [NSString stringWithCString:MAC];
 							NSString *sch = [NSString stringWithCString:ch];
-							NSImage *sig = [NSImage new];
+							NSImage *sig; // = [NSImage new];
+							NSImage *prot;// = [NSImage new];
 							
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
+								{
+									NSString *temp = [[NSBundle mainBundle] pathForResource:@"enc" ofType:@"tif"];
+									prot = [[NSImage alloc] initWithContentsOfFile:temp];
+								}
+							else prot = [[NSImage alloc] init];
 							NSString* imageName;
 							
 							int signal = priv.ieee->networks[ii].stats.signal;
@@ -188,11 +195,13 @@ static int networkMenuCount = 0;
 							
 							sig = [[NSImage alloc] initWithContentsOfFile:imageName];
 							
+							cout<<prot;
+
 							
 							NSMutableArray *data = [NSMutableArray new];
-							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];[data addObject:sig];
+							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];[data addObject:sig];[data addObject:prot];
 							
-							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", nil];
+							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", @"Info", nil];
 							
 							NSMutableDictionary *temp = [[NSMutableDictionary alloc] initWithObjects: data forKeys: keys];
 							
@@ -215,7 +224,7 @@ static int networkMenuCount = 0;
 						}
 					}
 				}
-	//	[networksMenu setAutoenablesItems:false];
+
 		[dataOutlet reloadData];
 		
 				
