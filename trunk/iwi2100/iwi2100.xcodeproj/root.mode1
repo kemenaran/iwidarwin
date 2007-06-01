@@ -221,6 +221,8 @@
 			<key>Layout</key>
 			<array>
 				<dict>
+					<key>BecomeActive</key>
+					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -264,7 +266,7 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>0</integer>
+									<integer>22</integer>
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
@@ -298,8 +300,6 @@
 					<key>Dock</key>
 					<array>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -317,7 +317,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61CF3FF60C0FB2D50011F657</string>
+										<string>610D74410C1056B9007D4F3B</string>
 										<key>history</key>
 										<array>
 											<string>61B06DA80B58946B000DD1AE</string>
@@ -337,7 +337,7 @@
 											<string>61D3E8480BE83526004FDD3D</string>
 											<string>6104B11A0BF8C2A5004388E7</string>
 											<string>61E5DE1F0C0CA31000BEAFB8</string>
-											<string>61D97A710C0F37E1009C5ACF</string>
+											<string>610D74270C105641007D4F3B</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -416,9 +416,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61CF3FF70C0FB2D50011F657</string>
+				<string>610D74420C1056B9007D4F3B</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61CF3FF80C0FB2D50011F657</string>
+				<string>610D74430C1056B9007D4F3B</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -552,6 +552,7 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>61B069860B5885D6000DD1AE</string>
 		<string>/var/root/svn/trunk/iwi2100/iwi2100.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -632,7 +633,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B069860B5885D6000DD1AE</string>
-				<string>61D97A6E0C0F37C3009C5ACF</string>
+				<string>610D74440C1056B9007D4F3B</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
