@@ -746,13 +746,11 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	}
 
 	priv->freq_band = IEEE80211_24GHZ_BAND;
+	
+	u32 pci_id;//(priv->pci_dev->device << 16) | priv->pci_dev->subsystem_device;
 	priv->is_3945 = 1;
-	
-	u32 pci_id = (deviceID << 16) | vendorID;
-	//fPCIDevice->configRead16(kIOPCIConfigDeviceID) | fPCIDevice->configRead16(kIOPCIConfigVendorID);
-	IWI_LOG("pci_id 0x%08x\n",pci_id);
-	
-	//priv->is_3945 = 1;
+	pci_id= (fPCIDevice->configRead16(kIOPCIConfigDeviceID) << 16) | fPCIDevice->configRead16(kIOPCIConfigSubSystemID);
+	IWI_LOG("PCI_ID 0x%08x\n",pci_id);
 	
 	switch (pci_id) {
 	case 0x42221005:	/* 0x4222 0x8086 0x1005 is BG SKU */

@@ -221,8 +221,6 @@
 			<key>Layout</key>
 			<array>
 				<dict>
-					<key>BecomeActive</key>
-					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -267,6 +265,8 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
+									<integer>12</integer>
+									<integer>9</integer>
 									<integer>0</integer>
 								</array>
 							</array>
@@ -301,6 +301,8 @@
 					<key>Dock</key>
 					<array>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -318,7 +320,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>6107C4010C0DC068007544D5</string>
+										<string>6100CD4B0C103FAA00DC17B7</string>
 										<key>history</key>
 										<array>
 											<string>61B125000B592DD600E4BC65</string>
@@ -342,8 +344,6 @@
 											<string>610B89AD0BECF7D7004FA0CC</string>
 											<string>611441820BED2D08006FA3B5</string>
 											<string>61CF71EB0BEF717C000D240D</string>
-											<string>61CF71ED0BEF717C000D240D</string>
-											<string>61021D170BF640F900657A67</string>
 											<string>610933350C0884C000FEC82A</string>
 											<string>610933360C0884C000FEC82A</string>
 											<string>613B8C6C0C08EF6C00FFE811</string>
@@ -352,7 +352,10 @@
 											<string>610653C80C0B7DD700D178DE</string>
 											<string>610653C90C0B7DD700D178DE</string>
 											<string>610653CA0C0B7DD700D178DE</string>
-											<string>6107C3E90C0DBFF5007544D5</string>
+											<string>610FFEF30C0FB88800CCC720</string>
+											<string>610FFEF50C0FB88800CCC720</string>
+											<string>61EA2DF90C0FB9D100F1CC52</string>
+											<string>61EA2DFF0C0FB9EA00F1CC52</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -388,6 +391,7 @@
 											<string>613B8C720C08EF6C00FFE811</string>
 											<string>613B8C730C08EF6C00FFE811</string>
 											<string>610653CB0C0B7DD700D178DE</string>
+											<string>610FFEFA0C0FB88800CCC720</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -445,9 +449,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>6107C4020C0DC068007544D5</string>
+				<string>6100CD4C0C103FAA00DC17B7</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>6107C4030C0DC068007544D5</string>
+				<string>6100CD4D0C103FAA00DC17B7</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -600,14 +604,12 @@
 					<key>Dock</key>
 					<array>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
 								<string>1CD0528F0623707200166675</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>iwi3945.cpp</string>
+								<string></string>
 								<key>StatusBarVisibility</key>
 								<true/>
 							</dict>
@@ -663,7 +665,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B06E030B58957A000DD1AE</string>
-				<string>610653D60C0B7EC600D178DE</string>
+				<string>61EA2DF00C0FB9C600F1CC52</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -808,7 +810,7 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CDD528C0622207200134675</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>iwi3945.cpp</string>
+										<string>base.c</string>
 										<key>StatusBarVisibility</key>
 										<true/>
 									</dict>
@@ -829,6 +831,8 @@
 							<string>212pt</string>
 						</dict>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -864,8 +868,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>610653C60C0B7DD600D178DE</string>
-				<string>610653C70C0B7DD600D178DE</string>
+				<string>61EA2DE10C0FB95000F1CC52</string>
+				<string>61EA2DE20C0FB95000F1CC52</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>

@@ -221,6 +221,8 @@
 			<key>Layout</key>
 			<array>
 				<dict>
+					<key>BecomeActive</key>
+					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -301,8 +303,6 @@
 					<key>Dock</key>
 					<array>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -320,7 +320,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61CF72210BEF7189000D240D</string>
+										<string>61788CC30C0FB8A300E0AE1B</string>
 										<key>history</key>
 										<array>
 											<string>6131B3AB0BB20C00001B2298</string>
@@ -344,8 +344,8 @@
 											<string>61CF71B10BEF6E85000D240D</string>
 											<string>61CF71B20BEF6E85000D240D</string>
 											<string>61CF71B30BEF6E85000D240D</string>
-											<string>61CF71B40BEF6E85000D240D</string>
-											<string>61CF71CE0BEF6E85000D240D</string>
+											<string>614224CC0C0F294500CCD8C5</string>
+											<string>614224D00C0F294500CCD8C5</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -429,9 +429,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61CF72220BEF7189000D240D</string>
+				<string>61788CC40C0FB8A300E0AE1B</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61CF72230BEF7189000D240D</string>
+				<string>61788CC50C0FB8A300E0AE1B</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -566,7 +566,7 @@
 	<key>WindowOrderList</key>
 	<array>
 		<string>6131B3D40BB20CF7001B2298</string>
-		<string>61CF722B0BEF7189000D240D</string>
+		<string>61788CCD0C0FB8A300E0AE1B</string>
 		<string>1CD10A99069EF8BA00B06720</string>
 		<string>1C0AD2B3069F1EA900FABCE6</string>
 		<string>/var/root/svn/trunk/iwi3945/networkSelector/networkSelector.xcodeproj</string>
@@ -649,7 +649,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>6131B3D40BB20CF7001B2298</string>
-				<string>61CF72240BEF7189000D240D</string>
+				<string>61788CC60C0FB8A300E0AE1B</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -755,14 +755,14 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1CD10A99069EF8BA00B06720</string>
-				<string>61CF72250BEF7189000D240D</string>
+				<string>61788CC70C0FB8A300E0AE1B</string>
 				<string>1C162984064C10D400B95A72</string>
-				<string>61CF72260BEF7189000D240D</string>
-				<string>61CF72270BEF7189000D240D</string>
-				<string>61CF72280BEF7189000D240D</string>
-				<string>61CF72290BEF7189000D240D</string>
-				<string>61CF722A0BEF7189000D240D</string>
-				<string>61CF722B0BEF7189000D240D</string>
+				<string>61788CC80C0FB8A300E0AE1B</string>
+				<string>61788CC90C0FB8A300E0AE1B</string>
+				<string>61788CCA0C0FB8A300E0AE1B</string>
+				<string>61788CCB0C0FB8A300E0AE1B</string>
+				<string>61788CCC0C0FB8A300E0AE1B</string>
+				<string>61788CCD0C0FB8A300E0AE1B</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.debug</string>
@@ -1013,9 +1013,9 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C0AD2B3069F1EA900FABCE6</string>
-				<string>61CF722C0BEF7189000D240D</string>
+				<string>61788CCE0C0FB8A300E0AE1B</string>
 				<string>1CD0528B0623707200166675</string>
-				<string>61CF722D0BEF7189000D240D</string>
+				<string>61788CCF0C0FB8A300E0AE1B</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.run</string>
