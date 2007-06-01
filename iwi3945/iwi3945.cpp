@@ -11150,7 +11150,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
-			int q=0;
+			/*int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
 				if (clone->ipw_read32(0x05c)==0x40001)// clone->ipw_write32(0x30, 0x1);//0x0f0ff);
@@ -11174,7 +11174,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					//clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
 					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
-			} else q=1;
+			} else q=1;*/
 			IWI_LOG("radio on 0x40000 = 0x%x\n",clone->ipw_read32(0x05c));
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
@@ -11184,7 +11184,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}
 		else
 		{
-			if (!(clone->rf_kill_active(clone->priv))) 
+			/*if (!(clone->rf_kill_active(clone->priv))) 
 			{
 				if (clone->ipw_read32(0x05c)==0x50000) clone->ipw_write32(0x05c, 0x1);
 				else 
@@ -11202,7 +11202,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					UInt32 r=clone->ipw_read32(0x05c)- 0x40000;
 					clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - r+1);
 				}
-			}
+			}*/
 			IWI_LOG("radio off 0x40000 = 0x%x\n",clone->ipw_read32(0x05c));
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
