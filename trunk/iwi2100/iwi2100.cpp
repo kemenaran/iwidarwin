@@ -1701,20 +1701,20 @@ int darwin_iwi2100::ipw2100_enable_adapter(struct ipw2100_priv *priv)
 
 	if (rf_kill_active(priv)) {
 		IOLog("Command aborted due to RF kill active.\n");
-		//goto fail_up;
+		goto fail_up;
 	}
 
 	err = ipw2100_hw_send_command(priv, &cmd);
 	if (err) {
 		IOLog("Failed to send HOST_COMPLETE command\n");
-		//goto fail_up;
+		goto fail_up;
 	}
 
 	err = ipw2100_wait_for_card_state(priv, IPW_HW_STATE_ENABLED);
 	if (err) {
 		IOLog("%s: card not responding to init command.\n",
 			       priv->net_dev->name);
-		//goto fail_up;
+		goto fail_up;
 	}
 
 	if (priv->stop_hang_check) {
@@ -1900,7 +1900,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),NULL,NULL,false);
 		
 		pl=1;
-		ipw2100_up(priv,0);
+		//ipw2100_up(priv,0);
 		return true;			// end start successfully
 	} while (false);
 		
@@ -3633,8 +3633,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			IOLog(
 			       ": %s: Could not cycle adapter.\n",
 			       priv->net_dev->name);
-			//rc = 1;
-			//goto exit;
+			rc = 1;
+			goto exit;
 		}
 	} else
 		priv->status |= STATUS_POWERED;
@@ -3643,8 +3643,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to start the firmware.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	ipw2100_initialize_ordinals(priv);
@@ -3654,14 +3654,14 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to determine HW features.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	/* Initialize the geo */
 	if (ipw_set_geo(priv->ieee, &ipw_geos[0])) {
 		IOLog( "Could not set geo\n");
-		//return 0;
+		return 0;
 	}
 	priv->ieee->freq_band = IEEE80211_24GHZ_BAND;
 
@@ -3670,8 +3670,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to clear ordinal lock.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	priv->status &= ~STATUS_SCANNING;
@@ -3686,7 +3686,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill),priv,2,true);
 		}
 
-		//deferred = 1;
+		deferred = 1;
 	}
 
 	/* Turn on the interrupt so that commands can be processed */
@@ -3705,8 +3705,8 @@ if (!deferred) {
 	if (ipw2100_adapter_setup(priv)) {
 		IOLog( ": %s: Failed to start the card.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	
@@ -3716,11 +3716,12 @@ if (!deferred) {
 			       "%s: failed in call to enable adapter.\n",
 			       priv->net_dev->name);
 			ipw2100_hw_stop_adapter(priv);
-			//rc = 1;
-			//goto exit;
+			rc = 1;
+			goto exit;
 		}
 
 		/* Start a scan . . . */
+		if (!(priv->config & CFG_ASSOCIATE) || priv->status & STATUS_RF_KILL_SW) return rc;
 		ipw2100_set_scan_options(priv);
 		ipw2100_start_scan(priv);
 	}
