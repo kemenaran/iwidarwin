@@ -7,11 +7,11 @@ This is development information related to porting Intel Wireless Driver to Darw
 
 == Currently Supported ==
 
- * 2200BG/2915ABG
+ * 2200bg / 2915abg
 
 == Drivers in Development ==
  * 2100
- * 3945ABG
+ * 3945abg
 
 == Requirement ==
  * Mac OS X *10.4.7*
