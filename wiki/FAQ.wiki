@@ -70,6 +70,9 @@ First you must determine which driver is installed, either iwi2100, iwi3945 or i
   % kextcache -k /System/Library/Extensions
   }}}
   # Driver is now uninstalled
+>> Sometimes it may give an error when deleting iwi3945.kext.
+>> If that is your case, just type as this:
+>> % rm -r /System/Library/Extensions/iwiXXXX.kext (replace XXXX with your specific driver)
 
 ==Error: Could not get ID for kernel control. 2==
 
