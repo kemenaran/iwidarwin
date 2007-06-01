@@ -570,7 +570,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#cd /private/var/root/svn/trunk/iwi3945\n#cd \"$SRCROOT\"\n\nsudo chown -R root:wheel build/Debug/iwi3945.kext\n\n#rm -rf /System/Library/Extensions/iwi3945.kext\n\ncp -rf build/Debug/iwi3945.kext /System/Library/Extensions\n\nrm -rf iwi3945.pkg\n\n# build only if no .dmg exists\nif [ -e iwi3945.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi3945.dmg\nrm -rf iwi3945/iwi3945.pkg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi3945/iwi3945.pkg -proj iwi3945.pmproj\n\ncp -f networkSelector/build/Release/networkSelector iwi3945\n\nhdiutil create -format UDZO -srcfolder iwi3945 iwi3945.dmg\n\nrm -rf iwi3945/iwi3945.pkg\nrm -f iwi3945/networkSelector\n\nsleep 1\n\nrm -rf iwi3945.pkg\n";
+			shellScript = "#cd /private/var/root/svn/trunk/iwi3945\n#cd \"$SRCROOT\"\n\nxcodebuild -project networkSelector/networkSelector.xcodeproj\n#xcodebuild -project nsGUI/nsGUI.xcodeproj\n\nsudo chown -R root:wheel build/Debug/iwi3945.kext\n\n#rm -rf /System/Library/Extensions/iwi3945.kext\n\ncp -rf build/Debug/iwi3945.kext /System/Library/Extensions\n\nrm -rf iwi3945.pkg\n\n# build only if no .dmg exists\nif [ -e iwi3945.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi3945.dmg\nrm -rf iwi3945/iwi3945.pkg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi3945/iwi3945.pkg -proj iwi3945.pmproj\n\ncp -f networkSelector/build/Release/networkSelector iwi3945\n\nhdiutil create -format UDZO -srcfolder iwi3945 iwi3945.dmg\n\nrm -rf iwi3945/iwi3945.pkg\nrm -f iwi3945/networkSelector\n\nsleep 1\n\nrm -rf iwi3945.pkg\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

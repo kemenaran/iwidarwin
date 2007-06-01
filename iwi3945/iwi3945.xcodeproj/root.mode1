@@ -221,6 +221,8 @@
 			<key>Layout</key>
 			<array>
 				<dict>
+					<key>BecomeActive</key>
+					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -265,9 +267,7 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>12</integer>
-									<integer>9</integer>
-									<integer>0</integer>
+									<integer>29</integer>
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
@@ -301,8 +301,6 @@
 					<key>Dock</key>
 					<array>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -320,7 +318,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>6100CD4B0C103FAA00DC17B7</string>
+										<string>610D745D0C1056EF007D4F3B</string>
 										<key>history</key>
 										<array>
 											<string>61B125000B592DD600E4BC65</string>
@@ -355,7 +353,7 @@
 											<string>610FFEF30C0FB88800CCC720</string>
 											<string>610FFEF50C0FB88800CCC720</string>
 											<string>61EA2DF90C0FB9D100F1CC52</string>
-											<string>61EA2DFF0C0FB9EA00F1CC52</string>
+											<string>610D74320C105658007D4F3B</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -449,9 +447,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>6100CD4C0C103FAA00DC17B7</string>
+				<string>610D745A0C1056E2007D4F3B</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>6100CD4D0C103FAA00DC17B7</string>
+				<string>610D745B0C1056E2007D4F3B</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -585,6 +583,7 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>61B06E030B58957A000DD1AE</string>
 		<string>/var/root/svn/trunk/iwi3945/iwi3945.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -665,7 +664,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B06E030B58957A000DD1AE</string>
-				<string>61EA2DF00C0FB9C600F1CC52</string>
+				<string>610D745C0C1056E2007D4F3B</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
