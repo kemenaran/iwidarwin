@@ -62,10 +62,11 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 202394967;
-			PBXWorkspaceStateSaveDate = 202394967;
+			PBXPerProjectTemplateStateSaveDate = 202752364;
+			PBXWorkspaceStateSaveDate = 202752364;
 		};
 		perUserProjectItems = {
+			61309E790C15C18D00F11307 /* PBXTextBookmark */ = 61309E790C15C18D00F11307 /* PBXTextBookmark */;
 			6179388A0BEFACA200AD3EA5 /* PBXTextBookmark */ = 6179388A0BEFACA200AD3EA5 /* PBXTextBookmark */;
 			61CD74A60BF3E09800403B9B /* PBXTextBookmark */ = 61CD74A60BF3E09800403B9B /* PBXTextBookmark */;
 			61CD74AA0BF3E09800403B9B /* PBXTextBookmark */ = 61CD74AA0BF3E09800403B9B /* PBXTextBookmark */;
@@ -75,7 +76,6 @@
 			61D13A9E0BF113D0005EB1EE /* PBXTextBookmark */ = 61D13A9E0BF113D0005EB1EE /* PBXTextBookmark */;
 			61D13A9F0BF113D0005EB1EE /* PBXTextBookmark */ = 61D13A9F0BF113D0005EB1EE /* PBXTextBookmark */;
 			61D13AA00BF113D0005EB1EE /* PBXTextBookmark */ = 61D13AA00BF113D0005EB1EE /* PBXTextBookmark */;
-			61E4582D0C104CFD00A3A139 /* PBXTextBookmark */ = 61E4582D0C104CFD00A3A139 /* PBXTextBookmark */;
 			61E45BE20C104E0200A3A139 /* PBXTextBookmark */ = 61E45BE20C104E0200A3A139 /* PBXTextBookmark */;
 			61E99A390BF3AD6D004E0520 /* PBXTextBookmark */ = 61E99A390BF3AD6D004E0520 /* PBXTextBookmark */;
 			61E99A400BF3AD6D004E0520 /* PBXTextBookmark */ = 61E99A400BF3AD6D004E0520 /* PBXTextBookmark */;
@@ -108,9 +108,19 @@
 	406E55DB0BECD5B800AB0131 /* MainController.mm */ = {
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {890, 8162}}";
-			sepNavSelRange = "{11519, 18}";
-			sepNavVisRect = "{{0, 7433}, {775, 353}}";
+			sepNavSelRange = "{17141, 0}";
+			sepNavVisRect = "{{0, 7420}, {775, 353}}";
 		};
+	};
+	61309E790C15C18D00F11307 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 406E55DB0BECD5B800AB0131 /* MainController.mm */;
+		name = "MainController.mm: 544";
+		rLen = 0;
+		rLoc = 17141;
+		rType = 0;
+		vrLen = 958;
+		vrLoc = 16477;
 	};
 	6179387B0BEFAC3500AD3EA5 /* nsGUI */ = {
 		isa = PBXExecutable;
@@ -270,16 +280,6 @@
 		rType = 0;
 		vrLen = 250;
 		vrLoc = 0;
-	};
-	61E4582D0C104CFD00A3A139 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 406E55DB0BECD5B800AB0131 /* MainController.mm */;
-		name = "- (IBAction)Connect:(id)sender";
-		rLen = 31;
-		rLoc = 8594;
-		rType = 0;
-		vrLen = 737;
-		vrLoc = 9549;
 	};
 	61E45BE20C104E0200A3A139 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
