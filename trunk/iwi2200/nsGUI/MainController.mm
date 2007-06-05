@@ -9,7 +9,7 @@ static int networkMenuCount = 0;
 {
 	[self preAction];
 	tinterval=[[[NSDate date] addTimeInterval:3] timeIntervalSinceNow];
-	timecheck=	[NSTimer scheduledTimerWithTimeInterval:tinterval target:self selector:@selector(preAction) userInfo:nil repeats:YES];
+	timecheck =	[NSTimer scheduledTimerWithTimeInterval:tinterval target:self selector:@selector(preAction) userInfo:nil repeats:YES];
 	originalIcon = [[NSApp applicationIconImage] copy];
     iconImageBuffer = [originalIcon copy];
 	
@@ -25,6 +25,7 @@ static int networkMenuCount = 0;
 	[statusItem setTitle:@"NetworkSelector"];
 	[statusItem setToolTip: @"NetworkSelector"];
 	[statusItem setHighlightMode: YES];
+	[networkName setTarget:self];
 }
 
 - (id) init
@@ -210,9 +211,6 @@ static int networkMenuCount = 0;
 							NSMenuItem *menuItem = [[NSMenuItem alloc] initWithTitle:sSSID 
 								action:@selector (ConnectFromMenu:) keyEquivalent:@""];
 							
-							
-							
-							
 							[menuItem setTag:ii];
 							[menuItem setTarget:self];
 							[menuItem setImage:sig];
@@ -241,7 +239,9 @@ static int networkMenuCount = 0;
 		statusImage = [[NSImage alloc] initWithContentsOfFile:imageName];
 		[statusItem setImage:statusImage];
 		[statusItem setAlternateImage:statusImage];
-		[DockMenu removeItemAtIndex:4];
+		
+		if ([DockMenu itemWithTag:360])  
+				[DockMenu removeItemAtIndex:4];
 		
 }
 
@@ -256,7 +256,6 @@ static int networkMenuCount = 0;
 	[alert addButtonWithTitle:@"Close"];
 	[alert setMessageText:@"Do you wish to hide nsGUI or close it ?."];
 	[alert setAlertStyle:NSWarningAlertStyle];
-	
 	[alert beginSheetModalForWindow:mainWindow modalDelegate:self didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:) contextInfo:nil];
 
 }
@@ -579,4 +578,40 @@ static int networkMenuCount = 0;
 			[appcontrol terminate:nil];
 		}
 }
+- (IBAction)createAdHoc:(id)sender
+{
+
+	[cr_networkDialog orderOut:nil];
+    [NSApp endSheet:cr_networkDialog];
+	if ([sender tag]) 
+	{
+		[networkName setStringValue:@""];
+		return;
+	}
+	[self preAction];
+	if (priv.ieee->iw_mode!=1)
+	{	
+		if (!(priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW))) [self PowerAction:self];
+		int sel0 = 2;
+		int *i = (int*) malloc(sizeof (int));
+		*i=(int)sel0;
+		b=sizeof(int);
+		setsockopt(fd,SYSPROTO_CONTROL,4,i,b);
+		[self preAction];
+		[self PowerAction:self];
+	}
+	if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)) [self PowerAction:self];
+	char *ssid = (char*) malloc(sizeof (char)*128);
+	[[networkName stringValue] getCString:ssid];
+	cout<<ssid;
+	setsockopt(fd,SYSPROTO_CONTROL,5,ssid,sizeof(ssid)+3);
+	[textOutlet setHidden:false];
+	[self cancelModeChange:nil];
+}
+- (IBAction)createAdHocSelected:(id)sender
+{
+	[NSApp beginSheet:cr_networkDialog modalForWindow:mainWindow
+        modalDelegate:self didEndSelector:nil contextInfo:nil];
+}
+
 @end

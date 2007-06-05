@@ -49,6 +49,7 @@
 		400A31900C01E54A007BE2A8 /* sig3s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig3s.tif; path = GFX/sig3s.tif; sourceTree = "<group>"; };
 		400A31920C01E54D007BE2A8 /* sig4s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig4s.tif; path = GFX/sig4s.tif; sourceTree = "<group>"; };
 		400B93D70BFE7DF8005504F4 /* Connected.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Connected.png; path = GFX/Connected.png; sourceTree = "<group>"; };
+		400D54FD0BBD50ED00653AE4 /* nsGUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nsGUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		40138DF70BBBE165007E4177 /* enc.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = enc.tif; path = GFX/enc.tif; sourceTree = "<group>"; };
 		402F07BF0BF934E600038DCA /* icons.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icons.icns; sourceTree = "<group>"; };
 		406E55DA0BECD5B800AB0131 /* MainController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = MainController.h; sourceTree = "<group>"; };
@@ -66,7 +67,6 @@
 		611AA9570C0C974200A4B5DA /* Splash Screen BMP.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = "Splash Screen BMP.jpg"; path = "GFX/Splash Screen BMP.jpg"; sourceTree = "<group>"; };
 		611AA9580C0C974200A4B5DA /* statusIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = statusIcon.png; path = GFX/statusIcon.png; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		8D1107320486CEB800E47090 /* nsGUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nsGUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,7 +109,9 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8D1107320486CEB800E47090 /* nsGUI.app */,
+				406E55DB0BECD5B800AB0131 /* MainController.mm */,
+				406E55DA0BECD5B800AB0131 /* MainController.h */,
+				400D54FD0BBD50ED00653AE4 /* nsGUI.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -122,8 +124,6 @@
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
-				406E55DA0BECD5B800AB0131 /* MainController.h */,
-				406E55DB0BECD5B800AB0131 /* MainController.mm */,
 			);
 			name = nsGUI;
 			sourceTree = "<group>";
@@ -194,7 +194,7 @@
 			name = nsGUI;
 			productInstallPath = "$(HOME)/Applications";
 			productName = nsGUI;
-			productReference = 8D1107320486CEB800E47090 /* nsGUI.app */;
+			productReference = 400D54FD0BBD50ED00653AE4 /* nsGUI.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

@@ -68,9 +68,12 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 	IBOutlet NSButton *NetButton;
 	IBOutlet NSButton *LedButton;
 	IBOutlet NSButton *ModeButton;
+	IBOutlet NSButton *createButton;
 	IBOutlet NSMatrix *selectedMode;
     IBOutlet NSTableView *dataOutlet;
     IBOutlet NSTextField *textOutlet;
+	IBOutlet NSTextField *createNetworkTitle;
+	IBOutlet NSPanel *cr_networkDialog;
 	IBOutlet NSProgressIndicator *ProgressAnim;
 	IBOutlet id listWindow;
 	IBOutlet NSWindow* mainWindow;
@@ -78,6 +81,8 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 	IBOutlet NSTextField *modeChangeTitle;
 	IBOutlet NSMenu *DockMenu;
 	IBOutlet NSMenu *networksMenu;
+	IBOutlet NSTextField *networkName;
+	
 	NSTimer *timecheck;
 	NSTimeInterval tinterval;
 	NSStatusItem *statusItem;
@@ -111,6 +116,9 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 - (IBAction)ModeChange:(id)sender;
 - (IBAction)openAboutWindow:(id)sender;
 - (IBAction)openMainWindow:(id)sender;
+- (IBAction)createAdHoc:(id)sender;
+- (IBAction)createAdHocSelected:(id)sender;
+
 - (void)tableView:(NSTableView *)aTableView
     setObjectValue:anObject
     forTableColumn:(NSTableColumn *)aTableColumn
