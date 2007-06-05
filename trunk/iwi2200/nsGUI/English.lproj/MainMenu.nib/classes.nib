@@ -11,6 +11,8 @@
                 NetworkAction = id; 
                 PowerAction = id; 
                 cancelModeChange = id; 
+                createAdHoc = id; 
+                createAdHocSelected = id; 
                 openAboutWindow = id; 
                 openMainWindow = id; 
                 quit = id; 
@@ -30,10 +32,14 @@
                 appcontrol = id; 
                 cancelChangeButton = NSButton; 
                 changeModeButton = NSButton; 
+                "cr_networkDialog" = NSPanel; 
+                createButton = NSButton; 
+                createNetworkTitle = NSTextField; 
                 dataOutlet = NSTableView; 
                 listWindow = id; 
                 mainWindow = NSWindow; 
                 modeChangeTitle = NSTextField; 
+                networkName = NSTextField; 
                 networksMenu = NSMenu; 
                 selectedMode = NSMatrix; 
                 textOutlet = NSTextField; 

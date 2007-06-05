@@ -6154,7 +6154,7 @@ int darwin_iwi2200::ipw_associate(ipw_priv *data)
 	network = match.network;
 	rates = &match.rates;
 	
-	if (network == NULL &&
+	/*if (network == NULL &&
 	    priv->ieee->iw_mode == IW_MODE_ADHOC && priv->ieee->scans>5 &&
 	    priv->config & CFG_ADHOC_CREATE &&
 	    //priv->config & CFG_STATIC_ESSID &&
@@ -6172,7 +6172,7 @@ int darwin_iwi2200::ipw_associate(ipw_priv *data)
 		list_del(element);
 		list_add_tail(&network->list, &priv->ieee->network_list);
 	}
-
+	*/
 	/*if (priv->ieee->iw_mode == IW_MODE_INFRA)
 	if (network)
 	{
@@ -10529,12 +10529,41 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 {
 	//int i=*((int*)data);
 	
-	//experimental encryption functions:
-	if (opt==5) //enable 
+
+	if (opt==5) //create adhoc network:
 	{
-		clone->priv->capability |= CAP_PRIVACY_ON;
-		clone->priv->ieee->sec.enabled=1;
-		clone->priv->ieee->sec.active_key = *(u16*)userdata;
+			IWI_DEBUG("nsGUI/network selector called network create");
+			if (clone->priv->ieee->iw_mode == IW_MODE_ADHOC &&
+				clone->priv->config & CFG_ADHOC_CREATE &&
+				!list_empty(&clone->priv->ieee->network_free_list)) {
+				struct ieee80211_network *network = NULL;
+				struct ipw_network_match match = {NULL};
+				struct ipw_supported_rates *rates;
+				struct list_head *element;
+				
+				if ((clone->priv->config & CFG_ASSOCIATE))
+				{
+					list_for_each_entry(network, &clone->priv->ieee->network_list, list) 
+						clone->ipw_best_network(clone->priv, &match, network, 0);
+				}
+				network = match.network;
+				rates = &match.rates;
+				
+			
+				element = clone->priv->ieee->network_free_list.next;
+				network = list_entry(element, struct ieee80211_network, list);
+				clone->ipw_adhoc_create(clone->priv, network);
+				char cc[strlen((char*)data)];
+				sprintf(cc,(char*)data);
+				memcpy(network->ssid,cc,sizeof(cc));
+				network->ssid_len=strlen((char*)data);
+				rates = &clone->priv->rates;
+				list_del(element);
+				list_add_tail(&network->list, &clone->priv->ieee->network_list);
+				clone->queue_td(0,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_scan));
+				clone->ipw_associate_network(clone->priv, network, rates, 0);
+		}
+		
 	}
 	
 	
@@ -10548,6 +10577,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		clone->mode=m;
 		clone->ipw_sw_reset(0);
 		clone->ipw_adapter_restart(clone->priv);
+		IODelay(5000);
 	}
 	if (opt==3)// led
 	{
@@ -10669,6 +10699,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
 			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_rf_kill),clone->priv,2000,true);
 			IWI_LOG("radio off 0x40000 = 0x%x\n",clone->ipw_read32(0x30));
+			IODelay(5000);
 		}	
 	}
 
