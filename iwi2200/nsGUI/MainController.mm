@@ -165,6 +165,13 @@ static int networkMenuCount = 0;
 					{
 						if (priv.ieee->networks[ii].ssid_len>0)
 						{
+							
+							if ((priv.ieee->iw_mode == IW_MODE_INFRA &&
+							 !(priv.ieee->networks[ii].capability & WLAN_CAPABILITY_ESS)) ||
+							(priv.ieee->iw_mode == IW_MODE_ADHOC &&
+							 !(priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS))) continue;
+						
+							
 							char SSID[256];
 							char MAC[17];
 							char ch[3];
