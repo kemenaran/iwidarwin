@@ -109,8 +109,6 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				406E55DB0BECD5B800AB0131 /* MainController.mm */,
-				406E55DA0BECD5B800AB0131 /* MainController.h */,
 				400D54FD0BBD50ED00653AE4 /* nsGUI.app */,
 			);
 			name = Products;
@@ -133,6 +131,8 @@
 			children = (
 				32CA4F630368D1EE00C91783 /* nsGUI_Prefix.pch */,
 				29B97316FDCFA39411CA2CEA /* main.mm */,
+				406E55DA0BECD5B800AB0131 /* MainController.h */,
+				406E55DB0BECD5B800AB0131 /* MainController.mm */,
 			);
 			name = "Other Sources";
 			sourceTree = "<group>";

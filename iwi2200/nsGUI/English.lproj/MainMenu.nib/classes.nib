@@ -5,6 +5,7 @@
             ACTIONS = {
                 CancelConnect = id; 
                 Connect = id; 
+                ConnectFromMenu = id; 
                 LEDAction = id; 
                 ModeAction = id; 
                 ModeChange = id; 
@@ -22,6 +23,7 @@
             OUTLETS = {
                 CancelButton = NSButton; 
                 ConnectButton = NSButton; 
+                Createibss = NSButton; 
                 DockMenu = NSMenu; 
                 LedButton = NSButton; 
                 ModeButton = NSButton; 

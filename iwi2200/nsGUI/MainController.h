@@ -65,6 +65,7 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 	IBOutlet NSButton *cancelChangeButton;
     IBOutlet NSButton *changeModeButton;
 	IBOutlet NSButton *PowerButton;
+	IBOutlet NSButton *Createibss;
 	IBOutlet NSButton *NetButton;
 	IBOutlet NSButton *LedButton;
 	IBOutlet NSButton *ModeButton;

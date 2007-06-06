@@ -221,8 +221,6 @@
 			<key>Layout</key>
 			<array>
 				<dict>
-					<key>BecomeActive</key>
-					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -260,13 +258,17 @@
 							<array>
 								<string>089C166AFE841209C02AAC07</string>
 								<string>247142CAFF3F8F9811CA285C</string>
+								<string>61D25D2B0B34458D00CAED01</string>
 								<string>089C167CFE841241C02AAC07</string>
 								<string>1C37FBAC04509CD000000102</string>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>23</integer>
+									<integer>8</integer>
+									<integer>6</integer>
+									<integer>4</integer>
+									<integer>0</integer>
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
@@ -300,12 +302,14 @@
 					<key>Dock</key>
 					<array>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
 								<string>1CE0B20306471E060097A5F4</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>iwi2200.cpp</string>
+								<string>ieee80211.h</string>
 								<key>PBXSplitModuleInNavigatorKey</key>
 								<dict>
 									<key>Split0</key>
@@ -313,11 +317,11 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CE0B20406471E060097A5F4</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>iwi2200.cpp</string>
+										<string>ieee80211.h</string>
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>613477D60C15D0170026C439</string>
+										<string>61F913450C16EFCB003F9589</string>
 										<key>history</key>
 										<array>
 											<string>610B4EEB0B5D822600A797F0</string>
@@ -393,17 +397,17 @@
 											<string>618A59F50BC09B4E004AB877</string>
 											<string>61E5EB850BC3316400E54F0B</string>
 											<string>618D6A310BC4113B00BF74E5</string>
-											<string>61D0D58A0BE7657F002A86B9</string>
 											<string>61CD008D0C04C256004B5CB3</string>
-											<string>61CD710D0C08EB9B000DC37B</string>
 											<string>61FC0B4A0C0C80D800429F34</string>
 											<string>61FC0B5D0C0C810000429F34</string>
 											<string>6106B3690C0C8765002CC3AA</string>
-											<string>6106B36A0C0C8765002CC3AA</string>
 											<string>6106B70E0C0C8810002CC3AA</string>
 											<string>6106B70F0C0C8810002CC3AA</string>
 											<string>61E45BD90C104E0200A3A139</string>
-											<string>61FF0B1B0C15CE760055267E</string>
+											<string>61D0DE980C15FC2B00C3EE04</string>
+											<string>61CF301F0C1622570001DFB2</string>
+											<string>61D0B6C70C16ED2100524BE8</string>
+											<string>61D0B6DB0C16EEC200524BE8</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -548,9 +552,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>613477D70C15D0170026C439</string>
+				<string>61F913420C16EFCB003F9589</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>613477D80C15D0170026C439</string>
+				<string>61F913430C16EFCB003F9589</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -765,7 +769,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61D25D670B34465900CAED01</string>
-				<string>613477D90C15D0170026C439</string>
+				<string>61F913440C16EFCB003F9589</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -905,12 +909,14 @@
 							<key>Dock</key>
 							<array>
 								<dict>
+									<key>BecomeActive</key>
+									<true/>
 									<key>ContentConfiguration</key>
 									<dict>
 										<key>PBXProjectModuleGUID</key>
 										<string>1CDD528C0622207200134675</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>iwi2200.cpp</string>
+										<string>ieee80211.h</string>
 										<key>StatusBarVisibility</key>
 										<true/>
 									</dict>
@@ -931,8 +937,6 @@
 							<string>314pt</string>
 						</dict>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -968,8 +972,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61E45BDF0C104E0200A3A139</string>
-				<string>61E45BE00C104E0200A3A139</string>
+				<string>61CF30190C1621540001DFB2</string>
+				<string>61CF301A0C1621540001DFB2</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
@@ -978,7 +982,7 @@
 			<key>WindowToolGUID</key>
 			<string>1C530D57069F1CE1000CFCEE</string>
 			<key>WindowToolIsVisible</key>
-			<true/>
+			<false/>
 		</dict>
 		<dict>
 			<key>Identifier</key>

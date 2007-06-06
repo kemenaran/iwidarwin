@@ -165,13 +165,6 @@ static int networkMenuCount = 0;
 					{
 						if (priv.ieee->networks[ii].ssid_len>0)
 						{
-							
-							if ((priv.ieee->iw_mode == IW_MODE_INFRA &&
-							 !(priv.ieee->networks[ii].capability & WLAN_CAPABILITY_ESS)) ||
-							(priv.ieee->iw_mode == IW_MODE_ADHOC &&
-							 !(priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS))) continue;
-						
-							
 							char SSID[256];
 							char MAC[17];
 							char ch[3];
@@ -183,16 +176,23 @@ static int networkMenuCount = 0;
 							
 							NSString *sSSID = [NSString stringWithCString:SSID];
 							NSString *sMAC = [NSString stringWithCString:MAC];
-							NSString *sch = [NSString stringWithCString:ch];
+							NSString *adhoc,*sch = [NSString stringWithCString:ch];
 							NSImage *sig; // = [NSImage new];
 							NSImage *prot;// = [NSImage new];
 							
-							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
+							
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS) ? 1 : 0)
 								{
 									NSString *temp = [[NSBundle mainBundle] pathForResource:@"enc" ofType:@"tif"];
 									prot = [[NSImage alloc] initWithContentsOfFile:temp];
 								}
 							else prot = [[NSImage alloc] init];
+							
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
+								{
+									adhoc=@"x";
+								}
+							else adhoc=@"";
 							NSString* imageName;
 							
 							int signal = priv.ieee->networks[ii].stats.signal;
@@ -208,8 +208,8 @@ static int networkMenuCount = 0;
 							
 							NSMutableArray *data = [NSMutableArray new];
 							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];[data addObject:sig];[data addObject:prot];
-							
-							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", @"Info", nil];
+							[data addObject:adhoc];
+							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", @"Info", @"Adhoc",nil];
 							
 							NSMutableDictionary *temp = [[NSMutableDictionary alloc] initWithObjects: data forKeys: keys];
 							
@@ -381,8 +381,10 @@ static int networkMenuCount = 0;
 		int *i = (int*) malloc(sizeof (int));
 		*i=(int)sel0;
 		b=sizeof(int);
+		if (*i==2) [Createibss setEnabled:YES]; else [Createibss setEnabled:NO];
 		setsockopt(fd,SYSPROTO_CONTROL,4,i,b);
 		[self preAction];
+		
 	}
 	//char mode[30];
 	//sprintf (mode,"selected Mode: %d",priv.ieee->iw_mode);
@@ -422,9 +424,10 @@ static int networkMenuCount = 0;
 			[PowerButton setTitle:@"Set Power ON"];
 			[[DockMenu itemWithTitle:@"Set Power OFF"] setTitle:@"Set Power ON" ];
 			
-			//[NetButton setEnabled:YES];
+			if (priv.ieee->iw_mode == IW_MODE_ADHOC) [Createibss setEnabled:YES];
 			[LedButton setEnabled:YES];
 			[ModeButton setEnabled:YES];
+			[self CancelConnect:nil];
 		}
 			else
 		{
@@ -432,8 +435,7 @@ static int networkMenuCount = 0;
 			[[DockMenu itemWithTitle:@"Set Power ON"] setTitle:@"Set Power OFF"];			
 
 			
-			//[NetButton setEnabled:NO];
-			
+			[Createibss setEnabled:NO];
 			[LedButton setEnabled:NO];
 			[ModeButton setEnabled:NO];
 		}
@@ -595,7 +597,8 @@ static int networkMenuCount = 0;
 		[networkName setStringValue:@""];
 		return;
 	}
-	[self preAction];
+	if ([[networkName stringValue] isEqualToString:@""]) return;
+	/*[self preAction];
 	if (priv.ieee->iw_mode!=1)
 	{	
 		if (!(priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW))) [self PowerAction:self];
@@ -607,16 +610,27 @@ static int networkMenuCount = 0;
 		[self preAction];
 		[self PowerAction:self];
 	}
-	if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)) [self PowerAction:self];
+	if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW))*/ [self PowerAction:self];
 	char *ssid = (char*) malloc(sizeof (char)*128);
 	[[networkName stringValue] getCString:ssid];
 	cout<<ssid;
-	setsockopt(fd,SYSPROTO_CONTROL,5,ssid,sizeof(ssid)+3);
-	[textOutlet setHidden:false];
-	[self cancelModeChange:nil];
+	[Createibss setEnabled:NO];
+	//[textOutlet setHidden:true];
+	[textOutlet setStringValue:@"Creating network..."];
+	wait_conect=YES;
+	[ProgressAnim setHidden:false];
+	[ProgressAnim startAnimation:self];
+	[mainWindow display];
+	setsockopt(fd,SYSPROTO_CONTROL,5,ssid,[[networkName stringValue] length]);
+	//[self cancelModeChange:nil];
+	[ProgressAnim stopAnimation:self];
+	[ProgressAnim setHidden:true];
+	wait_conect=NO;
+	//[self preAction];
 }
 - (IBAction)createAdHocSelected:(id)sender
 {
+	[self cancelModeChange:nil];
 	[NSApp beginSheet:cr_networkDialog modalForWindow:mainWindow
         modalDelegate:self didEndSelector:nil contextInfo:nil];
 }
