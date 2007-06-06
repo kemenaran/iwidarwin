@@ -10532,8 +10532,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 
 	if (opt==5) //create adhoc network:
 	{
-			IWI_DEBUG("nsGUI/network selector called network create");
-			if (clone->priv->ieee->iw_mode == IW_MODE_ADHOC &&
+			IWI_LOG("nsGUI/network selector called network create ssid: %s len:%d\n",(char*)data,strlen((char*)data) );
+			/*if (clone->priv->ieee->iw_mode == IW_MODE_ADHOC &&
 				clone->priv->config & CFG_ADHOC_CREATE &&
 				!list_empty(&clone->priv->ieee->network_free_list)) {
 				struct ieee80211_network *network = NULL;
@@ -10547,9 +10547,11 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 						clone->ipw_best_network(clone->priv, &match, network, 0);
 				}
 				network = match.network;
-				rates = &match.rates;
-				
-			
+				rates = &match.rates;*/
+				IODelay(5000*1000);
+				struct ieee80211_network *network = NULL;
+				struct ipw_supported_rates *rates;
+				struct list_head *element;
 				element = clone->priv->ieee->network_free_list.next;
 				network = list_entry(element, struct ieee80211_network, list);
 				clone->ipw_adhoc_create(clone->priv, network);
@@ -10560,9 +10562,19 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				rates = &clone->priv->rates;
 				list_del(element);
 				list_add_tail(&network->list, &clone->priv->ieee->network_list);
-				clone->queue_td(0,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_scan));
-				clone->ipw_associate_network(clone->priv, network, rates, 0);
-		}
+				//clone->queue_td(0,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_scan));
+				//clone->ipw_associate_network(clone->priv, network, rates, 0);
+				int rep=0;
+				while (!(clone->priv->status & STATUS_ASSOCIATED)) 
+				{
+					clone->ipw_adapter_restart(clone->priv);
+					IODelay(5000*1000);
+					clone->ipw_associate_network(clone->priv, network, rates, 0);
+					IODelay(5000*1000);
+					rep++;
+					if (rep==2) break;
+				}
+		//}
 		
 	}
 	
@@ -10625,9 +10637,9 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->ipw_associate_network(clone->priv, network, rates, 0);
 			IODelay(5000*1000);
 			rep++;
-			if (rep==5) break;
+			if (rep==2) break;
 		}
-		if (rep == 5)
+		if (rep == 2)
 		{
 			IWI_LOG("failed when associating to this network\n");
 			return 1;
@@ -10663,6 +10675,14 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;
+			//IOFree(clone->priv->ieee->networks, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
+			clone->priv->ieee->networks = (struct ieee80211_network*)IOMalloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));//, NULL);
+			memset(clone->priv->ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
+			INIT_LIST_HEAD(&clone->priv->ieee->network_free_list);
+			INIT_LIST_HEAD(&clone->priv->ieee->network_list);
+			for (int i = 0; i < MAX_NETWORK_COUNT; i++)
+			list_add_tail(&clone->priv->ieee->networks[i].list,
+			      &clone->priv->ieee->network_free_list);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
@@ -10696,10 +10716,24 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			clone->setLinkStatus(kIONetworkLinkValid);
-			if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
+			int w=0;
+			if ((clone->fNetif->getFlags() & IFF_RUNNING))
+			{
+			  w=1;
+			  clone->ipw_link_down(clone->priv); 
+			}
+			else clone->ipw_led_link_off(clone->priv);
+			//IOFree(clone->priv->ieee->networks, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
+			clone->priv->ieee->networks = (struct ieee80211_network*)IOMalloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));//, NULL);
+			memset(clone->priv->ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
+			INIT_LIST_HEAD(&clone->priv->ieee->network_free_list);
+			INIT_LIST_HEAD(&clone->priv->ieee->network_list);
+			for (int i = 0; i < MAX_NETWORK_COUNT; i++)
+			list_add_tail(&clone->priv->ieee->networks[i].list,
+			      &clone->priv->ieee->network_free_list);
 			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_rf_kill),clone->priv,2000,true);
 			IWI_LOG("radio off 0x40000 = 0x%x\n",clone->ipw_read32(0x30));
-			IODelay(5000);
+			if (w==1) IODelay(5000*1000);
 		}	
 	}
 
