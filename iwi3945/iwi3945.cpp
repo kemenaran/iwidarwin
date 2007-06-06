@@ -2410,7 +2410,7 @@ void darwin_iwi3945::ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 
 			/*do we still own skb, then released */
 			if (txq->txb[txq->q.last_used].skb[0]) {
-				//freePacket(skb);
+				if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) freePacket(skb);
 				txq->txb[txq->q.last_used].skb[0] = NULL;
 			}
 		}
@@ -2428,7 +2428,7 @@ void darwin_iwi3945::ieee80211_txb_free(struct ieee80211_txb *txb)
 		if (txb->fragments[i]) 
 		{
 			mbuf_freem_list(txb->fragments[i]);
-			//freePacket(txb->fragments[i]);
+			if (!(mbuf_type(txb->fragments[i]) == MBUF_TYPE_FREE) ) freePacket(txb->fragments[i]);
 			txb->fragments[i]=NULL;
 			
 		}
@@ -2901,7 +2901,7 @@ void darwin_iwi3945::ipw_rx_queue_reset(struct ipw_priv *priv,
 		 * to an SKB, so we need to unmap and free potential storage */
 		if (rxq->pool[i].skb != NULL) {
 			rxq->pool[i].dma_addr=NULL;
-			//freePacket(rxq->pool[i].skb);
+			if (!(mbuf_type(rxq->pool[i].skb) == MBUF_TYPE_FREE) ) freePacket(rxq->pool[i].skb);
 			rxq->pool[i].skb = NULL;
 		}
 		list_add_tail(&rxq->pool[i].list, &rxq->rx_used);
@@ -5187,7 +5187,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 	if (priv->status & STATUS_RF_KILL_HW) {
 		if ((cmd->meta.flags & CMD_WANT_SKB)
 		    && cmd->meta.u.skb) {
-			//freePacket(cmd->meta.u.skb);
+			if (!(mbuf_type(cmd->meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd->meta.u.skb);
 			cmd->meta.u.skb = NULL;
 		}
 
@@ -5200,7 +5200,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 	if (priv->status & STATUS_FW_ERROR) {
 		if ((cmd->meta.flags & CMD_WANT_SKB)
 		    && cmd->meta.u.skb) {
-			//freePacket(cmd->meta.u.skb);
+			if (!(mbuf_type(cmd->meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd->meta.u.skb);
 			cmd->meta.u.skb = NULL;
 		}
 
@@ -6393,7 +6393,7 @@ int darwin_iwi3945::ipw_send_rxon_assoc(struct ipw_priv *priv)
 		rc = -EIO;
 	}
 
-	//freePacket(cmd.meta.u.skb);
+	if (!(mbuf_type(cmd.meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd.meta.u.skb);
 
 	return rc;
 }
@@ -6610,7 +6610,7 @@ int darwin_iwi3945::ipw_send_add_station(struct ipw_priv *priv,
 			break;
 		}
 	}
-	////freePacket(cmd.meta.u.skb);
+	if (!(mbuf_type(cmd.meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd.meta.u.skb);
 
 	return rc;
 }
@@ -7421,7 +7421,7 @@ void darwin_iwi3945::reg_txpower_periodic(struct ipw_priv *priv)
 
  reschedule:
 	//queue_delayed_work(priv->workqueue,   &priv->thermal_periodic, REG_RECALIB_PERIOD * HZ);
-	queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),priv,NULL,true);
+	queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),priv,6,true);
 }
 
 int darwin_iwi3945::ipw_send_bt_config(struct ipw_priv *priv)
@@ -9194,7 +9194,7 @@ void darwin_iwi3945::RxQueueIntr()
 		 * fail to Rx correctly */
 		if (rxb->skb != NULL) {
 			//dev_kfree_skb_any(rxb->skb);
-			//freePacket(rxb->skb);
+			if (!(mbuf_type(rxb->skb) == MBUF_TYPE_FREE) ) freePacket(rxb->skb);
 			//rxb->skb = NULL;
 		}
 		rxb->dma_addr=NULL;
@@ -10069,7 +10069,7 @@ mbuf_t darwin_iwi3945::mergePacket(mbuf_t m)
 
 	/* merging is not completed. */
 
-	//freePacket(nm);
+	if (!(mbuf_type(nm) == MBUF_TYPE_FREE) ) freePacket(nm);
 	nm=NULL;
 	return NULL;
 
@@ -10118,7 +10118,7 @@ UInt32 darwin_iwi3945::outputPacket(mbuf_t m, void * param)
 	IOLog("outputPacket\n");
 	if(!(fNetif->getFlags() & IFF_RUNNING) || mbuf_pkthdr_len(m)==0 || m==NULL)
 	{
-		//freePacket(m);
+		if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 		m=NULL;
 		netStats->outputErrors++;
 		return kIOReturnOutputDropped;
@@ -10170,7 +10170,7 @@ finish:
 	//freePacket(m);
 	m=NULL;
 	if (ret ==  kIOReturnOutputDropped) { 
-		////freePacket(nm);
+		if (!(mbuf_type(nm) == MBUF_TYPE_FREE) ) freePacket(nm);
 		//nm=NULL;
 	}
 	return ret;	
@@ -10211,7 +10211,7 @@ struct ieee80211_txb *darwin_iwi3945::ieee80211_alloc_txb(int nr_frags, int txb_
 		{
 			i--;
 			if (txb->fragments[i]!=NULL){
-				//freePacket(txb->fragments[i]);
+				if (!(mbuf_type(txb->fragments[i]) == MBUF_TYPE_FREE) ) freePacket(txb->fragments[i]);
 				 txb->fragments[i]=NULL;
 			}
 			//txb->fragments[i--]=NULL;
@@ -10544,7 +10544,7 @@ int darwin_iwi3945::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//skb=NULL;
 	if (skb!=NULL) 
 	{
-	     //freePacket(skb);
+	     if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) freePacket(skb);
                skb=NULL;
 	}
 
@@ -10562,7 +10562,7 @@ int darwin_iwi3945::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		}
 
 		ieee80211_txb_free(txb);
-		//freePacket(skb_frag);
+		if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
 		skb_frag=NULL;
 	}
 
@@ -10573,10 +10573,10 @@ int darwin_iwi3945::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//IOLockUnlock(mutex);
 	//netif_stop_queue(dev);
 	IWI_LOG("TX drop\n");
-	//freePacket(skb);
+	if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) freePacket(skb);
 	skb=NULL;
 	ieee80211_txb_free(txb);
-	//freePacket(skb_frag);
+	if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
 	skb_frag=NULL;
 	//fTransmitQueue->stop();
 	////fTransmitQueue->setCapacity(0);
