@@ -798,11 +798,11 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	//priv->qos_data.qos_cap.val = 0;
 	//priv->actual_txpower_limit = IPW_DEFAULT_TX_POWER;	
 	
-	ipw_read_ucode(priv);
+	
 
 	MemoryDmaAlloc(sizeof(struct ipw_shared_t), &priv->hw_setting.shared_phys, &priv->hw_setting.shared_virt);
 
-
+	
 
 
 
@@ -826,7 +826,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	priv->hw_setting.max_rxq_log = RX_QUEUE_SIZE_LOG;
 	priv->hw_setting.cck_flag = 0;
 
-
+	ipw_read_ucode(priv);
 	IOLog("Waiting for ipw3945d to request INIT.\n");
 
 	return 0;
