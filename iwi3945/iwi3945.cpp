@@ -3154,7 +3154,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("Radio disabled by module parameter.\n");
-		return 0;
+		//return 0;
 	};// else if (priv->status & STATUS_RF_KILL_HW)
 		//return 0;
 
@@ -9238,7 +9238,7 @@ int darwin_iwi3945::resetTxQueue()
 void darwin_iwi3945::free(void)
 {
 	IOLog("todo: Freeing\n");
-	
+	return; // need to fix this
 	/*if (pl==0)
 	{
 		stop(NULL);*/
@@ -11179,8 +11179,9 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			clone->pl=1;
-			clone->ipw_up(clone->priv);
+			clone->ipw_scan_initiate(clone->priv,0);
+			//clone->pl=1;
+			//clone->ipw_up(clone->priv);
 		}
 		else
 		{
@@ -11208,7 +11209,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			clone->setLinkStatus(kIONetworkLinkValid);
-			clone->ipw_down(clone->priv);
+			//clone->ipw_down(clone->priv);
 		}	
 	}
 
