@@ -4,8 +4,8 @@
 #include "defines.h"
 
 struct ipw2100_priv;
-struct ipw2100_tx_packet;
-struct ipw2100_rx_packet;
+//struct ipw2100_tx_packet;
+//struct ipw2100_rx_packet;
 
 struct ipw_supported_rates {
 	u8 ieee_mode;

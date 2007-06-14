@@ -405,6 +405,7 @@ int darwin_iwi2100::ipw2100_rx_allocate(struct ipw2100_priv *priv)
 
 	for (j = 0; j < i; j++) {
 		priv->rx_buffers[j].dma_addr=NULL;
+		if (priv->rx_buffers[j].skb)
 		if (!(mbuf_type(priv->rx_buffers[j].skb) == MBUF_TYPE_FREE) ) freePacket(priv->rx_buffers[j].skb);
 		/*pci_unmap_single(priv->pci_dev, priv->rx_buffers[j].dma_addr,
 				 sizeof(struct ipw2100_rx_packet),
@@ -550,6 +551,7 @@ void darwin_iwi2100::ipw2100_rx_free(struct ipw2100_priv *priv)
 					 sizeof(struct ipw2100_rx),
 					 PCI_DMA_FROMDEVICE);
 			dev_kfree_skb(priv->rx_buffers[i].skb);*/
+			if (priv->rx_buffers[i].skb)
 			if (!(mbuf_type(priv->rx_buffers[i].skb) == MBUF_TYPE_FREE) ) freePacket(priv->rx_buffers[i].skb);
 		}
 	}
@@ -1095,6 +1097,7 @@ mbuf_t darwin_iwi2100::mergePacket(mbuf_t m)
 	IWI_WARN("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
 					mbuf_len(m),mbuf_pkthdr_len(m),
 					mbuf_len(nm),mbuf_pkthdr_len(nm) );
+	if (m)
 	if (!(mbuf_type(nm) == MBUF_TYPE_FREE) ) freePacket(nm);
 	nm=NULL;
 	return NULL;
@@ -4818,6 +4821,7 @@ UInt32 darwin_iwi2100::outputPacket(mbuf_t m, void * param)
 	IOLog("outputPacket\n");
 	if(!(fNetif->getFlags() & IFF_RUNNING) || mbuf_pkthdr_len(m)==0 || m==NULL)
 	{
+		if (m)
 		if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 		m=NULL;
 		netStats->outputErrors++;
@@ -4865,9 +4869,11 @@ UInt32 darwin_iwi2100::outputPacket(mbuf_t m, void * param)
 finish:	
 	
 	/* free finished packet */
+	if (m)
 	if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 	m=NULL;
 	if (ret ==  kIOReturnOutputDropped) { 
+	if (nm)
 		if (!(mbuf_type(nm) == MBUF_TYPE_FREE) ) freePacket(nm);
 		//nm=NULL;
 	}
@@ -5286,6 +5292,7 @@ int darwin_iwi2100::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		}
 
 		ieee80211_txb_free(txb);
+		if (skb_frag)
 		if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
 		skb_frag=NULL;
 	}
@@ -5297,9 +5304,11 @@ int darwin_iwi2100::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//IOLockUnlock(mutex);
 	//netif_stop_queue(dev);
 	IWI_WARN("TX drop\n");
+	if (skb)
 	if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) freePacket(skb);
 	skb=NULL;
 	ieee80211_txb_free(txb);
+	if (skb_frag)
 	if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
 	skb_frag=NULL;
 	//fTransmitQueue->stop();
@@ -5574,6 +5583,7 @@ mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw21
 		priv->ieee->stats.rx_errors++;
 
 		/* ieee80211_rx failed, so it didn't free the SKB */
+		if (packet->skb)
 		if (!(mbuf_type(packet->skb) == MBUF_TYPE_FREE) ) freePacket(packet->skb);
 		packet->skb = NULL;
 	}
