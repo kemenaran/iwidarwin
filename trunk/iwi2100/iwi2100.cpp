@@ -3699,7 +3699,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("%s: Radio is disabled by Manual Disable "
 			       "switch\n", priv->net_dev->name);
-		return 0;
+		//return 0;
 	}
 	
 if (!deferred) {
