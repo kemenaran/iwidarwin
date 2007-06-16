@@ -94,6 +94,12 @@ static int networkMenuCount = 0;
 		//[CancelButton setHidden:false];
 		//[modeChangeTitle setHidden:true];
 		[selectedMode setHidden:true];
+		/*
+			memory leak fix:
+			if the following pointer are not equel (priv.ieee,priv0.ieee) it means that priv.ieee->networks has
+			already been dynamicly allocated and therefore should be released before re-allocating it again. 
+		*/
+		if (priv.ieee!=priv0.ieee) free(priv.ieee->networks);
 		priv=priv0;
 		sp=sizeof(priv);
 		int result = getsockopt( fd, SYSPROTO_CONTROL, 0, &priv, &sp);
@@ -384,6 +390,7 @@ static int networkMenuCount = 0;
 		if (*i==2) [Createibss setEnabled:YES]; else [Createibss setEnabled:NO];
 		setsockopt(fd,SYSPROTO_CONTROL,4,i,b);
 		[self preAction];
+		free(i);
 		
 	}
 	//char mode[30];
@@ -405,6 +412,12 @@ static int networkMenuCount = 0;
 - (void)preAction
 {
 		if (wait_conect) return;
+		/*
+			memory leak fix:
+			if the following pointer are not equel (priv.ieee,priv0.ieee) it means that priv.ieee->networks has
+			already been dynamicly allocated and therefore should be released before re-allocating it again. 
+		*/
+		if (priv.ieee!=priv0.ieee) free(priv.ieee->networks);
 		priv=priv0;
 		sp=sizeof(priv);
 		int result = getsockopt( fd, SYSPROTO_CONTROL, 0, &priv, &sp);
@@ -613,7 +626,6 @@ static int networkMenuCount = 0;
 	if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW))*/ [self PowerAction:self];
 	char *ssid = (char*) malloc(sizeof (char)*128);
 	[[networkName stringValue] getCString:ssid];
-	cout<<ssid;
 	[Createibss setEnabled:NO];
 	//[textOutlet setHidden:true];
 	[textOutlet setStringValue:@"Creating network..."];
