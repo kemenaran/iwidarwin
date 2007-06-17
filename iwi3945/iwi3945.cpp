@@ -6674,16 +6674,16 @@ int darwin_iwi3945::ipw_commit_rxon(struct ipw_priv *priv)
 					RXON_FILTER_ASSOC_MSK;
 
 		}
-		rc=0;//hack
+		//rc=0;//hack
 		if (!rc)
 			rc = ipw_send_cmd_pdu(priv, REPLY_RXON,
 					      sizeof(struct ipw_rxon_cmd),
 					      &priv->staging_rxon);
-		rc=0;//hack
+		//rc=0;//hack
 		if (!rc)
 			rc = ipw_reg_send_txpower(priv);
 
-		rc=0;//hack
+		//rc=0;//hack
 		/* Add the broadcast address so we can send broadcast frames */
 		if (!rc) {
 			if (ipw_rxon_add_station(priv, BROADCAST_ADDR, 0) ==
@@ -6691,7 +6691,7 @@ int darwin_iwi3945::ipw_commit_rxon(struct ipw_priv *priv)
 				rc = -EIO;
 		}
 	}
-	rc=0;//hack
+	//rc=0;//hack
 	if (rc)
 		IOLog("Error setting configuration.  Reload driver.\n");
 	else
