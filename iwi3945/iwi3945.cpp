@@ -1,9 +1,4 @@
-/*ipw3945: priv->ucode_raw->size: 111572
-ipw3945: ucode->boot_size: 900
-ipw3945: ucode->inst_size: 77888
-ipw3945: ucode->data_size: 32768
-ipw3945: sizeof(*ucode):  16
-*/
+//iwlwifi-3945-ucode-2.14.3
 #include "firmware/ipw3945.ucode.h"
 #include "defines.h"
 
