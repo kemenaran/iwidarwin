@@ -182,23 +182,32 @@ static int networkMenuCount = 0;
 							
 							NSString *sSSID = [NSString stringWithCString:SSID];
 							NSString *sMAC = [NSString stringWithCString:MAC];
-							NSString *adhoc,*sch = [NSString stringWithCString:ch];
+							NSString *sch = [NSString stringWithCString:ch];
 							NSImage *sig; // = [NSImage new];
 							NSImage *prot;// = [NSImage new];
+							prot = [[NSImage alloc] init];
 							
-							
-							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS) ? 1 : 0)
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS) ? 1 : 1)
 								{
 									NSString *temp = [[NSBundle mainBundle] pathForResource:@"enc" ofType:@"tif"];
 									prot = [[NSImage alloc] initWithContentsOfFile:temp];
 								}
-							else prot = [[NSImage alloc] init];
 							
-							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS) ? 1 : 0)
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 1)
 								{
-									adhoc=@"x";
+									NSString *temp = [[NSBundle mainBundle] pathForResource:@"ibss" ofType:@"tif"];
+									prot = [[NSImage alloc] initWithContentsOfFile:temp];
 								}
-							else adhoc=@"";
+
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS) ? 1 : 0)
+								{
+									NSString *temp = [[NSBundle mainBundle] pathForResource:@"enc-ibss" ofType:@"tif"];
+									prot = [[NSImage alloc] initWithContentsOfFile:temp];
+								}
+								
 							NSString* imageName;
 							
 							int signal = priv.ieee->networks[ii].stats.signal;
@@ -214,8 +223,7 @@ static int networkMenuCount = 0;
 							
 							NSMutableArray *data = [NSMutableArray new];
 							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];[data addObject:sig];[data addObject:prot];
-							[data addObject:adhoc];
-							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", @"Info", @"Adhoc",nil];
+							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", @"Info",nil];
 							
 							NSMutableDictionary *temp = [[NSMutableDictionary alloc] initWithObjects: data forKeys: keys];
 							
@@ -571,6 +579,7 @@ static int networkMenuCount = 0;
 			}
 		}
 		[textOutlet setStringValue:sta];
+
 		
 		
 		
@@ -624,8 +633,8 @@ static int networkMenuCount = 0;
 		[self PowerAction:self];
 	}
 	if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW))*/ [self PowerAction:self];
-	char *ssid = (char*) malloc(sizeof (char)*128);
-	[[networkName stringValue] getCString:ssid];
+	//char *ssid = (char*) malloc(sizeof (char)*128);
+	//[[networkName stringValue] getCString:ssid];
 	[Createibss setEnabled:NO];
 	//[textOutlet setHidden:true];
 	[textOutlet setStringValue:@"Creating network..."];
@@ -633,7 +642,7 @@ static int networkMenuCount = 0;
 	[ProgressAnim setHidden:false];
 	[ProgressAnim startAnimation:self];
 	[mainWindow display];
-	setsockopt(fd,SYSPROTO_CONTROL,5,ssid,[[networkName stringValue] length]);
+	setsockopt(fd,SYSPROTO_CONTROL,5,[[networkName stringValue] cString] ,[[networkName stringValue] length]);
 	//[self cancelModeChange:nil];
 	[ProgressAnim stopAnimation:self];
 	[ProgressAnim setHidden:true];

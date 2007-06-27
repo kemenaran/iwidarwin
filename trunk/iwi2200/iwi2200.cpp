@@ -10558,7 +10558,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				char cc[strlen((char*)data)];
 				sprintf(cc,(char*)data);
 				memcpy(network->ssid,cc,sizeof(cc));
-				network->ssid_len=strlen((char*)data);
+				network->ssid_len=len;//strlen((char*)data);
 				rates = &clone->priv->rates;
 				list_del(element);
 				list_add_tail(&network->list, &clone->priv->ieee->network_list);

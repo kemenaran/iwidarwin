@@ -264,6 +264,7 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
+									<integer>7</integer>
 									<integer>0</integer>
 								</array>
 							</array>
@@ -317,7 +318,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>6116EF8A0C16F238007BC3CA</string>
+										<string>611EEE640C32D27C003C6DBD</string>
 										<key>history</key>
 										<array>
 											<string>61D13A9A0BF113D0005EB1EE</string>
@@ -325,7 +326,7 @@
 											<string>61CD74A60BF3E09800403B9B</string>
 											<string>6126369B0C15EB8800E90989</string>
 											<string>61CD96230C15FEC5009DCDDB</string>
-											<string>61F913390C16EFAA003F9589</string>
+											<string>617AD85E0C32CEB200B05E8E</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -392,9 +393,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>6116EF8B0C16F238007BC3CA</string>
+				<string>611EEE380C32D027003C6DBD</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>6116EF8C0C16F238007BC3CA</string>
+				<string>611EEE390C32D027003C6DBD</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -528,6 +529,12 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>611EEE4B0C32D0B7003C6DBD</string>
+		<string>611EEE4C0C32D0B7003C6DBD</string>
+		<string>61E99A580BF3AD91004E0520</string>
+		<string>611EEE460C32D06E003C6DBD</string>
+		<string>61E999EE0BF3A976004E0520</string>
+		<string>1CD10A99069EF8BA00B06720</string>
 		<string>1C0AD2B3069F1EA900FABCE6</string>
 		<string>/var/root/svn/trunk/iwi2200/nsGUI/nsGUI.xcodeproj</string>
 	</array>
@@ -609,7 +616,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61E999EE0BF3A976004E0520</string>
-				<string>61F9133A0C16EFAA003F9589</string>
+				<string>611EEE3A0C32D027003C6DBD</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -651,8 +658,8 @@
 										<string>yes</string>
 										<key>sizes</key>
 										<array>
-											<string>{{0, 0}, {278, 200}}</string>
-											<string>{{278, 0}, {416, 200}}</string>
+											<string>{{0, 0}, {274, 200}}</string>
+											<string>{{274, 0}, {420, 200}}</string>
 										</array>
 									</dict>
 									<key>VerticalSplitView</key>
@@ -715,14 +722,14 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1CD10A99069EF8BA00B06720</string>
-				<string>61D0DAD10C15F55E00C3EE04</string>
+				<string>611EEE400C32D06E003C6DBD</string>
 				<string>1C162984064C10D400B95A72</string>
-				<string>61D0DAD20C15F55E00C3EE04</string>
-				<string>61D0DAD30C15F55E00C3EE04</string>
-				<string>61D0DAD40C15F55E00C3EE04</string>
-				<string>61D0DAD50C15F55E00C3EE04</string>
-				<string>61D0DAD60C15F55E00C3EE04</string>
-				<string>61D0DAD70C15F55E00C3EE04</string>
+				<string>611EEE410C32D06E003C6DBD</string>
+				<string>611EEE420C32D06E003C6DBD</string>
+				<string>611EEE430C32D06E003C6DBD</string>
+				<string>611EEE440C32D06E003C6DBD</string>
+				<string>611EEE450C32D06E003C6DBD</string>
+				<string>611EEE460C32D06E003C6DBD</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.debug</string>
@@ -731,7 +738,7 @@
 			<key>WindowToolGUID</key>
 			<string>1CD10A99069EF8BA00B06720</string>
 			<key>WindowToolIsVisible</key>
-			<false/>
+			<true/>
 		</dict>
 		<dict>
 			<key>FirstTimeWindowDisplayed</key>
@@ -812,8 +819,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61CF31670C1624E00001DFB2</string>
-				<string>61CF31680C1624E00001DFB2</string>
+				<string>617AD4940C32BAFE00B05E8E</string>
+				<string>617AD4950C32BAFE00B05E8E</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
@@ -822,7 +829,7 @@
 			<key>WindowToolGUID</key>
 			<string>1C530D57069F1CE1000CFCEE</string>
 			<key>WindowToolIsVisible</key>
-			<false/>
+			<true/>
 		</dict>
 		<dict>
 			<key>Identifier</key>
@@ -876,7 +883,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61E99A580BF3AD91004E0520</string>
-				<string>61D0DAD80C15F55E00C3EE04</string>
+				<string>611EEE470C32D06E003C6DBD</string>
 				<string>1C78EAAC065D492600B07095</string>
 			</array>
 			<key>WindowString</key>
@@ -971,9 +978,9 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C0AD2B3069F1EA900FABCE6</string>
-				<string>6116EF8D0C16F238007BC3CA</string>
+				<string>611EEE3B0C32D027003C6DBD</string>
 				<string>1CD0528B0623707200166675</string>
-				<string>6116EF8E0C16F238007BC3CA</string>
+				<string>611EEE3C0C32D027003C6DBD</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.run</string>
