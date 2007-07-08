@@ -3754,7 +3754,8 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 		IOLog("Microcode HW error detected.  Restarting.\n");
 
 		/* tell the device to stop sending interrupts */
-		ipw_disable_interrupts(priv);
+		//hack
+		/*ipw_disable_interrupts(priv);
 
 		ipw_irq_handle_error(priv);
 
@@ -3762,14 +3763,15 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 
 		//spin_unlock_irqrestore(&priv->lock, flags);
 
-		return 0;
+		return 0;*/
 	}
 
 	if (inta & BIT_INT_SWERROR) {
 		IOLog("Microcode SW error detected.  Restarting 0x%X.\n",
 			  inta);
-		ipw_irq_handle_error(priv);
-		handled |= BIT_INT_SWERROR;
+		//hack
+		//ipw_irq_handle_error(priv);
+		//handled |= BIT_INT_SWERROR;
 	}
 
 	if (inta & BIT_INT_WAKEUP) {
@@ -6686,7 +6688,7 @@ int darwin_iwi3945::ipw_commit_rxon(struct ipw_priv *priv)
 				rc = -EIO;
 		}
 	}
-	//rc=0;//hack
+	rc=0;//hack
 	if (rc)
 		IOLog("Error setting configuration.  Reload driver.\n");
 	else
