@@ -89,12 +89,10 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 204406390;
-			PBXWorkspaceStateSaveDate = 204406390;
+			PBXPerProjectTemplateStateSaveDate = 204526049;
+			PBXWorkspaceStateSaveDate = 204526049;
 		};
 		perUserProjectItems = {
-			6105537E0C2EFEDD00D9DDF0 /* PBXTextBookmark */ = 6105537E0C2EFEDD00D9DDF0 /* PBXTextBookmark */;
-			6105537F0C2EFEDD00D9DDF0 /* PBXTextBookmark */ = 6105537F0C2EFEDD00D9DDF0 /* PBXTextBookmark */;
 			6105538F0C2EFEEF00D9DDF0 /* PBXTextBookmark */ = 6105538F0C2EFEEF00D9DDF0 /* PBXTextBookmark */;
 			6131B3AB0BB20C00001B2298 /* PBXTextBookmark */ = 6131B3AB0BB20C00001B2298 /* PBXTextBookmark */;
 			6131B3AD0BB20C00001B2298 /* PBXTextBookmark */ = 6131B3AD0BB20C00001B2298 /* PBXTextBookmark */;
@@ -133,6 +131,7 @@
 			61B1124D0BB4288700DD9EA9 /* PBXTextBookmark */ = 61B1124D0BB4288700DD9EA9 /* PBXTextBookmark */;
 			61B11A9B0BB42DFF00DD9EA9 /* PBXTextBookmark */ = 61B11A9B0BB42DFF00DD9EA9 /* PBXTextBookmark */;
 			61B11AA60BB42DFF00DD9EA9 /* PBXTextBookmark */ = 61B11AA60BB42DFF00DD9EA9 /* PBXTextBookmark */;
+			61FA6B570C30D1FC00773BE9 /* PBXTextBookmark */ = 61FA6B570C30D1FC00773BE9 /* PBXTextBookmark */;
 		};
 		sourceControlManager = 6150CF320BB2040400B0A7E8 /* Source Control */;
 		userBuildSettings = {
@@ -142,26 +141,8 @@
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {775, 3640}}";
 			sepNavSelRange = "{455, 0}";
-			sepNavVisRect = "{{0, 132}, {775, 394}}";
+			sepNavVisRect = "{{0, 1278}, {775, 394}}";
 		};
-	};
-	6105537E0C2EFEDD00D9DDF0 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		comments = "error: 4965/defines.h: No such file or directory";
-		fRef = 08FB7796FE84155DC02AAC07 /* main.cpp */;
-		rLen = 1;
-		rLoc = 23;
-		rType = 1;
-	};
-	6105537F0C2EFEDD00D9DDF0 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 08FB7796FE84155DC02AAC07 /* main.cpp */;
-		name = main;
-		rLen = 4;
-		rLoc = 2094;
-		rType = 0;
-		vrLen = 921;
-		vrLoc = 1774;
 	};
 	6105538F0C2EFEEF00D9DDF0 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -952,6 +933,16 @@
 		location = networkSelector;
 		modificationTime = 197743433.517884;
 		state = 1;
+	};
+	61FA6B570C30D1FC00773BE9 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 08FB7796FE84155DC02AAC07 /* main.cpp */;
+		name = "main.cpp: 14";
+		rLen = 0;
+		rLoc = 455;
+		rType = 0;
+		vrLen = 1052;
+		vrLoc = 2891;
 	};
 	8DD76F620486A84900D96B5E /* networkSelector */ = {
 		activeExec = 0;
