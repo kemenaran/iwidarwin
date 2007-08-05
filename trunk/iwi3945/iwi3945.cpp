@@ -11176,9 +11176,9 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			clone->ipw_scan_initiate(clone->priv,0);
-			//clone->pl=1;
-			//clone->ipw_up(clone->priv);
+			//clone->ipw_scan_initiate(clone->priv,0);
+			clone->pl=1;
+			clone->ipw_up(clone->priv);
 		}
 		else
 		{
