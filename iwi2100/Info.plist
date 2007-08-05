@@ -35,7 +35,7 @@
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
 			<key>p_disable</key>
-			<integer>1</integer>
+			<integer>0</integer>
 			<key>p_mode</key>
 			<integer>0</integer>
 		</dict>

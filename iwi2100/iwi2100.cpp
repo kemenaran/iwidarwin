@@ -1903,7 +1903,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),NULL,NULL,false);
 		
 		pl=1;
-		//ipw2100_up(priv,0);
+		ipw2100_up(priv,0);
 		return true;			// end start successfully
 	} while (false);
 		
@@ -2195,7 +2195,7 @@ void darwin_iwi2100::ipw2100_reset_adapter(struct ipw2100_priv *priv)
 	/* We have to signal any supplicant if we are disassociating */
 	//if (associated)
 	//	wireless_send_event(priv->net_dev, SIOCGIWAP, &wrqu, NULL);
-
+	pl=1;
 	ipw2100_up(priv, 0);
 	//mutex_unlock(&priv->action_mutex);
 
