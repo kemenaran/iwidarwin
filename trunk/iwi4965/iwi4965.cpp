@@ -1043,12 +1043,7 @@ bool darwin_iwi4965::start(IOService *provider)
 		}
 		fTransmitQueue->setCapacity(1024);
 		
-		ipw_sw_reset(1);
-		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
-		ipw_nic_init(priv);
-		ipw_nic_reset(priv);
-		ipw_bg_resume_work();
-		
+
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
 			break;
@@ -1119,6 +1114,13 @@ bool darwin_iwi4965::start(IOService *provider)
 		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::reg_txpower_periodic),NULL,NULL,false);
 		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::ipw_bg_post_associate),NULL,NULL,false);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::ipw_down),NULL,NULL,false);
+		
+		ipw_sw_reset(1);
+		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
+		//ipw_nic_init(priv);
+		//ipw_nic_reset(priv);
+		//ipw_bg_resume_work();
+		
 		pl=1;
 		ipw_up(priv);
 		return true;			// end start successfully
@@ -11152,13 +11154,13 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;*/
-			IWI_LOG("radio on 0x40000 = 0x%x\n",clone->ipw_read32(0x05c));
+			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1),clone->ipw_read32(CSR_UCODE_DRV_GP1));
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			clone->ipw_scan_initiate(clone->priv,0);
-			//clone->pl=1;
-			//clone->ipw_up(clone->priv);
+			//clone->ipw_scan_initiate(clone->priv,0);
+			clone->pl=1;
+			clone->ipw_up(clone->priv);
 		}
 		else
 		{
@@ -11181,12 +11183,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - r+1);
 				}
 			}*/
-			IWI_LOG("radio off 0x40000 = 0x%x\n",clone->ipw_read32(0x05c));
+			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1),clone->ipw_read32(CSR_UCODE_DRV_GP1));
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			clone->setLinkStatus(kIONetworkLinkValid);
-			//clone->ipw_down(clone->priv);
+			clone->ipw_down(clone->priv);
 		}	
 	}
 
