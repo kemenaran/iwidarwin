@@ -318,7 +318,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>613D205D0C662B1700CF3F61</string>
+										<string>6123E4080C67DB0100F4F22F</string>
 										<key>history</key>
 										<array>
 											<string>61B06DA80B58946B000DD1AE</string>
@@ -336,7 +336,7 @@
 											<string>61D0D61B0BE77338002A86B9</string>
 											<string>61D3E8480BE83526004FDD3D</string>
 											<string>613D20560C662ADE00CF3F61</string>
-											<string>613D20570C662ADE00CF3F61</string>
+											<string>61DF427F0C67DA8F0058C94B</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -356,8 +356,6 @@
 											<string>61810F4F0BA5A80D00220520</string>
 											<string>61F149E10BAECD8900A13F2E</string>
 											<string>61DE9BDD0BB01B4B004764E5</string>
-											<string>613D1CBD0C662A6F00CF3F61</string>
-											<string>613D20580C662ADE00CF3F61</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -415,9 +413,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>613D1CBF0C662A6F00CF3F61</string>
+				<string>6123E4090C67DB0100F4F22F</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>613D1CC00C662A6F00CF3F61</string>
+				<string>6123E40A0C67DB0100F4F22F</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -551,8 +549,6 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>61B069860B5885D6000DD1AE</string>
-		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>/var/root/svn/trunk/iwi2100/iwi2100.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -633,7 +629,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B069860B5885D6000DD1AE</string>
-				<string>613D205A0C662ADE00CF3F61</string>
+				<string>61EB94EF0C67D94C00F0569C</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
