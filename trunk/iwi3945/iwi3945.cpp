@@ -1061,12 +1061,6 @@ bool darwin_iwi3945::start(IOService *provider)
 		}
 		fTransmitQueue->setCapacity(1024);
 		
-		ipw_sw_reset(1);
-		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
-		ipw_nic_init(priv);
-		ipw_nic_reset(priv);
-		ipw_bg_resume_work();
-		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
 			break;
@@ -1137,8 +1131,16 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),NULL,NULL,false);
 		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_post_associate),NULL,NULL,false);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),NULL,NULL,false);
+
+		
+		ipw_sw_reset(1);
+		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
+		//ipw_nic_init(priv);
+		//ipw_nic_reset(priv);
+		//ipw_bg_resume_work();
 		pl=1;
 		ipw_up(priv);
+
 		return true;			// end start successfully
 	} while (false);
 		
@@ -3149,7 +3151,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("Radio disabled by module parameter.\n");
-		//return 0;
+		return 0;
 	};// else if (priv->status & STATUS_RF_KILL_HW)
 		//return 0;
 
@@ -3158,7 +3160,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	rc = ipw_nic_init(priv);
 	if (rc) {
 		IOLog("Unable to init nic\n");
-		//return rc;
+		return rc;
 	}
 
 	ipw_write32( CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
@@ -3754,8 +3756,8 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 		IOLog("Microcode HW error detected.  Restarting.\n");
 
 		/* tell the device to stop sending interrupts */
-		//hack
-		/*ipw_disable_interrupts(priv);
+
+		ipw_disable_interrupts(priv);
 
 		ipw_irq_handle_error(priv);
 
@@ -3763,15 +3765,15 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 
 		//spin_unlock_irqrestore(&priv->lock, flags);
 
-		return 0;*/
+		return 0;
 	}
 
 	if (inta & BIT_INT_SWERROR) {
 		IOLog("Microcode SW error detected.  Restarting 0x%X.\n",
 			  inta);
-		//hack
-		//ipw_irq_handle_error(priv);
-		//handled |= BIT_INT_SWERROR;
+
+		ipw_irq_handle_error(priv);
+		handled |= BIT_INT_SWERROR;
 	}
 
 	if (inta & BIT_INT_WAKEUP) {
@@ -11172,7 +11174,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;*/
-			IWI_LOG("radio on 0x40000 = 0x%x\n",clone->ipw_read32(0x05c));
+			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1),clone->ipw_read32(CSR_UCODE_DRV_GP1));
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
@@ -11201,12 +11203,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - r+1);
 				}
 			}*/
-			IWI_LOG("radio off 0x40000 = 0x%x\n",clone->ipw_read32(0x05c));
+			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1),clone->ipw_read32(CSR_UCODE_DRV_GP1));
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			clone->setLinkStatus(kIONetworkLinkValid);
-			//clone->ipw_down(clone->priv);
+			clone->ipw_down(clone->priv);
 		}	
 	}
 
