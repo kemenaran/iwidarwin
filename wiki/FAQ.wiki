@@ -2,6 +2,7 @@
 #labels Featured,FAQ,FrequentlyAskedQuestions
 
 = F.A.Q. =
+
 ==When will the 3945 or 2100 be supported?==
 
 We do not have this card in house. We can write test code, but no release is currently working. We are looking for skilled developers with a 2100 or 3945abg card to help.
@@ -47,8 +48,8 @@ We are aware of this issue. Please use 802.11b in the meantime.
 
 Nope, the iwi driver works with 10.4.4 to 10.4.9 including SSE2 kernels.
 
-
 ==How do I create log's to help development of the drivers?==
+
   # open Terminal
   {{{
   % sudo -s
@@ -59,14 +60,14 @@ Nope, the iwi driver works with 10.4.4 to 10.4.9 including SSE2 kernels.
   }}}
   # Now you have 3 log files; dmesg.txt, system.txt and ioreg.txt you can find them on the desktop
 
-
 ==How can I uninstall the driver?==
+
 First you must determine which driver is installed, either iwi2100, iwi3945 or iwi2200.
   # open Terminal
   {{{
   % sudo -s
-  % rm -r /System/Library/Extensions/iwiXXXX.kext (replace XXXX with your specific driver)
-  % rm -r /Library/Receipts/iwiXXXX.pkg
+  % rm -rf /System/Library/Extensions/iwiXXXX.kext (replace XXXX with your specific driver)
+  % rm -rf /Library/Receipts/iwiXXXX.pkg
   % rm /System/Library/Extensions.*
   % kextcache -k /System/Library/Extensions
   }}}
@@ -99,6 +100,7 @@ If not please reply to this thread [http://forum.insanelymac.com/index.php?showt
 
 
 === Information to include in bug reports ===
+
 The following information is required in bug reports.
 
  * Version of iwi. _*important*_
@@ -108,8 +110,6 @@ The following information is required in bug reports.
  * Mac OS X version
  * IO80211Family version
  * What you were doing when the bug occured 
-
-
 
 ==My question is not answered in this FAQ==
 
