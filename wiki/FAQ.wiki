@@ -49,7 +49,7 @@ Nope, the iwi driver works with 10.4.4 to 10.4.9 including SSE2 kernels.
 
 
 ==How do I create log's to help development of the drivers?==
-  # go to Terminal.App
+  # open Terminal
   {{{
   % sudo -s
   % cd ~/Desktop
@@ -62,17 +62,15 @@ Nope, the iwi driver works with 10.4.4 to 10.4.9 including SSE2 kernels.
 
 ==How can I uninstall the driver?==
 First you must determine which driver is installed, either iwi2100, iwi3945 or iwi2200.
-  # go to Terminal.App
+  # open Terminal
   {{{
   % sudo -s
-  % rm /System/Library/Extensions/iwiXXXX.kext (replace XXXX with your specific driver)
+  % rm -r /System/Library/Extensions/iwiXXXX.kext (replace XXXX with your specific driver)
+  % rm -r /Library/Receipts/iwiXXXX.pkg
   % rm /System/Library/Extensions.*
   % kextcache -k /System/Library/Extensions
   }}}
   # Driver is now uninstalled
->> Sometimes it may give an error when deleting iwi3945.kext.
->> If that is your case, just type as this:
->> % rm -r /System/Library/Extensions/iwiXXXX.kext (replace XXXX with your specific driver)
 
 ==Error: Could not get ID for kernel control. 2==
 
