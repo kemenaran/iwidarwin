@@ -1834,6 +1834,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		//ipw2100_sw_reset(1);
+		ipw2100_initialize_ordinals(priv);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -8501,13 +8502,13 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	}
 	if (opt==1) //HACK: start/stop the nic
 	{
+		u32 reg;
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
 			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
-				u32 reg;
 				clone->read_register(clone->priv->net_dev, IPW_REG_GPIO, &reg);
 				reg = reg &~ IPW_BIT_GPIO_RF_KILL;
 				clone->write_register(clone->priv->net_dev, IPW_REG_GPIO, reg);			
@@ -8516,13 +8517,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			if (q==1) clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2100::ipw2100_rf_kill),clone->priv,2000,true);
-			IWI_LOG("radio on \n");
+			IWI_LOG("radio on IPW_REG_GPIO = 0x%x\n",reg);
 		}
 		else
 		{
 			if (!(clone->rf_kill_active(clone->priv))) 
 			{
-				u32 reg;
 				clone->read_register(clone->priv->net_dev, IPW_REG_GPIO, &reg);
 				reg = reg | IPW_BIT_GPIO_RF_KILL;
 				clone->write_register(clone->priv->net_dev, IPW_REG_GPIO, reg);
@@ -8534,7 +8534,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			//if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
 			//clone->schedule_reset(clone->priv);
 			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2100::ipw2100_rf_kill),clone->priv,2000,true);
-			IWI_LOG("radio off \n");
+			IWI_LOG("radio off IPW_REG_GPIO = 0x%x\n",reg);
 		}	
 	}
 

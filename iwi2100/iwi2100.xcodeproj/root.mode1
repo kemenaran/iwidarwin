@@ -318,7 +318,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>6123E4080C67DB0100F4F22F</string>
+										<string>61D358100C7B59060000E730</string>
 										<key>history</key>
 										<array>
 											<string>61B06DA80B58946B000DD1AE</string>
@@ -336,7 +336,7 @@
 											<string>61D0D61B0BE77338002A86B9</string>
 											<string>61D3E8480BE83526004FDD3D</string>
 											<string>613D20560C662ADE00CF3F61</string>
-											<string>61DF427F0C67DA8F0058C94B</string>
+											<string>61D358090C7B58ED0000E730</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -413,9 +413,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>6123E4090C67DB0100F4F22F</string>
+				<string>61D3580B0C7B58ED0000E730</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>6123E40A0C67DB0100F4F22F</string>
+				<string>61D3580C0C7B58ED0000E730</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -549,6 +549,8 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>61B069860B5885D6000DD1AE</string>
+		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>/var/root/svn/trunk/iwi2100/iwi2100.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -629,7 +631,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B069860B5885D6000DD1AE</string>
-				<string>61EB94EF0C67D94C00F0569C</string>
+				<string>61D3580D0C7B58ED0000E730</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -823,8 +825,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>613D205B0C662ADE00CF3F61</string>
-				<string>613D205C0C662ADE00CF3F61</string>
+				<string>61D3580E0C7B58ED0000E730</string>
+				<string>61D3580F0C7B58ED0000E730</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
