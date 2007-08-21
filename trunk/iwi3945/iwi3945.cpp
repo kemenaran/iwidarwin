@@ -1061,6 +1061,8 @@ bool darwin_iwi3945::start(IOService *provider)
 		}
 		fTransmitQueue->setCapacity(1024);
 		
+		ipw_nic_reset(priv);
+		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
 			break;
@@ -2076,10 +2078,10 @@ int darwin_iwi3945::ipw3945_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 	//return 0;
 	//spin_lock_irqsave(&priv->lock, flags);
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
+	if (rc) {
+		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 
 	if (!pwr_max) {
 		u32 val;
@@ -2134,10 +2136,10 @@ int darwin_iwi3945::ipw_nic_stop_master(struct ipw_priv *priv)
 				  CSR_RESET,
 				  CSR_RESET_REG_FLAG_MASTER_DISABLED,
 				  CSR_RESET_REG_FLAG_MASTER_DISABLED, 100);
-		/*if (rc < 0) {
-			spin_unlock_irqrestore(&priv->lock, flags);
+		if (rc < 0) {
+			//spin_unlock_irqrestore(&priv->lock, flags);
 			return rc;
-		}*/
+		}
 	}
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
@@ -2161,10 +2163,10 @@ int darwin_iwi3945::ipw_nic_reset(struct ipw_priv *priv)
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
 
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
+	if (rc) {
+		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 
 	_ipw_write_restricted_reg(priv, APMG_CLK_CTRL_REG,
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -2227,14 +2229,14 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	if (rc < 0) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		IOLog("Failed to init the card\n");
-		//return rc;
+		return rc;
 	}
 
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
+	if (rc) {
+		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
 				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -2339,7 +2341,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 
 	if (!priv->rxq) {
 		IOLog("Unable to initialize Rx queue\n");
-		//return -ENOMEM;
+		return -ENOMEM;
 	}
 	IOLog("ipw_rx_queue_replenish\n");
 	ipw_rx_queue_replenish(priv);
@@ -2349,18 +2351,18 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 //	spin_lock_irqsave(&priv->lock, flags);
 
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
+	if (rc) {
+		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), priv->rxq->write & ~7);
 	_ipw_release_restricted_access(priv);
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
 	IOLog("ipw_queue_reset\n");
 	rc = ipw_queue_reset(priv);
-	//if (rc)
-	//	return rc;
+	if (rc)
+		return rc;
 
 	priv->status |= STATUS_INIT;
 
@@ -3193,7 +3195,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 			memcpy(priv->mac_addr, priv->eeprom.mac_address, 6);
 			IOLog("MAC address: " MAC_FMT "\n",
 				       MAC_ARG(priv->mac_addr));
-			
+			memcpy(fEnetAddr.bytes, priv->eeprom.mac_address, 6);
 			// TODO removed by patatester, maybe the cause of the incorrect 
 			// mac address association
 			// ifnet_set_lladdr(fifnet, priv->eeprom.mac_address, ETH_ALEN);

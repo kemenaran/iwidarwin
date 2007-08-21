@@ -319,7 +319,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61EB94D10C67D77B00F0569C</string>
+										<string>61D354620C7B56620000E730</string>
 										<key>history</key>
 										<array>
 											<string>61B125000B592DD600E4BC65</string>
@@ -343,7 +343,9 @@
 											<string>61D211F70C67D05600A6E438</string>
 											<string>61F1032A0C67D3FA0068C18B</string>
 											<string>61EB91260C67D6F600F0569C</string>
-											<string>61EB91290C67D6F600F0569C</string>
+											<string>61D354590C7B56620000E730</string>
+											<string>61D3545A0C7B56620000E730</string>
+											<string>61D3545B0C7B56620000E730</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -369,6 +371,12 @@
 											<string>6109333B0C0884C000FEC82A</string>
 											<string>610FFEFA0C0FB88800CCC720</string>
 											<string>61F1032D0C67D3FA0068C18B</string>
+											<string>61D3545C0C7B56620000E730</string>
+											<string>61D3545D0C7B56620000E730</string>
+											<string>61D3545E0C7B56620000E730</string>
+											<string>61D3545F0C7B56620000E730</string>
+											<string>61D354600C7B56620000E730</string>
+											<string>61D354610C7B56620000E730</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -426,9 +434,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61EB94D20C67D77B00F0569C</string>
+				<string>61D354630C7B56620000E730</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61EB94D30C67D77B00F0569C</string>
+				<string>61D354640C7B56620000E730</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -562,6 +570,8 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>61B06E030B58957A000DD1AE</string>
+		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>/var/root/svn/trunk/iwi3945/iwi3945.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -642,7 +652,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B06E030B58957A000DD1AE</string>
-				<string>61EB91160C67D62500F0569C</string>
+				<string>61D354650C7B56620000E730</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -787,7 +797,7 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CDD528C0622207200134675</string>
 										<key>PBXProjectModuleLabel</key>
-										<string></string>
+										<string>iwl-4965.c</string>
 										<key>StatusBarVisibility</key>
 										<true/>
 									</dict>
@@ -845,8 +855,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61EB910D0C67D4BE00F0569C</string>
-				<string>61EB910E0C67D4BE00F0569C</string>
+				<string>61D354350C7B50080000E730</string>
+				<string>61D354360C7B50080000E730</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
