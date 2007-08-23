@@ -1061,7 +1061,8 @@ bool darwin_iwi3945::start(IOService *provider)
 		}
 		fTransmitQueue->setCapacity(1024);
 		
-		ipw_nic_reset(priv);
+		
+		ipw_sw_reset(1);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -1135,7 +1136,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),NULL,NULL,false);
 
 		
-		ipw_sw_reset(1);
+		
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		//ipw_nic_init(priv);
 		//ipw_nic_reset(priv);
@@ -4807,7 +4808,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 
 	if (!ipw_is_ready(priv)) {
 		IOLog("request scan called when driver not ready.\n");
-		//return -1;
+		return -1;
 	}
 
 	//mutex_lock(&priv->mutex);
@@ -4818,26 +4819,26 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 		IOLog
 		    ("Multiple concurrent scan requests in parallel. "
 		     "Ignoring second request.\n");
-		//rc = -EIO;
-		//goto done;
+		rc = -EIO;
+		goto done;
 	}
 
 	if (priv->status & STATUS_EXIT_PENDING) {
 		IOLog("Aborting scan due to device shutdown\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		//goto done;
+		goto done;
 	}
 
 	if (priv->status & STATUS_SCAN_ABORTING) {
 		IOLog("Scan request while abort pending.  Queuing.\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		//goto done;
+		goto done;
 	}
 
 	if (priv->status & STATUS_RF_KILL_MASK) {
 		IOLog("Aborting scan due to RF Kill activation\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		//goto done;
+		goto done;
 	}
 
 	if (!(priv->status & STATUS_READY)) {
@@ -4848,7 +4849,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 
 	if (!priv->scan_bands) {
 		IOLog("Aborting scan due to no requested bands.\n");
-		//goto done;
+		goto done;
 	}
 
 	if (!priv->scan) {
@@ -11180,9 +11181,15 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			//clone->ipw_scan_initiate(clone->priv,0);
 			clone->pl=1;
 			clone->ipw_up(clone->priv);
+			int r1=0;
+			while (!((clone->priv->status & STATUS_SCANNING)))
+			{
+				clone->ipw_scan_initiate(clone->priv,0);
+				r1++;
+				if (r1==100) break;
+			}
 		}
 		else
 		{
