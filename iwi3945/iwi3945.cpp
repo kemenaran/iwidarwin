@@ -865,14 +865,14 @@ int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
 		 IOLog("uCode instr len %d too large to fit in card\n",
 			       (int)ucode->inst_size);
 		rc = -EINVAL;
-		//goto err_release;
+		goto err_release;
 	}
 
 	if (ucode->data_size > ALM_RTC_DATA_SIZE) {
 		IOLog("uCode data len %d too large to fit in card\n",
 			       (int)ucode->data_size);
 		rc = -EINVAL;
-		//goto err_release;
+		goto err_release;
 	}
 
 	if (ucode->boot_size > ALM_RTC_INST_SIZE) {
@@ -880,7 +880,7 @@ int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
 		    ("uCode boot instr len %d too large to fit in card\n",
 		     (int)ucode->boot_size);
 		rc = -EINVAL;
-		//goto err_release;
+		goto err_release;
 	}
 
 	if (ucode->boot_data_size > ALM_RTC_DATA_SIZE) {
@@ -888,7 +888,7 @@ int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
 		    ("uCode boot data len %d too large to fit in card\n",
 		     (int)ucode->boot_data_size);
 		rc = -EINVAL;
-		//goto err_release;
+		goto err_release;
 	}
 
 	/* allocate ucode buffers for card's bus-master loading */
@@ -1063,6 +1063,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		
 		
 		ipw_sw_reset(1);
+		ipw_bg_resume_work();
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -2992,8 +2993,8 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 	IOLog("bootstrap data image size is %u\n", len);
 
 	rc1 = ipw_grab_restricted_access(priv);
-	//if (rc1)
-	//	return rc1;
+	if (rc1)
+		return rc1;
 
 	/* read from card's data memory to verify */
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_DATA_LOWER_BOUND);
@@ -3023,8 +3024,8 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 	IOLog("bootstrap instruction image size is %u\n", len);
 
 	rc1 = ipw_grab_restricted_access(priv);
-	//if (rc1)
-	//	return rc1;
+	if (rc1)
+		return rc1;
 
 	/* read from card's instruction memory to verify */
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
@@ -3149,14 +3150,14 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 	if (priv->status & STATUS_EXIT_PENDING) {
 		IOLog("Exit pending will not bring the NIC up\n");
-		//return -EIO;
+		return -EIO;
 	}
 
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("Radio disabled by module parameter.\n");
 		return 0;
-	};// else if (priv->status & STATUS_RF_KILL_HW)
-		//return 0;
+	} else if (priv->status & STATUS_RF_KILL_HW)
+		return 0;
 
 	ipw_write32( CSR_INT, 0xFFFFFFFF);
 
@@ -6693,7 +6694,6 @@ int darwin_iwi3945::ipw_commit_rxon(struct ipw_priv *priv)
 				rc = -EIO;
 		}
 	}
-	rc=0;//hack
 	if (rc)
 		IOLog("Error setting configuration.  Reload driver.\n");
 	else
@@ -7224,9 +7224,20 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 	ipw_clear_stations_table(priv);
 
-	if (!(priv->status & STATUS_RF_KILL_MASK)) {
-		/* if rfkill is not on, then
-		 * wait for thermal sensor in adapter to kick in */
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
+		IOLog("Can not read rfkill status from adapter\n");
+		return;
+	}
+	u32 rfkill;
+	rfkill = _ipw_read_restricted_reg(priv, ALM_APMG_RFKILL);
+	IOLog("RFKILL status: 0x%x\n", rfkill);
+	_ipw_release_restricted_access(priv);
+
+	if (rfkill & 0x1) {
+		priv->status &= ~STATUS_RF_KILL_HW;
+		/* if rfkill is not on, then wait for thermal
+		 * sensor in adapter to kick in */
 		while (ipw_read32(CSR_UCODE_DRV_GP2)== 0) {
 			thermal_spin++;
 			udelay(10);
@@ -7234,7 +7245,9 @@ void darwin_iwi3945::ipw_bg_alive_start()
 		if (thermal_spin)
 			IOLog("Thermal calibration took %dus\n",
 				       thermal_spin * 10);
-	}
+	} else
+		priv->status |= STATUS_RF_KILL_HW;
+
 	IOLog("ipw_init_channel_map\n");
 	rc = ipw_init_channel_map(priv);
 	if (rc) {
@@ -11149,9 +11162,26 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	}
 	if (opt==1) //HACK: start/stop the nic
 	{
-		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
+		u32 rfkill;
+		int rc = clone->ipw_grab_restricted_access(clone->priv);
+		if (rc) {
+		IOLog("Can not read rfkill status from adapter\n");
+		//return;
+		}
+		rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
+		IOLog("RFKILL base status: 0x%x\n", rfkill);
+		clone->_ipw_release_restricted_access(clone->priv);
+	
+		if ((clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) || (rfkill != 0x1) ) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
+			if (rfkill & 0x1) {
+				//priv->status &= ~STATUS_RF_KILL_HW;
+			} else
+			{
+				//priv->status |= STATUS_RF_KILL_HW;
+				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, 0x1);
+			}	
 			/*int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
@@ -11177,19 +11207,19 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;*/
-			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1),clone->ipw_read32(CSR_UCODE_DRV_GP1));
+			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), rfkill);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			clone->pl=1;
 			clone->ipw_up(clone->priv);
-			int r1=0;
+			/*int r1=0;
 			while (!((clone->priv->status & STATUS_SCANNING)))
 			{
 				clone->ipw_scan_initiate(clone->priv,0);
 				r1++;
 				if (r1==100) break;
-			}
+			}*/
 		}
 		else
 		{
@@ -11212,7 +11242,14 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - r+1);
 				}
 			}*/
-			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1),clone->ipw_read32(CSR_UCODE_DRV_GP1));
+			if (rfkill & 0x1) {
+				//priv->status &= ~STATUS_RF_KILL_HW;
+				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, 0);
+			} else
+			{
+				//priv->status |= STATUS_RF_KILL_HW;
+			}
+			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), rfkill);
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
