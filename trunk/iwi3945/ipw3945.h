@@ -3214,7 +3214,7 @@ struct ieee80211_local {
 	int user_space_mlme;
 };
 
-
+#define ALM_APMG_RFKILL				 (0x003014)
 
 
 
