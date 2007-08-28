@@ -1,0 +1,308 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
+		61B069750B588509000DD1AE /* ipw2100.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B069730B588509000DD1AE /* ipw2100.h */; };
+		61B63A5F0B5A8BE300B07D04 /* iwi2100.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61B63A5C0B5A8BE300B07D04 /* iwi2100.cpp */; };
+		61B63A600B5A8BE300B07D04 /* iwi2100.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B63A5D0B5A8BE300B07D04 /* iwi2100.h */; };
+		61B63A6A0B5A8C2400B07D04 /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B63A690B5A8C2400B07D04 /* defines.h */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		089C167EFE841241C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		32D94FCF0562CBF700B6AF17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
+		32D94FD00562CBF700B6AF17 /* iwi2100.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwi2100.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		61B069730B588509000DD1AE /* ipw2100.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw2100.h; sourceTree = "<group>"; };
+		61B069780B5885B5000DD1AE /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
+		61B069790B5885B5000DD1AE /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		61B0697A0B5885B5000DD1AE /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
+		61B0697B0B5885B5000DD1AE /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
+		61B63A5C0B5A8BE300B07D04 /* iwi2100.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = iwi2100.cpp; sourceTree = "<group>"; };
+		61B63A5D0B5A8BE300B07D04 /* iwi2100.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi2100.h; sourceTree = "<group>"; };
+		61B63A690B5A8C2400B07D04 /* defines.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
+		61B63E220B5A921F00B07D04 /* iwi_bss.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi_bss.fw.h; sourceTree = "<group>"; };
+		61B63E230B5A921F00B07D04 /* iwi_ibss.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi_ibss.fw.h; sourceTree = "<group>"; };
+		61B63E240B5A921F00B07D04 /* iwi_mon.fw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi_mon.fw.h; sourceTree = "<group>"; };
+		61B659B90B5AC1EF00B07D04 /* ipw2100.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = ipw2100.c; path = "../../../../2100/ipw2100-1.2.2/ipw2100.c"; sourceTree = SOURCE_ROOT; };
+		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		32D94FCB0562CBF700B6AF17 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		089C166AFE841209C02AAC07 /* iwi2100 */ = {
+			isa = PBXGroup;
+			children = (
+				61B659B90B5AC1EF00B07D04 /* ipw2100.c */,
+				247142CAFF3F8F9811CA285C /* Source */,
+				8DA8362C06AD9B9200E5AC22 /* Kernel.framework */,
+				089C167CFE841241C02AAC07 /* Resources */,
+				19C28FB6FE9D52B211CA2CBB /* Products */,
+			);
+			name = iwi2100;
+			sourceTree = "<group>";
+		};
+		089C167CFE841241C02AAC07 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				32D94FCF0562CBF700B6AF17 /* Info.plist */,
+				089C167DFE841241C02AAC07 /* InfoPlist.strings */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		19C28FB6FE9D52B211CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				32D94FD00562CBF700B6AF17 /* iwi2100.kext */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		247142CAFF3F8F9811CA285C /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				61B63E200B5A921F00B07D04 /* firmware */,
+				61B63A690B5A8C2400B07D04 /* defines.h */,
+				61B63A5C0B5A8BE300B07D04 /* iwi2100.cpp */,
+				61B63A5D0B5A8BE300B07D04 /* iwi2100.h */,
+				61B069730B588509000DD1AE /* ipw2100.h */,
+				61B069770B5885B5000DD1AE /* net */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		61B069770B5885B5000DD1AE /* net */ = {
+			isa = PBXGroup;
+			children = (
+				61B069780B5885B5000DD1AE /* compat.h */,
+				61B069790B5885B5000DD1AE /* ieee80211.h */,
+				61B0697A0B5885B5000DD1AE /* ieee80211_crypt.h */,
+				61B0697B0B5885B5000DD1AE /* ieee80211_radiotap.h */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
+		61B63E200B5A921F00B07D04 /* firmware */ = {
+			isa = PBXGroup;
+			children = (
+				61B63E220B5A921F00B07D04 /* iwi_bss.fw.h */,
+				61B63E230B5A921F00B07D04 /* iwi_ibss.fw.h */,
+				61B63E240B5A921F00B07D04 /* iwi_mon.fw.h */,
+			);
+			path = firmware;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		32D94FC50562CBF700B6AF17 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				61B069750B588509000DD1AE /* ipw2100.h in Headers */,
+				61B63A600B5A8BE300B07D04 /* iwi2100.h in Headers */,
+				61B63A6A0B5A8C2400B07D04 /* defines.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		32D94FC30562CBF700B6AF17 /* iwi2100 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB91D908733DB10010E9CD /* Build configuration list for PBXNativeTarget "iwi2100" */;
+			buildPhases = (
+				32D94FC50562CBF700B6AF17 /* Headers */,
+				32D94FC70562CBF700B6AF17 /* Resources */,
+				32D94FC90562CBF700B6AF17 /* Sources */,
+				32D94FCB0562CBF700B6AF17 /* Frameworks */,
+				32D94FCC0562CBF700B6AF17 /* Rez */,
+				61B00E810B8132E70065C250 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = iwi2100;
+			productInstallPath = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+			productName = iwi2100;
+			productReference = 32D94FD00562CBF700B6AF17 /* iwi2100.kext */;
+			productType = "com.apple.product-type.kernel-extension.iokit";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		089C1669FE841209C02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 1DEB91DD08733DB10010E9CD /* Build configuration list for PBXProject "iwi2100" */;
+			hasScannedForEncodings = 1;
+			mainGroup = 089C166AFE841209C02AAC07 /* iwi2100 */;
+			projectDirPath = "";
+			targets = (
+				32D94FC30562CBF700B6AF17 /* iwi2100 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		32D94FC70562CBF700B6AF17 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXRezBuildPhase section */
+		32D94FCC0562CBF700B6AF17 /* Rez */ = {
+			isa = PBXRezBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXRezBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		61B00E810B8132E70065C250 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#cd /private/var/root/svn/trunk/iwi2100\n#cd \"$SRCROOT\"\n\nsudo chown -R root:wheel build/Debug/iwi2100.kext\n\n#rm -rf /System/Library/Extensions/iwi2100.kext\n\ncp -rf build/Debug/iwi2100.kext /System/Library/Extensions\n\nrm -rf iwi2100.pkg\n\n# build only if no .dmg exists\nif [ -e iwi2100.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi2100.dmg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi2100.pkg -proj iwi2100.pmproj\n\nhdiutil create -format UDZO -srcfolder iwi2100.pkg iwi2100.dmg\n\nsleep 1\n\nrm -rf iwi2100.pkg\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		32D94FC90562CBF700B6AF17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				61B63A5F0B5A8BE300B07D04 /* iwi2100.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		089C167DFE841241C02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				089C167EFE841241C02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB91DA08733DB10010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = i386;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_PREPROCESS = YES;
+				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				MODULE_NAME = com.yourcompany.driver.iwi2100;
+				MODULE_VERSION = 1.0.0d1;
+				OTHER_CPLUSPLUSFLAGS = "-w";
+				PRODUCT_NAME = iwi2100;
+				WRAPPER_EXTENSION = kext;
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		1DEB91DB08733DB10010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = i386;
+				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_PREPROCESS = YES;
+				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				MODULE_NAME = com.yourcompany.driver.iwi2100;
+				MODULE_VERSION = 1.0.0d1;
+				OTHER_CPLUSPLUSFLAGS = "-w";
+				PRODUCT_NAME = iwi2100;
+				WRAPPER_EXTENSION = kext;
+			};
+			name = Release;
+		};
+		1DEB91DE08733DB10010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+			};
+			name = Debug;
+		};
+		1DEB91DF08733DB10010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB91D908733DB10010E9CD /* Build configuration list for PBXNativeTarget "iwi2100" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB91DA08733DB10010E9CD /* Debug */,
+				1DEB91DB08733DB10010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB91DD08733DB10010E9CD /* Build configuration list for PBXProject "iwi2100" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB91DE08733DB10010E9CD /* Debug */,
+				1DEB91DF08733DB10010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 089C1669FE841209C02AAC07 /* Project object */;
+}

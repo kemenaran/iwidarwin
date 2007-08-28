@@ -1,0 +1,6 @@
+#!/bin/sh
+if[ -d /System/Library/Extensions/iwi2200.kext ]; then
+	rm -rf /System/Library/Extensions/iwi2200.kext
+fi
+rm -f /System/Library/Extensions.kextcache
+rm -f /System/Library/Extensions.mkext
