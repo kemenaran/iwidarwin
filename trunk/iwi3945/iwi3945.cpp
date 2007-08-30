@@ -6930,7 +6930,7 @@ void darwin_iwi3945::ieee80211_unmask_channel(struct net_device *dev, int mode,
 				     struct ieee80211_channel *chan)
 {
 	int i;
-	IOLog("ieee80211_unmask_channel\n");
+	//IOLog("ieee80211_unmask_channel\n");
 	chan->flag = 0;
 
 	/*if (ieee80211_regdom == 64 &&
@@ -6981,7 +6981,7 @@ int darwin_iwi3945::ieee80211_unmask_channels(struct net_device *dev)
 {
 	struct ieee80211_local *local = hw_to_local(priv->ieee);
 	//wdev_priv(dev->ieee80211_ptr);
-	IOLog("ieee80211_unmask_channels\n");
+	//IOLog("ieee80211_unmask_channels\n");
 	struct ieee80211_hw_mode *mode;
 	int c;
 
@@ -11170,9 +11170,9 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}
 		rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
 		IOLog("RFKILL base status: 0x%x\n", rfkill);
-		clone->_ipw_release_restricted_access(clone->priv);
+		//clone->_ipw_release_restricted_access(clone->priv);
 	
-		if ((clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) || (rfkill != 0x1) ) // off -> on
+		if ((clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) || !(rfkill & 0x1) ) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
 			if (rfkill & 0x1) {
@@ -11207,6 +11207,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;*/
+			clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), rfkill);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
@@ -11249,6 +11250,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
 			}
+			clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), rfkill);
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
