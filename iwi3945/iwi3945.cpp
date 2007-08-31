@@ -1435,7 +1435,7 @@ void darwin_iwi3945::ipw_init_ordinals(struct ipw_priv *priv)
 
 int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 {
-	//if (priv->is_3945) {
+	if (priv->is_3945) {
 		int rc;
 		ipw_set_bit( CSR_GP_CNTRL,
 			    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
@@ -1447,7 +1447,7 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 			//IOLog("MAC is in deep sleep!\n");
 			return -EIO;
 		}
-	//}
+	}
 
 	priv->status |= STATUS_RESTRICTED;
 
@@ -1703,7 +1703,7 @@ int darwin_iwi3945::ipw_download_ucode(struct ipw_priv *priv,
 		goto done;
 	}
 
-	rc = 0;
+	//rc = 0;
 
 	IOLog("3945ABG card ucode download is good \n");
 
@@ -1748,7 +1748,7 @@ int darwin_iwi3945::ipw_load_ucode(struct ipw_priv *priv,
 
 	if (mem_size < len) {
 		IOLog("invalid image size, too big %d %d\n", mem_size, len);
-		//return -EINVAL;
+		return -EINVAL;
 	}
 
 	while (len > 0) {
@@ -1922,21 +1922,21 @@ int darwin_iwi3945::ipw_eeprom_init_sram(struct ipw_priv *priv)
 
 	if (sizeof(priv->eeprom) != 1024) {
 		IOLog("EEPROM structure size incorrect!\n");
-		//return -EINVAL;
+		return -EINVAL;
 	}
 
 	if ((gp & 0x00000007) == 0x00000000) {
 		IOLog("EEPROM not found, EEPROM_GP=0x%08x", gp);
-		//return -ENOENT;
+		return -ENOENT;
 	}
 
 	ipw_clear_bit( CSR_EEPROM_GP, 0x00000180);
 	for (addr = 0, r = 0; addr < sz; addr += 2) {
 		ipw_write32( CSR_EEPROM_REG, addr << 1);
 		ipw_clear_bit( CSR_EEPROM_REG, 0x00000002);
-		ipw_grab_restricted_access(priv);
-		//if (rc)
-		//	return rc;
+		rc=ipw_grab_restricted_access(priv);
+		if (rc)
+			return rc;
 
 		for (to = 0; to < 10; to++) {
 			r = _ipw_read_restricted(priv, CSR_EEPROM_REG);
@@ -1949,7 +1949,7 @@ int darwin_iwi3945::ipw_eeprom_init_sram(struct ipw_priv *priv)
 
 		if (!(r & 1)) {
 			IOLog("Time out reading EEPROM[%d]", addr);
-			//return -ETIMEDOUT;
+			return -ETIMEDOUT;
 		}
 
 		e[addr / 2] = r >> 16;
@@ -2335,7 +2335,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	
 
 	/* Allocate the RX queue, or reset if it is already allocated */
-	IOLog("Allocate the RX queue\n");
+	//IOLog("Allocate the RX queue\n");
 	if (!priv->rxq)
 		priv->rxq = ipw_rx_queue_alloc(priv);
 	else
@@ -2345,9 +2345,9 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		IOLog("Unable to initialize Rx queue\n");
 		return -ENOMEM;
 	}
-	IOLog("ipw_rx_queue_replenish\n");
+	//IOLog("ipw_rx_queue_replenish\n");
 	ipw_rx_queue_replenish(priv);
-	IOLog("ipw_rx_init\n");
+	//IOLog("ipw_rx_init\n");
 	ipw_rx_init(priv, priv->rxq);
 
 //	spin_lock_irqsave(&priv->lock, flags);
@@ -2361,13 +2361,13 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	_ipw_release_restricted_access(priv);
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
-	IOLog("ipw_queue_reset\n");
+	//IOLog("ipw_queue_reset\n");
 	rc = ipw_queue_reset(priv);
 	if (rc)
 		return rc;
 
 	priv->status |= STATUS_INIT;
-
+	IOLog("nic_init done\n");
 	return 0;
 
 }
@@ -2644,7 +2644,7 @@ int darwin_iwi3945::ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
 	rc = ipw_grab_restricted_access(priv);
 	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
-		//return rc;
+		return rc;
 	}
 	_ipw_write_restricted(priv, FH_CBCC_CTRL(id), 0);
 	_ipw_write_restricted(priv, FH_CBCC_BASE(id), 0);
@@ -2728,7 +2728,7 @@ int darwin_iwi3945::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 	rc = ipw_grab_restricted_access(priv);
 	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
-		//return rc;
+		return rc;
 	}
 
 	_ipw_write_restricted(priv, FH_RCSR_RBD_BASE(0), rxq->dma_addr);
@@ -3013,7 +3013,7 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 	}
 
 	_ipw_release_restricted_access(priv);
-	errcnt=0;
+	//errcnt=0;
 	if (!errcnt)
 		IOLog("bootstrap image in DATA memory is good\n");
 
@@ -3044,7 +3044,7 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 	}
 
 	_ipw_release_restricted_access(priv);
-	errcnt=0;
+	//errcnt=0;
 	if (!errcnt)
 		IOLog
 		    ("bootstrap image in INSTRUCTION memory is good\n");
@@ -3205,7 +3205,8 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 		//memcpy(priv->ieee->perm_addr, priv->mac_addr, ETH_ALEN);
-
+		//hack: force scan
+		ipw_scan_initiate(priv,0);
 		return 0;
 	}
 
@@ -8894,6 +8895,19 @@ void darwin_iwi3945::RxQueueIntr()
 		if (rxb == NULL) return;
 		priv->rxq->queue[i] = NULL;
 
+		mbuf_setlen(rxb->skb,IPW_RX_BUF_SIZE);
+		mbuf_pkthdr_setlen(rxb->skb,IPW_RX_BUF_SIZE);
+		if( mbuf_next(rxb->skb)) 
+		{
+			IOLog("rx mbuf_next\n");
+			break;
+		}
+		
+		if (mbuf_data(rxb->skb)==NULL || rxb->skb==0){
+			IOLog( "rx Queue not allocated!\n");
+			break;
+		}
+		
 		pkt = (struct ipw_rx_packet *)mbuf_data(rxb->skb);
 
 		/* If this frame wasn't received then it is a response from
@@ -11162,7 +11176,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	}
 	if (opt==1) //HACK: start/stop the nic
 	{
-		u32 rfkill;
+		u32 rfkill,r1;
 		int rc = clone->ipw_grab_restricted_access(clone->priv);
 		if (rc) {
 		IOLog("Can not read rfkill status from adapter\n");
@@ -11181,7 +11195,15 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
 				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, 0x1);
-			}	
+			}
+			IOLog("Trying to turn card on...\n");	
+			r1=0;
+			while (clone->ipw_read32(CSR_UCODE_DRV_GP2)== 0) 
+			{
+				udelay(10);
+				r1++;
+				if (r1==5000000) break;
+			}
 			/*int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
@@ -11208,7 +11230,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				}
 			} else q=1;*/
 			clone->_ipw_release_restricted_access(clone->priv);
-			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), rfkill);
+			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
@@ -11250,8 +11272,16 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
 			}
+			IOLog("Trying to turn card off...\n");	
+			r1=0;
+			while (clone->ipw_read32(CSR_UCODE_DRV_GP2)!= 0) 
+			{
+				udelay(10);
+				r1++;
+				if (r1==5000000) break;
+			}
 			clone->_ipw_release_restricted_access(clone->priv);
-			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), rfkill);
+			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
