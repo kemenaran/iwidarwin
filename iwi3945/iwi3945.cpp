@@ -1397,10 +1397,8 @@ void darwin_iwi3945::ipw_rf_kill(ipw_priv *priv)
 			    ("Can not turn radio back on - "
 			     "disabled by SW switch\n");
 		else
-		{	IOLog
-			    ("Radio Frequency Kill Switch is On:\n"
-			     "Kill switch must be turned off for "
-			     "wireless networking to work. Press wireless button if you have it\n");
+		{	
+			IOLog ("Radio Frequency Kill Switch is On:\n Kill switch must be turned off for wireless networking to work. \n Press wireless button if you have it\n");
 				 //queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
 		}
 	}
@@ -11186,7 +11184,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		IOLog("RFKILL base status: 0x%x\n", rfkill);
 		//clone->_ipw_release_restricted_access(clone->priv);
 	
-		if ((clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) || !(rfkill & 0x1) ) // off -> on
+		if ((clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) ) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
 			if (rfkill & 0x1) {
@@ -11202,7 +11200,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			{
 				udelay(10);
 				r1++;
-				if (r1==5000000) break;
+				if (r1==1000000) break;
 			}
 			/*int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
@@ -11229,6 +11227,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;*/
+			clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+			clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
 			clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
@@ -11236,6 +11236,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			clone->pl=1;
 			clone->ipw_up(clone->priv);
+			
 			/*int r1=0;
 			while (!((clone->priv->status & STATUS_SCANNING)))
 			{
@@ -11278,8 +11279,10 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			{
 				udelay(10);
 				r1++;
-				if (r1==5000000) break;
+				if (r1==1000000) break;
 			}
+			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_SW_BIT_RFKILL);
+			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
 			clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status |= STATUS_RF_KILL_HW;
