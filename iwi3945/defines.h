@@ -1098,5 +1098,6 @@ typedef unsigned char UInt8;
 #define RATE_SCALE_11M_PLCP   110
 #define TX_STATUS_ENTRY(x) case TX_STATUS_FAIL_ ## x: return #x
 
+#define CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW          (0x08000000)
 
 

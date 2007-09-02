@@ -1433,7 +1433,40 @@ void darwin_iwi3945::ipw_init_ordinals(struct ipw_priv *priv)
 
 int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 {
-	if (priv->is_3945) {
+		int rc;
+	u32 gp_ctl;
+
+	if (priv->status & STATUS_RF_KILL_MASK) {
+		IWI_DEBUG_FULL("WARNING: Requesting MAC access during RFKILL "
+			"wakes up NIC");
+
+		/* 10 msec allows time for NIC to complete its data save */
+		gp_ctl = ipw_read32( CSR_GP_CNTRL);
+		if (gp_ctl & CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY) {
+			IWI_DEBUG_FULL("Wait for complete power-down, "
+				"gpctl = 0x%08x\n", gp_ctl);
+			mdelay(10);
+		} else {
+			IWI_DEBUG_FULL("power-down complete, "
+				"gpctl = 0x%08x\n", gp_ctl);
+		}
+	}
+
+	/* this bit wakes up the NIC */
+	ipw_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+	rc = ipw_poll_bit( priv, CSR_GP_CNTRL,
+			   CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN,
+			   (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
+			    CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
+	if (rc < 0) {
+		IWI_DEBUG_FULL("MAC is in deep sleep!\n");
+		return -EIO;
+	}
+
+	priv->status |= STATUS_RESTRICTED;
+
+	return 0;
+	/*if (priv->is_3945) {
 		int rc;
 		ipw_set_bit( CSR_GP_CNTRL,
 			    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
@@ -1449,7 +1482,7 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 
 	priv->status |= STATUS_RESTRICTED;
 
-	return 0;
+	return 0;*/
 
 }
 
@@ -3157,6 +3190,10 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	} else if (priv->status & STATUS_RF_KILL_HW)
 		return 0;
 
+		if (!(ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // STATUS_RF_KILL_HW
+		return 0;
+
+
 	ipw_write32( CSR_INT, 0xFFFFFFFF);
 
 	rc = ipw_nic_init(priv);
@@ -3182,7 +3219,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 		rc = ipw_setup_bootstrap(priv);
 		if (rc) {
 			IOLog("Unable to set up bootstrap uCode: %d\n", rc);
-			continue;
+			//continue;
 		}
 
 		/* start card; bootstrap will load runtime ucode */
@@ -11230,6 +11267,9 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			} else q=1;*/
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+			if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // STATUS_RF_KILL_HW
+				clone->ipw_write32(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
+				
 			clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
@@ -11284,6 +11324,9 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			}
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_SW_BIT_RFKILL);
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+			if ((clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // ~STATUS_RF_KILL_HW
+				clone->ipw_write32(CSR_GP_CNTRL, clone->ipw_read32(CSR_GP_CNTRL) | ~CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
+				
 			clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status |= STATUS_RF_KILL_HW;
