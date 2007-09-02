@@ -822,7 +822,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	priv->hw_setting.cck_flag = 0;
 
 	ipw_read_ucode(priv);
-	IOLog("Waiting for ipw3945d to request INIT.\n");
+	IOLog("ipw_sw_reset done.\n");
 
 	return 0;
 	
@@ -1794,10 +1794,10 @@ int darwin_iwi3945::ipw_load_ucode(struct ipw_priv *priv,
 				     (ALM_FH_SRVC_CHNL), 1000);
 	if (rc < 0) {
 		IOLog("3945ABG card ucode DOWNLOAD FAILED \n");
-		//goto done;
+		goto done;
 	}
 
-	rc = 0;
+	//rc = 0;
 
 	IOLog("3945ABG card ucode download is good \n");
 
@@ -3747,10 +3747,11 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 
 	//spin_lock_irqsave(&priv->lock, flags);
 
-	inta = ipw_read32( CSR_INT);
+	//code repeated??
+	/*inta = ipw_read32( CSR_INT);
 	inta_mask = ipw_read32( CSR_INT_MASK);
 	ipw_write32( CSR_INT, inta);
-	inta &= (CSR_INI_SET_MASK & inta_mask);
+	inta &= (CSR_INI_SET_MASK & inta_mask);*/
 
 	/* Add any cached INTA values that need to be handled */
 	inta |= priv->isr_inta;
@@ -5057,7 +5058,7 @@ int darwin_iwi3945::ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd
 
 	if ((out_cmd->hdr.cmd != 0x23 &&
 	     out_cmd->hdr.cmd != 0x24 && out_cmd->hdr.cmd != 0x22)) {
-		IPW_DEBUG_HC("Sending command %s (#%x), seq: 0x%04X, "
+		IWI_DEBUG_FULL("Sending command %s (#%x), seq: 0x%04X, "
 			     "%d bytes at %d[%d]:%d\n",
 			     get_cmd_string(out_cmd->hdr.cmd),
 			     out_cmd->hdr.cmd, out_cmd->hdr.sequence,
@@ -5070,10 +5071,10 @@ int darwin_iwi3945::ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd
 						     priv->hw_setting.
 						     cmd_queue_no, 0);*/
 	q->first_empty = ipw_queue_inc_wrap(q->first_empty, q->n_bd);
-	ipw_tx_queue_update_write_ptr(priv, txq, priv->hw_setting.cmd_queue_no);
+	rc=ipw_tx_queue_update_write_ptr(priv, txq, priv->hw_setting.cmd_queue_no);
 
-	//if (rc)
-	//	return rc;
+	if (rc)
+		return rc;
 
 	return 0;
 }
@@ -5151,39 +5152,37 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 
 	if (is_cmd_sync(cmd)) {
 	
-	rc=0;
+	int rc2=0;
 	while (priv->status & STATUS_HCMD_ACTIVE) 
 	{
-		rc++;
+		rc2++;
 		IODelay(HZ);
-		if (rc==HZ) break;
+		if (rc2==HZ) break;
 	}
-		rc=0;
-		/*if (rc == HZ) {
+		if (rc2 == HZ) 
+		{
 			//if (cmd_needs_lock(cmd))
 			//	spin_lock_irqsave(&priv->lock, flags);
-
-			if (priv->status & STATUS_HCMD_ACTIVE) {
+			if (priv->status & STATUS_HCMD_ACTIVE) 
+			{
 				IOLog("Error sending %s: "
 					  "time out after %dms.\n",
 					  get_cmd_string(cmd->id),
 					  0);
-				priv->status &= ~STATUS_HCMD_ACTIVE;
+				/*priv->status &= ~STATUS_HCMD_ACTIVE;
 				if ((cmd->meta.flags & CMD_WANT_SKB)
 				    && cmd->meta.u.skb) {
-					////freePacket(cmd->meta.u.skb);
+					if (!(mbuf_type(cmd->meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd->meta.u.skb);
 					cmd->meta.u.skb = NULL;
 				}
-
 				//if (cmd_needs_lock(cmd))
 				//	spin_unlock_irqrestore(&priv->
 				//			       lock, flags);
-				//return -ETIMEDOUT;
+				return -ETIMEDOUT;*/
 			}
-			rc=0;
 			//if (cmd_needs_lock(cmd))
 			//	spin_unlock_irqrestore(&priv->lock, flags);
-		}*/
+		}
 	}
 
 	if (priv->status & STATUS_RF_KILL_HW) {
@@ -5454,7 +5453,7 @@ int darwin_iwi3945::ipw_init_channel_map(struct ipw_priv *priv)
 			ch_info->flags = eeprom_ch_info[c].flags;
 
 			if (!(is_channel_valid(ch_info))) {
-				IOLog("Ch. %d [%sGhz] - No Tx\n",
+				IWI_DEBUG_FULL("Ch. %d [%sGhz] - No Tx\n",
 					       ch_info->channel,
 					       is_channel_a_band(ch_info) ?
 					       "5.2" : "2.4");
@@ -5474,7 +5473,7 @@ int darwin_iwi3945::ipw_init_channel_map(struct ipw_priv *priv)
 				ch_info->rx_unlock = 0;
 			}
 
-			IOLog("Ch. %d [%sGhz] %s%s%s%s%s%s(" BIT_FMT8
+			IWI_DEBUG_FULL("Ch. %d [%sGhz] %s%s%s%s%s%s(" BIT_FMT8
 				       " %ddBm): Ad-Hoc %ssupported\n",
 				       ch_info->channel,
 				       is_channel_a_band(ch_info) ?
@@ -5551,7 +5550,7 @@ void darwin_iwi3945::reg_init_channel_groups(struct ipw_priv *priv)
 	s32 rate_index;
 	const struct ipw_eeprom_txpower_group *group;
 
-	IOLog("Initializing factory calib info from EEPROM\n");
+	IWI_DEBUG_FULL("Initializing factory calib info from EEPROM\n");
 
 	for (i = 0; i < IPW_NUM_TX_CALIB_GROUPS; i++) {
 		s8 *clip_pwrs;	/* table of power levels for each rate */
@@ -5560,7 +5559,7 @@ void darwin_iwi3945::reg_init_channel_groups(struct ipw_priv *priv)
 
 		/* sanity check on factory saturation power value */
 		if (group->saturation_power < 40) {
-			IOLog("Error: saturation power is %d, "
+			IWI_DEBUG_FULL("Error: saturation power is %d, "
 				    "less than minimum expected 40\n",
 				    group->saturation_power);
 			return;
@@ -5633,7 +5632,7 @@ u16 darwin_iwi3945::reg_get_chnl_grp_index(struct ipw_priv *priv,
 	} else
 		group_index = 0;	/* 2.4 GHz, group 0 */
 
-	IOLog("Chnl %d mapped to grp %d\n", ch_info->channel,
+	IWI_DEBUG_FULL("Chnl %d mapped to grp %d\n", ch_info->channel,
 			group_index);
 	return group_index;
 }
@@ -5747,7 +5746,7 @@ int darwin_iwi3945::reg_txpower_set_from_eeprom(struct ipw_priv *priv)
 						       groups[ch_info->
 							      group_index].
 						       temperature);
-		IOLog("Delta index for channel %d: %d [%d]\n",
+		IWI_DEBUG_FULL("Delta index for channel %d: %d [%d]\n",
 			ch_info->channel, delta_index, temperature + 260);
 
 		/* set tx power value for all OFDM rates */
@@ -6082,7 +6081,7 @@ void darwin_iwi3945::ipw_init_geos(struct ipw_priv *priv)
 		ch = &priv->channel_info[i];
 
 		if (!is_channel_valid(ch)) {
-			IOLog
+			IWI_DEBUG_FULL
 				("Channel %d [%sGhz] is Tx only -- skipping.\n",
 				 ch->channel, is_channel_a_band(ch) ? "5.2" : "2.4");
 			continue;
@@ -6422,14 +6421,14 @@ int darwin_iwi3945::ipw_reg_send_txpower(struct ipw_priv *priv)
 				       priv->active_conf.phymode,
 				       priv->active_conf.channel);
 	if (!ch_info) {
-		IOLog
+		IWI_DEBUG_FULL
 		    ("Failed to get channel info for channel %d [%d]\n",
 		     priv->active_conf.channel, priv->active_conf.phymode);
 		return -EINVAL;
 	}
 
 	if (!is_channel_valid(ch_info)) {
-		IPW_DEBUG_POWER("Not calling TX_PWR_TABLE_CMD on "
+		IWI_DEBUG_FULL("Not calling TX_PWR_TABLE_CMD on "
 				"non-Tx channel.\n");
 		return 0;
 	}
@@ -6440,7 +6439,7 @@ int darwin_iwi3945::ipw_reg_send_txpower(struct ipw_priv *priv)
 			ch_info->power_info[rate_idx].tpc;
 		txpower.power[rate_idx].rate = ipw_rate_index2plcp(rate_idx);
 
-		IPW_DEBUG_POWER("ch %d:%d rf %d dsp %3d rate code 0x%02x\n",
+		IWI_DEBUG_FULL("ch %d:%d rf %d dsp %3d rate code 0x%02x\n",
 				txpower.channel,
 				txpower.band,
 				txpower.power[rate_idx].tpc.tx_gain,
@@ -6888,7 +6887,7 @@ int darwin_iwi3945::ieee80211_register_hwmode(struct ieee80211_hw *hw,
 	struct ieee80211_rate *rate;
 	int i;
 	
-	IOLog("ieee80211_register_hwmode\n");
+	//IOLog("ieee80211_register_hwmode\n");
 	
 	INIT_LIST_HEAD(&mode->list);
 	list_add_tail(&mode->list, &local->modes_list);
@@ -6997,7 +6996,7 @@ int darwin_iwi3945::ieee80211_init_client(struct net_device *dev)
 {
 	//if (ieee80211_regdom == 0x40)
 	//	channel_range = ieee80211_mkk_channels;
-	IOLog("ieee80211_init_client\n");
+	//IOLog("ieee80211_init_client\n");
 	ieee80211_unmask_channels(dev);
 	return 0;
 }
@@ -7247,23 +7246,23 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	} else
 		priv->status |= STATUS_RF_KILL_HW;
 
-	IOLog("ipw_init_channel_map\n");
+	//IOLog("ipw_init_channel_map\n");
 	rc = ipw_init_channel_map(priv);
 	if (rc) {
 		IOLog("initializing regulatory failed: %d\n", rc);
 		//mutex_unlock(&priv->mutex);
 		return;
 	}
-	IOLog("ipw_init_geos\n");
+	//IOLog("ipw_init_geos\n");
 	ipw_init_geos(priv);
 
 	if (!(priv->status & STATUS_GEO_CONFIGURED)) return;
 	
 	if (!priv->netdev_registered) {
 	//	mutex_unlock(&priv->mutex);
-	IOLog("ieee80211_rate_control_register\n");
+	//IOLog("ieee80211_rate_control_register\n");
 		ieee80211_rate_control_register(&priv->rate_control);
-	IOLog("ieee80211_register_hw\n");
+	//IOLog("ieee80211_register_hw\n");
 		rc = ieee80211_register_hw(priv->ieee);
 		if (rc) {
 			IOLog("Failed to register network "
@@ -7275,18 +7274,18 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 	//	mutex_lock(&priv->mutex);
 		priv->netdev_registered = 1;
-		IOLog("ipw_reset_channel_flag\n");
+		//IOLog("ipw_reset_channel_flag\n");
 		ipw_reset_channel_flag(priv);
 	}
 
 	memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 
 	priv->rates_mask = IEEE80211_DEFAULT_RATES_MASK;
-	IOLog("ipw_set_supported_rates_mask\n");
+	//IOLog("ipw_set_supported_rates_mask\n");
 	ipw_set_supported_rates_mask(priv, priv->rates_mask);
-	IOLog("ipw_set_rate\n");
+	//IOLog("ipw_set_rate\n");
 	ipw_set_rate(priv);
-	IOLog("ipw_send_power_mode\n");
+	//IOLog("ipw_send_power_mode\n");
 	ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
 
 /*
@@ -7296,22 +7295,22 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//ipw_send_power_mode(priv, IPW_POWER_LEVEL(priv->power_mode));
 
 	/* Initialize our rx_config data */
-	IOLog("ipw_connection_init_rx_config\n");
+	//IOLog("ipw_connection_init_rx_config\n");
 	ipw_connection_init_rx_config(priv);
 	memcpy(priv->staging_rxon.node_addr, priv->net_dev->dev_addr, ETH_ALEN);
 
 	/* Configure BT coexistence */
-	IOLog("ipw_send_bt_config\n");
+	//IOLog("ipw_send_bt_config\n");
 	ipw_send_bt_config(priv);
 
-	IOLog("ipw_commit_rxon\n");
+	//IOLog("ipw_commit_rxon\n");
 	/* Configure the adapter for unassociated operation */
 	ipw_commit_rxon(priv);
 
 	/* Add the broadcast address so we can send probe requests */
-	IOLog("ipw_rxon_add_station\n");
+	//IOLog("ipw_rxon_add_station\n");
 	ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
-	IOLog("ipw_init_rate_scaling\n");
+	//IOLog("ipw_init_rate_scaling\n");
 	ipw_init_rate_scaling(priv);
 
 	/* At this point, the NIC is initialized and operational */
@@ -7319,13 +7318,14 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	priv->status |= STATUS_READY;
 
 //	ipw_update_link_led(priv);
-	IOLog("reg_txpower_periodic\n");
+	//IOLog("reg_txpower_periodic\n");
 	reg_txpower_periodic(priv);
 
 	//mutex_unlock(&priv->mutex);
 	
 	//hack: force scan
 	//ipw_scan_initiate(priv,0);
+	IOLog("ipw_bg_alive_start done\n");
 }
 
 
@@ -7586,10 +7586,10 @@ int darwin_iwi3945::ipw_update_power_cmd(struct ipw_priv *priv,
 			cmd->SleepInterval[i] = max_sleep;
 	}
 
-	IOLog("Flags value = 0x%08X\n", cmd->flags);
-	IOLog("Tx timeout = %u\n", cmd->TxDataTimeout);
-	IOLog("Rx timeout = %u\n", cmd->RxDataTimeout);
-	IOLog
+	IWI_DEBUG_FULL("Flags value = 0x%08X\n", cmd->flags);
+	IWI_DEBUG_FULL("Tx timeout = %u\n", cmd->TxDataTimeout);
+	IWI_DEBUG_FULL("Rx timeout = %u\n", cmd->RxDataTimeout);
+	IWI_DEBUG_FULL
 	    ("Sleep interval vector = { %d , %d , %d , %d , %d }\n",
 	     cmd->SleepInterval[0], cmd->SleepInterval[1],
 	     cmd->SleepInterval[2], cmd->SleepInterval[3],
@@ -8888,6 +8888,7 @@ void darwin_iwi3945::RxQueueIntr()
 	int pkt_from_hardware;
 	r = ((struct ipw_shared_t*)(priv->hw_setting.shared_virt))->rx_read_ptr[0];
 	i = priv->rxq->read;
+	IOLog("RxQueueIntr i= %d r=%d\n",i,r);
 	while (i != r) {
 		rxb = priv->rxq->queue[i];
 		if (rxb == NULL) return;
@@ -10605,12 +10606,12 @@ int darwin_iwi3945::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	ieee80211_txb_free(txb);
 	if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
 	skb_frag=NULL;
-	//fTransmitQueue->stop();
-	////fTransmitQueue->setCapacity(0);
-	//fTransmitQueue->flush();
+	fTransmitQueue->stop();
+	fTransmitQueue->setCapacity(0);
+	fTransmitQueue->flush();
 	stats->tx_errors++;
 	netStats->outputErrors++;
-	return kIOReturnOutputDropped;
+	return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 }
 
 int darwin_iwi3945::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
@@ -10630,9 +10631,9 @@ int darwin_iwi3945::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 		IWI_ERR("Tx attempt while not associated.\n");
 		//priv->ieee->stats.tx_carrier_errors++;
 		//netif_stop_queue(dev);
-		//fTransmitQueue->stop();
-		////fTransmitQueue->setCapacity(0);
-		//fTransmitQueue->flush();
+		fTransmitQueue->stop();
+		fTransmitQueue->setCapacity(0);
+		fTransmitQueue->flush();
 		goto fail_unlock;
 	}
 	if (txb->payload_size==0) goto fail_unlock;
@@ -10954,15 +10955,15 @@ int darwin_iwi3945::ipw_tx_skb(struct ipw_priv *priv, mbuf_t skb, struct ieee802
 
 	if (rc)
 		return rc;
-	if ((ipw_queue_space(q) < q->high_mark)
-	    && priv->netdev_registered) fTransmitQueue->stop();
+	//if ((ipw_queue_space(q) < q->high_mark)
+	  //  && priv->netdev_registered) fTransmitQueue->stop();
 	//	ieee80211_stop_queue(priv->ieee, ctl->queue);
 
 	return kIOReturnOutputSuccess;
 
       drop:
 	IOLog("Silently dropping Tx packet.\n");
-	return kIOReturnOutputDropped;
+	return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 }
 
 int darwin_iwi3945::ipw_build_tx_cmd_basic(struct ipw_priv *priv,
@@ -11192,7 +11193,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			} else
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
-				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, 0x1);
+				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | 0x1);
 			}
 			IOLog("Trying to turn card on...\n");	
 			r1=0;
@@ -11268,7 +11269,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			}*/
 			if (rfkill & 0x1) {
 				//priv->status &= ~STATUS_RF_KILL_HW;
-				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, 0);
+				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | ~0x1);
 			} else
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
