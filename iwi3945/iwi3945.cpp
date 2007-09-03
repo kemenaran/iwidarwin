@@ -1798,9 +1798,10 @@ int darwin_iwi3945::ipw_load_ucode(struct ipw_priv *priv,
 	count = TFD_CTL_COUNT_GET(tfd.control_flags);
 	tfd.control_flags = TFD_CTL_COUNT_SET(count) | TFD_CTL_PAD_SET(pad);
 
-	rc = ipw_grab_restricted_access(priv);
-	if (rc)
-		return rc;
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	//if (rc)
+	//	return rc;
 
 	_ipw_write_restricted(priv, FH_TCSR_CONFIG(ALM_FH_SRVC_CHNL),
 			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_PAUSE);
@@ -3023,9 +3024,10 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 
 	IOLog("bootstrap data image size is %u\n", len);
 
-	rc1 = ipw_grab_restricted_access(priv);
-	if (rc1)
-		return rc1;
+	//rc1 = 
+	ipw_grab_restricted_access(priv);
+	//if (rc1)
+	//	return rc1;
 
 	/* read from card's data memory to verify */
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_DATA_LOWER_BOUND);
@@ -3100,9 +3102,10 @@ int darwin_iwi3945::ipw_verify_ucode(struct ipw_priv *priv)
 
 	IOLog("ucode inst image size is %u\n", len);
 
-	rc = ipw_grab_restricted_access(priv);
-	if (rc)
-		return rc;
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	//if (rc)
+	//	return rc;
 
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
 
@@ -3138,22 +3141,23 @@ int darwin_iwi3945::ipw_setup_bootstrap(struct ipw_priv *priv)
 	/* Load bootstrap uCode data into card via card's TFD DMA channel */
 	rc = ipw_load_ucode(priv, &(priv->ucode_boot_data),
 			    ALM_RTC_DATA_SIZE, RTC_DATA_LOWER_BOUND);
-	if (rc)
-		goto error;
+	//if (rc)
+	//	goto error;
 
 	/* Load bootstrap uCode instructions, same way */
 	rc = ipw_load_ucode(priv, &(priv->ucode_boot),
 			    ALM_RTC_INST_SIZE, RTC_INST_LOWER_BOUND);
-	if (rc)
-		goto error;
+	//if (rc)
+	//	goto error;
 
 	/* verify bootstrap in-place in DATA and INSTRUCTION SRAM */
 	ipw_verify_bootstrap(priv);
 
 	/* tell bootstrap uCode where to find the runtime uCode in host DRAM */
-	rc = ipw_grab_restricted_access(priv);
-	if (rc)
-		goto error;
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	//if (rc)
+	//	goto error;
 
 	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_PTR_REG,
 				 priv->ucode_code.p_addr);
@@ -3785,10 +3789,10 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 	//spin_lock_irqsave(&priv->lock, flags);
 
 	//code repeated??
-	/*inta = ipw_read32( CSR_INT);
+	inta = ipw_read32( CSR_INT);
 	inta_mask = ipw_read32( CSR_INT_MASK);
 	ipw_write32( CSR_INT, inta);
-	inta &= (CSR_INI_SET_MASK & inta_mask);*/
+	inta &= (CSR_INI_SET_MASK & inta_mask);
 
 	/* Add any cached INTA values that need to be handled */
 	inta |= priv->isr_inta;
@@ -11230,7 +11234,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			} else
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
-				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | 0x1);
+				r1=0;
+				while (!(clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL) & 0x1)) 
+				{
+					clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | 0x1);
+					if (r1==1000000) break;
+				}
 			}
 			IOLog("Trying to turn card on...\n");	
 			r1=0;
@@ -11309,7 +11318,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			}*/
 			if (rfkill & 0x1) {
 				//priv->status &= ~STATUS_RF_KILL_HW;
-				clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | ~0x1);
+				r1=0;
+				while ((clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL) & 0x1)) 
+				{
+					clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | ~0x1);
+					if (r1==1000000) break;
+				}
 			} else
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
