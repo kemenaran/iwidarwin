@@ -1,4 +1,4 @@
-//iwlwifi-3945-ucode-2.14.3
+//iwlwifi-3945-ucode-2.14.1.5
 #include "firmware/ipw3945.ucode.h"
 #include "defines.h"
 
@@ -14,6 +14,37 @@ OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);//IO80211Con
 //clone of the driver class, used in all the kext control functions.
 
 static darwin_iwi3945 *clone;
+
+enum iwl_antenna {
+	IWL_ANTENNA_DIVERSITY,
+	IWL_ANTENNA_MAIN,
+	IWL_ANTENNA_AUX
+};
+
+enum {
+	IWL_RATE_6M_INDEX = 0,
+	IWL_RATE_9M_INDEX,
+	IWL_RATE_12M_INDEX,
+	IWL_RATE_18M_INDEX,
+	IWL_RATE_24M_INDEX,
+	IWL_RATE_36M_INDEX,
+	IWL_RATE_48M_INDEX,
+	IWL_RATE_54M_INDEX,
+	IWL_RATE_1M_INDEX,
+	IWL_RATE_2M_INDEX,
+	IWL_RATE_5M_INDEX,
+	IWL_RATE_11M_INDEX,
+	IWL_RATE_COUNT,
+	IWL_RATE_INVM_INDEX,
+	IWL_RATE_INVALID = IWL_RATE_INVM_INDEX
+};
+
+enum {
+	IWL_FIRST_OFDM_RATE = IWL_RATE_6M_INDEX,
+	IWL_LAST_OFDM_RATE = IWL_RATE_54M_INDEX,
+	IWL_FIRST_CCK_RATE = IWL_RATE_1M_INDEX,
+	IWL_LAST_CCK_RATE = IWL_RATE_11M_INDEX,
+};
 
 static struct ipw_tx_power power_gain_table[2][IPW_MAX_GAIN_ENTRIES] = {
 	{
@@ -2266,11 +2297,12 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		return rc;
 	}
 
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	//if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
-		return rc;
-	}
+	//	return rc;
+	//}
 	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
 				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -2302,9 +2334,10 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	/* Initialize the EEPROM */
-	rc = ipw_eeprom_init_sram(priv);
-	if (rc)
-		return rc;
+	//rc = 
+	ipw_eeprom_init_sram(priv);
+	//if (rc)
+	//	return rc;
 
 	//spin_lock_irqsave(&priv->lock, flags);
 	if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
@@ -2384,11 +2417,12 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 
 //	spin_lock_irqsave(&priv->lock, flags);
 
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	//if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
-		return rc;
-	}
+	//	return rc;
+	//}
 	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), priv->rxq->write & ~7);
 	_ipw_release_restricted_access(priv);
 
@@ -2443,6 +2477,7 @@ void darwin_iwi3945::ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 
 			/*do we still own skb, then released */
 			if (txq->txb[txq->q.last_used].skb[0]) {
+				if (skb)
 				if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) freePacket(skb);
 				txq->txb[txq->q.last_used].skb[0] = NULL;
 			}
@@ -3141,13 +3176,13 @@ int darwin_iwi3945::ipw_setup_bootstrap(struct ipw_priv *priv)
 	/* Load bootstrap uCode data into card via card's TFD DMA channel */
 	rc = ipw_load_ucode(priv, &(priv->ucode_boot_data),
 			    ALM_RTC_DATA_SIZE, RTC_DATA_LOWER_BOUND);
-	//if (rc)
+	if (rc) IOLog("failure in ucode_boot_data\n");
 	//	goto error;
 
 	/* Load bootstrap uCode instructions, same way */
 	rc = ipw_load_ucode(priv, &(priv->ucode_boot),
 			    ALM_RTC_INST_SIZE, RTC_INST_LOWER_BOUND);
-	//if (rc)
+	if (rc) IOLog("failure in ucode_boot\n");
 	//	goto error;
 
 	/* verify bootstrap in-place in DATA and INSTRUCTION SRAM */
@@ -3194,8 +3229,8 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 	} else if (priv->status & STATUS_RF_KILL_HW)
 		return 0;
 
-		if (!(ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // STATUS_RF_KILL_HW
-		return 0;
+		//if (!(ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // STATUS_RF_KILL_HW
+		//return 0;
 
 
 	ipw_write32( CSR_INT, 0xFFFFFFFF);
@@ -3244,8 +3279,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 		//memcpy(priv->ieee->perm_addr, priv->mac_addr, ETH_ALEN);
-		//hack: force scan
-		ipw_scan_initiate(priv,0);
+		
 		return 0;
 	}
 
@@ -3771,9 +3805,9 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 
 	/* tell the device to stop sending interrupts */
 
-	IOLog
-	    ("interrupt recieved 0x%08x masked 0x%08x card mask 0x%08x\n",
-	     inta, inta_mask, CSR_INI_SET_MASK);
+	//IOLog
+	  //  ("interrupt recieved 0x%08x masked 0x%08x card mask 0x%08x\n",
+	    // inta, inta_mask, CSR_INI_SET_MASK);
 
 	priv->status &= ~STATUS_INT_ENABLED;
 	ipw_write32( CSR_INT_MASK, 0x00000000);
@@ -4812,15 +4846,15 @@ struct ieee80211_hw_mode *darwin_iwi3945::ipw_get_hw_mode(struct ipw_priv *priv,
 int darwin_iwi3945::ipw_get_antenna_flags(struct ipw_priv *priv)
 {
 	switch (priv->antenna) {
-	case 0:		/* "diversity", NIC selects best antenna by itself */
+	case IWL_ANTENNA_DIVERSITY:
 		return 0;
 
-	case 1:		/* force Main antenna */
+	case IWL_ANTENNA_MAIN:
 		if (priv->eeprom.antenna_switch_type)
 			return RXON_FLG_DIS_DIV_MSK | RXON_FLG_ANT_B_MSK;
 		return RXON_FLG_DIS_DIV_MSK | RXON_FLG_ANT_A_MSK;
 
-	case 2:		/* force Aux antenna */
+	case IWL_ANTENNA_AUX:
 		if (priv->eeprom.antenna_switch_type)
 			return RXON_FLG_DIS_DIV_MSK | RXON_FLG_ANT_A_MSK;
 		return RXON_FLG_DIS_DIV_MSK | RXON_FLG_ANT_B_MSK;
@@ -4880,7 +4914,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 	if (priv->status & STATUS_RF_KILL_MASK) {
 		IOLog("Aborting scan due to RF Kill activation\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		goto done;
+		//goto done;
 	}
 
 	if (!(priv->status & STATUS_READY)) {
@@ -5015,7 +5049,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 		goto done;
 
 	//queue_delayed_work(priv->workqueue, &priv->scan_check,  IPW_SCAN_CHECK_WATCHDOG);
-	queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan_check),priv,5,false);
+	queue_te(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan_check),priv,7,false);
 	
 	priv->status &= ~STATUS_SCAN_PENDING;
 
@@ -5099,7 +5133,7 @@ int darwin_iwi3945::ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd
 
 	if ((out_cmd->hdr.cmd != 0x23 &&
 	     out_cmd->hdr.cmd != 0x24 && out_cmd->hdr.cmd != 0x22)) {
-		IWI_DEBUG_FULL("Sending command %s (#%x), seq: 0x%04X, "
+		IOLog("Sending command %s (#%x), seq: 0x%04X, "
 			     "%d bytes at %d[%d]:%d\n",
 			     get_cmd_string(out_cmd->hdr.cmd),
 			     out_cmd->hdr.cmd, out_cmd->hdr.sequence,
@@ -5210,8 +5244,8 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 					  "time out after %dms.\n",
 					  get_cmd_string(cmd->id),
 					  0);
-				/*priv->status &= ~STATUS_HCMD_ACTIVE;
-				if ((cmd->meta.flags & CMD_WANT_SKB)
+				priv->status &= ~STATUS_HCMD_ACTIVE;
+				/*if ((cmd->meta.flags & CMD_WANT_SKB)
 				    && cmd->meta.u.skb) {
 					if (!(mbuf_type(cmd->meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd->meta.u.skb);
 					cmd->meta.u.skb = NULL;
@@ -6407,37 +6441,125 @@ int darwin_iwi3945::tune_required(struct ipw_priv *priv)
 	return 1;
 }
 
+int darwin_iwi3945::iwl_check_rxon_cmd(struct iwl_rxon_cmd *rxon)
+{
+	int error = 0;
+	int counter = 1;
+
+	if (rxon->flags & RXON_FLG_BAND_24G_MSK) {
+		error |= (rxon->flags & RXON_FLG_TGJ_NARROW_BAND_MSK);
+		error |= (rxon->flags & RXON_FLG_RADAR_DETECT_MSK);
+		if (error)
+			IOLog("check 24G fields %d | %d\n",
+				    counter++, error);
+	} else {
+		error |= ((rxon->flags & RXON_FLG_SHORT_SLOT_MSK) !=
+			  RXON_FLG_SHORT_SLOT_MSK);
+		if (error)
+			IOLog("check 52 fields %d | %d\n",
+				    counter++, error);
+		error |= (rxon->flags & RXON_FLG_CCK_MSK);
+		if (error)
+			IOLog("check 52 CCK %d | %d\n",
+				    counter++, error);
+
+	}
+	error |= (rxon->node_addr[0] | rxon->bssid_addr[0]) & 0x1;
+	if (error)
+		IOLog("check mac addr %d | %d\n", counter++, error);
+
+	/* make sure basic rates 6Mbps and 1Mbps are supported */
+	error |= (((rxon->ofdm_basic_rates & IWL_RATE_6M_MASK) == 0) &&
+		  ((rxon->cck_basic_rates & IWL_RATE_1M_MASK) == 0));
+
+	if (error)
+		IOLog("check basic rate %d | %d\n", counter++, error);
+	error |= (rxon->assoc_id > 2007);
+	if (error)
+		IOLog("check assoc id %d | %d\n", counter++, error);
+
+	error |= ((rxon->flags &
+		   (RXON_FLG_CCK_MSK | RXON_FLG_SHORT_SLOT_MSK)) ==
+		  (RXON_FLG_CCK_MSK | RXON_FLG_SHORT_SLOT_MSK));
+
+	if (error)
+		IOLog("check CCK and short slot %d | %d\n",
+			    counter++, error);
+	error |= ((rxon->flags & (RXON_FLG_CCK_MSK | RXON_FLG_AUTO_DETECT_MSK))
+		  == (RXON_FLG_CCK_MSK | RXON_FLG_AUTO_DETECT_MSK));
+
+	if (error)
+		IOLog("check CCK & auto detect %d | %d\n",
+			    counter++, error);
+	error |= ((rxon->flags &
+		   (RXON_FLG_AUTO_DETECT_MSK | RXON_FLG_TGG_PROTECT_MSK)) ==
+		  RXON_FLG_TGG_PROTECT_MSK);
+
+	if (error)
+		IOLog("check TGG %d | %d\n", counter++, error);
+	if ((rxon->flags & RXON_FLG_DIS_DIV_MSK))
+		error |= ((rxon->flags &
+			   (RXON_FLG_ANT_B_MSK | RXON_FLG_ANT_A_MSK)) == 0);
+
+	if (error)
+		IOLog("check antenna %d %d\n", counter++, error);
+	if (error)
+		IOLog("Tuning to channel %d\n",
+			    le16_to_cpu(rxon->channel));
+	if (error) {
+		IOLog
+		    ("Error not a valid iwl_rxon_assoc_cmd field values\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 int darwin_iwi3945::ipw_send_rxon_assoc(struct ipw_priv *priv)
 {
 	int rc = 0;
 	struct ipw_rx_packet *res = NULL;
-	struct ipw_rxon_assoc_cmd rxon_assoc;
+	struct iwl_rxon_assoc_cmd rxon_assoc;
 	struct ipw_host_cmd cmd;// = {
 		cmd.id = REPLY_RXON_ASSOC;
-		cmd.len = sizeof(struct ipw_rxon_assoc_cmd);
+		cmd.len = sizeof(rxon_assoc);
 		cmd.meta.flags = CMD_WANT_SKB;
 		cmd.data = &rxon_assoc;
-	//};
+	
+	const struct iwl_rxon_cmd *rxon1 = &priv->staging_rxon;
+	const struct iwl_rxon_cmd *rxon2 = &priv->active_rxon;
+
+	if ((rxon1->flags == rxon2->flags) &&
+	    (rxon1->filter_flags == rxon2->filter_flags) &&
+	    (rxon1->cck_basic_rates == rxon2->cck_basic_rates) &&
+	    (rxon1->ofdm_basic_rates == rxon2->ofdm_basic_rates)) {
+		IOLog("Using current RXON_ASSOC.  Not resending.\n");
+		return 0;
+	}
 
 	rxon_assoc.flags = priv->staging_rxon.flags;
 	rxon_assoc.filter_flags = priv->staging_rxon.filter_flags;
 	rxon_assoc.ofdm_basic_rates = priv->staging_rxon.ofdm_basic_rates;
 	rxon_assoc.cck_basic_rates = priv->staging_rxon.cck_basic_rates;
 	rxon_assoc.reserved = 0;
-
 	rc = ipw_send_cmd(priv, &cmd);
 	if (rc)
 		return rc;
 
-	res = (struct ipw_rx_packet *)mbuf_data(cmd.meta.u.skb);//->data;
-	if (res->hdr.flags & 0x40) {
+	res = (struct ipw_rx_packet *)mbuf_data(cmd.meta.u.skb);
+	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IOLog("Bad return from REPLY_RXON_ASSOC command\n");
 		rc = -EIO;
 	}
 
-	if (!(mbuf_type(cmd.meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd.meta.u.skb);
+	//priv->alloc_rxb_skb--;
+	//dev_kfree_skb_any(cmd.meta.u.skb);
+	if (cmd.meta.u.skb) 
+			if (!(mbuf_type(cmd.meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd.meta.u.skb);
+
 
 	return rc;
+
 }
 
 u8 darwin_iwi3945::ipw_rate_index2plcp(int x)
@@ -6652,6 +6774,7 @@ int darwin_iwi3945::ipw_send_add_station(struct ipw_priv *priv,
 			break;
 		}
 	}
+	if (cmd.meta.u.skb)
 	if (!(mbuf_type(cmd.meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd.meta.u.skb);
 
 	return rc;
@@ -6665,8 +6788,47 @@ int darwin_iwi3945::ipw_rxon_add_station(struct ipw_priv *priv, u8 * addr, int i
 	return ipw_add_station(priv, addr, is_ap, 0);
 }
 
+int darwin_iwi3945::iwl_full_rxon_required(struct ipw_priv *priv)
+{
+
+	/* These items are only settable from the full RXON command */
+	if (!(priv->active_rxon.filter_flags & RXON_FILTER_ASSOC_MSK) ||
+	    compare_ether_addr(priv->staging_rxon.bssid_addr,
+			       priv->active_rxon.bssid_addr) ||
+	    compare_ether_addr(priv->staging_rxon.node_addr,
+			       priv->active_rxon.node_addr) ||
+	    compare_ether_addr(priv->staging_rxon.wlap_bssid_addr,
+			       priv->active_rxon.wlap_bssid_addr) ||
+	    (priv->staging_rxon.dev_type != priv->active_rxon.dev_type) ||
+	    (priv->staging_rxon.channel != priv->active_rxon.channel) ||
+	    (priv->staging_rxon.air_propagation !=
+	     priv->active_rxon.air_propagation) ||
+	    (priv->staging_rxon.assoc_id != priv->active_rxon.assoc_id))
+		return 1;
+
+	/* flags, filter_flags, ofdm_basic_rates, and cck_basic_rates can
+	 * be updated with the RXON_ASSOC command -- however only some
+	 * flag transitions are allowed using RXON_ASSOC */
+
+	/* Check if we are not switching bands */
+	if (iwl_check_bits(priv->staging_rxon.flags, RXON_FLG_BAND_24G_MSK) !=
+	    iwl_check_bits(priv->active_rxon.flags, RXON_FLG_BAND_24G_MSK))
+		return 1;
+
+	/* Check if we are switching association toggle */
+	if (iwl_check_bits(priv->staging_rxon.filter_flags,
+			   RXON_FILTER_ASSOC_MSK) !=
+	    iwl_check_bits(priv->active_rxon.filter_flags,
+			   RXON_FILTER_ASSOC_MSK))
+		return 1;
+
+	return 0;
+}
+
 int darwin_iwi3945::ipw_commit_rxon(struct ipw_priv *priv)
 {
+		/* cast away the const for active_rxon in this function */
+	struct iwl_rxon_cmd *active_rxon = (struct iwl_rxon_cmd *)&priv->active_rxon;
 	int rc = 0;
 
 	if (!ipw_is_alive(priv))
@@ -6680,66 +6842,116 @@ int darwin_iwi3945::ipw_commit_rxon(struct ipw_priv *priv)
 	    ~(RXON_FLG_DIS_DIV_MSK | RXON_FLG_ANT_SEL_MSK);
 	priv->staging_rxon.flags |= ipw_get_antenna_flags(priv);
 
-	/* If we don't need to retune, we can use ipw_rxon_assoc_cmd which
-	 * is used to reconfigure filter and other flags for the current
-	 * radio configuration.
-	 *
-	 * If we need to tune, we need to request the regulatory
-	 * daemon to tune and configure the radio via ipw_send_rx_config. */
-	if (!tune_required(priv))
+	rc = iwl_check_rxon_cmd(&priv->staging_rxon);
+	if (rc) {
+		IOLog("Invalid RXON configuration.  Not committing.\n");
+		return -EINVAL;
+	}
+
+	/* If we don't need to send a full RXON, we can use
+	 * iwl_rxon_assoc_cmd which is used to reconfigure filter
+	 * and other flags for the current radio configuration. */
+	if (!iwl_full_rxon_required(priv)) {
 		rc = ipw_send_rxon_assoc(priv);
-	else {
-		/* Sending the RXON command clears out the station table,
-		 * so we must clear out our cached table values so we will
-		 * re-add stations to the uCode for TX */
-		ipw_clear_stations_table(priv);
-
-		/* If we are currently associated and the new config requires
-		 * a tune *and* the new config wants the associated mask enabled,
-		 * we must clear the associated from the active configuration
-		 * before we apply the new config */
-		if (ipw_is_associated(priv) &&
-		    (priv->staging_rxon.
-		     filter_flags & RXON_FILTER_ASSOC_MSK)) {
-			IOLog("Toggling associated bit on current "
-				       "RXON\n");
-			priv->active_rxon.filter_flags &=
-				~RXON_FILTER_ASSOC_MSK;
-			rc = ipw_send_cmd_pdu(priv, REPLY_RXON,
-					      sizeof(struct ipw_rxon_cmd),
-					      &priv->active_rxon);
-
-			/* If the mask clearing failed then we set
-			 * active_config back to what it was previously */
-			if (!rc)
-				priv->active_rxon.filter_flags |=
-					RXON_FILTER_ASSOC_MSK;
-
+		if (rc) {
+			IOLog("Error setting RXON_ASSOC "
+				  "configuration (%d).\n", rc);
+			return rc;
 		}
-		//rc=0;//hack
-		if (!rc)
-			rc = ipw_send_cmd_pdu(priv, REPLY_RXON,
-					      sizeof(struct ipw_rxon_cmd),
-					      &priv->staging_rxon);
-		//rc=0;//hack
-		if (!rc)
-			rc = ipw_reg_send_txpower(priv);
 
-		//rc=0;//hack
-		/* Add the broadcast address so we can send broadcast frames */
-		if (!rc) {
-			if (ipw_rxon_add_station(priv, BROADCAST_ADDR, 0) ==
-			    IPW_INVALID_STATION)
-				rc = -EIO;
+		memcpy(active_rxon, &priv->staging_rxon, sizeof(*active_rxon));
+
+		return 0;
+	}
+
+	/* If we are currently associated and the new config requires
+	 * an RXON_ASSOC and the new config wants the associated mask enabled,
+	 * we must clear the associated from the active configuration
+	 * before we apply the new config */
+	if (ipw_is_associated(priv) &&
+	    (priv->staging_rxon.filter_flags & RXON_FILTER_ASSOC_MSK)) {
+		IOLog("Toggling associated bit on current RXON\n");
+		active_rxon->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
+
+		rc = ipw_send_cmd_pdu(priv, REPLY_RXON,
+				      sizeof(struct iwl_rxon_cmd),
+				      &priv->active_rxon);
+
+		/* If the mask clearing failed then we set
+		 * active_rxon back to what it was previously */
+		if (rc) {
+			active_rxon->filter_flags |= RXON_FILTER_ASSOC_MSK;
+			IOLog("Error clearing ASSOC_MSK on current "
+				  "configuration (%d).\n", rc);
+			return rc;
+		}
+
+		/* The RXON bit toggling will have cleared out the
+		 * station table in the uCode, so blank it in the driver
+		 * as well */
+		ipw_clear_stations_table(priv);
+	} else if (priv->staging_rxon.filter_flags & RXON_FILTER_ASSOC_MSK) {
+		/* When switching from non-associated to associated, the
+		 * uCode clears out the station table; so clear it in the
+		 * driver as well */
+		ipw_clear_stations_table(priv);
+	}
+
+	IOLog("Sending RXON\n"
+		       "* with%s RXON_FILTER_ASSOC_MSK\n"
+		       "* channel = %d\n"
+		       "* bssid = " MAC_FMT "\n",
+		       ((priv->staging_rxon.filter_flags &
+			 RXON_FILTER_ASSOC_MSK) ? "" : "out"),
+		       priv->staging_rxon.channel,
+		       MAC_ARG(priv->staging_rxon.bssid_addr));
+
+	/* Apply the new configuration */
+	rc = ipw_send_cmd_pdu(priv, REPLY_RXON,
+			      sizeof(struct iwl_rxon_cmd), &priv->staging_rxon);
+	if (rc) {
+		IOLog("Error setting new configuration (%d).\n", rc);
+		return rc;
+	}
+
+	memcpy(active_rxon, &priv->staging_rxon, sizeof(*active_rxon));
+
+	/* If we issue a new RXON command which required a tune then we must
+	 * send a new TXPOWER command or we won't be able to Tx any frames */
+	rc = ipw_reg_send_txpower(priv);
+	if (rc) {
+		IOLog("Error setting Tx power (%d).\n", rc);
+		return rc;
+	}
+
+	/* Add the broadcast address so we can send broadcast frames */
+	if (ipw_rxon_add_station(priv, BROADCAST_ADDR, 0) ==
+	    IPW_INVALID_STATION) {
+		IOLog("Error adding BROADCAST address for transmit.\n");
+		return -EIO;
+	}
+
+	/* If we have set the ASSOC_MSK and we are in BSS mode then
+	 * add the IWL_AP_ID to the station rate table */
+	if (ipw_is_associated(priv) &&
+	    (priv->iw_mode == IEEE80211_IF_TYPE_STA)) {
+		if (ipw_rxon_add_station(priv, priv->active_rxon.bssid_addr, 1)
+		    == IPW_INVALID_STATION) {
+			IOLog("Error adding AP address for transmit.\n");
+			return -EIO;
 		}
 	}
-	if (rc)
-		IOLog("Error setting configuration.  Reload driver.\n");
-	else
-		memcpy(&priv->active_rxon, &priv->staging_rxon,
-		       sizeof(priv->active_rxon));
 
-	return rc;
+	/* Init the hardware's rate fallback order based on the
+	 * phymode */
+	rc = ipw_init_rate_scaling(priv);
+	if (rc) {
+		IOLog("Error setting HW rate table: %02X\n", rc);
+		return -EIO;
+	}
+
+	return 0;
+
 }
 
 int darwin_iwi3945::ipw_init_rate_scaling(struct ipw_priv *priv)
@@ -7258,7 +7470,8 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 	/* After the ALIVE response, we can processed host commands */
 	priv->status |= STATUS_ALIVE;
-
+	priv->status &= ~STATUS_FW_ERROR;
+	
 	IOLog("Alive received.\n");
 
 	ipw_clear_stations_table(priv);
@@ -7270,7 +7483,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	}
 	u32 rfkill;
 	rfkill = _ipw_read_restricted_reg(priv, ALM_APMG_RFKILL);
-	IOLog("RFKILL status: 0x%x\n", rfkill);
+	IOLog("RFKILL status: = 0x%x\n", rfkill);
 	_ipw_release_restricted_access(priv);
 
 	if (rfkill & 0x1) {
@@ -7348,12 +7561,6 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	/* Configure the adapter for unassociated operation */
 	ipw_commit_rxon(priv);
 
-	/* Add the broadcast address so we can send probe requests */
-	//IOLog("ipw_rxon_add_station\n");
-	ipw_rxon_add_station(priv, BROADCAST_ADDR, 0);
-	//IOLog("ipw_init_rate_scaling\n");
-	ipw_init_rate_scaling(priv);
-
 	/* At this point, the NIC is initialized and operational */
 	priv->notif_missed_beacons = 0;
 	priv->status |= STATUS_READY;
@@ -7364,9 +7571,10 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 	//mutex_unlock(&priv->mutex);
 	
-	//hack: force scan
-	//ipw_scan_initiate(priv,0);
 	IOLog("ipw_bg_alive_start done\n");
+	//hack: force scan
+	ipw_scan_initiate(priv,0);
+
 }
 
 
@@ -7786,7 +7994,7 @@ int darwin_iwi3945::ipw_scan_initiate(struct ipw_priv *priv, unsigned long ms)
 	if (priv->status & STATUS_RF_KILL_MASK) {
 		IOLog("Aborting scan due to RF Kill activation\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		return 0;
+		//return 0;
 	}
 
 	if (!(priv->status & STATUS_READY)) {
@@ -7812,7 +8020,7 @@ int darwin_iwi3945::ipw_scan_schedule(struct ipw_priv *priv, unsigned long ms)
 		priv->status |= STATUS_SCAN_PENDING;
 		return 0;
 	}
-	queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan),priv,3,true);
+	queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan),priv,NULL,true);
 	//queue_delayed_work(priv->workqueue,   &priv->request_scan, msecs_to_jiffies(ms));
 
 	return 0;
@@ -8797,14 +9005,7 @@ struct ieee80211_network *darwin_iwi3945::ieee80211_move_network_channel(struct
 	return target;
 }
 
-static inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
-{
-	const u16 *a = (const u16 *) _a;
-	const u16 *b = (const u16 *) _b;
 
-	if (ETH_ALEN != 6) return -1;
-	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
-}
 
 int darwin_iwi3945::is_same_network_channel_switch(struct ieee80211_network
 					  *src, struct ieee80211_network
@@ -9227,7 +9428,7 @@ void darwin_iwi3945::RxQueueIntr()
 				priv->status &=
 				    ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 
-			//	ipw_scan_cancel(priv);
+				ipw_scan_cancel(priv);
 
 				if (((status & STATUS_RF_KILL_HW) !=
 				     (priv->status & STATUS_RF_KILL_HW))
@@ -9284,6 +9485,26 @@ void darwin_iwi3945::RxQueueIntr()
 
 }
 
+int darwin_iwi3945::ipw_scan_cancel(struct ipw_priv *priv)
+{
+	if (priv->status & STATUS_SCAN_PENDING) {
+		IWI_DEBUG("Cancelling pending scan request.\n");
+		priv->status &= ~STATUS_SCAN_PENDING;
+		//cancel_delayed_work(&priv->request_scan);
+	}
+
+	if (priv->status & STATUS_SCANNING) {
+		if (!(priv->status & STATUS_SCAN_ABORTING)) {
+			IWI_DEBUG("Queuing scan abort.\n");
+			priv->status |= STATUS_SCAN_ABORTING;
+			//queue_work(priv->workqueue, &priv->abort_scan);
+		} else {
+			IWI_DEBUG("Scan abort already in progress.\n");
+		}
+	}
+
+	return 0;
+}
 
 int darwin_iwi3945::initTxQueue()
 {
@@ -10102,10 +10323,10 @@ void darwin_iwi3945::ipw_link_down(struct ipw_priv *priv)
 
 	ipw_reset_stats(priv);
 
-	if (!(priv->status & STATUS_EXIT_PENDING)) {
+	//if (!(priv->status & STATUS_EXIT_PENDING)) {
 		/* Queue up another scan... */
 		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan),priv,3,true);
-	}
+	//}
 }
 
 mbuf_t darwin_iwi3945::mergePacket(mbuf_t m)
@@ -10631,6 +10852,7 @@ int darwin_iwi3945::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		}
 
 		ieee80211_txb_free(txb);
+		if (skb_frag)
 		if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
 		skb_frag=NULL;
 	}
@@ -10642,9 +10864,11 @@ int darwin_iwi3945::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//IOLockUnlock(mutex);
 	//netif_stop_queue(dev);
 	IWI_LOG("TX drop\n");
+	if (skb)
 	if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) freePacket(skb);
 	skb=NULL;
 	ieee80211_txb_free(txb);
+	if (skb_frag)
 	if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
 	skb_frag=NULL;
 	fTransmitQueue->stop();
@@ -11234,12 +11458,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			} else
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
-				r1=0;
+				/*r1=0;
 				while (!(clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL) & 0x1)) 
 				{
 					clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | 0x1);
 					if (r1==1000000) break;
-				}
+				}*/
 			}
 			IOLog("Trying to turn card on...\n");	
 			r1=0;
@@ -11276,8 +11500,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			} else q=1;*/
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
-			if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // STATUS_RF_KILL_HW
-				clone->ipw_write32(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
+			//if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // STATUS_RF_KILL_HW
+			//	clone->ipw_write32(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
 				
 			clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
@@ -11318,12 +11542,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			}*/
 			if (rfkill & 0x1) {
 				//priv->status &= ~STATUS_RF_KILL_HW;
-				r1=0;
+				/*r1=0;
 				while ((clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL) & 0x1)) 
 				{
 					clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | ~0x1);
 					if (r1==1000000) break;
-				}
+				}*/
 			} else
 			{
 				//priv->status |= STATUS_RF_KILL_HW;
@@ -11338,13 +11562,13 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			}
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_SW_BIT_RFKILL);
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
-			if ((clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // ~STATUS_RF_KILL_HW
-				clone->ipw_write32(CSR_GP_CNTRL, clone->ipw_read32(CSR_GP_CNTRL) | ~CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
+			//if ((clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // ~STATUS_RF_KILL_HW
+			//	clone->ipw_write32(CSR_GP_CNTRL, clone->ipw_read32(CSR_GP_CNTRL) | ~CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
 				
 			clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status |= STATUS_RF_KILL_HW;
-			clone->priv->status &= ~STATUS_RF_KILL_SW;
+			clone->priv->status |= STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			clone->setLinkStatus(kIONetworkLinkValid);
 			clone->ipw_down(clone->priv);
