@@ -1101,3 +1101,21 @@ typedef unsigned char UInt8;
 #define CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW          (0x08000000)
 
 
+
+#define IWL_CMD_FAILED_MSK 0x40
+
+
+/* #define vs. enum to keep from defaulting to 'large integer' */
+#define	IWL_RATE_6M_MASK   (1<<IWL_RATE_6M_INDEX)
+#define	IWL_RATE_9M_MASK   (1<<IWL_RATE_9M_INDEX)
+#define	IWL_RATE_12M_MASK  (1<<IWL_RATE_12M_INDEX)
+#define	IWL_RATE_18M_MASK  (1<<IWL_RATE_18M_INDEX)
+#define	IWL_RATE_24M_MASK  (1<<IWL_RATE_24M_INDEX)
+#define	IWL_RATE_36M_MASK  (1<<IWL_RATE_36M_INDEX)
+#define	IWL_RATE_48M_MASK  (1<<IWL_RATE_48M_INDEX)
+#define	IWL_RATE_54M_MASK  (1<<IWL_RATE_54M_INDEX)
+#define	IWL_RATE_1M_MASK   (1<<IWL_RATE_1M_INDEX)
+#define	IWL_RATE_2M_MASK   (1<<IWL_RATE_2M_INDEX)
+#define	IWL_RATE_5M_MASK   (1<<IWL_RATE_5M_INDEX)
+#define	IWL_RATE_11M_MASK  (1<<IWL_RATE_11M_INDEX)
+

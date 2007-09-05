@@ -2511,24 +2511,33 @@ EEPROM_REGULATORY_BAND5_CHANNELS_LENGTH)
 #define EEPROM_SKU_CAP_HW_RF_KILL_ENABLE                (1 << 1)
 #define EEPROM_SKU_CAP_OP_MODE_MRC                      (1 << 7)
 
-struct ipw_rxon_cmd {
-	u8 node_addr[6];
-	u16 reserved1;
-	u8 bssid_addr[6];
-	u16 reserved2;
-	u8 wlap_bssid_addr[6];
-	u16 reserved3;
-	u8 dev_type;
-	u8 air_propagation;
-	u16 reserved4;		// 27:26
-	u8 ofdm_basic_rates;
-	u8 cck_basic_rates;
-	u16 assoc_id;
+struct iwl_rxon_assoc_cmd {
 	u32 flags;
 	u32 filter_flags;
-	u16 channel;
-	u16 reserved5;
+	u8 ofdm_basic_rates;
+	u8 cck_basic_rates;
+	__le16 reserved;
 } __attribute__ ((packed));
+
+struct iwl_rxon_cmd {
+	u8 node_addr[6];
+	__le16 reserved1;
+	u8 bssid_addr[6];
+	__le16 reserved2;
+	u8 wlap_bssid_addr[6];
+	__le16 reserved3;
+	u8 dev_type;
+	u8 air_propagation;
+	__le16 reserved4;
+	u8 ofdm_basic_rates;
+	u8 cck_basic_rates;
+	__le16 assoc_id;
+	u32 flags;
+	u32 filter_flags;
+	__le16 channel;
+	__le16 reserved5;
+} __attribute__ ((packed));
+
 
 struct ipw_driver_hw_info {
 
@@ -2815,8 +2824,8 @@ struct ipw_priv {
 	unsigned long hw_len;
 	struct ipw_lq_mngr lq_mngr;
 	
-	struct ipw_rxon_cmd active_rxon;
-	struct ipw_rxon_cmd staging_rxon;
+	struct iwl_rxon_cmd active_rxon;
+	struct iwl_rxon_cmd staging_rxon;
 	
 	struct fw_image_desc ucode_code;
 	struct fw_image_desc ucode_data;

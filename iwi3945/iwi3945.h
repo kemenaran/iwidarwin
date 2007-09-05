@@ -1014,7 +1014,21 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual u16 ipw_get_active_dwell_time(struct ipw_priv *priv, int phymode);
 	virtual u16 ipw_get_passive_dwell_time(struct ipw_priv *priv, int phymode);
 	virtual int is_channel_narrow(const struct ipw_channel_info *ch_info);
-	
+	virtual int ipw_scan_cancel(struct ipw_priv *priv);
+	virtual int iwl_check_rxon_cmd(struct iwl_rxon_cmd *rxon);
+	virtual int iwl_full_rxon_required(struct ipw_priv *priv);
+inline int iwl_check_bits(unsigned long field, unsigned long mask)
+{
+	return ((field & mask) == mask) ? 1 : 0;
+}	
+inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
+{
+	const u16 *a = (const u16 *) _a;
+	const u16 *b = (const u16 *) _b;
+
+	if (ETH_ALEN != 6) return -1;
+	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
+}	
 	
 	
 	// statistics
