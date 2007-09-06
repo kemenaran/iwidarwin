@@ -827,74 +827,128 @@ int darwin_iwi4965::ipw_read_ucode(struct ipw_priv *priv)
 		       ucode->inst_size);
 	IOLog("f/w package hdr runtime data size = %u\n",
 		       ucode->data_size);
+	IOLog("f/w package hdr init inst size = %u\n",
+		       ucode->init_size);
+	IOLog("f/w package hdr init data size = %u\n",
+		       ucode->init_data_size);
 	IOLog("f/w package hdr boot inst size = %u\n",
 		       ucode->boot_size);
-	IOLog("f/w package hdr boot data size = %u\n",
-		       ucode->boot_data_size);
 
 	/* verify size of file vs. image size info in file's header */
-	/*if (ucode_raw->size < sizeof(*ucode) +
+	if (ucode_raw->size < sizeof(*ucode) +
 	    ucode->inst_size + ucode->data_size +
-	    ucode->boot_size + ucode->boot_data_size) {
+	    ucode->init_size + ucode->init_data_size +
+	    ucode->boot_size) {
+
 		IOLog("uCode file size %d too small\n",
 			       (int)ucode_raw->size);
 		rc = -EINVAL;
-		//goto err_release;
-	}*/
-
-	/* verify that uCode images will fit in card's SRAM */
-	if (ucode->inst_size > ALM_RTC_INST_SIZE) {
-		 IOLog("uCode instr len %d too large to fit in card\n",
-			       (int)ucode->inst_size);
-		rc = -EINVAL;
-		//goto err_release;
+		goto err_release;
 	}
 
-	if (ucode->data_size > ALM_RTC_DATA_SIZE) {
+	/* verify that uCode images will fit in card's SRAM */
+	if (ucode->inst_size > IWL_MAX_INST_SIZE) {
+		IOLog("uCode instr len %d too large to fit in card\n",
+			       (int)ucode->inst_size);
+		rc = -EINVAL;
+		goto err_release;
+	}
+
+	if (ucode->data_size > IWL_MAX_DATA_SIZE) {
 		IOLog("uCode data len %d too large to fit in card\n",
 			       (int)ucode->data_size);
 		rc = -EINVAL;
-		//goto err_release;
+		goto err_release;
+	}
+	if (ucode->init_size > IWL_MAX_INST_SIZE) {
+		IOLog
+		    ("uCode init instr len %d too large to fit in card\n",
+		     (int)ucode->init_size);
+		rc = -EINVAL;
+		goto err_release;
 	}
 
-	if (ucode->boot_size > ALM_RTC_INST_SIZE) {
+	if (ucode->init_data_size > IWL_MAX_DATA_SIZE) {
 		IOLog
-		    ("uCode boot instr len %d too large to fit in card\n",
+		    ("uCode init data len %d too large to fit in card\n",
+		     (int)ucode->init_data_size);
+		rc = -EINVAL;
+		goto err_release;
+	}
+	if (ucode->boot_size > IWL_MAX_BSM_SIZE) {
+		IOLog
+		    ("uCode boot instr len %d too large to fit in bsm\n",
 		     (int)ucode->boot_size);
 		rc = -EINVAL;
-		//goto err_release;
-	}
-
-	if (ucode->boot_data_size > ALM_RTC_DATA_SIZE) {
-		IOLog
-		    ("uCode boot data len %d too large to fit in card\n",
-		     (int)ucode->boot_data_size);
-		rc = -EINVAL;
-		//goto err_release;
+		goto err_release;
 	}
 
 	/* allocate ucode buffers for card's bus-master loading */
 	priv->ucode_code.len = ucode->inst_size;
 	MemoryDmaAlloc(priv->ucode_code.len, &(priv->ucode_code.p_addr), &(priv->ucode_code.v_addr));
-	
+	/*priv->ucode_code.v_addr =
+	    pci_alloc_consistent(priv->pci_dev,
+				 priv->ucode_code.len,
+				 &(priv->ucode_code.p_addr));*/
+
+	/* 2 copies of runtime ucode data:
+	 * 1) unmodified from disk
+	 * 2) backup cache for save/restore during power-downs */
 	priv->ucode_data.len = ucode->data_size;
 	MemoryDmaAlloc(priv->ucode_data.len, &(priv->ucode_data.p_addr), &(priv->ucode_data.v_addr));
-	
+	/*priv->ucode_data.v_addr =
+	    pci_alloc_consistent(priv->pci_dev,
+				 priv->ucode_data.len,
+				 &(priv->ucode_data.p_addr));*/
 
+	priv->ucode_data_backup.len = ucode->data_size;
+	MemoryDmaAlloc(priv->ucode_data_backup.len, &(priv->ucode_data_backup.p_addr), &(priv->ucode_data_backup.v_addr));
+	/*priv->ucode_data_backup.v_addr =
+	    pci_alloc_consistent(priv->pci_dev,
+				 priv->ucode_data_backup.len,
+				 &(priv->ucode_data_backup.p_addr));*/
+
+
+	/* initialization images are optional */
+	priv->ucode_init.len = ucode->init_size;
+	if (ucode->init_size) {
+	MemoryDmaAlloc(priv->ucode_init.len, &(priv->ucode_init.p_addr), &(priv->ucode_init.v_addr));
+		/*priv->ucode_init.v_addr =
+		    pci_alloc_consistent(priv->pci_dev,
+					 priv->ucode_init.len,
+					 &(priv->ucode_init.p_addr));*/
+		if (!priv->ucode_init.v_addr)
+			goto err_pci_alloc;
+	} else {
+		priv->ucode_init.v_addr = NULL;
+		priv->ucode_init.p_addr = 0;
+	}
+
+	priv->ucode_init_data.len = ucode->init_data_size;
+	if (ucode->init_data_size) {
+	MemoryDmaAlloc(priv->ucode_init_data.len, &(priv->ucode_init_data.p_addr), &(priv->ucode_init_data.v_addr));
+		/*priv->ucode_init_data.v_addr =
+		    pci_alloc_consistent(priv->pci_dev,
+					 priv->ucode_init_data.len,
+					 &(priv->ucode_init_data.p_addr));*/
+		if (!priv->ucode_init_data.v_addr)
+			goto err_pci_alloc;
+	} else {
+		priv->ucode_init_data.v_addr = NULL;
+		priv->ucode_init_data.p_addr = 0;
+	}
+
+	/* bootstrap is mandatory */
 	priv->ucode_boot.len = ucode->boot_size;
 	MemoryDmaAlloc(priv->ucode_boot.len, &(priv->ucode_boot.p_addr), &(priv->ucode_boot.v_addr));
+	/*priv->ucode_boot.v_addr =
+	    pci_alloc_consistent(priv->pci_dev,
+				 priv->ucode_boot.len,
+				 &(priv->ucode_boot.p_addr));*/
 
-
-	priv->ucode_boot_data.len = ucode->boot_data_size;
-	MemoryDmaAlloc(priv->ucode_boot_data.len, &(priv->ucode_boot_data.p_addr), &(priv->ucode_boot_data.v_addr));
-
-
-	if (!priv->ucode_code.v_addr || !priv->ucode_data.v_addr
-	    || !priv->ucode_boot.v_addr || !priv->ucode_boot_data.v_addr) {
-		IOLog("failed to allocate pci memory\n");
-		rc = -ENOMEM;
+	if (!priv->ucode_code.v_addr || !priv->ucode_data.v_addr ||
+	    !priv->ucode_boot.v_addr)
 		goto err_pci_alloc;
-	}
 
 	/* Copy images into buffers for card's bus-master reads ... */
 
@@ -904,6 +958,8 @@ int darwin_iwi4965::ipw_read_ucode(struct ipw_priv *priv)
 	IOLog("Copying (but not loading) uCode instr len %d\n",
 		       (int)len);
 	memcpy(priv->ucode_code.v_addr, src, len);
+	IOLog("uCode instr buf vaddr = 0x%p, paddr = 0x%08x\n",
+		priv->ucode_code.v_addr, (u32)priv->ucode_code.p_addr);
 
 	/* runtime data (2nd block) */
 	src = &ucode->data[ucode->inst_size];
@@ -911,33 +967,49 @@ int darwin_iwi4965::ipw_read_ucode(struct ipw_priv *priv)
 	IOLog("Copying (but not loading) uCode data len %d\n",
 		       (int)len);
 	memcpy(priv->ucode_data.v_addr, src, len);
+	memcpy(priv->ucode_data_backup.v_addr, src, len);
 
-	/* bootstrap instructions (3rd block) */
+	/* initialization instructions (3rd block) */
+	if (ucode->init_size) {
+		src = &ucode->data[ucode->inst_size + ucode->data_size];
+		len = priv->ucode_init.len;
+		IOLog("Copying (but not loading) init instr len %d\n",
+			       (int)len);
+		memcpy(priv->ucode_init.v_addr, src, len);
+	}
+
+	/* initialization data (4th block) */
+	if (ucode->init_data_size) {
+		src = &ucode->data[ucode->inst_size + ucode->data_size
+				   + ucode->init_size];
+		len = priv->ucode_init_data.len;
+		IOLog("Copying (but not loading) init data len %d\n",
+			       (int)len);
+		memcpy(priv->ucode_init_data.v_addr, src, len);
+	}
+
+	/* bootstrap instructions (5th block) */
 	src = &ucode->data[ucode->inst_size + ucode->data_size];
+	src += ucode->init_size + ucode->init_data_size;
 	len = priv->ucode_boot.len;
 	IOLog("Copying (but not loading) boot instr len %d\n",
 		       (int)len);
 	memcpy(priv->ucode_boot.v_addr, src, len);
 
-	/* bootstrap data (4th block) */
-	src = &ucode->data[ucode->inst_size + ucode->data_size
-			   + ucode->boot_size];
-	len = priv->ucode_boot_data.len;
-	IOLog("Copying (but not loading) boot data len %d\n",
-		       (int)len);
-	memcpy(priv->ucode_boot_data.v_addr, src, len);
-
 	//release_firmware(ucode_raw);
 	return 0;
 
-      err_pci_alloc:
-	//ipw_dealloc_ucode_pci(priv);
+ err_pci_alloc:
+	IOLog("failed to allocate pci memory\n");
+	rc = -ENOMEM;
+	//iwl_dealloc_ucode_pci(priv);
 
-      err_release:
-//	release_firmware(ucode_raw);
+ err_release:
+	//release_firmware(ucode_raw);
 
-      error:
+ error:
 	return rc;
+	
 }
 
 IOOptionBits darwin_iwi4965::getState( void ) const
@@ -1713,77 +1785,67 @@ int darwin_iwi4965::ipw_load_ucode(struct ipw_priv *priv,
 {
 	dma_addr_t phy_addr = 0;
 	u32 len = 0;
-	u32 count = 0;
-	u32 pad;
-	struct tfd_frame tfd;
 	u32 tx_config = 0;
 	int rc;
-
-	memset(&tfd, 0, sizeof(struct tfd_frame));
 
 	phy_addr = desc->p_addr;
 	len = desc->len;
 
 	if (mem_size < len) {
-		IOLog("invalid image size, too big %d %d\n", mem_size, len);
-		//return -EINVAL;
+		IOLog("invalid image size, too big %d %d\n", mem_size,
+			  len);
+		return -EINVAL;
 	}
-
-	while (len > 0) {
-		if (ALM_TB_MAX_BYTES_COUNT < len) {
-			attach_buffer_to_tfd_frame( &tfd, phy_addr,
-						   ALM_TB_MAX_BYTES_COUNT);
-			len -= ALM_TB_MAX_BYTES_COUNT;
-			phy_addr += ALM_TB_MAX_BYTES_COUNT;
-		} else {
-			attach_buffer_to_tfd_frame( &tfd, phy_addr, len);
-			break;
-		}
-	}
-
-	pad = U32_PAD(len);
-	count = TFD_CTL_COUNT_GET(tfd.control_flags);
-	tfd.control_flags = TFD_CTL_COUNT_SET(count) | TFD_CTL_PAD_SET(pad);
 
 	rc = ipw_grab_restricted_access(priv);
-	if (rc)
-		return rc;
+	rc=0;
+	//if (rc)
+	//	return rc;
 
-	_ipw_write_restricted(priv, FH_TCSR_CONFIG(ALM_FH_SRVC_CHNL),
-			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_PAUSE);
-	ipw_write_buffer_restricted(priv,
-				    ALM_FH_TFDB_CHNL_BUF_CTRL_REG
-				    (ALM_FH_SRVC_CHNL),
-				    sizeof(struct tfd_frame), (u32 *) & tfd);
-	_ipw_write_restricted(priv, HBUS_TARG_MEM_WADDR, dst_addr);
-	_ipw_write_restricted(priv, FH_TCSR_CREDIT(ALM_FH_SRVC_CHNL),
-			     0x000FFFFF);
 	_ipw_write_restricted(priv,
-			     FH_TCSR_BUFF_STTS(ALM_FH_SRVC_CHNL),
-			     ALM_FH_TCSR_CHNL_TX_BUF_STS_REG_VAL_TFDB_VALID
-			     | ALM_FH_TCSR_CHNL_TX_BUF_STS_REG_BIT_TFDB_WPTR);
+			     IWL_FH_TCSR_CHNL_TX_CONFIG_REG(IWL_FH_SRVC_CHNL),
+			     IWL_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_PAUSE);
 
-	tx_config = ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_ENABLE |
-	    ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CREDIT_DISABLE_VAL |
-	    ALM_FH_TCSR_TX_CONFIG_REG_VAL_MSG_MODE_DRIVER;
+	_ipw_write_restricted(priv,
+			     IWL_FH_SRVC_CHNL_SRAM_ADDR_REG(IWL_FH_SRVC_CHNL),
+			     dst_addr);
 
-	_ipw_write_restricted(priv, FH_TCSR_CONFIG(ALM_FH_SRVC_CHNL), tx_config);
+	_ipw_write_restricted(priv,
+			     IWL_FH_TFDIB_CTRL0_REG(IWL_FH_SRVC_CHNL),
+			     iwl4965_get_dma_lo_address(phy_addr));
 
-	rc = ipw_poll_restricted_bit(priv, FH_TSSR_TX_STATUS,
-				     ALM_FH_TSSR_TX_STATUS_REG_MSK_CHNL_IDLE
-				     (ALM_FH_SRVC_CHNL), 1000);
+	_ipw_write_restricted(priv,
+			     IWL_FH_TFDIB_CTRL1_REG(IWL_FH_SRVC_CHNL),
+			     (iwl4965_get_dma_hi_address(phy_addr) <<
+			      IWL_FH_TFDIB_CTRL1_REG_POS_MSB) | len);
+
+	_ipw_write_restricted(priv,
+			     IWL_FH_TCSR_CHNL_TX_BUF_STS_REG(IWL_FH_SRVC_CHNL),
+			     1 << IWL_FH_TCSR_CHNL_TX_BUF_STS_REG_POS_TB_NUM |
+			     1 << IWL_FH_TCSR_CHNL_TX_BUF_STS_REG_POS_TB_IDX |
+			     IWL_FH_TCSR_CHNL_TX_BUF_STS_REG_VAL_TFDB_VALID);
+
+	tx_config = IWL_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_ENABLE |
+	    IWL_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CREDIT_DISABLE_VAL;
+
+	_ipw_write_restricted(priv,
+			     IWL_FH_TCSR_CHNL_TX_CONFIG_REG(IWL_FH_SRVC_CHNL),
+			     tx_config);
+
+	rc = ipw_poll_restricted_bit(priv,
+				     IWL_FH_TSSR_TX_STATUS_REG,
+				     IWL_FH_TSSR_TX_STATUS_REG_MSK_CHNL_IDLE
+				     (IWL_FH_SRVC_CHNL), 1000);
 	if (rc < 0) {
-		IOLog("4965 card ucode DOWNLOAD FAILED \n");
-		//goto done;
+		IOLog("Kedron card ucode DOWNLOAD FAILED \n");
+		goto done;
 	}
 
 	rc = 0;
 
-	IOLog("4965 card ucode download is good \n");
+	IOLog("Kedron card ucode download is good \n");
 
-	_ipw_write_restricted(priv, FH_TCSR_CREDIT(ALM_FH_SRVC_CHNL), 0x0);
-
-      done:
+ done:
 	_ipw_release_restricted_access(priv);
 	return rc;
 
@@ -1802,10 +1864,7 @@ void darwin_iwi4965::ipw_nic_start(struct ipw_priv *priv)
 	unsigned long flags;
 
 	//spin_lock_irqsave(&priv->lock, flags);
-	ipw_clear_bit( CSR_RESET,
-		      CSR_RESET_REG_FLAG_MASTER_DISABLED |
-		      CSR_RESET_REG_FLAG_STOP_MASTER |
-		      CSR_RESET_REG_FLAG_NEVO_RESET);
+	ipw_write32( CSR_RESET, 0);
 	//spin_unlock_irqrestore(&priv->lock, flags);
 }
 
@@ -1822,18 +1881,14 @@ int darwin_iwi4965::ipw_query_eeprom(struct ipw_priv *priv, u32 offset,
 
 int darwin_iwi4965::ipw_card_show_info(struct ipw_priv *priv)
 {
-	IOLog("4965 HW Version %u.%u.%u\n",
-		       ((priv->eeprom.board_revision >> 8) & 0x0F),
-		       ((priv->eeprom.board_revision >> 8) >> 4),
-		       (priv->eeprom.board_revision & 0x00FF));
+	u16 hw_version = priv->eeprom.board_revision_4965;
 
-	IOLog("4965 PBA Number %.*s\n",
-		       (int)sizeof(priv->eeprom.board_pba_number),
-		       priv->eeprom.board_pba_number);
+	IOLog("4965ABGN HW Version %u.%u.%u\n",
+		       ((hw_version >> 8) & 0x0F),
+		       ((hw_version >> 8) >> 4), (hw_version & 0x00FF));
 
-	IOLog("EEPROM_ANTENNA_SWITCH_TYPE is 0x%02X\n",
-		       priv->eeprom.antenna_switch_type);
-
+	IOLog("4965ABGN PBA Number %.16s\n",
+		       priv->eeprom.board_pba_number_4965);
 
 }
 
@@ -1908,7 +1963,7 @@ int darwin_iwi4965::ipw_eeprom_init_sram(struct ipw_priv *priv)
 		//return -ENOENT;
 	}
 
-	ipw_clear_bit( CSR_EEPROM_GP, 0x00000180);
+//	ipw_clear_bit( CSR_EEPROM_GP, 0x00000180);
 	for (addr = 0, r = 0; addr < sz; addr += 2) {
 		ipw_write32( CSR_EEPROM_REG, addr << 1);
 		ipw_clear_bit( CSR_EEPROM_REG, 0x00000002);
@@ -2038,6 +2093,41 @@ int darwin_iwi4965::ipw_rate_scale_init_handle(struct ipw_priv *priv, s32 window
 
 int darwin_iwi4965::ipw_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 {
+	int rc = 0;
+	unsigned long flags;
+
+	//spin_lock_irqsave(&priv->lock, flags);
+	rc = ipw_grab_restricted_access(priv);
+	rc=0;
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}*/
+
+	if (!pwr_max) {
+		u32 val;
+		//rc = pci_read_config_dword(priv->pci_dev, 0x0C8, &val);
+		val=fPCIDevice->configRead8(0x0C8);
+
+		if (val & PCI_CFG_PMC_PME_FROM_D3COLD_SUPPORT) {
+			ipw_set_bits_mask_restricted_reg(
+				priv, ALM_APMG_PS_CTL,
+				APMG_PS_CTRL_REG_VAL_POWER_SRC_VAUX,
+				~APMG_PS_CTRL_REG_MSK_POWER_SRC);
+
+		}
+	} else {
+		ipw_set_bits_mask_restricted_reg(
+			priv, ALM_APMG_PS_CTL,
+			APMG_PS_CTRL_REG_VAL_POWER_SRC_VMAIN,
+			~APMG_PS_CTRL_REG_MSK_POWER_SRC);
+
+	}
+
+	_ipw_release_restricted_access(priv);
+//	spin_unlock_irqrestore(&priv->lock, flags);
+
+	return rc;
 
 }
 
@@ -2105,7 +2195,7 @@ int darwin_iwi4965::ipw_nic_stop_master(struct ipw_priv *priv)
 	/* set stop master bit */
 	ipw_set_bit( CSR_RESET, CSR_RESET_REG_FLAG_STOP_MASTER);
 
-	reg_val = ipw_read32(CSR_GP_CNTRL);
+	reg_val = ipw_read32( CSR_GP_CNTRL);
 
 	if (CSR_GP_CNTRL_REG_FLAG_MAC_POWER_SAVE ==
 	    (reg_val & CSR_GP_CNTRL_REG_MSK_POWER_SAVE_TYPE)) {
@@ -2116,16 +2206,17 @@ int darwin_iwi4965::ipw_nic_stop_master(struct ipw_priv *priv)
 				  CSR_RESET,
 				  CSR_RESET_REG_FLAG_MASTER_DISABLED,
 				  CSR_RESET_REG_FLAG_MASTER_DISABLED, 100);
-		/*if (rc < 0) {
-			spin_unlock_irqrestore(&priv->lock, flags);
+		if (rc < 0) {
+			//spin_unlock_irqrestore(&priv->lock, flags);
 			return rc;
-		}*/
+		}
 	}
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
 	IOLog("stop master\n");
 
 	return rc;
+
 }
 
 int darwin_iwi4965::ipw_nic_reset(struct ipw_priv *priv)
@@ -2136,48 +2227,44 @@ int darwin_iwi4965::ipw_nic_reset(struct ipw_priv *priv)
 	ipw_nic_stop_master(priv);
 
 	//spin_lock_irqsave(&priv->lock, flags);
+
 	ipw_set_bit( CSR_RESET, CSR_RESET_REG_FLAG_SW_RESET);
 
-	rc = ipw_poll_bit(priv, CSR_GP_CNTRL,
+	udelay(10);
+
+	ipw_set_bit( CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+	rc = ipw_poll_bit(priv, CSR_RESET,
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
-			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
+			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25);
+
+	udelay(10);
 
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
-		return rc;
-	}*/
+	if (!rc) {
+		_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
+					 APMG_CLK_REG_VAL_DMA_CLK_RQT |
+					 APMG_CLK_REG_VAL_BSM_CLK_RQT);
 
-	_ipw_write_restricted_reg(priv, APMG_CLK_CTRL_REG,
-				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
+		udelay(10);
 
-	udelay(10);
+		ipw_set_bits_restricted_reg(
+			priv, ALM_APMG_PCIDEV_STT,
+			APMG_DEV_STATE_REG_VAL_L1_ACTIVE_DISABLE);
 
-	ipw_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+		_ipw_release_restricted_access(priv);
+	}
 
-	_ipw_write_restricted_reg(priv, ALM_APMG_LARC_INT_MSK, 0x0);
-	_ipw_write_restricted_reg(priv, ALM_APMG_LARC_INT, 0xFFFFFFFF);
+	//spin_unlock_irqrestore(&priv->lock, flags);
 
-	/* enable DMA */
-	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
-				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
-				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
-	udelay(10);
+	//spin_lock_irqsave(&priv->lock, flags);
 
-	ipw_set_bits_restricted_reg(priv, ALM_APMG_PS_CTL,
-				    APMG_PS_CTRL_REG_VAL_ALM_R_RESET_REQ);
-	udelay(5);
-	ipw_clear_bits_restricted_reg(priv, ALM_APMG_PS_CTL,
-				      APMG_PS_CTRL_REG_VAL_ALM_R_RESET_REQ);
-	_ipw_release_restricted_access(priv);
-
-	/* Clear the 'host command active' bit... */
 	priv->status &= ~STATUS_HCMD_ACTIVE;
-
 	//wake_up_interruptible(&priv->wait_command_queue);
+
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	return rc;
+
 }
 
 void darwin_iwi4965::ipw_clear_bits_restricted_reg(struct ipw_priv
@@ -2189,160 +2276,153 @@ void darwin_iwi4965::ipw_clear_bits_restricted_reg(struct ipw_priv
 
 int darwin_iwi4965::ipw_nic_init(struct ipw_priv *priv)
 {
-	u8 rev_id;
+	
 	int rc;
 	unsigned long flags;
+	struct ipw_rx_queue *rxq = priv->rxq;
+	u8 rev_id;
+	u32 val;
+	u8 val_link;
 
 	ipw_power_init_handle(priv);
-	
-	ipw_rate_scale_init_handle(priv, IPW_RATE_SCALE_MAX_WINDOW);
 
+	/* nic_init */
 	//spin_lock_irqsave(&priv->lock, flags);
-	ipw_set_bit( CSR_ANA_PLL_CFG, (1 << 24));
+
 	ipw_set_bit( CSR_GIO_CHICKEN_BITS,
-		    CSR_GIO_CHICKEN_BITS_REG_BIT_L1A_NO_L0S_RX);
+		    CSR_GIO_CHICKEN_BITS_REG_BIT_DIS_L0S_EXIT_TIMER);
 
 	ipw_set_bit( CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
-	rc = ipw_poll_bit( priv,CSR_GP_CNTRL,
+	rc = ipw_poll_bit(priv, CSR_GP_CNTRL,
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
 	if (rc < 0) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		IOLog("Failed to init the card\n");
-		//return rc;
+		return rc;
 	}
 
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
-		return rc;
-	}*/
-	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
+	rc=0;
+	//if (rc) {
+	//	spin_unlock_irqrestore(&priv->lock, flags);
+	//	return rc;
+	//}
+
+	_ipw_read_restricted_reg(priv, APMG_CLK_CTRL_REG);
+
+	_ipw_write_restricted_reg(priv, APMG_CLK_CTRL_REG,
 				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
+	_ipw_read_restricted_reg(priv, APMG_CLK_CTRL_REG);
+
 	udelay(20);
-	ipw_set_bits_restricted_reg(priv, ALM_APMG_PCIDEV_STT,
+
+	_ipw_set_bits_restricted_reg(priv, ALM_APMG_PCIDEV_STT,
 				    APMG_DEV_STATE_REG_VAL_L1_ACTIVE_DISABLE);
+
 	_ipw_release_restricted_access(priv);
+	ipw_write32( CSR_INT_COALESCING, 512 / 32);
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	/* Determine HW type */
+	//rc = pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &rev_id);
 	rev_id= fPCIDevice->configRead8(kIOPCIConfigRevisionID);
+	//if (rc)
+	//	return rc;
+
 	IOLog("HW Revision ID = 0x%X\n", rev_id);
 
-	ipw3945_nic_set_pwr_src(priv, 1);
+	//iwl4965_nic_set_pwr_src
+	ipw_nic_set_pwr_src(priv, 1);
 	//spin_lock_irqsave(&priv->lock, flags);
 
-	if (rev_id & PCI_CFG_REV_ID_BIT_RTP)
-		IOLog("RTP type \n");
-	else if (rev_id & PCI_CFG_REV_ID_BIT_BASIC_SKU) {
-		IOLog("ALM-MB type\n");
-		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
-			    CSR_HW_IF_CONFIG_REG_BIT_ALMAGOR_MB);
-	} else {
-		IOLog("ALM-MM type\n");
-		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
-			    CSR_HW_IF_CONFIG_REG_BIT_ALMAGOR_MM);
+	if ((rev_id & 0x80) == 0x80 && (rev_id & 0x7f) < 8) {
+		//pci_read_config_dword(priv->pci_dev, 0xe8, &val);
+		val=fPCIDevice->configRead32(0xe8);
+		/* Enable No Snoop field */
+		fPCIDevice->configWrite32(0xe8, val & ~(1 << 11));
 	}
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
-	/* Initialize the EEPROM */
+	/* Read the EEPROM */
 	rc = ipw_eeprom_init_sram(priv);
 	if (rc)
 		return rc;
 
-	//spin_lock_irqsave(&priv->lock, flags);
-	if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
-		IOLog("SKU OP mode is mrc\n");
-		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
-			    CSR_HW_IF_CONFIG_REG_BIT_SKU_MRC);
-	} else {
-		IOLog("SKU OP mode is basic\n");
-	}
+	/*if (priv->eeprom.calib_version < EEPROM_TX_POWER_VERSION_NEW) {
+		IOLog("Older EEPROM detected!  Aborting.\n");
+		return -EINVAL;
+	}*/
 
-	if ((priv->eeprom.board_revision & 0xF0) == 0xD0) {
-		IOLog("4965 revision is 0x%X\n",
-			       priv->eeprom.board_revision);
-		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
-			    CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
-	} else {
-		IOLog("4965 revision is 0x%X\n",
-			       priv->eeprom.board_revision);
-		ipw_clear_bit( CSR_HW_IF_CONFIG_REG,
-			      CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
-	}
+	//pci_read_config_byte(priv->pci_dev, PCI_LINK_CTRL, &val_link);
+	val_link=fPCIDevice->configRead8(PCI_LINK_CTRL);
 
-	if (priv->eeprom.almgor_m_version <= 1) {
-		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
-			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_A);
-		IOLog("Card M type A version is 0x%X\n",
-			       priv->eeprom.almgor_m_version);
-	} else {
-		IOLog("Card M type B version is 0x%X\n",
-			       priv->eeprom.almgor_m_version);
-		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
-			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_B);
-	}
-	//spin_unlock_irqrestore(&priv->lock, flags);
-
-	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
-		priv->capability |= CAP_RF_SW_KILL;
-	else
-		priv->capability &= ~CAP_RF_SW_KILL;
-
-	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
-		priv->capability |= CAP_RF_HW_KILL;
-	else
-		priv->capability &= ~CAP_RF_HW_KILL;
-
-	switch (priv->capability & (CAP_RF_HW_KILL | CAP_RF_SW_KILL)) {
-	case CAP_RF_HW_KILL:
-		IOLog("HW RF KILL supported in EEPROM.\n");
-		break;
-	case CAP_RF_SW_KILL:
-		IOLog("SW RF KILL supported in EEPROM.\n");
-		break;
-	case (CAP_RF_HW_KILL | CAP_RF_SW_KILL):
-		IOLog("HW & HW RF KILL supported in EEPROM.\n");
-		break;
-	default:
-		IOLog("NO RF KILL supported in EEPROM.\n");
-		break;
-	}
+	/* disable L1 entry -- workaround for pre-B1 */
+	//pci_write_config_byte(priv->pci_dev, PCI_LINK_CTRL, val_link & ~0x02);
+	fPCIDevice->configWrite8(PCI_LINK_CTRL, val_link & ~0x02);
 	
+	//spin_lock_irqsave(&priv->lock, flags);
 
-	/* Allocate the RX queue, or reset if it is already allocated */
-	IOLog("Allocate the RX queue\n");
-	if (!priv->rxq)
-		priv->rxq = ipw_rx_queue_alloc(priv);
-	else
-		ipw_rx_queue_reset(priv, priv->rxq);
+	/* set CSR_HW_CONFIG_REG for uCode use */
 
-	if (!priv->rxq) {
-		IOLog("Unable to initialize Rx queue\n");
-		//return -ENOMEM;
-	}
-	IOLog("ipw_rx_queue_replenish\n");
-	ipw_rx_queue_replenish(priv);
-	IOLog("ipw_rx_init\n");
-	ipw_rx_init(priv, priv->rxq);
-
-//	spin_lock_irqsave(&priv->lock, flags);
+	ipw_set_bit( CSR_SW_VER, CSR_HW_IF_CONFIG_REG_BIT_KEDRON_R |
+		    CSR_HW_IF_CONFIG_REG_BIT_RADIO_SI |
+		    CSR_HW_IF_CONFIG_REG_BIT_MAC_SI);
 
 	rc = ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc=0;
+	/*if (rc < 0) {
 		spin_unlock_irqrestore(&priv->lock, flags);
+		IWL_DEBUG_INFO("Failed to init the card\n");
 		return rc;
 	}*/
-	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), priv->rxq->write & ~7);
+
+	_ipw_read_restricted_reg(priv, ALM_APMG_PS_CTL);
+	ipw_set_bits_restricted_reg(priv, ALM_APMG_PS_CTL,
+				    APMG_PS_CTRL_REG_VAL_ALM_R_RESET_REQ);
+	udelay(5);
+	ipw_clear_bits_restricted_reg(priv, ALM_APMG_PS_CTL,
+				      APMG_PS_CTRL_REG_VAL_ALM_R_RESET_REQ);
+
 	_ipw_release_restricted_access(priv);
+	//spin_unlock_irqrestore(&priv->lock, flags);
+
+	ipw_card_show_info(priv);
+
+	/* end nic_init */
+
+	/* Allocate the RX queue, or reset if it is already allocated */
+	if (!rxq) {
+		rxq = ipw_rx_queue_alloc(priv);
+		if (rc) {
+			IOLog("Unable to initialize Rx queue\n");
+			return -ENOMEM;
+		}
+	} else
+		ipw_rx_queue_reset(priv, rxq);
+
+	ipw_rx_queue_replenish(priv);
+
+	ipw_rx_init(priv, rxq);
+
+	//spin_lock_irqsave(&priv->lock, flags);
+
+	rxq->need_update = 1;
+	ipw_rx_queue_update_write_ptr(priv, rxq);
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
-	IOLog("ipw_queue_reset\n");
-	rc = ipw_queue_reset(priv);
-	//if (rc)
-	//	return rc;
+	ipw_queue_reset(priv);
+	/*rc = iwl4965_txq_ctx_reset(priv);
+	if (rc)
+		return rc;*/
+
+	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
+		IOLog("SW RF KILL supported in EEPROM.\n");
+
+	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
+		IOLog("HW RF KILL supported in EEPROM.\n");
 
 	priv->status |= STATUS_INIT;
 
@@ -2704,33 +2784,34 @@ int darwin_iwi4965::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 
 	//spin_lock_irqsave(&priv->lock, flags);
 	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
-		//spin_unlock_irqrestore(&priv->lock, flags);
-		//return rc;
-	}
+	rc=0;
+	/*if (rc) {
+		spin_unlock_irqrestore(&priv->lock, flags);
+		return rc;
+	}*/
 
-	_ipw_write_restricted(priv, FH_RCSR_RBD_BASE(0), rxq->dma_addr);
-	_ipw_write_restricted(priv, FH_RCSR_RPTR_ADDR(0),
-			     priv->hw_setting.shared_phys +
-			     offsetof(struct ipw_shared_t, rx_read_ptr[0]));
-	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), 0);
-	_ipw_write_restricted(priv, FH_RCSR_CONFIG(0),
-			     ALM_FH_RCSR_RX_CONFIG_REG_VAL_DMA_CHNL_EN_ENABLE
-			     |
-			     ALM_FH_RCSR_RX_CONFIG_REG_VAL_RDRBD_EN_ENABLE
-			     |
-			     ALM_FH_RCSR_RX_CONFIG_REG_BIT_WR_STTS_EN
-			     |
-			     ALM_FH_RCSR_RX_CONFIG_REG_VAL_MAX_FRAG_SIZE_128
-			     | (RX_QUEUE_SIZE_LOG <<
-				ALM_FH_RCSR_RX_CONFIG_REG_POS_RBDC_SIZE)
-			     |
-			     ALM_FH_RCSR_RX_CONFIG_REG_VAL_IRQ_DEST_INT_HOST
-			     | (1 << ALM_FH_RCSR_RX_CONFIG_REG_POS_IRQ_RBTH)
-			     | ALM_FH_RCSR_RX_CONFIG_REG_VAL_MSG_MODE_FH);
+	/* stop HW */
+	_ipw_write_restricted(priv, FH_MEM_RCSR_CHNL0_CONFIG_REG, 0);
 
-	/* fake read to flush all prev I/O */
-	_ipw_read_restricted(priv, FH_RSSR_CTRL);
+	_ipw_write_restricted(priv, FH_RSCSR_CHNL0_RBDCB_WPTR_REG, 0);
+	_ipw_write_restricted(priv, FH_RSCSR_CHNL0_RBDCB_BASE_REG,
+			     rxq->dma_addr >> 8);
+
+	_ipw_write_restricted(priv, FH_RSCSR_CHNL0_STTS_WPTR_REG,
+			     (priv->hw_setting.shared_phys +
+			      offsetof(struct iwl_shared, val0)) >> 4);
+
+	_ipw_write_restricted(priv, FH_MEM_RCSR_CHNL0_CONFIG_REG,
+			     FH_RCSR_RX_CONFIG_CHNL_EN_ENABLE_VAL |
+			     FH_RCSR_CHNL0_RX_CONFIG_IRQ_DEST_INT_HOST_VAL |
+			     IWL_FH_RCSR_RX_CONFIG_REG_VAL_RB_SIZE_4K |
+			     /*0x10 << 4 | */
+			     (RX_QUEUE_SIZE_LOG <<
+			      FH_RCSR_RX_CONFIG_RBDCB_SIZE_BITSHIFT));
+
+	/*
+	 * iwl_write32(priv,CSR_INT_COAL_REG,0);
+	 */
 
 	_ipw_release_restricted_access(priv);
 
@@ -3078,44 +3159,240 @@ int darwin_iwi4965::ipw_verify_ucode(struct ipw_priv *priv)
 
 }
 
+int darwin_iwi4965::iwl4965_verify_bsm(struct ipw_priv *priv)
+{
+	u8 *image = (u8*)priv->ucode_boot.v_addr;
+	u32 len = priv->ucode_boot.len;
+	u32 reg;
+	u32 val;
+	int rc;
+
+	rc = ipw_grab_restricted_access(priv);
+	rc=0;
+	//if (rc)
+	//	return rc;
+
+	/* verify BSM SRAM contents */
+	val = _ipw_read_restricted_reg(priv, BSM_WR_DWCOUNT_REG);
+	for (reg = BSM_SRAM_LOWER_BOUND;
+	     reg < BSM_SRAM_LOWER_BOUND + len;
+	     reg += sizeof(u32), image += sizeof(u32)) {
+		val = _ipw_read_restricted_reg(priv, reg);
+		if (val != *(u32 *) image) {
+			IOLog("BSM uCode verification failed at "
+				  "addr 0x%08X+%u (of %u), is 0x%x, s/b 0x%x\n",
+				  BSM_SRAM_LOWER_BOUND,
+				  reg - BSM_SRAM_LOWER_BOUND, len,
+				  val, *(u32 *) image);
+			_ipw_release_restricted_access(priv);
+			return -EIO;
+		}
+	}
+
+	_ipw_release_restricted_access(priv);
+
+	IOLog("BSM bootstrap uCode image OK\n");
+
+	return 0;
+}
+
+/**
+ * iwl4965_load_bsm - Load bootstrap instructions
+ *
+ * Loads the bootstrap instructions into card's Bootstrap State Machine memory
+ *
+ * BSM reloads bootstrap uCode after after power-down (suspend/resume
+ * or RFKill), then bootstrap uCode reloads runtime uCode.
+ */
+int darwin_iwi4965::iwl4965_load_bsm(struct ipw_priv *priv)
+{
+	u8 *image = (u8*)priv->ucode_boot.v_addr;
+	u32 len = priv->ucode_boot.len;
+	dma_addr_t pinst;
+	dma_addr_t pdata;
+	u32 inst_len;
+	u32 data_len;
+	int rc;
+
+	/* make sure bootstrap is no larger than BSM's SRAM size */
+	if (len > IWL_MAX_BSM_SIZE)
+		return -EINVAL;
+
+	/* tell bootstrap uCode where to find the uCode in host DRAM ...
+	 * bits 35:4 for 4965 */
+	pinst = priv->ucode_code.p_addr >> 4;
+	pdata = priv->ucode_data.p_addr >> 4;
+	inst_len = priv->ucode_code.len;
+	data_len = priv->ucode_data.len;
+
+	rc = ipw_grab_restricted_access(priv);
+	rc=0;
+	//if (rc)
+	//	return rc;
+
+	/* Tell bootstrap uCode where to find image to load */
+	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_PTR_REG, pinst);
+	_ipw_write_restricted_reg(priv, BSM_DRAM_DATA_PTR_REG, pdata);
+	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_BYTECOUNT_REG, inst_len);
+	_ipw_write_restricted_reg(priv, BSM_DRAM_DATA_BYTECOUNT_REG, data_len);
+
+	/* fill BSM memory with bootstrap instructions */
+	ipw_write_restricted_reg_buffer(priv, BSM_SRAM_LOWER_BOUND, len,
+					image);
+
+	/* tell BSM to copy into instruction SRAM from BSM SRAM, when asked */
+	_ipw_write_restricted_reg(priv, BSM_WR_MEM_SRC_REG, 0x0);
+	_ipw_write_restricted_reg(priv, BSM_WR_MEM_DST_REG,
+				 RTC_INST_LOWER_BOUND);
+	_ipw_write_restricted_reg(priv, BSM_WR_DWCOUNT_REG, len / sizeof(u32));
+
+	/* enable load whenever power management unit triggers it */
+	_ipw_write_restricted_reg(priv, BSM_WR_CTRL_REG,
+				 BSM_WR_CTRL_REG_BIT_START_EN);
+
+	_ipw_release_restricted_access(priv);
+
+	return iwl4965_verify_bsm(priv);
+}
+
+int darwin_iwi4965::iwl4965_verify_initcode(struct ipw_priv *priv)
+{
+	u32 *image;
+	u32 len, val;
+	int rc1 = 0;
+	int rc2 = 0;
+	u32 errcnt;
+
+	len = priv->ucode_init_data.len;
+	image = (u32 *) priv->ucode_init_data.v_addr;
+
+	IOLog("init uCode data image size is %u\n", len);
+
+	rc1 = ipw_grab_restricted_access(priv);
+	rc1=0;
+	//if (rc1)
+	//	return rc1;
+
+	/* read from card's data memory to verify */
+	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_DATA_LOWER_BOUND);
+
+	for (errcnt = 0; len > 0; len -= sizeof(u32), image++) {
+		/* read data comes through single port, auto-incr addr */
+		/* NOTE: Use the debugless read so we don't flood kernel log
+		 * if IWL_DL_IO is set */
+		val = _ipw_read_restricted(priv, HBUS_TARG_MEM_RDAT);
+		if (val != *image) {
+			IOLog("init uCode DATA section is invalid at "
+				  "offset 0x%x, is 0x%x, s/b 0x%x\n",
+				  priv->ucode_init_data.len - len, val,
+				  *image);
+			rc2 = -EIO;
+			errcnt++;
+			if (errcnt >= 20)
+				break;
+		}
+	}
+
+	_ipw_release_restricted_access(priv);
+
+	if (!errcnt)
+		IOLog("init uCode image in DATA memory is good\n");
+
+	/* check instruction image */
+	len = priv->ucode_init.len;
+	image = (u32 *) priv->ucode_init.v_addr;
+
+	IOLog("init uCode instruction image size is %u\n", len);
+
+	rc1 = ipw_grab_restricted_access(priv);
+	rc1=0;
+	//if (rc1)
+	//	return rc1;
+
+	/* read from card's instruction memory to verify */
+	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
+
+	for (errcnt = 0; len > 0; len -= sizeof(u32), image++) {
+		/* read data comes through single port, auto-incr addr */
+		/* NOTE: Use the debugless read so we don't flood kernel log
+		 * if IWL_DL_IO is set */
+		val = _ipw_read_restricted(priv, HBUS_TARG_MEM_RDAT);
+		if (val != *image) {
+			IOLog("init uCode INST section is invalid at "
+				  "offset 0x%x, is 0x%x, s/b 0x%x\n",
+				  priv->ucode_init.len - len, val, *image);
+			rc2 = -EIO;
+			errcnt++;
+			if (errcnt >= 20)
+				break;
+		}
+	}
+
+	_ipw_release_restricted_access(priv);
+
+	if (!errcnt)
+		IOLog
+		    ("init uCode image in INSTRUCTION memory is good\n");
+
+	return rc2;
+}
+
 int darwin_iwi4965::ipw_setup_bootstrap(struct ipw_priv *priv)
 {
-	int rc = 0;
+	int rc;
 
-	/* Load bootstrap uCode data into card via card's TFD DMA channel */
-	rc = ipw_load_ucode(priv, &(priv->ucode_boot_data),
-			    ALM_RTC_DATA_SIZE, RTC_DATA_LOWER_BOUND);
+	/* Copy original ucode data image from disk into backup cache */
+	memcpy(priv->ucode_data_backup.v_addr, priv->ucode_data.v_addr,
+			priv->ucode_data.len);
+
+	/* Load bootstrap instructions into bootstrap state machine, for
+	 *   restoring after suspend/resume and rfkill power-downs */
+	rc = iwl4965_load_bsm(priv);
 	if (rc)
 		goto error;
 
-	/* Load bootstrap uCode instructions, same way */
-	rc = ipw_load_ucode(priv, &(priv->ucode_boot),
-			    ALM_RTC_INST_SIZE, RTC_INST_LOWER_BOUND);
-	if (rc)
-		goto error;
+	/* if uCode package has initialization images, load them */
+	if (priv->ucode_init.len) {
+		rc = ipw_load_ucode(priv, &(priv->ucode_init_data),
+					IWL_MAX_DATA_SIZE,
+					RTC_DATA_LOWER_BOUND);
+		if (rc)
+			goto error;
 
-	/* verify bootstrap in-place in DATA and INSTRUCTION SRAM */
-	ipw_verify_bootstrap(priv);
+		rc = ipw_load_ucode(priv, &(priv->ucode_init),
+					IWL_MAX_INST_SIZE,
+					RTC_INST_LOWER_BOUND);
+		if (rc)
+			goto error;
 
-	/* tell bootstrap uCode where to find the runtime uCode in host DRAM */
-	rc = ipw_grab_restricted_access(priv);
-	if (rc)
-		goto error;
+		/* verify init uCode in-place in DATA and INSTRUCTION SRAM */
+		iwl4965_verify_initcode(priv);
 
-	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_PTR_REG,
-				 priv->ucode_code.p_addr);
-	_ipw_write_restricted_reg(priv, BSM_DRAM_DATA_PTR_REG,
-				 priv->ucode_data.p_addr);
-	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_BYTECOUNT_REG,
-				 priv->ucode_code.len);
-	_ipw_write_restricted_reg(priv, BSM_DRAM_DATA_BYTECOUNT_REG,
-				 priv->ucode_data.len);
-	_ipw_release_restricted_access(priv);
+	} else {
+
+		/* else directly load runtime uCode image */
+		rc = ipw_load_ucode(priv, &(priv->ucode_data),
+					IWL_MAX_DATA_SIZE,
+					RTC_DATA_LOWER_BOUND);
+		if (rc)
+			goto error;
+
+		rc = ipw_load_ucode(priv, &(priv->ucode_code),
+					IWL_MAX_INST_SIZE,
+					RTC_INST_LOWER_BOUND);
+		if (rc)
+			goto error;
+
+		/* verify runtime uCode in-place in DATA and
+		 * INSTRUCTION SRAM */
+		ipw_verify_ucode(priv);
+	}
 
 	return 0;
 
-      error:
+ error:
 	return rc;
+
 }
 
 #define MAX_HW_RESTARTS 2
@@ -5376,7 +5653,13 @@ int darwin_iwi4965::is_channel_radar(const struct ipw_channel_info *ch_info)
 	return (ch_info->flags & IPW_CHANNEL_RADAR) ? 1 : 0;
 }
 
-
+enum {
+	HT_IE_EXT_CHANNEL_NONE = 0,
+	HT_IE_EXT_CHANNEL_ABOVE,
+	HT_IE_EXT_CHANNEL_INVALID,
+	HT_IE_EXT_CHANNEL_BELOW,
+	HT_IE_EXT_CHANNEL_MAX
+};
 
 int darwin_iwi4965::ipw_init_channel_map(struct ipw_priv *priv)
 {
@@ -5482,7 +5765,95 @@ int darwin_iwi4965::ipw_init_channel_map(struct ipw_priv *priv)
 		}
 	}
 
+	for (band = 6; band <= 7; band++) {
+		int phymode;
+		u8 ch,fat_extension_chan;
+
+		ipw_init_band_reference(priv, band, &eeprom_ch_count,
+					&eeprom_ch_info, &eeprom_ch_index);
+
+		phymode = (band == 6) ? MODE_IEEE80211B : MODE_IEEE80211A;
+		/* Loop through each band adding each of the channels */
+		for (ch = 0; ch < eeprom_ch_count; ch++) {
+
+			if ((band == 6) &&
+			    ((eeprom_ch_index[ch] == 5) ||
+			    (eeprom_ch_index[ch] == 6) ||
+			    (eeprom_ch_index[ch] == 7)))
+			       fat_extension_chan = HT_IE_EXT_CHANNEL_MAX;
+			else
+				fat_extension_chan = HT_IE_EXT_CHANNEL_ABOVE;
+
+			iwl4965_set_fat_chan_info(priv, phymode,
+						  eeprom_ch_index[ch],
+						  &(eeprom_ch_info[ch]),
+						  fat_extension_chan);
+
+			iwl4965_set_fat_chan_info(priv, phymode,
+						  (eeprom_ch_index[ch] + 4),
+						  &(eeprom_ch_info[ch]),
+						  HT_IE_EXT_CHANNEL_BELOW);
+		}
+	}
 	reg_txpower_set_from_eeprom(priv);
+
+	return 0;
+}
+
+enum {
+	EEPROM_CHANNEL_VALID = (1 << 0),	/* usable for this SKU/geo */
+	EEPROM_CHANNEL_IBSS = (1 << 1),	/* usable as an IBSS channel */
+	/* Bit 2 Reserved */
+	EEPROM_CHANNEL_ACTIVE = (1 << 3),	/* active scanning allowed */
+	EEPROM_CHANNEL_RADAR = (1 << 4),	/* radar detection required */
+	EEPROM_CHANNEL_WIDE = (1 << 5),
+	EEPROM_CHANNEL_NARROW = (1 << 6),
+	EEPROM_CHANNEL_DFS = (1 << 7),	/* dynamic freq selection candidate */
+};
+
+#define CHECK_AND_PRINT(x) ((eeprom_ch->flags & EEPROM_CHANNEL_##x) \
+			    ? # x " " : "")
+
+int darwin_iwi4965::iwl4965_set_fat_chan_info(struct ipw_priv *priv, int phymode,
+			      int channel,
+			      const struct ipw_eeprom_channel *eeprom_ch,
+			      u8 fat_extension_channel)
+{
+	struct ipw_channel_info *ch_info;
+
+	ch_info = (struct ipw_channel_info *)ipw_get_channel_info(priv,
+						phymode,
+						channel);
+	if (!is_channel_valid(ch_info))
+		return -1;
+
+		IOLog("FAT Ch. %d [%sGHz] %s%s%s%s%s%s(" BIT_FMT8
+				" %ddBm): Ad-Hoc %ssupported\n",
+				ch_info->channel,
+				is_channel_a_band(ch_info) ?
+				"5.2" : "2.4",
+				CHECK_AND_PRINT(IBSS),
+				CHECK_AND_PRINT(ACTIVE),
+				CHECK_AND_PRINT(RADAR),
+				CHECK_AND_PRINT(WIDE),
+				CHECK_AND_PRINT(NARROW),
+				CHECK_AND_PRINT(DFS),
+				BIT_ARG8(eeprom_ch->flags),
+				eeprom_ch->
+				max_power_avg,
+				((eeprom_ch->
+				flags & EEPROM_CHANNEL_IBSS)
+				&& !(eeprom_ch->
+				flags & EEPROM_CHANNEL_RADAR))
+				? "" : "not ");
+
+	ch_info->fat_eeprom = *eeprom_ch;
+	ch_info->fat_max_power_avg = eeprom_ch->max_power_avg;
+	ch_info->fat_curr_txpow = eeprom_ch->max_power_avg;
+	ch_info->fat_min_power = 0;
+	ch_info->fat_scan_power = eeprom_ch->max_power_avg;
+	ch_info->fat_flags = eeprom_ch->flags;
+	ch_info->fat_extension_channel = fat_extension_channel;
 
 	return 0;
 }
@@ -5499,6 +5870,7 @@ int darwin_iwi4965::reg_temp_out_of_range(int temperature)
 
 int darwin_iwi4965::reg_txpower_get_temperature(struct ipw_priv *priv)
 {
+#if 0
 	int temperature;
 
 	temperature = ipw_get_temperature(priv);
@@ -5520,10 +5892,12 @@ int darwin_iwi4965::reg_txpower_get_temperature(struct ipw_priv *priv)
 	}
 
 	return temperature;	/* raw, not "human readable" */
+#endif
 }
 
 void darwin_iwi4965::reg_init_channel_groups(struct ipw_priv *priv)
 {
+#if 0
 	u32 i;
 	s32 rate_index;
 	const struct ipw_eeprom_txpower_group *group;
@@ -5585,11 +5959,13 @@ void darwin_iwi4965::reg_init_channel_groups(struct ipw_priv *priv)
 			}
 		}
 	}
+#endif	
 }
 
 u16 darwin_iwi4965::reg_get_chnl_grp_index(struct ipw_priv *priv,
 				  const struct ipw_channel_info *ch_info)
 {
+#if 0
 	struct ipw_eeprom_txpower_group *ch_grp = &priv->eeprom.groups[0];
 	u8 group;
 	u16 group_index = 0;	/* based on factory calib frequencies */
@@ -5612,7 +5988,9 @@ u16 darwin_iwi4965::reg_get_chnl_grp_index(struct ipw_priv *priv,
 
 	IOLog("Chnl %d mapped to grp %d\n", ch_info->channel,
 			group_index);
+
 	return group_index;
+#endif
 }
 
 int darwin_iwi4965::reg_adjust_power_by_temp(int new_reading, int old_reading)
@@ -5626,6 +6004,7 @@ int darwin_iwi4965::reg_get_matched_power_index(struct ipw_priv *priv,
 				       s8 requested_power,
 				       s32 setting_index, s32 * new_index)
 {
+#if 0
 	const struct ipw_eeprom_txpower_group *chnl_grp = NULL;
 	s32 index0, index1;
 	s32 rPower = 2 * requested_power;
@@ -5667,6 +6046,7 @@ int darwin_iwi4965::reg_get_matched_power_index(struct ipw_priv *priv,
 	    ((s32) rPower - (s32) samples[index0].power) / denominator +
 	    (1 << 18);
 	*new_index = res >> 19;
+#endif
 	return 0;
 }
 
@@ -5685,6 +6065,7 @@ u8 darwin_iwi4965::reg_fix_power_index(int index)
 
 int darwin_iwi4965::reg_txpower_set_from_eeprom(struct ipw_priv *priv)
 {
+#if 0
 	struct ipw_channel_info *ch_info = NULL;
 	struct ipw_channel_power_info *pwr_info;
 	int delta_index;
@@ -5802,7 +6183,7 @@ int darwin_iwi4965::reg_txpower_set_from_eeprom(struct ipw_priv *priv)
 					   ch_info, a_band);
 		}
 	}
-
+#endif
 	return 0;
 }
 
@@ -7327,6 +7708,7 @@ int darwin_iwi4965::is_temp_calib_needed(struct ipw_priv *priv)
 
 int darwin_iwi4965::reg_txpower_compensate_for_temperature_dif(struct ipw_priv *priv)
 {
+#if 0	
 	struct ipw_channel_info *ch_info = NULL;
 	int delta_index;
 	const s8 *clip_pwrs; /* array of h/w max power levels for each rate */
@@ -7384,6 +7766,8 @@ int darwin_iwi4965::reg_txpower_compensate_for_temperature_dif(struct ipw_priv *
 
 	/* send Txpower command for current channel to ucode */
 	return ipw_reg_send_txpower(priv);
+
+#endif
 }
 
 void darwin_iwi4965::reg_txpower_periodic(struct ipw_priv *priv)
