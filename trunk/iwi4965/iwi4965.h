@@ -130,11 +130,12 @@ static const char ipw_modes[] = {
 
 struct ipw_ucode {
 	u32 ver;
-	u32 inst_size;		// size of runtime instructions
-	u32 data_size;		// size of runtime data
-	u32 boot_size;		// size of bootstrap instructions
-	u32 boot_data_size;	// size of bootstrap data
-	u8 data[0];		// data appears in same order as "size" elements
+	u32 inst_size;
+	u32 data_size;
+	u32 init_size;
+	u32 init_data_size;
+	u32 boot_size;
+	u8 data[0];
 };
 
 
@@ -1014,7 +1015,26 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual u16 ipw_get_active_dwell_time(struct ipw_priv *priv, int phymode);
 	virtual u16 ipw_get_passive_dwell_time(struct ipw_priv *priv, int phymode);
 	virtual int is_channel_narrow(const struct ipw_channel_info *ch_info);
-	
+	virtual int iwl4965_verify_bsm(struct ipw_priv *priv);
+	virtual int iwl4965_load_bsm(struct ipw_priv *priv);
+inline u32 iwl4965_get_dma_lo_address(dma_addr_t addr)
+{
+	return (u32) (addr & 0xffffffff);
+}
+
+inline u8 iwl4965_get_dma_hi_address(dma_addr_t addr)
+{
+	return sizeof(addr) > sizeof(u32) ? (addr >> 16) >> 16 : 0;
+}
+	virtual int iwl4965_verify_initcode(struct ipw_priv *priv);
+	virtual int iwl4965_set_fat_chan_info(struct ipw_priv *priv, int phymode,
+			      int channel,
+			      const struct ipw_eeprom_channel *eeprom_ch,
+			      u8 fat_extension_channel);
+				  
+				  
+				  
+				  
 	
 	
 	// statistics
