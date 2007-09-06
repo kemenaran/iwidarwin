@@ -1029,6 +1029,10 @@ inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
 	if (ETH_ALEN != 6) return -1;
 	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
 }	
+	virtual int iwl_set_rxon_channel(struct ipw_priv *priv, u8 phymode, u8 channel);
+
+	
+	
 	
 	
 	// statistics

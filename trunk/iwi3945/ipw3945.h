@@ -2762,7 +2762,8 @@ struct ipw_priv {
 	struct ieee80211_channel *ieee_channels;
 	struct ieee80211_rate *ieee_rates;
 	//struct iw_public_data wireless_data;
-
+	u8 phymode;
+	
 	struct ipw_driver_hw_info hw_setting;
 	u8 is_3945;
 	int interface_id;
