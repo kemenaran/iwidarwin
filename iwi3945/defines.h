@@ -1119,3 +1119,9 @@ typedef unsigned char UInt8;
 #define	IWL_RATE_5M_MASK   (1<<IWL_RATE_5M_INDEX)
 #define	IWL_RATE_11M_MASK  (1<<IWL_RATE_11M_INDEX)
 
+#define IWL_CMD_QUEUE_NUM       4
+#define IWL_MAX_SCAN_SIZE 1024
+
+
+
+

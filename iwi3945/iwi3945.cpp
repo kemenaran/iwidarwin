@@ -737,6 +737,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	priv->auth_state = AUTH_INIT;
 	priv->ieee_channels = NULL;
 	priv->ieee_rates = NULL;
+	priv->phymode = -1;
 	//priv->hw_base = memBase;
 
 
@@ -758,7 +759,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	}
 
 	/*************************************/
-	switch (mode) {
+	/*switch (mode) {
 	case 1:
 		priv->iw_mode = IW_MODE_ADHOC;
 		break;
@@ -769,8 +770,8 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	case 0:
 		priv->iw_mode = IW_MODE_INFRA;
 		break;
-	}
-
+	}*/
+	priv->iw_mode =IEEE80211_IF_TYPE_STA;
 	priv->freq_band = IEEE80211_24GHZ_BAND;
 	
 	u32 pci_id;//(priv->pci_dev->device << 16) | priv->pci_dev->subsystem_device;
@@ -852,11 +853,39 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	priv->hw_setting.max_rxq_log = RX_QUEUE_SIZE_LOG;
 	priv->hw_setting.cck_flag = 0;
 
+	iwl_set_rxon_channel(priv, MODE_IEEE80211G, 6);
+	
 	ipw_read_ucode(priv);
 	IOLog("ipw_sw_reset done.\n");
 
 	return 0;
 	
+}
+
+int darwin_iwi3945::iwl_set_rxon_channel(struct ipw_priv *priv, u8 phymode, u8 channel)
+{
+	if (!ipw_get_channel_info(priv, phymode, channel)) {
+		IOLog("Could not set channel to %d [%d]\n",
+			       channel, phymode);
+		return -EINVAL;
+	}
+
+	if ((priv->staging_rxon.channel == channel) &&
+	    (priv->phymode == phymode))
+		return 0;
+
+	priv->staging_rxon.channel = channel;
+	if ((phymode == MODE_IEEE80211A) ||
+	    (phymode == MODE_ATHEROS_TURBO))
+		priv->staging_rxon.flags &= ~RXON_FLG_BAND_24G_MSK;
+	else
+		priv->staging_rxon.flags |= RXON_FLG_BAND_24G_MSK;
+
+	priv->phymode = phymode;
+
+	IOLog("Staging channel set to %d [%d]\n", channel, phymode);
+
+	return 0;
 }
 
 int darwin_iwi3945::ipw_read_ucode(struct ipw_priv *priv)
@@ -2208,7 +2237,7 @@ int darwin_iwi3945::ipw_nic_stop_master(struct ipw_priv *priv)
 	}
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
-	IOLog("stop master\n");
+	IOLog("nic_stop master\n");
 
 	return rc;
 }
@@ -2277,10 +2306,9 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	u8 rev_id;
 	int rc;
 	unsigned long flags;
-
-	ipw_power_init_handle(priv);
+	struct ipw_rx_queue *rxq = priv->rxq;
 	
-	ipw_rate_scale_init_handle(priv, IPW_RATE_SCALE_MAX_WINDOW);
+	ipw_power_init_handle(priv);
 
 	//spin_lock_irqsave(&priv->lock, flags);
 	ipw_set_bit( CSR_ANA_PLL_CFG, (1 << 24));
@@ -2288,7 +2316,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		    CSR_GIO_CHICKEN_BITS_REG_BIT_L1A_NO_L0S_RX);
 
 	ipw_set_bit( CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
-	rc = ipw_poll_bit( priv,CSR_GP_CNTRL,
+	rc = ipw_poll_bit(priv, CSR_GP_CNTRL,
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
 	if (rc < 0) {
@@ -2297,12 +2325,11 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		return rc;
 	}
 
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	//if (rc) {
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
-	//	return rc;
-	//}
+		return rc;
+	}
 	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
 				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -2334,10 +2361,9 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	/* Initialize the EEPROM */
-	//rc = 
-	ipw_eeprom_init_sram(priv);
-	//if (rc)
-	//	return rc;
+	rc = ipw_eeprom_init_sram(priv);
+	if (rc)
+		return rc;
 
 	//spin_lock_irqsave(&priv->lock, flags);
 	if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
@@ -2374,60 +2400,39 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
-		priv->capability |= CAP_RF_SW_KILL;
-	else
-		priv->capability &= ~CAP_RF_SW_KILL;
+		IOLog("SW RF KILL supported in EEPROM.\n");
 
 	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
-		priv->capability |= CAP_RF_HW_KILL;
-	else
-		priv->capability &= ~CAP_RF_HW_KILL;
-
-	switch (priv->capability & (CAP_RF_HW_KILL | CAP_RF_SW_KILL)) {
-	case CAP_RF_HW_KILL:
 		IOLog("HW RF KILL supported in EEPROM.\n");
-		break;
-	case CAP_RF_SW_KILL:
-		IOLog("SW RF KILL supported in EEPROM.\n");
-		break;
-	case (CAP_RF_HW_KILL | CAP_RF_SW_KILL):
-		IOLog("HW & HW RF KILL supported in EEPROM.\n");
-		break;
-	default:
-		IOLog("NO RF KILL supported in EEPROM.\n");
-		break;
-	}
-	
 
 	/* Allocate the RX queue, or reset if it is already allocated */
-	//IOLog("Allocate the RX queue\n");
-	if (!priv->rxq)
-		priv->rxq = ipw_rx_queue_alloc(priv);
-	else
-		ipw_rx_queue_reset(priv, priv->rxq);
+	if (!rxq) {
+		rxq = ipw_rx_queue_alloc(priv);
+	} else
+		ipw_rx_queue_reset(priv, rxq);
 
-	if (!priv->rxq) {
-		IOLog("Unable to initialize Rx queue\n");
-		return -ENOMEM;
-	}
-	//IOLog("ipw_rx_queue_replenish\n");
 	ipw_rx_queue_replenish(priv);
-	//IOLog("ipw_rx_init\n");
-	ipw_rx_init(priv, priv->rxq);
 
-//	spin_lock_irqsave(&priv->lock, flags);
+	ipw_rx_init(priv, rxq);
 
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	//if (rc) {
+	//spin_lock_irqsave(&priv->lock, flags);
+
+/*
+ * Look at using this instead :::
+	rxq->need_update = 1;
+	iwl_rx_queue_update_write_ptr(priv, rxq);
+*/
+
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
-	//	return rc;
-	//}
-	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), priv->rxq->write & ~7);
+		return rc;
+	}
+	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), rxq->write & ~7);
 	_ipw_release_restricted_access(priv);
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
-	//IOLog("ipw_queue_reset\n");
+
 	rc = ipw_queue_reset(priv);
 	if (rc)
 		return rc;
