@@ -724,7 +724,7 @@ virtual IOOptionBits getState( void ) const;
 	virtual u8 ipw_add_station(struct ipw_priv *priv, u8 * bssid,
 			  int is_ap, u8 flags);
 	virtual int ipw_send_add_station(struct ipw_priv *priv,
-				struct ipw_addsta_cmd *sta, u8 flags);
+				struct iwl_addsta_cmd *sta, u8 flags);
 	virtual int ipw_init_rate_scaling(struct ipw_priv *priv);
 	virtual void reg_txpower_periodic(struct ipw_priv *priv);
 	virtual int is_temp_calib_needed(struct ipw_priv *priv);

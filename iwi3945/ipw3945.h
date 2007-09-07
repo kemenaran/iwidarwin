@@ -486,15 +486,15 @@ struct ipw_keyinfo {
 	u8 key[16];		//byte 32:16 16-byte unicast decryption key
 } __attribute__ ((packed));
 
-struct sta_id_modify {
+/*struct sta_id_modify {
 	u8 MACAddr[ETH_ALEN];
 	u16 reserved1;
 	u8 staID;
 	u8 modify_mask;
 	u16 reserved2;
-} __attribute__ ((packed));
+} __attribute__ ((packed));*/
 
-struct ipw_addsta_cmd {
+/*struct ipw_addsta_cmd {
 	u8 ctrlAddModify;
 	u8 reserved[3];
 	struct sta_id_modify sta;
@@ -512,7 +512,7 @@ struct ipw_addsta_cmd {
 	u8 add_immediate_ba_tid;
 	u8 remove_immediate_ba_tid;
 	u16 add_immediate_ba_start_seq;
-} __attribute__ ((packed));
+} __attribute__ ((packed));*/
 
 struct ipw_add_sta_resp {
 	u8 status;
@@ -1581,11 +1581,57 @@ struct ipw_host_cmd {
 	void *data;
 };
 
+typedef enum { ALG_NONE, ALG_WEP, ALG_TKIP, ALG_CCMP, ALG_NULL }
+ieee80211_key_alg;
+
+struct ipw_hw_key {
+	ieee80211_key_alg alg;
+	int keylen;
+	u8 key[32];
+};
+
+struct iwl_keyinfo {
+	__le16 key_flags;
+	u8 tkip_rx_tsc_byte2;	/* TSC[2] for key mix ph1 detection */
+	u8 reserved1;
+	__le16 tkip_rx_ttak[5];	/* 10-byte unicast TKIP TTAK */
+	__le16 reserved2;
+	u8 key[16];		/* 16-byte unicast decryption key */
+} __attribute__ ((packed));
+
+struct sta_id_modify {
+	u8 addr[ETH_ALEN];
+	__le16 reserved1;
+	u8 sta_id;
+	u8 modify_mask;
+	__le16 reserved2;
+} __attribute__ ((packed));
+
+struct iwl_addsta_cmd {
+	u8 mode;
+	u8 reserved[3];
+	struct sta_id_modify sta;
+	struct iwl_keyinfo key;
+	u32 station_flags;
+	u32 station_flags_msk;
+	__le16 tid_disable_tx;
+	union {
+		struct {
+			u8 rate;
+			u8 flags;
+		} s;
+		__le16 rate_n_flags;
+	} tx_rate;
+	u8 add_immediate_ba_tid;
+	u8 remove_immediate_ba_tid;
+	__le16 add_immediate_ba_start_seq;
+} __attribute__ ((packed));
+
 struct ipw_cmd {
 	struct ipw_cmd_meta meta;
 	struct ipw_cmd_header hdr;
 	union {
-		struct ipw_addsta_cmd addsta;
+		struct iwl_addsta_cmd addsta;
 		struct ipw_led_cmd led;
 		u32 flags;
 		u8 val8;
@@ -1916,27 +1962,25 @@ struct ipw_lq_mngr {
 	u32 tx_packets;
 };
 
-typedef enum { ALG_NONE, ALG_WEP, ALG_TKIP, ALG_CCMP, ALG_NULL }
-ieee80211_key_alg;
-
-struct ipw_hw_key {
+struct iwl_hw_key {
 	ieee80211_key_alg alg;
 	int keylen;
 	u8 key[32];
 };
 
 struct ipw_station_entry {
-	struct ipw_addsta_cmd sta;
+	struct iwl_addsta_cmd sta;
 	struct ipw_tid_data tid[MAX_TID_COUNT];
 	union {
-		struct  {
+		struct {
 			u8 rate;
 			u8 flags;
 		} s;
 		u16 rate_n_flags;
 	} current_rate;
 	u8 used;
-	struct ipw_hw_key keyinfo;
+	u8 ps_status;
+	struct iwl_hw_key keyinfo;
 };
 
 struct ipw_rate_info {
