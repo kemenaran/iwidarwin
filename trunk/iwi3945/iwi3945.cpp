@@ -15,6 +15,45 @@ OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);//IO80211Con
 
 static darwin_iwi3945 *clone;
 
+enum {
+	IWL_RATE_6M_PLCP = 13,
+	IWL_RATE_9M_PLCP = 15,
+	IWL_RATE_12M_PLCP = 5,
+	IWL_RATE_18M_PLCP = 7,
+	IWL_RATE_24M_PLCP = 9,
+	IWL_RATE_36M_PLCP = 11,
+	IWL_RATE_48M_PLCP = 1,
+	IWL_RATE_54M_PLCP = 3,
+	IWL_RATE_1M_PLCP = 10,
+	IWL_RATE_2M_PLCP = 20,
+	IWL_RATE_5M_PLCP = 55,
+	IWL_RATE_11M_PLCP = 110,
+};
+
+enum {
+	IWL_RATE_6M_IEEE = 12,
+	IWL_RATE_9M_IEEE = 18,
+	IWL_RATE_12M_IEEE = 24,
+	IWL_RATE_18M_IEEE = 36,
+	IWL_RATE_24M_IEEE = 48,
+	IWL_RATE_36M_IEEE = 72,
+	IWL_RATE_48M_IEEE = 96,
+	IWL_RATE_54M_IEEE = 108,
+	IWL_RATE_1M_IEEE = 2,
+	IWL_RATE_2M_IEEE = 4,
+	IWL_RATE_5M_IEEE = 11,
+	IWL_RATE_11M_IEEE = 22,
+};
+
+enum {
+	IWL_AP_ID = 0,
+	IWL_MULTICAST_ID,
+	IWL_STA_ID,
+	IWL_BROADCAST_ID = 24,
+	IWL_STATION_COUNT = 25,
+	IWL_INVALID_STATION
+};
+
 enum iwl_antenna {
 	IWL_ANTENNA_DIVERSITY,
 	IWL_ANTENNA_MAIN,
@@ -848,7 +887,7 @@ int darwin_iwi3945::ipw_sw_reset(int option)
 	priv->hw_setting.statistics_size = sizeof(struct ipw_notif_statistics);
 	priv->hw_setting.rate_scale_size =
 		sizeof(struct ipw_rate_scaling_cmd_specifics);
-	priv->hw_setting.add_station_size = sizeof(struct ipw_addsta_cmd);
+	priv->hw_setting.add_station_size = sizeof(struct iwl_addsta_cmd);
 	priv->hw_setting.max_rxq_size = RX_QUEUE_SIZE;
 	priv->hw_setting.max_rxq_log = RX_QUEUE_SIZE_LOG;
 	priv->hw_setting.cck_flag = 0;
@@ -1526,24 +1565,6 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 	priv->status |= STATUS_RESTRICTED;
 
 	return 0;
-	/*if (priv->is_3945) {
-		int rc;
-		ipw_set_bit( CSR_GP_CNTRL,
-			    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
-		rc = ipw_poll_bit( priv,CSR_GP_CNTRL,
-				  CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN,
-				  (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
-				   CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
-		if (rc < 0) {
-			//IOLog("MAC is in deep sleep!\n");
-			return -EIO;
-		}
-	}
-
-	priv->status |= STATUS_RESTRICTED;
-
-	return 0;*/
-
 }
 
 void darwin_iwi3945::_ipw_write_restricted(struct ipw_priv *priv,
@@ -1567,34 +1588,7 @@ int darwin_iwi3945::ipw_copy_ucode_images(struct ipw_priv *priv,
 				 size_t image_len_code,
 				 u8 * image_data, size_t image_len_data)
 {
-/*	int rc;
-
-	if ((image_len_code > priv->ucode_code.actual_len) ||
-	    (image_len_data > priv->ucode_data.actual_len)) {
-		IOLog("uCode size is too large to fit\n");
-		return -EINVAL;
-	}
-
-	memcpy(priv->ucode_code.v_addr, image_code, image_len_code);
-	priv->ucode_code.len = (u32) image_len_code;
-	memcpy(priv->ucode_data.v_addr, image_data, image_len_data);
-	priv->ucode_data.len = (u32) image_len_data;
-
-	rc = ipw_grab_restricted_access(priv);
-	if (rc)
-		return rc;
-
-	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_PTR_REG,
-				 priv->ucode_code.p_addr);
-	_ipw_write_restricted_reg(priv, BSM_DRAM_DATA_PTR_REG,
-				 priv->ucode_data.p_addr);
-	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_BYTECOUNT_REG,
-				 priv->ucode_code.len);
-	_ipw_write_restricted_reg(priv, BSM_DRAM_DATA_BYTECOUNT_REG,
-				 priv->ucode_data.len);
-	_ipw_release_restricted_access(priv);
-
-	return 0;*/
+	return 0;
 }
 
 void darwin_iwi3945::_ipw_release_restricted_access(struct ipw_priv
@@ -1637,38 +1631,6 @@ void darwin_iwi3945::ipw_write_restricted_reg_buffer(struct ipw_priv
 
 int darwin_iwi3945::ipw_download_ucode_base(struct ipw_priv *priv, u8 * image, u32 len)
 {
-	u32 reg;
-	u32 val;
-	int rc;
-
-	rc = ipw_grab_restricted_access(priv);
-	if (rc)
-		return rc;
-
-	ipw_write_restricted_reg_buffer(priv, BSM_SRAM_LOWER_BOUND, len, image);
-	_ipw_write_restricted_reg(priv, BSM_WR_MEM_SRC_REG, 0x0);
-	_ipw_write_restricted_reg(priv, BSM_WR_MEM_DST_REG,
-				 RTC_INST_LOWER_BOUND);
-	_ipw_write_restricted_reg(priv, BSM_WR_DWCOUNT_REG, len / sizeof(u32));
-	_ipw_write_restricted_reg(priv, BSM_WR_CTRL_REG,
-				 BSM_WR_CTRL_REG_BIT_START_EN);
-
-	val = _ipw_read_restricted_reg(priv, BSM_WR_DWCOUNT_REG);
-	for (reg = BSM_SRAM_LOWER_BOUND;
-	     reg < BSM_SRAM_LOWER_BOUND + len;
-	     reg += sizeof(u32), image += sizeof(u32)) {
-		val = _ipw_read_restricted_reg(priv, reg);
-		if (val != *(u32 *) image) {
-			IOLog("uCode verification failed at "
-				  "addr 0x%08X+%u (of %u)\n",
-				  BSM_SRAM_LOWER_BOUND,
-				  reg - BSM_SRAM_LOWER_BOUND, len);
-			_ipw_release_restricted_access(priv);
-			return -EIO;
-		}
-	}
-
-	_ipw_release_restricted_access(priv);
 	return 0;
 }
 
@@ -1728,81 +1690,7 @@ int darwin_iwi3945::ipw_download_ucode(struct ipw_priv *priv,
 			      struct fw_image_desc *desc,
 			      u32 mem_size, dma_addr_t dst_addr)
 {
-	dma_addr_t phy_addr = 0;
-	u32 len = 0;
-	u32 count = 0;
-	u32 pad;
-	struct tfd_frame tfd;
-	u32 tx_config = 0;
-	int rc;
-
-	memset(&tfd, 0, sizeof(struct tfd_frame));
-
-	phy_addr = desc->p_addr;
-	len = desc->len;
-
-	if (mem_size < len) {
-		IOLog("invalid image size, too big %d %d\n", mem_size, len);
-		return -EINVAL;
-	}
-
-	while (len > 0) {
-		if (ALM_TB_MAX_BYTES_COUNT < len) {
-			attach_buffer_to_tfd_frame(&tfd, phy_addr,
-						   ALM_TB_MAX_BYTES_COUNT);
-			len -= ALM_TB_MAX_BYTES_COUNT;
-			phy_addr += ALM_TB_MAX_BYTES_COUNT;
-		} else {
-			attach_buffer_to_tfd_frame(&tfd, phy_addr, len);
-			break;
-		}
-	}
-
-	pad = U32_PAD(len);
-	count = TFD_CTL_COUNT_GET(tfd.control_flags);
-	tfd.control_flags = TFD_CTL_COUNT_SET(count) | TFD_CTL_PAD_SET(pad);
-
-	rc = ipw_grab_restricted_access(priv);
-	if (rc)
-		return rc;
-
-	_ipw_write_restricted(priv, FH_TCSR_CONFIG(ALM_FH_SRVC_CHNL),
-			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_PAUSE);
-	ipw_write_buffer_restricted(priv,
-				    ALM_FH_TFDB_CHNL_BUF_CTRL_REG
-				    (ALM_FH_SRVC_CHNL),
-				    sizeof(struct tfd_frame), (u32 *) & tfd);
-	_ipw_write_restricted(priv, HBUS_TARG_MEM_WADDR, dst_addr);
-	_ipw_write_restricted(priv, FH_TCSR_CREDIT(ALM_FH_SRVC_CHNL),
-			     0x000FFFFF);
-	_ipw_write_restricted(priv,
-			     FH_TCSR_BUFF_STTS(ALM_FH_SRVC_CHNL),
-			     ALM_FH_TCSR_CHNL_TX_BUF_STS_REG_VAL_TFDB_VALID
-			     | ALM_FH_TCSR_CHNL_TX_BUF_STS_REG_BIT_TFDB_WPTR);
-
-	tx_config = ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_ENABLE |
-	    ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CREDIT_DISABLE_VAL |
-	    ALM_FH_TCSR_TX_CONFIG_REG_VAL_MSG_MODE_DRIVER;
-
-	_ipw_write_restricted(priv, FH_TCSR_CONFIG(ALM_FH_SRVC_CHNL), tx_config);
-
-	rc = ipw_poll_restricted_bit(priv, FH_TSSR_TX_STATUS,
-				     ALM_FH_TSSR_TX_STATUS_REG_MSK_CHNL_IDLE
-				     (ALM_FH_SRVC_CHNL), 1000);
-	if (rc < 0) {
-		IOLog("3945ABG card ucode DOWNLOAD FAILED \n");
-		goto done;
-	}
-
-	//rc = 0;
-
-	IOLog("3945ABG card ucode download is good \n");
-
-	_ipw_write_restricted(priv, FH_TCSR_CREDIT(ALM_FH_SRVC_CHNL), 0x0);
-
-      done:
-	_ipw_release_restricted_access(priv);
-	return rc;
+return 0;
 }
 
 int darwin_iwi3945::ipw_poll_restricted_bit(struct ipw_priv *priv,
@@ -1891,7 +1779,7 @@ int darwin_iwi3945::ipw_load_ucode(struct ipw_priv *priv,
 		goto done;
 	}
 
-	//rc = 0;
+	rc = 0;
 
 	IOLog("3945ABG card ucode download is good \n");
 
@@ -2026,9 +1914,10 @@ int darwin_iwi3945::ipw_eeprom_init_sram(struct ipw_priv *priv)
 	for (addr = 0, r = 0; addr < sz; addr += 2) {
 		ipw_write32( CSR_EEPROM_REG, addr << 1);
 		ipw_clear_bit( CSR_EEPROM_REG, 0x00000002);
-		rc=ipw_grab_restricted_access(priv);
-		if (rc)
-			return rc;
+		//rc=
+		ipw_grab_restricted_access(priv);
+		//if (rc)
+		//	return rc;
 
 		for (to = 0; to < 10; to++) {
 			r = _ipw_read_restricted(priv, CSR_EEPROM_REG);
@@ -2171,11 +2060,12 @@ int darwin_iwi3945::ipw3945_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 
 	//return 0;
 	//spin_lock_irqsave(&priv->lock, flags);
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	/*if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}
+	}*/
 
 	if (!pwr_max) {
 		u32 val;
@@ -2256,11 +2146,12 @@ int darwin_iwi3945::ipw_nic_reset(struct ipw_priv *priv)
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
 
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	/*if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}
+	}*/
 
 	_ipw_write_restricted_reg(priv, APMG_CLK_CTRL_REG,
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -2325,11 +2216,12 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		return rc;
 	}
 
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	/*if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}
+	}*/
 	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
 				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -2423,11 +2315,12 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	iwl_rx_queue_update_write_ptr(priv, rxq);
 */
 
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	/*if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}
+	}*/
 	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), rxq->write & ~7);
 	_ipw_release_restricted_access(priv);
 
@@ -2580,7 +2473,8 @@ int darwin_iwi3945::ipw_tx_reset(struct ipw_priv *priv)
 	unsigned long flags;
 
 	//spin_lock_irqsave(&priv->lock, flags);
-	rc = ipw_grab_restricted_access(priv);
+	//rc = 
+	ipw_grab_restricted_access(priv);
 	/*if (rc) {
 		spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
@@ -2713,11 +2607,12 @@ int darwin_iwi3945::ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
 	q->element_size = sizeof(struct tfd_frame);
 
 	//spin_lock_irqsave(&priv->lock, flags);
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	/*if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}
+	}*/
 	_ipw_write_restricted(priv, FH_CBCC_CTRL(id), 0);
 	_ipw_write_restricted(priv, FH_CBCC_BASE(id), 0);
 
@@ -2797,11 +2692,12 @@ int darwin_iwi3945::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 	unsigned long flags;
 
 	//spin_lock_irqsave(&priv->lock, flags);
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	/*if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}
+	}*/
 
 	_ipw_write_restricted(priv, FH_RCSR_RBD_BASE(0), rxq->dma_addr);
 	_ipw_write_restricted(priv, FH_RCSR_RPTR_ADDR(0),
@@ -2866,9 +2762,10 @@ int darwin_iwi3945::ipw_rx_queue_update_write_ptr(struct ipw_priv *priv,
 			goto exit_unlock;
 		}
 
-		rc = ipw_grab_restricted_access(priv);
-		if (rc)
-			goto exit_unlock;
+		//rc = 
+		ipw_grab_restricted_access(priv);
+		//if (rc)
+		//	goto exit_unlock;
 
 		_ipw_write_restricted(priv, FH_RCSR_WPTR(0), q->write & ~0x7);
 		_ipw_release_restricted_access(priv);
@@ -3096,9 +2993,10 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 
 	IOLog("bootstrap instruction image size is %u\n", len);
 
-	rc1 = ipw_grab_restricted_access(priv);
-	if (rc1)
-		return rc1;
+	//rc1 = 
+	ipw_grab_restricted_access(priv);
+	//if (rc1)
+	//	return rc1;
 
 	/* read from card's instruction memory to verify */
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
@@ -3652,11 +3550,12 @@ int darwin_iwi3945::ipw3945_rxq_stop(struct ipw_priv *priv)
 	unsigned long flags;
 
 	//spin_lock_irqsave(&priv->lock, flags);
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	/*if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}
+	}*/
 
 	_ipw_write_restricted(priv, FH_RCSR_CONFIG(0), 0);
 	rc = ipw_poll_restricted_bit(priv, FH_RSSR_STATUS, (1 << 24), 1000);
@@ -3730,9 +3629,10 @@ int darwin_iwi3945::ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
 			goto exit_unlock;
 		}
 
-		rc = ipw_grab_restricted_access(priv);
-		if (rc)
-			goto exit_unlock;
+		//rc = 
+		ipw_grab_restricted_access(priv);
+		//if (rc)
+		//	goto exit_unlock;
 
 		_ipw_write_restricted(priv, FH_RCSR_WPTR(0), q->write & ~0x7);
 		_ipw_release_restricted_access(priv);
@@ -3765,9 +3665,10 @@ int darwin_iwi3945::ipw_tx_queue_update_write_ptr(struct ipw_priv *priv,
 			return rc;
 		}
 
-		rc = ipw_grab_restricted_access(priv);
-		if (rc)
-			return rc;
+		//rc = 
+		ipw_grab_restricted_access(priv);
+		//if (rc)
+		//	return rc;
 		_ipw_write_restricted(priv, HBUS_TARG_WRPTR,
 				     txq->q.first_empty | (tx_id << 8));
 		_ipw_release_restricted_access(priv);
@@ -6622,126 +6523,127 @@ int darwin_iwi3945::ipw_reg_send_txpower(struct ipw_priv *priv)
 
 u8 darwin_iwi3945::ipw_remove_station(struct ipw_priv *priv, u8 * bssid, int is_ap)
 {
-	int index = IPW_INVALID_STATION;
+	int index = IWL_INVALID_STATION;
 	int i;
 	unsigned long flags;
 
 	//spin_lock_irqsave(&priv->sta_lock, flags);
 	if (is_ap) {
-		index = AP_ID;
+		index = IWL_AP_ID;
 		if ((priv->stations[index].used))
 			priv->stations[index].used = 0;
-	} else if (ipw_is_broadcast_ether_addr(bssid)) {
-		index = priv->hw_setting.broadcast_id;
+	} else if (is_broadcast_ether_addr(bssid)) {
+		index = IWL_BROADCAST_ID;
 		if ((priv->stations[index].used))
 			priv->stations[index].used = 0;
-	} else {
-		for (i = STA_ID; i < (priv->num_stations + STA_ID); i++) {
-			if ((priv->stations[i].used)
-			    &&
-			    (!memcmp
-			     (priv->stations[i].sta.sta.MACAddr,
-			      bssid, ETH_ALEN))) {
+	} else
+		for (i = IWL_STA_ID; i < priv->num_stations + IWL_STA_ID; i++) {
+			if (priv->stations[i].used &&
+			    !compare_ether_addr(
+				    priv->stations[i].sta.sta.addr, bssid)) {
 				index = i;
 				priv->stations[index].used = 0;
 				break;
 			}
 		}
-	}
 
-	if (index != IPW_INVALID_STATION) {
+	if (index != IWL_INVALID_STATION) {
 		if (priv->num_stations > 0)
 			priv->num_stations--;
-		IOLog("Removing STA ID %d: " MAC_FMT "\n",
-			index, MAC_ARG(bssid));
-
 	}
 
 	//spin_unlock_irqrestore(&priv->sta_lock, flags);
 	return 0;
+
 }
 
 u8 darwin_iwi3945::ipw_add_station(struct ipw_priv *priv, u8 * bssid,
 			  int is_ap, u8 flags)
 {
-	int i = priv->hw_setting.number_of_stations;
-	int index = IPW_INVALID_STATION;
+	int i = IWL_STATION_COUNT;
+	int index = IWL_INVALID_STATION;
+	struct ipw_station_entry *station;
 	unsigned long flags_spin;
 
 	//spin_lock_irqsave(&priv->sta_lock, flags_spin);
 	if (is_ap) {
-		index = AP_ID;
-		if ((priv->stations[index].used) &&
-		    (!memcmp
-		     (priv->stations[index].sta.sta.MACAddr, bssid, ETH_ALEN)))
+		index = IWL_AP_ID;
+		if (priv->stations[index].used &&
+		    !compare_ether_addr(priv->stations[index].sta.sta.addr,
+					bssid))
 			goto done;
-	} else if (ipw_is_broadcast_ether_addr(bssid)) {
-		index = priv->hw_setting.broadcast_id;
-		if ((priv->stations[index].used) &&
-		    (!memcmp
-		     (priv->stations[index].sta.sta.MACAddr, bssid, ETH_ALEN)))
+	} else if (is_broadcast_ether_addr(bssid)) {
+		index = IWL_BROADCAST_ID;
+		if (priv->stations[index].used &&
+		    !compare_ether_addr(priv->stations[index].sta.sta.addr,
+					bssid))
 			goto done;
-	} else {
-		for (i = STA_ID; i < (priv->num_stations + STA_ID); i++) {
-			if ((priv->stations[i].used)
-			    &&
-			    (!memcmp
-			     (priv->stations[i].sta.sta.MACAddr,
-			      bssid, ETH_ALEN))) {
+	} else
+		for (i = IWL_STA_ID; i < priv->num_stations + IWL_STA_ID; i++) {
+			if (priv->stations[i].used &&
+			    !compare_ether_addr(priv->stations[i].sta.sta.addr,
+						bssid))
 				goto done;
-			}
 
-			if ((priv->stations[i].used == 0) &&
-			    (index == IPW_INVALID_STATION))
+			if (!priv->stations[i].used &&
+			    index == IWL_INVALID_STATION)
 				index = i;
 		}
-	}
 
-	if (index != IPW_INVALID_STATION)
+	if (index != IWL_INVALID_STATION)
 		i = index;
 
-	if (i == priv->hw_setting.number_of_stations) {
-		index = IPW_INVALID_STATION;
+	if (i == IWL_STATION_COUNT) {
+		index = IWL_INVALID_STATION;
 		goto done;
 	}
 
 	IOLog("Adding STA ID %d: " MAC_FMT "\n", i, MAC_ARG(bssid));
+	station = &priv->stations[i];
 
-	priv->stations[i].used = 1;
-	priv->stations[i].current_rate.s.rate = R_1M;
-	memset(&priv->stations[i].sta, 0, sizeof(struct ipw_addsta_cmd));
-	memcpy(priv->stations[i].sta.sta.MACAddr, bssid, ETH_ALEN);
-	priv->stations[i].sta.ctrlAddModify = 0;
-	priv->stations[i].sta.sta.staID = i;
-	priv->stations[i].sta.station_flags = 0;
+	station->used = 1;
+	station->current_rate.s.rate = IWL_RATE_1M_PLCP;
+	memset(&station->sta, 0, sizeof(struct iwl_addsta_cmd));
+	memcpy(station->sta.sta.addr, bssid, ETH_ALEN);
+	station->sta.mode = 0;
+	station->sta.sta.sta_id = i;
+	station->sta.station_flags = 0;
 
-	//todoG do we need this
-//      priv->stations[i].sta.tid_disable_tx = 0xffff;  /* all TID's disabled */
-	if (priv->active_conf.phymode == MODE_IEEE80211A)
-		priv->stations[i].sta.tx_rate.rate_n_flags = R_6M;
+	/* todoG do we need this
+	 * all TID's disabled
+	 *  priv->stations[i].sta.tid_disable_tx = 0xffff;
+	 */
+	if ((priv->phymode == MODE_IEEE80211A) ||
+	    (priv->phymode == MODE_ATHEROS_TURBO))
+		station->sta.tx_rate.rate_n_flags = IWL_RATE_6M_PLCP;
 	else
-		priv->stations[i].sta.tx_rate.rate_n_flags = R_1M |
-			priv->hw_setting.cck_flag;
+		station->sta.tx_rate.rate_n_flags = IWL_RATE_1M_PLCP |
+						    priv->hw_setting.cck_flag;
 
-	priv->stations[i].sta.tx_rate.rate_n_flags |= RATE_MCS_ANT_B_MSK;
-	priv->stations[i].sta.tx_rate.rate_n_flags &= ~RATE_MCS_ANT_A_MSK;
+	/* Turn on both antennas for the station... */
+	station->sta.tx_rate.rate_n_flags |= RATE_MCS_ANT_AB_MSK;
 
-	priv->stations[i].sta.station_flags |= STA_MODIFY_TX_RATE_MSK;
+	/*
+	 * priv->stations[i].sta.tx_rate.rate_n_flags |= RATE_MCS_ANT_B_MSK;
+	 * priv->stations[i].sta.tx_rate.rate_n_flags &= ~RATE_MCS_ANT_A_MSK;
+	 */
 
-	priv->stations[i].current_rate.rate_n_flags = priv->stations[i].sta.tx_rate.rate_n_flags;
+	station->sta.station_flags |= STA_MODIFY_TX_RATE_MSK;
+	station->current_rate.rate_n_flags = station->sta.tx_rate.rate_n_flags;
 
 	priv->num_stations++;
 	//spin_unlock_irqrestore(&priv->sta_lock, flags_spin);
-	ipw_send_add_station(priv, &priv->stations[i].sta, flags);
+	ipw_send_add_station(priv, &station->sta, flags);
 	return i;
-      done:
+
+ done:
 	//spin_unlock_irqrestore(&priv->sta_lock, flags_spin);
 	return index;
 
 }
 
 int darwin_iwi3945::ipw_send_add_station(struct ipw_priv *priv,
-				struct ipw_addsta_cmd *sta, u8 flags)
+				struct iwl_addsta_cmd *sta, u8 flags)
 {
 	struct ipw_rx_packet *res = NULL;
 	int rc = 0;
@@ -7481,11 +7383,12 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 	ipw_clear_stations_table(priv);
 
-	rc = ipw_grab_restricted_access(priv);
-	if (rc) {
+	//rc = 
+	ipw_grab_restricted_access(priv);
+	/*if (rc) {
 		IOLog("Can not read rfkill status from adapter\n");
 		return;
-	}
+	}*/
 	u32 rfkill;
 	rfkill = _ipw_read_restricted_reg(priv, ALM_APMG_RFKILL);
 	IOLog("RFKILL status: = 0x%x\n", rfkill);
@@ -8637,6 +8540,8 @@ struct ipw_tpt_entry *darwin_iwi3945::ipw_get_tpt_by_rssi(s32 rssi, u8 mode)
 	return &tpt_table[index];
 }
 
+
+
 u8 darwin_iwi3945::ipw_rate_scale2plcp(int x)
 {
 	int i;
@@ -8650,28 +8555,26 @@ u8 darwin_iwi3945::ipw_rate_scale2plcp(int x)
 u8 darwin_iwi3945::ipw_sync_station(struct ipw_priv *priv, int sta_id,
 			   u16 tx_rate, u8 flags)
 {
+	unsigned long flags_spin;
+	struct ipw_station_entry *station;
 
-	if (sta_id != IPW_INVALID_STATION) {
-		unsigned long flags_spin;
+	if (sta_id == IWL_INVALID_STATION)
+		return IWL_INVALID_STATION;
 
-		//spin_lock_irqsave(&priv->sta_lock, flags_spin);
+	//spin_lock_irqsave(&priv->sta_lock, flags_spin);
+	station = &priv->stations[sta_id];
 
-		priv->stations[sta_id].sta.sta.modify_mask =
-		    STA_CONTROL_MODIFY_MSK;
-		priv->stations[sta_id].sta.tx_rate.rate_n_flags = tx_rate;
-		priv->stations[sta_id].current_rate.rate_n_flags = tx_rate;
-		priv->stations[sta_id].sta.ctrlAddModify =
-		    STA_CONTROL_MODIFY_MSK;
+	station->sta.sta.modify_mask = STA_CONTROL_MODIFY_MSK;
+	station->sta.tx_rate.rate_n_flags = tx_rate;
+	station->current_rate.rate_n_flags = tx_rate;
+	station->sta.mode = STA_CONTROL_MODIFY_MSK;
 
-		//spin_unlock_irqrestore(&priv->sta_lock, flags_spin);
+	//spin_unlock_irqrestore(&priv->sta_lock, flags_spin);
 
-		ipw_send_add_station(priv, &priv->stations[sta_id].sta, flags);
-		IOLog("SCALE sync station %d to rate %d\n",
-			       sta_id, tx_rate);
-		return sta_id;
-	}
-
-	return IPW_INVALID_STATION;
+	ipw_send_add_station(priv, &station->sta, flags);
+	IOLog("SCALE sync station %d to rate %d\n",
+			sta_id, tx_rate);
+	return sta_id;
 }
 	
 int darwin_iwi3945::ipw_rate_scale_rxon_handle(struct ipw_priv *priv, s32 sta_id)
@@ -10588,13 +10491,13 @@ int darwin_iwi3945::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	else
 		fc = IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA;
 
-	if (ieee->iw_mode == IW_MODE_INFRA) {
+	if (ieee->iw_mode == IEEE80211_IF_TYPE_STA){//IW_MODE_INFRA) {
 		fc |= IEEE80211_FCTL_TODS;
 		/* To DS: Addr1 = BSSID, Addr2 = SA, Addr3 = DA */
 		memcpy(header.addr1, ieee->bssid, ETH_ALEN);
 		memcpy(header.addr2, src, ETH_ALEN);
 		memcpy(header.addr3, dest, ETH_ALEN);
-	} else if (ieee->iw_mode == IW_MODE_ADHOC) {
+	} else if (ieee->iw_mode == IEEE80211_IF_TYPE_IBSS){//IW_MODE_ADHOC) {
 		/* not From/To DS: Addr1 = DA, Addr2 = SA, Addr3 = BSSID */
 		memcpy(header.addr1, dest, ETH_ALEN);
 		memcpy(header.addr2, src, ETH_ALEN);
@@ -10927,28 +10830,21 @@ int darwin_iwi3945::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 u8 darwin_iwi3945::ipw_find_station(struct ipw_priv *priv, u8 * bssid)
 {
 	int i;
-	int start = 0;
-	int ret = IPW_INVALID_STATION;
+	int ret = IWL_INVALID_STATION;
 	unsigned long flags;
 
-	if (priv->iw_mode == IEEE80211_IF_TYPE_IBSS)
-		start = STA_ID;
-
-	if (ipw_is_broadcast_ether_addr(bssid))
-		return priv->hw_setting.broadcast_id;
-
 	//spin_lock_irqsave(&priv->sta_lock, flags);
-	for (i = start; i < (start + priv->num_stations); i++)
+	for (i = IWL_STA_ID; i < (IWL_STA_ID + priv->num_stations); i++)
 		if ((priv->stations[i].used) &&
-		    (!memcmp
-		     (priv->stations[i].sta.sta.MACAddr, bssid, ETH_ALEN))) {
+		    (!compare_ether_addr
+		     (priv->stations[i].sta.sta.addr, bssid))) {
 			ret = i;
 			goto out;
 		}
 
 	IOLog("can not find STA " MAC_FMT " (total %d)\n",
-			MAC_ARG(bssid), priv->num_stations);
-      out:
+		       MAC_ARG(bssid), priv->num_stations);
+ out:
 	//spin_unlock_irqrestore(&priv->sta_lock, flags);
 	return ret;
 }
