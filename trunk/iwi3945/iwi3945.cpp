@@ -2299,12 +2299,17 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 
 	/* Allocate the RX queue, or reset if it is already allocated */
 	if (!rxq) {
+		IOLog("ipw_rx_queue_alloc\n");
 		rxq = ipw_rx_queue_alloc(priv);
 	} else
+	{
+		IOLog("ipw_rx_queue_reset\n");
 		ipw_rx_queue_reset(priv, rxq);
-
+	}
+	IOLog("ipw_rx_queue_replenish\n");
 	ipw_rx_queue_replenish(priv);
 
+	IOLog("ipw_rx_init\n");
 	ipw_rx_init(priv, rxq);
 
 	//spin_lock_irqsave(&priv->lock, flags);
@@ -2325,7 +2330,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	_ipw_release_restricted_access(priv);
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
-
+	IOLog("ipw_queue_reset\n");
 	rc = ipw_queue_reset(priv);
 	if (rc)
 		return rc;
