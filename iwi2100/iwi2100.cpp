@@ -1905,7 +1905,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		
 		ipw2100_sw_reset(1);
 		pl=1;
-		ipw2100_up(priv,0);
+		ipw2100_up(priv,1);
 		return true;			// end start successfully
 	} while (false);
 		
@@ -2134,7 +2134,7 @@ void darwin_iwi2100::schedule_reset(struct ipw2100_priv *priv)
 {
 	unsigned long now = jiffies;//get_seconds();
 
-
+	IOLog("schedule_reset\n");
 	if (priv->reset_backoff &&
 	    (now - priv->last_reset > priv->reset_backoff))
 		priv->reset_backoff = 0;
@@ -3104,10 +3104,10 @@ int darwin_iwi2100::ipw2100_read_mac_address(struct ipw2100_priv *priv)
 		IOLog("MAC address read failed\n");
 		return -EIO;
 	}
-	/*IOLog("card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
+	IOLog("card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
 		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-	memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
+	/*memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
 	memcpy(priv->mac_addr, mac, ETH_ALEN);
 	memcpy(priv->ieee->dev->dev_addr, mac, ETH_ALEN);*/
 	return 0;
@@ -3520,13 +3520,13 @@ int darwin_iwi2100::ipw2100_adapter_setup(struct ipw2100_priv *priv)
 	}
 #endif				
 
-	/*err = ipw2100_read_mac_address(priv);
+	err = ipw2100_read_mac_address(priv);
 	if (err)
 		return -EIO;
 
 	err = ipw2100_set_mac_address(priv, batch_mode);
 	if (err)
-		return err;*/
+		return err;
 
 	err = ipw2100_set_port_type(priv, priv->ieee->iw_mode, batch_mode);
 	if (err)
@@ -3701,7 +3701,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	if (priv->status & STATUS_RF_KILL_SW) {
 		IOLog("%s: Radio is disabled by Manual Disable "
 			       "switch\n", priv->net_dev->name);
-		//return 0;
+		return 0;
 	}
 	
 if (!deferred) {
@@ -3726,7 +3726,7 @@ if (!deferred) {
 		}
 
 		/* Start a scan . . . */
-		if (!(priv->config & CFG_ASSOCIATE) || priv->status & STATUS_RF_KILL_SW) return rc;
+		if (!(priv->config & CFG_ASSOCIATE)) return rc;
 		ipw2100_set_scan_options(priv);
 		ipw2100_start_scan(priv);
 	}
@@ -4005,7 +4005,7 @@ void darwin_iwi2100::ipw2100_wx_event_work(struct ipw2100_priv *priv)
 	if (priv->status & STATUS_STOPPING)
 		return;
 
-	if (!(priv->config & CFG_ASSOCIATE) || priv->status & STATUS_RF_KILL_SW) return;
+	if (!(priv->config & CFG_ASSOCIATE)) return;
 	//mutex_lock(&priv->action_mutex);
 
 	IOLog("associating\n");
@@ -5573,8 +5573,8 @@ void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 
 	//todo: check if works
 	packet->dma_addr=NULL;
-	//skb_put(packet->skb, status->frame_size);
-mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw2100_rx_packet, rxp->rx_data), status->frame_size);
+	skb_put(packet->skb, status->frame_size);
+//mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw2100_rx_packet, rxp->rx_data), status->frame_size);
 	if( mbuf_flags(packet->skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(packet->skb, status->frame_size);
 			
@@ -5966,7 +5966,6 @@ void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
 				break;
 			}
 #endif
-			if (priv->status & STATUS_RF_KILL_SW) break;
 			if (stats.len < sizeof(struct ieee80211_hdr_3addr))
 				break;
 			switch (WLAN_FC_GET_TYPE(u->rx_data.header.frame_ctl)) {
@@ -6008,8 +6007,7 @@ void darwin_iwi2100::__ipw2100_rx_process(struct ipw2100_priv *priv)
 
 int darwin_iwi2100::__ipw2100_tx_process(struct ipw2100_priv *priv)
 {
-	if (priv->status & STATUS_RF_KILL_SW) return 0;
-	
+
 	struct ipw2100_bd_queue *txq = &priv->tx_queue;
 	struct ipw2100_bd *tbd;
 	struct list_head *element;
