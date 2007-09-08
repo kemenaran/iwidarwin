@@ -1536,17 +1536,17 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 	u32 gp_ctl;
 
 	if (priv->status & STATUS_RF_KILL_MASK) {
-		IWI_DEBUG_FULL("WARNING: Requesting MAC access during RFKILL "
+		IOLog("gra WARNING: Requesting MAC access during RFKILL "
 			"wakes up NIC");
 
 		/* 10 msec allows time for NIC to complete its data save */
 		gp_ctl = ipw_read32( CSR_GP_CNTRL);
 		if (gp_ctl & CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY) {
-			IWI_DEBUG_FULL("Wait for complete power-down, "
+			IOLog("gra Wait for complete power-down, "
 				"gpctl = 0x%08x\n", gp_ctl);
 			mdelay(10);
 		} else {
-			IWI_DEBUG_FULL("power-down complete, "
+			IOLog("gra power-down complete, "
 				"gpctl = 0x%08x\n", gp_ctl);
 		}
 	}
@@ -1558,7 +1558,7 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 			   (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
 			    CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
 	if (rc < 0) {
-		IWI_DEBUG_FULL("MAC is in deep sleep!\n");
+		IOLog("gra MAC is in deep sleep!\n");
 		return -EIO;
 	}
 
@@ -1712,6 +1712,7 @@ int darwin_iwi3945::ipw_load_ucode(struct ipw_priv *priv,
 			  struct fw_image_desc *desc,
 			  u32 mem_size, dma_addr_t dst_addr)
 {
+	IWI_DEBUG_FN("\n");
 	dma_addr_t phy_addr = 0;
 	u32 len = 0;
 	u32 count = 0;
@@ -1746,10 +1747,9 @@ int darwin_iwi3945::ipw_load_ucode(struct ipw_priv *priv,
 	count = TFD_CTL_COUNT_GET(tfd.control_flags);
 	tfd.control_flags = TFD_CTL_COUNT_SET(count) | TFD_CTL_PAD_SET(pad);
 
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	//if (rc)
-	//	return rc;
+	rc = 	ipw_grab_restricted_access(priv);
+	if (rc)
+		return rc;
 
 	_ipw_write_restricted(priv, FH_TCSR_CONFIG(ALM_FH_SRVC_CHNL),
 			     ALM_FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_PAUSE);
@@ -1892,6 +1892,7 @@ void darwin_iwi3945::__ipw_set_bits_restricted_reg(u32 line, struct ipw_priv
 
 int darwin_iwi3945::ipw_eeprom_init_sram(struct ipw_priv *priv)
 {
+	IWI_DEBUG_FN("\n");
 	u16 *e = (u16 *) & priv->eeprom;
 	u32 r;
 	int to;
@@ -1914,10 +1915,9 @@ int darwin_iwi3945::ipw_eeprom_init_sram(struct ipw_priv *priv)
 	for (addr = 0, r = 0; addr < sz; addr += 2) {
 		ipw_write32( CSR_EEPROM_REG, addr << 1);
 		ipw_clear_bit( CSR_EEPROM_REG, 0x00000002);
-		//rc=
-		ipw_grab_restricted_access(priv);
-		//if (rc)
-		//	return rc;
+		rc=	ipw_grab_restricted_access(priv);
+		if (rc)
+			return rc;
 
 		for (to = 0; to < 10; to++) {
 			r = _ipw_read_restricted(priv, CSR_EEPROM_REG);
@@ -2057,15 +2057,14 @@ int darwin_iwi3945::ipw3945_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 {
 	int rc = 0;
 	unsigned long flags;
-
+	IWI_DEBUG_FN("\n");
 	//return 0;
 	//spin_lock_irqsave(&priv->lock, flags);
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc =ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 
 	if (!pwr_max) {
 		u32 val;
@@ -2136,7 +2135,7 @@ int darwin_iwi3945::ipw_nic_reset(struct ipw_priv *priv)
 {
 	int rc = 0;
 	unsigned long flags;
-
+	IWI_DEBUG_FN("\n");
 	ipw_nic_stop_master(priv);
 
 	//spin_lock_irqsave(&priv->lock, flags);
@@ -2146,12 +2145,11 @@ int darwin_iwi3945::ipw_nic_reset(struct ipw_priv *priv)
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
 			  CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
 
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 
 	_ipw_write_restricted_reg(priv, APMG_CLK_CTRL_REG,
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -2197,7 +2195,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	u8 rev_id;
 	int rc;
 	unsigned long flags;
-	struct ipw_rx_queue *rxq = priv->rxq;
+	//struct ipw_rx_queue *rxq = priv->rxq;
 	
 	ipw_power_init_handle(priv);
 
@@ -2216,12 +2214,11 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		return rc;
 	}
 
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 	_ipw_write_restricted_reg(priv, ALM_APMG_CLK_EN,
 				 APMG_CLK_REG_VAL_DMA_CLK_RQT |
 				 APMG_CLK_REG_VAL_BSM_CLK_RQT);
@@ -2298,19 +2295,15 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 		IOLog("HW RF KILL supported in EEPROM.\n");
 
 	/* Allocate the RX queue, or reset if it is already allocated */
-	if (!rxq) {
-		IOLog("ipw_rx_queue_alloc\n");
-		rxq = ipw_rx_queue_alloc(priv);
+	if (!priv->rxq) {
+		priv->rxq = ipw_rx_queue_alloc(priv);
 	} else
 	{
-		IOLog("ipw_rx_queue_reset\n");
-		ipw_rx_queue_reset(priv, rxq);
+		ipw_rx_queue_reset(priv, priv->rxq);
 	}
-	IOLog("ipw_rx_queue_replenish\n");
 	ipw_rx_queue_replenish(priv);
 
-	IOLog("ipw_rx_init\n");
-	ipw_rx_init(priv, rxq);
+	ipw_rx_init(priv, priv->rxq);
 
 	//spin_lock_irqsave(&priv->lock, flags);
 
@@ -2320,13 +2313,12 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	iwl_rx_queue_update_write_ptr(priv, rxq);
 */
 
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
-	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), rxq->write & ~7);
+	}
+	_ipw_write_restricted(priv, FH_RCSR_WPTR(0), priv->rxq->write & ~7);
 	_ipw_release_restricted_access(priv);
 
 	//spin_unlock_irqrestore(&priv->lock, flags);
@@ -2476,14 +2468,13 @@ int darwin_iwi3945::ipw_tx_reset(struct ipw_priv *priv)
 {
 	int rc;
 	unsigned long flags;
-
+	IWI_DEBUG_FN("\n");
 	//spin_lock_irqsave(&priv->lock, flags);
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
+		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 
 	_ipw_write_restricted_reg(priv, SCD_MODE_REG, 0x2);	// bypass mode
 	_ipw_write_restricted_reg(priv, SCD_ARASTAT_REG, 0x01);	// RA 0 is active
@@ -2586,6 +2577,7 @@ int darwin_iwi3945::ipw3945_queue_tx_init(struct ipw_priv *priv,
 int darwin_iwi3945::ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
 			  int count, int size, u32 id)
 {
+	IWI_DEBUG_FN("\n");
 	int rc;
 	unsigned long flags;
 
@@ -2612,12 +2604,11 @@ int darwin_iwi3945::ipw_queue_init(struct ipw_priv *priv, struct ipw_queue *q,
 	q->element_size = sizeof(struct tfd_frame);
 
 	//spin_lock_irqsave(&priv->lock, flags);
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 	_ipw_write_restricted(priv, FH_CBCC_CTRL(id), 0);
 	_ipw_write_restricted(priv, FH_CBCC_BASE(id), 0);
 
@@ -2695,14 +2686,13 @@ int darwin_iwi3945::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 {
 	int rc;
 	unsigned long flags;
-
+	IWI_DEBUG_FN("\n");
 	//spin_lock_irqsave(&priv->lock, flags);
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 
 	_ipw_write_restricted(priv, FH_RCSR_RBD_BASE(0), rxq->dma_addr);
 	_ipw_write_restricted(priv, FH_RCSR_RPTR_ADDR(0),
@@ -2752,7 +2742,7 @@ int darwin_iwi3945::ipw_rx_queue_update_write_ptr(struct ipw_priv *priv,
 	u32 reg = 0;
 	int rc = 0;
 	unsigned long flags;
-
+	IWI_DEBUG_FN("\n");
 	//spin_lock_irqsave(&q->lock, flags);
 
 	if (q->need_update == 0)
@@ -2767,10 +2757,9 @@ int darwin_iwi3945::ipw_rx_queue_update_write_ptr(struct ipw_priv *priv,
 			goto exit_unlock;
 		}
 
-		//rc = 
-		ipw_grab_restricted_access(priv);
-		//if (rc)
-		//	goto exit_unlock;
+		rc =ipw_grab_restricted_access(priv);
+		if (rc)
+			goto exit_unlock;
 
 		_ipw_write_restricted(priv, FH_RCSR_WPTR(0), q->write & ~0x7);
 		_ipw_release_restricted_access(priv);
@@ -2794,7 +2783,7 @@ int darwin_iwi3945::ipw_rx_queue_restock(struct ipw_priv *priv)
 	unsigned long flags;
 	int write;
 	int counter = 0;
-
+	//IWI_DEBUG_FN("\n");
 	//spin_lock_irqsave(&rxq->lock, flags);
 	write = rxq->write & ~0x7;
 	while ((ipw_rx_queue_space(rxq) > 0) && (rxq->free_count)) {
@@ -2831,6 +2820,7 @@ int darwin_iwi3945::ipw_rx_queue_restock(struct ipw_priv *priv)
 
 void darwin_iwi3945::ipw_rx_queue_replenish(struct ipw_priv *priv)
 {
+	//IWI_DEBUG_FN("\n");
 	struct ipw_rx_queue *rxq = priv->rxq;
 	struct list_head *element;
 	struct ipw_rx_mem_buffer *rxb;
@@ -2840,8 +2830,8 @@ void darwin_iwi3945::ipw_rx_queue_replenish(struct ipw_priv *priv)
 		element = rxq->rx_used.next;
 		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
 		//rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
-		rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
-		if (!rxb->skb) {
+		//rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
+		if (mbuf_getpacket(MBUF_WAITOK , &rxb->skb)!=0) {
 			IOLog(
 			       "%s: Can not allocate SKB buffers.\n",
 			       priv->net_dev->name);
@@ -2865,6 +2855,7 @@ void darwin_iwi3945::ipw_rx_queue_replenish(struct ipw_priv *priv)
 void darwin_iwi3945::ipw_rx_queue_reset(struct ipw_priv *priv,
 				      struct ipw_rx_queue *rxq)
 {
+	IWI_DEBUG_FN("\n");
 	unsigned long flags;
 	int i;
 	//spin_lock_irqsave(&rxq->lock, flags);
@@ -2891,6 +2882,7 @@ void darwin_iwi3945::ipw_rx_queue_reset(struct ipw_priv *priv,
 
 struct ipw_rx_queue *darwin_iwi3945::ipw_rx_queue_alloc(struct ipw_priv *priv)
 {
+	IWI_DEBUG_FN("\n");
 	struct ipw_rx_queue *rxq;
 	//struct pci_dev *dev = priv->pci_dev;
 	int i;
@@ -2966,10 +2958,9 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 
 	IOLog("bootstrap data image size is %u\n", len);
 
-	//rc1 = 
-	ipw_grab_restricted_access(priv);
-	//if (rc1)
-	//	return rc1;
+	rc1 =ipw_grab_restricted_access(priv);
+	if (rc1)
+		return rc1;
 
 	/* read from card's data memory to verify */
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_DATA_LOWER_BOUND);
@@ -2998,10 +2989,9 @@ int darwin_iwi3945::ipw_verify_bootstrap(struct ipw_priv *priv)
 
 	IOLog("bootstrap instruction image size is %u\n", len);
 
-	//rc1 = 
-	ipw_grab_restricted_access(priv);
-	//if (rc1)
-	//	return rc1;
+	rc1 = 	ipw_grab_restricted_access(priv);
+	if (rc1)
+		return rc1;
 
 	/* read from card's instruction memory to verify */
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
@@ -3045,10 +3035,9 @@ int darwin_iwi3945::ipw_verify_ucode(struct ipw_priv *priv)
 
 	IOLog("ucode inst image size is %u\n", len);
 
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	//if (rc)
-	//	return rc;
+	rc =ipw_grab_restricted_access(priv);
+	if (rc)
+		return rc;
 
 	_ipw_write_restricted(priv, HBUS_TARG_MEM_RADDR, RTC_INST_LOWER_BOUND);
 
@@ -3097,10 +3086,9 @@ int darwin_iwi3945::ipw_setup_bootstrap(struct ipw_priv *priv)
 	ipw_verify_bootstrap(priv);
 
 	/* tell bootstrap uCode where to find the runtime uCode in host DRAM */
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	//if (rc)
-	//	goto error;
+	rc =ipw_grab_restricted_access(priv);
+	if (rc)
+		goto error;
 
 	_ipw_write_restricted_reg(priv, BSM_DRAM_INST_PTR_REG,
 				 priv->ucode_code.p_addr);
@@ -3122,6 +3110,7 @@ int darwin_iwi3945::ipw_setup_bootstrap(struct ipw_priv *priv)
 
 int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 {
+	IWI_DEBUG_FN("\n");
 	pl++;
 	if (pl>MAX_HW_RESTARTS)	return 0;
 	int rc, i;
@@ -3553,14 +3542,13 @@ int darwin_iwi3945::ipw3945_rxq_stop(struct ipw_priv *priv)
 {
 	int rc;
 	unsigned long flags;
-
+	IWI_DEBUG_FN("\n");
 	//spin_lock_irqsave(&priv->lock, flags);
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		//spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
-	}*/
+	}
 
 	_ipw_write_restricted(priv, FH_RCSR_CONFIG(0), 0);
 	rc = ipw_poll_restricted_bit(priv, FH_RSSR_STATUS, (1 << 24), 1000);
@@ -3619,7 +3607,7 @@ int darwin_iwi3945::ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
 	u32 reg = 0;
 	int rc = 0;
 	unsigned long flags;
-
+	IWI_DEBUG_FN("\n");
 	//spin_lock_irqsave(&q->lock, flags);
 
 	if (q->need_update == 0)
@@ -3634,10 +3622,9 @@ int darwin_iwi3945::ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
 			goto exit_unlock;
 		}
 
-		//rc = 
-		ipw_grab_restricted_access(priv);
-		//if (rc)
-		//	goto exit_unlock;
+		rc =ipw_grab_restricted_access(priv);
+		if (rc)
+			goto exit_unlock;
 
 		_ipw_write_restricted(priv, FH_RCSR_WPTR(0), q->write & ~0x7);
 		_ipw_release_restricted_access(priv);
@@ -3657,7 +3644,7 @@ int darwin_iwi3945::ipw_tx_queue_update_write_ptr(struct ipw_priv *priv,
 {
 	u32 reg = 0;
 	int rc = 0;
-
+	IWI_DEBUG_FN("\n");
 	if (txq->need_update == 0)
 		return rc;
 
@@ -3670,10 +3657,9 @@ int darwin_iwi3945::ipw_tx_queue_update_write_ptr(struct ipw_priv *priv,
 			return rc;
 		}
 
-		//rc = 
-		ipw_grab_restricted_access(priv);
-		//if (rc)
-		//	return rc;
+		rc = ipw_grab_restricted_access(priv);
+		if (rc)
+			return rc;
 		_ipw_write_restricted(priv, HBUS_TARG_WRPTR,
 				     txq->q.first_empty | (tx_id << 8));
 		_ipw_release_restricted_access(priv);
@@ -7388,12 +7374,11 @@ void darwin_iwi3945::ipw_bg_alive_start()
 
 	ipw_clear_stations_table(priv);
 
-	//rc = 
-	ipw_grab_restricted_access(priv);
-	/*if (rc) {
+	rc = ipw_grab_restricted_access(priv);
+	if (rc) {
 		IOLog("Can not read rfkill status from adapter\n");
 		return;
-	}*/
+	}
 	u32 rfkill;
 	rfkill = _ipw_read_restricted_reg(priv, ALM_APMG_RFKILL);
 	IOLog("RFKILL status: = 0x%x\n", rfkill);
@@ -10255,11 +10240,10 @@ mbuf_t darwin_iwi3945::mergePacket(mbuf_t m)
 	}
 
 	/* allocate and Initialize New mbuf */
-	nm = allocatePacket(mbuf_pkthdr_len(m));
-	
+	//nm = allocatePacket(mbuf_pkthdr_len(m));
+	if (mbuf_getpacket(MBUF_WAITOK, &nm)!=0) return NULL;
 	mbuf_setlen(nm,0);
 	mbuf_pkthdr_setlen(nm,0);
-	
 	
 	/* merging chains to single mbuf */
 	for (nm2 = m; nm2;  nm2 = mbuf_next(nm2)) {
@@ -10393,7 +10377,8 @@ struct ieee80211_txb *darwin_iwi3945::ieee80211_alloc_txb(int nr_frags, int txb_
 	txb->frag_size = txb_size;
 
 	for (i = 0; i < nr_frags; i++) {
-		txb->fragments[i] = allocatePacket(txb_size + headroom);
+		//txb->fragments[i] = allocatePacket(txb_size + headroom);
+		if (mbuf_getpacket(MBUF_WAITOK , &txb->fragments[i])!=0) break;
 		//__dev_alloc_skb(txb_size + headroom,						    gfp_mask);
 		if (unlikely(!txb->fragments[i])) {
 			i--;
@@ -11347,11 +11332,11 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	if (opt==1) //HACK: start/stop the nic
 	{
 		u32 rfkill,r1;
-		int rc = clone->ipw_grab_restricted_access(clone->priv);
+		/*int rc = clone->ipw_grab_restricted_access(clone->priv);
 		if (rc) {
 		IOLog("Can not read rfkill status from adapter\n");
 		//return;
-		}
+		}*/
 		rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
 		IOLog("RFKILL base status: 0x%x\n", rfkill);
 		//clone->_ipw_release_restricted_access(clone->priv);
@@ -11372,14 +11357,14 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				}*/
 			}
 			IOLog("Trying to turn card on...\n");	
-			r1=0;
+			/*r1=0;
 			while (clone->ipw_read32(CSR_UCODE_DRV_GP2)== 0) 
 			{
 				udelay(10);
 				r1++;
 				if (r1==1000000) break;
 			}
-			/*int q=0;
+			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
 				if (clone->ipw_read32(0x05c)==0x40001)// clone->ipw_write32(0x30, 0x1);//0x0f0ff);
@@ -11404,12 +11389,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;*/
-			clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
-			clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+			//clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+			//clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
 			//if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // STATUS_RF_KILL_HW
 			//	clone->ipw_write32(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
 				
-			clone->_ipw_release_restricted_access(clone->priv);
+			//clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
@@ -11459,7 +11444,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				//priv->status |= STATUS_RF_KILL_HW;
 			}
 			IOLog("Trying to turn card off...\n");	
-			r1=0;
+			/*r1=0;
 			while (clone->ipw_read32(CSR_UCODE_DRV_GP2)!= 0) 
 			{
 				udelay(10);
@@ -11467,11 +11452,11 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				if (r1==1000000) break;
 			}
 			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_SW_BIT_RFKILL);
-			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);*/
 			//if ((clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // ~STATUS_RF_KILL_HW
 			//	clone->ipw_write32(CSR_GP_CNTRL, clone->ipw_read32(CSR_GP_CNTRL) | ~CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
 				
-			clone->_ipw_release_restricted_access(clone->priv);
+			//clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status |= STATUS_RF_KILL_SW;
