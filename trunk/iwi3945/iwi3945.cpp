@@ -1234,6 +1234,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::reg_txpower_periodic),NULL,NULL,false);
 		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_post_associate),NULL,NULL,false);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),NULL,NULL,false);
+		queue_te(13,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::iwl_irq_tasklet),NULL,NULL,false);
 
 		
 		
@@ -1427,8 +1428,8 @@ void darwin_iwi3945::ipw_start_nic()
 
 inline void darwin_iwi3945::ipw_enable_interrupts(struct ipw_priv *priv)
 {
-	if (priv->status & STATUS_INT_ENABLED)
-		return;
+	//if (priv->status & STATUS_INT_ENABLED)
+	//	return;
 	priv->status |= STATUS_INT_ENABLED;
 	ipw_write32(CSR_INT_MASK, CSR_INI_SET_MASK);}
 
@@ -1537,17 +1538,15 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 
 	if (priv->status & STATUS_RF_KILL_MASK) {
 		IOLog("gra WARNING: Requesting MAC access during RFKILL "
-			"wakes up NIC");
+			"wakes up NIC\n");
 
 		/* 10 msec allows time for NIC to complete its data save */
 		gp_ctl = ipw_read32( CSR_GP_CNTRL);
 		if (gp_ctl & CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY) {
-			IOLog("gra Wait for complete power-down, "
-				"gpctl = 0x%08x\n", gp_ctl);
+			IOLog("gra Wait for complete power-down gpctl = 0x%08x\n", gp_ctl);
 			mdelay(10);
 		} else {
-			IOLog("gra power-down complete, "
-				"gpctl = 0x%08x\n", gp_ctl);
+			IOLog("gra power-down complete gpctl = 0x%08x\n", gp_ctl);
 		}
 	}
 
@@ -2230,7 +2229,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 
 	/* Determine HW type */
 	rev_id= fPCIDevice->configRead8(kIOPCIConfigRevisionID);
-	IOLog("HW Revision ID = 0x%X\n", rev_id);
+	IOLog("HW Revision ID = %d\n", rev_id);
 
 	ipw3945_nic_set_pwr_src(priv, 1);
 	//spin_lock_irqsave(&priv->lock, flags);
@@ -2253,7 +2252,7 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	rc = ipw_eeprom_init_sram(priv);
 	if (rc)
 		return rc;
-
+	
 	//spin_lock_irqsave(&priv->lock, flags);
 	if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
 		IOLog("SKU OP mode is mrc\n");
@@ -2264,12 +2263,12 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	}
 
 	if ((priv->eeprom.board_revision & 0xF0) == 0xD0) {
-		IOLog("3945ABG revision is 0x%X\n",
+		IOLog("3945ABG revision is %d\n",
 			       priv->eeprom.board_revision);
 		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
 	} else {
-		IOLog("3945ABG revision is 0x%X\n",
+		IOLog("3945ABG revision is %d\n",
 			       priv->eeprom.board_revision);
 		ipw_clear_bit( CSR_HW_IF_CONFIG_REG,
 			      CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
@@ -2278,10 +2277,10 @@ int darwin_iwi3945::ipw_nic_init(struct ipw_priv *priv)
 	if (priv->eeprom.almgor_m_version <= 1) {
 		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_A);
-		IOLog("Card M type A version is 0x%X\n",
+		IOLog("Card M type A version is %d\n",
 			       priv->eeprom.almgor_m_version);
 	} else {
-		IOLog("Card M type B version is 0x%X\n",
+		IOLog("Card M type B version is %d\n",
 			       priv->eeprom.almgor_m_version);
 		ipw_set_bit( CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_B);
@@ -3176,7 +3175,7 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 		//memcpy(priv->ieee->perm_addr, priv->mac_addr, ETH_ALEN);
-		
+
 		return 0;
 	}
 
@@ -3404,13 +3403,13 @@ void darwin_iwi3945::ipw_deinit(struct ipw_priv *priv)
 
 inline void darwin_iwi3945::ipw_disable_interrupts(struct ipw_priv *priv)
 {
-	if (!(priv->status & STATUS_INT_ENABLED))
-		return;
-	priv->status &= ~STATUS_INT_ENABLED;
-	ipw_write32(CSR_INT_MASK, 0x00000000);
-	ipw_write32(CSR_INT, CSR_INI_SET_MASK);
-	ipw_write32( CSR_FH_INT_STATUS, 0xff);
-	ipw_write32( CSR_FH_INT_STATUS, 0x00070000);
+		/* disable interrupts from uCode/NIC to host */
+	ipw_write32( CSR_INT_MASK, 0x00000000);
+
+	/* acknowledge/clear/reset any interrupts still pending
+	 * from uCode or flow handler (Rx/Tx DMA) */
+	ipw_write32( CSR_INT, 0xffffffff);
+	ipw_write32( CSR_FH_INT_STATUS, 0xffffffff);
 
 }
 
@@ -3640,147 +3639,187 @@ int darwin_iwi3945::ipw3945_rx_queue_update_wr_ptr(struct ipw_priv *priv,
 }
 
 int darwin_iwi3945::ipw_tx_queue_update_write_ptr(struct ipw_priv *priv,
-					 struct ipw_tx_queue *txq, int tx_id)
+					 struct ipw_tx_queue *txq)
 {
+	IWI_DEBUG_FN("\n");
 	u32 reg = 0;
 	int rc = 0;
-	IWI_DEBUG_FN("\n");
+	int txq_id = txq->q.id;
+
 	if (txq->need_update == 0)
 		return rc;
 
+	/* if we're trying to save power */
 	if (priv->status & STATUS_POWER_PMI) {
+		/* wake up nic if it's powered down ...
+		 * uCode will wake up, and interrupt us again, so next
+		 * time we'll skip this part. */
 		reg = ipw_read32( CSR_UCODE_DRV_GP1);
 
 		if (reg & CSR_UCODE_DRV_GP1_BIT_MAC_SLEEP) {
+			IWI_DEBUG_FN("Requesting wakeup, GP1 = 0x%x\n", reg);
 			ipw_set_bit( CSR_GP_CNTRL,
 				    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
 			return rc;
 		}
 
+		/* restore this queue's parameters in nic hardware. */
 		rc = ipw_grab_restricted_access(priv);
 		if (rc)
 			return rc;
 		_ipw_write_restricted(priv, HBUS_TARG_WRPTR,
-				     txq->q.first_empty | (tx_id << 8));
+				     txq->q.first_empty | (txq_id << 8));
 		_ipw_release_restricted_access(priv);
+
+	/* else not in power-save mode, uCode will never sleep when we're
+	 * trying to tx (during RFKILL, we're not trying to tx). */
 	} else {
 		ipw_write32( HBUS_TARG_WRPTR,
-			    txq->q.first_empty | (tx_id << 8));
+			    txq->q.first_empty | (txq_id << 8));
 	}
 
 	txq->need_update = 0;
 
 	return rc;
+
 }
 
 UInt32 darwin_iwi3945::handleInterrupt(void)
 {
 	u32 inta, inta_mask;
+	u32 inta_fh;
 	if (!priv)
 		return false;
 
 	//spin_lock(&priv->lock);
-	if (!(priv->status & STATUS_INT_ENABLED)) {
-		/* Shared IRQ */
-		return false;
-	}
 
-	inta = ipw_read32( CSR_INT);
-	inta_mask = ipw_read32( CSR_INT_MASK);
-	if (inta == 0xFFFFFFFF) {
-		/* Hardware disappeared */
-		//IOLog("IRQ INTA == 0xFFFFFFFF\n");
-		return false;
-	}
-
-	if (!(inta & (CSR_INI_SET_MASK & inta_mask))) {
-		if (inta)
-			ipw_write32( CSR_INT, inta);
-		/* Shared interrupt */
-		return false;
-	}
-
-	/* tell the device to stop sending interrupts */
-
-	//IOLog
-	  //  ("interrupt recieved 0x%08x masked 0x%08x card mask 0x%08x\n",
-	    // inta, inta_mask, CSR_INI_SET_MASK);
-
-	priv->status &= ~STATUS_INT_ENABLED;
+	/* Disable (but don't clear!) interrupts here to avoid
+	 *    back-to-back ISRs and sporadic interrupts from our NIC.
+	 * If we have something to service, the tasklet will re-enable ints.
+	 * If we *don't* have something, we'll re-enable before leaving here. */
+	inta_mask = ipw_read32( CSR_INT_MASK);  /* just for debug */
 	ipw_write32( CSR_INT_MASK, 0x00000000);
-	/* ack current interrupts */
-	ipw_write32( CSR_INT, inta);
-	inta &= (CSR_INI_SET_MASK & inta_mask);
-	/* Cache INTA value for our tasklet */
-	priv->isr_inta = inta;
-	
-	UInt32  handled = 0;
-	//unsigned long flags;
 
-	//spin_lock_irqsave(&priv->lock, flags);
-
-	//code repeated??
+	/* Discover which interrupts are active/pending */
 	inta = ipw_read32( CSR_INT);
-	inta_mask = ipw_read32( CSR_INT_MASK);
+	inta_fh = ipw_read32( CSR_FH_INT_STATUS);
+
+	/* Ignore interrupt if there's nothing in NIC to service.
+	 * This may be due to IRQ shared with another device,
+	 * or due to sporadic interrupts thrown from our NIC. */
+	if (!inta && !inta_fh) {
+		IWI_DEBUG_FN("Ignore interrupt, inta == 0, inta_fh == 0\n");
+		goto none;
+	}
+
+	if ((inta == 0xFFFFFFFF) || (inta == 0xa5a5a5a5)
+	    || (inta == 0x5a5a5a5a)) {
+		/* Hardware disappeared */
+		IWI_DEBUG_FN("HARDWARE GONE?? INTA == 0x%080x\n", inta);
+		goto none;
+	}
+
+	IWI_DEBUG_FN ("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
+	     inta, inta_mask, inta_fh);
+
+	/* iwl_irq_tasklet() will service interrupts and re-enable them */
+	queue_te(13,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::iwl_irq_tasklet),priv,NULL,true);
+
+	return true;
+
+ none:
+	/* re-enable interrupts here since we don't have anything to service. */
+	ipw_enable_interrupts(priv);
+	return false;
+}
+
+void darwin_iwi3945::iwl_irq_tasklet(struct ipw_priv *priv)
+{
+	u32 inta, inta_mask, handled = 0;
+	u32 inta_fh;
+	unsigned long flags;
+
+
+	/* Ack/clear/reset pending uCode interrupts.
+	 * Note:  Some bits in CSR_INT are "OR" of bits in CSR_FH_INT_STATUS,
+	 *  and will clear only when CSR_FH_INT_STATUS gets cleared. */
+	inta = ipw_read32( CSR_INT);
 	ipw_write32( CSR_INT, inta);
-	inta &= (CSR_INI_SET_MASK & inta_mask);
 
-	/* Add any cached INTA values that need to be handled */
-	inta |= priv->isr_inta;
+	/* Ack/clear/reset pending flow-handler (DMA) interrupts.
+	 * Any new interrupts that happen after this, either while we're
+	 * in this tasklet, or later, will show up in next ISR/tasklet. */
+	inta_fh = ipw_read32( CSR_FH_INT_STATUS);
+	ipw_write32( CSR_FH_INT_STATUS, inta_fh);
 
+	inta_mask = ipw_read32( CSR_INT_MASK); /* just for debug */
+	IWI_DEBUG_FN
+	    ("inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
+	     inta, inta_mask, inta_fh);
+
+	/* Since CSR_INT and CSR_FH_INT_STATUS reads and clears are not
+	 * atomic, make sure that inta covers all the interrupts that
+	 * we've discovered, even if FH interrupt came in just after
+	 * reading CSR_INT. */
+	if (inta_fh & FH_INT_RX_MASK)
+		inta |= BIT_INT_FH_RX;
+	if (inta_fh & FH_INT_TX_MASK)
+		inta |= BIT_INT_FH_TX;
+
+	/* Now service all interrupt bits discovered above. */
 	if (inta & BIT_INT_ERR) {
-		IOLog("Microcode HW error detected.  Restarting.\n");
+		IWI_DEBUG_FN("Microcode HW error detected.  Restarting.\n");
 
-		/* tell the device to stop sending interrupts */
-
+		/* Tell the device to stop sending interrupts */
 		ipw_disable_interrupts(priv);
 
 		ipw_irq_handle_error(priv);
 
 		handled |= BIT_INT_ERR;
 
-		//spin_unlock_irqrestore(&priv->lock, flags);
 
-		return 0;
+		return;
+	}
+
+	if (inta & BIT_INT_CT_KILL) {
+		IWI_DEBUG_FN("Microcode CT kill error detected. \n");
+		handled |= BIT_INT_CT_KILL;
 	}
 
 	if (inta & BIT_INT_SWERROR) {
-		IOLog("Microcode SW error detected.  Restarting 0x%X.\n",
+		IWI_DEBUG_FN("Microcode SW error detected.  Restarting 0x%X.\n",
 			  inta);
-
 		ipw_irq_handle_error(priv);
 		handled |= BIT_INT_SWERROR;
 	}
 
 	if (inta & BIT_INT_WAKEUP) {
-		IOLog("Wakeup interrupt\n");
+		IWI_DEBUG_FN("Wakeup interrupt\n");
 		ipw_rx_queue_update_write_ptr(priv, priv->rxq);
-		ipw_tx_queue_update_write_ptr(priv, &priv->txq[0], 0);
-		ipw_tx_queue_update_write_ptr(priv, &priv->txq[1], 1);
-		ipw_tx_queue_update_write_ptr(priv, &priv->txq[2], 2);
-		ipw_tx_queue_update_write_ptr(priv, &priv->txq[3], 3);
-		ipw_tx_queue_update_write_ptr(priv, &priv->txq[4], 4);
-		ipw_tx_queue_update_write_ptr(priv, &priv->txq[5], 5);
-
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[0]);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[1]);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[2]);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[3]);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[4]);
+		ipw_tx_queue_update_write_ptr(priv, &priv->txq[5]);
 
 		handled |= BIT_INT_WAKEUP;
 	}
 
+	/* Alive notification via Rx interrupt will do the real work */
 	if (inta & BIT_INT_ALIVE) {
-		IOLog("Alive interrupt\n");
+		IWI_DEBUG_FN("Alive interrupt\n");
 		handled |= BIT_INT_ALIVE;
 	}
 
-	/* handle all the justifications for the interrupt */
-	if (inta & BIT_INT_RX) {
-		IOLog("Rx interrupt\n");
-		//ipw_rx_handle(priv);
+	if (inta & (BIT_INT_FH_RX | BIT_INT_SW_RX)) {
+		//iwl_rx_handle(priv);
 		RxQueueIntr();
-		handled |= BIT_INT_RX;
+		handled |= (BIT_INT_FH_RX | BIT_INT_SW_RX);
 	}
 
-	if (inta & BIT_INT_TX) {
-		IOLog("Command completed.\n");
+	if (inta & BIT_INT_FH_TX) {
+		IWI_DEBUG_FN("Tx interrupt\n");
 		ipw_write32( CSR_FH_INT_STATUS, (1 << 6));
 		if (!ipw_grab_restricted_access(priv)) {
 			_ipw_write_restricted(priv,
@@ -3788,20 +3827,22 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 					     (ALM_FH_SRVC_CHNL), 0x0);
 			_ipw_release_restricted_access(priv);
 		}
-
-		handled |= BIT_INT_TX;
+		handled |= BIT_INT_FH_TX;
 	}
 
-	if (handled != inta) {
-		IOLog("Unhandled INTA bits 0x%08x\n", inta & ~handled);
+	if (inta & ~handled)
+		IWI_DEBUG_FN("Unhandled INTA bits 0x%08x\n", inta & ~handled);
+
+	if (inta & ~CSR_INI_SET_MASK) {
+		IWI_DEBUG_FN("Disabled INTA bits 0x%08x were pending\n",
+			 inta & ~CSR_INI_SET_MASK);
+		IWI_DEBUG_FN("   with FH_INT = 0x%08x\n", inta_fh);
 	}
 
-	/* enable all interrupts */
+	/* Re-enable all interrupts */
 	ipw_enable_interrupts(priv);
 
-	//spin_unlock_irqrestore(&priv->lock, flags);
 }
-
 
 UInt16 darwin_iwi3945::readPromWord(UInt16 *base, UInt8 addr)
 {
@@ -5043,7 +5084,7 @@ int darwin_iwi3945::ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd
 						     priv->hw_setting.
 						     cmd_queue_no, 0);*/
 	q->first_empty = ipw_queue_inc_wrap(q->first_empty, q->n_bd);
-	rc=ipw_tx_queue_update_write_ptr(priv, txq, priv->hw_setting.cmd_queue_no);
+	rc=ipw_tx_queue_update_write_ptr(priv, &txq[priv->hw_setting.cmd_queue_no]);
 
 	if (rc)
 		return rc;
@@ -11107,7 +11148,7 @@ int darwin_iwi3945::ipw_tx_skb(struct ipw_priv *priv, mbuf_t skb, struct ieee802
 
 	//rc = priv->hw_setting.tx_queue_update_wr_ptr(priv, txq, tx_id, len);
 	q->first_empty = ipw_queue_inc_wrap(q->first_empty, q->n_bd);
-	rc = ipw_tx_queue_update_write_ptr(priv, txq, tx_id);
+	rc = ipw_tx_queue_update_write_ptr(priv, &txq[tx_id]);
 
 	if (rc)
 		return rc;
@@ -11458,11 +11499,11 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				
 			//clone->_ipw_release_restricted_access(clone->priv);
 			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill);
+			clone->setLinkStatus(kIONetworkLinkValid);
+			clone->ipw_down(clone->priv);
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status |= STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			clone->setLinkStatus(kIONetworkLinkValid);
-			clone->ipw_down(clone->priv);
 		}	
 	}
 
