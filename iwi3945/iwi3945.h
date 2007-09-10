@@ -942,7 +942,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual int ipw_nic_reset(struct ipw_priv *priv);
 	virtual int ipw_nic_stop_master(struct ipw_priv *priv);
 	virtual int ipw_tx_queue_update_write_ptr(struct ipw_priv *priv,
-					 struct ipw_tx_queue *txq, int tx_id);
+					 struct ipw_tx_queue *txq);
 	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
 	virtual int ipw_scan_completed(struct ipw_priv *priv, int success);
 	virtual int ipw_scan_initiate(struct ipw_priv *priv, unsigned long ms);
@@ -1030,7 +1030,7 @@ inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
 	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
 }	
 	virtual int iwl_set_rxon_channel(struct ipw_priv *priv, u8 phymode, u8 channel);
-
+	virtual void iwl_irq_tasklet(struct ipw_priv *priv);
 	
 	
 	

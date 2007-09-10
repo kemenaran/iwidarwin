@@ -1123,5 +1123,46 @@ typedef unsigned char UInt8;
 #define IWL_MAX_SCAN_SIZE 1024
 
 
+/* interrupt flags in INTA, set by uCode or hardware (e.g. dma),
+ * acknowledged (reset) by host writing "1" to flagged bits. */
+#define BIT_INT_FH_RX        (1<<31) /* Rx DMA, cmd responses, FH_INT[17:16] */
+#define BIT_INT_ERR          (1<<29) /* DMA hardware error FH_INT[31] */
+#define BIT_INT_FH_TX        (1<<27) /* Tx DMA FH_INT[1:0] */
+#define BIT_INT_MAC_CLK_ACTV (1<<26) /* NIC controller's clock toggled on/off */
+#define BIT_INT_SWERROR      (1<<25) /* uCode error */
+#define BIT_INT_RF_KILL      (1<<7)  /* HW RFKILL switch GP_CNTRL[27] toggled */
+#define BIT_INT_CT_KILL      (1<<6)  /* Critical temp (chip too hot) rfkill */
+#define BIT_INT_SW_RX        (1<<3)  /* Rx, command responses, 3945 */
+#define BIT_INT_WAKEUP       (1<<1)  /* NIC controller waking up (pwr mgmt) */
+#define BIT_INT_ALIVE        (1<<0)  /* uCode interrupts once it initializes */
+
+#define CSR_INI_SET_MASK      ( BIT_INT_FH_RX   |  \
+				BIT_INT_ERR     |  \
+				BIT_INT_FH_TX   |  \
+				BIT_INT_SWERROR |  \
+				BIT_INT_SW_RX   |  \
+				BIT_INT_WAKEUP  |  \
+				BIT_INT_ALIVE )
+
+/* interrupt flags in FH (flow handler) (PCI busmaster DMA) */
+#define BIT_FH_INT_ERR       (1<<31) /* Error */
+#define BIT_FH_INT_HI_PRIOR  (1<<30) /* High priority Rx, bypass coalescing */
+#define BIT_FH_INT_RX_CHNL2  (1<<18) /* Rx channel 2 (3945 only) */
+#define BIT_FH_INT_RX_CHNL1  (1<<17) /* Rx channel 1 */
+#define BIT_FH_INT_RX_CHNL0  (1<<16) /* Rx channel 0 */
+#define BIT_FH_INT_TX_CHNL6  (1<<6)  /* Tx channel 6 (3945 only) */
+#define BIT_FH_INT_TX_CHNL1  (1<<1)  /* Tx channel 1 */
+#define BIT_FH_INT_TX_CHNL0  (1<<0)  /* Tx channel 0 */
+
+#define FH_INT_RX_MASK        ( BIT_FH_INT_HI_PRIOR |  \
+				BIT_FH_INT_RX_CHNL2 |  \
+				BIT_FH_INT_RX_CHNL1 |  \
+				BIT_FH_INT_RX_CHNL0 )
+
+#define FH_INT_TX_MASK        ( BIT_FH_INT_TX_CHNL6 |  \
+				BIT_FH_INT_TX_CHNL1 |  \
+				BIT_FH_INT_TX_CHNL0 )
+
+
 
 
