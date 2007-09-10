@@ -851,11 +851,11 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 	/* Allocate and initialize the Tx/Rx queues and lists */
 	if (ipw2100_queues_allocate(priv)) {
 		IOLog(
-		       "Error calilng ipw2100_queues_allocate.\n");
+		       "Error in ipw2100_queues_allocate.\n");
 	}
 	ipw2100_queues_initialize(priv);
 
-	//ipw2100_initialize_ordinals(priv);
+	ipw2100_initialize_ordinals(priv);
 	
 	IOLog(": Detected Intel PRO/Wireless 2100 Network Connection\n");
 	//pl=1;
@@ -1833,8 +1833,9 @@ bool darwin_iwi2100::start(IOService *provider)
 		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
 		
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
-		//ipw2100_sw_reset(1);
-		ipw2100_initialize_ordinals(priv);
+		IOLog("ipw2100_sw_reset\n");
+		ipw2100_sw_reset(1);
+		//ipw2100_initialize_ordinals(priv);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -1903,9 +1904,9 @@ bool darwin_iwi2100::start(IOService *provider)
 		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter),NULL,NULL,false);
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),NULL,NULL,false);
 		
-		ipw2100_sw_reset(1);
+		//ipw2100_sw_reset(1);
 		pl=1;
-		ipw2100_up(priv,1);
+		ipw2100_up(priv,0);
 		return true;			// end start successfully
 	} while (false);
 		
