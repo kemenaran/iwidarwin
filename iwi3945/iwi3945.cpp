@@ -3708,7 +3708,7 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 	 * This may be due to IRQ shared with another device,
 	 * or due to sporadic interrupts thrown from our NIC. */
 	if (!inta && !inta_fh) {
-		IWI_DEBUG_FN("Ignore interrupt, inta == 0, inta_fh == 0\n");
+		//IWI_DEBUG_FN("Ignore interrupt, inta == 0, inta_fh == 0\n");
 		goto none;
 	}
 
@@ -3719,8 +3719,8 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 		goto none;
 	}
 
-	IWI_DEBUG_FN ("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
-	     inta, inta_mask, inta_fh);
+	//IWI_DEBUG_FN ("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
+	  //   inta, inta_mask, inta_fh);
 
 	/* iwl_irq_tasklet() will service interrupts and re-enable them */
 	queue_te(13,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::iwl_irq_tasklet),priv,NULL,true);
@@ -3753,9 +3753,9 @@ void darwin_iwi3945::iwl_irq_tasklet(struct ipw_priv *priv)
 	ipw_write32( CSR_FH_INT_STATUS, inta_fh);
 
 	inta_mask = ipw_read32( CSR_INT_MASK); /* just for debug */
-	IWI_DEBUG_FN
-	    ("inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
-	     inta, inta_mask, inta_fh);
+	//IWI_DEBUG_FN
+	  //  ("inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
+	    // inta, inta_mask, inta_fh);
 
 	/* Since CSR_INT and CSR_FH_INT_STATUS reads and clears are not
 	 * atomic, make sure that inta covers all the interrupts that
