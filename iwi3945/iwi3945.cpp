@@ -1485,10 +1485,10 @@ void darwin_iwi3945::ipw_rf_kill(ipw_priv *priv)
 	//mutex_lock(&priv->mutex);
 
 	if (!(priv->status & STATUS_RF_KILL_MASK)) {
-			//IOLog("HW RF Kill no longer active, restarting device\n");
+			IOLog("HW RF Kill no longer active, restarting device\n");
 		if (!(priv->status & STATUS_EXIT_PENDING))
 		{
-			ipw_down(priv);
+			queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 			pl=1;
 			ipw_up(priv);
 		}
@@ -3841,7 +3841,7 @@ void darwin_iwi3945::iwl_irq_tasklet(struct ipw_priv *priv)
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
 		setLinkStatus(kIONetworkLinkValid);
-		ipw_down(priv);
+		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 		//if ((fNetif->getFlags() & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
 		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
 		handled |= IWI_INTR_RADIO_OFF;
@@ -11338,7 +11338,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		clone->associate=0;
 		clone->mode=m;
 		clone->ipw_sw_reset(0);
-		clone->ipw_down(clone->priv);
+		clone->queue_te(12,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_down),clone->priv,NULL,true);
 	}
 	if (opt==3)// led
 	{
@@ -11397,138 +11397,52 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	if (opt==1) //HACK: start/stop the nic
 	{
 		u32 rfkill,r1, rfkill2=0;
-		/*int rc = clone->ipw_grab_restricted_access(clone->priv);
-		if (rc) {
-		IOLog("Can not read rfkill status from adapter\n");
-		//return;
-		}*/
 		rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
 		if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
-		IOLog("RFKILL base status: 0x%x rfkill2 0x%x\n", rfkill, rfkill2);
-		//clone->_ipw_release_restricted_access(clone->priv);
-	
+		IOLog("RFKILL base status: 0x%x rfkill2 0x%x rfkill3 0x%x\n", rfkill, rfkill2, clone->ipw_read32(ALM_APMG_RFKILL));
+
 		if ((clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW))) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
-			if (rfkill2 == 0) {
-				//priv->status &= ~STATUS_RF_KILL_HW;
-			} else
-			{
-				clone->ipw_clear_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
-				//priv->status |= STATUS_RF_KILL_HW;
-				/*r1=0;
-				while (!(clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL) & 0x1)) 
-				{
-					clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | 0x1);
-					if (r1==1000000) break;
-				}*/
-			}
 			IOLog("Trying to turn card on...\n");	
-			/*r1=0;
-			while (clone->ipw_read32(CSR_UCODE_DRV_GP2)== 0) 
-			{
-				udelay(10);
-				r1++;
-				if (r1==1000000) break;
-			}
-			int q=0;
-			if (clone->rf_kill_active(clone->priv)) 
+			if (rfkill & 0x0) //which value??
 			{	
-				if (clone->ipw_read32(0x05c)==0x40001)// clone->ipw_write32(0x30, 0x1);//0x0f0ff);
-				//else 
-				clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - 0x1);
-				
-				if (clone->ipw_read32(0x05c)!=0x50000)
+				if (BITC(clone->ipw_read32(ALM_APMG_RFKILL),0) & 0x1) clone->ipw_write32(ALM_APMG_RFKILL, 0x0);
+				else
 				{
 					UInt32 r1=0;
-					while (!((clone->priv->status & STATUS_SCANNING)))
-					//( clone->ipw_read32(0x30)!=0x50000 ) 
+					clone->priv->status &= ~STATUS_READY; //maybe other state
+					while (!((clone->priv->status & STATUS_READY)))
 					{
-						clone->ipw_write32(0x05c, 0x1);// clone->ipw_read32(0x30) + 0x1);
-						//if (clone->priv->status & STATUS_SCANNING) break;
+						clone->ipw_write32(ALM_APMG_RFKILL, 0x1);
 						r1++;
-						//if (r1==5000000) break;
+						if (r1==5000000) break;//return 1;
 					}
-					//UInt32 r=0x50001 - clone->ipw_read32(0x30);
-					clone->ipw_write32(0x05c, 0x50001);//clone->ipw_read32(0x30) + r);
-					//UInt32 r=clone->ipw_read32(0x30)- 0x50000;
-					//clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
-					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
-			} else q=1;*/
-			//clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
-			//clone->ipw_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
-			//if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // STATUS_RF_KILL_HW
-			//	clone->ipw_write32(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
-				
-			//clone->_ipw_release_restricted_access(clone->priv);
-			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x rfkill2 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill, rfkill2);
+			}
+			rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
+			if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
+			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x rfkill2 0x%x rfkill3 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill, rfkill2, clone->ipw_read32(ALM_APMG_RFKILL));
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_rf_kill),clone->priv,NULL,true);
-			//clone->pl=1;
-			//clone->ipw_up(clone->priv);
-			
-			/*int r1=0;
-			while (!((clone->priv->status & STATUS_SCANNING)))
-			{
-				clone->ipw_scan_initiate(clone->priv,0);
-				r1++;
-				if (r1==100) break;
-			}*/
+
 		}
 		else
 		{
-			/*if (!(clone->rf_kill_active(clone->priv))) 
-			{
-				if (clone->ipw_read32(0x05c)==0x50000) clone->ipw_write32(0x05c, 0x1);
-				else 
-				clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - 0x1);
-				
-				if (clone->ipw_read32(0x05c)!=0x40000)
-				{
-					UInt32 r1=0;
-					while ( clone->ipw_read32(0x05c)!=0x40000 ) 
-					{
-						clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) + 0x1);
-						r1++;
-						if (r1==5000000) break;
-					}
-					UInt32 r=clone->ipw_read32(0x05c)- 0x40000;
-					clone->ipw_write32(0x05c, clone->ipw_read32(0x05c) - r+1);
-				}
-			}*/
-			if (rfkill2 == 0) {
-				//priv->status &= ~STATUS_RF_KILL_HW;
-				/*r1=0;
-				while ((clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL) & 0x1)) 
-				{
-					clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, rfkill | ~0x1);
-					if (r1==1000000) break;
-				}*/
-				clone->ipw_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
-			} else
-			{
-				//priv->status |= STATUS_RF_KILL_HW;
-			}
 			IOLog("Trying to turn card off...\n");	
-			/*r1=0;
-			while (clone->ipw_read32(CSR_UCODE_DRV_GP2)!= 0) 
+			if (rfkill & 0x1) 
 			{
-				udelay(10);
-				r1++;
-				if (r1==1000000) break;
+				if (BITC(clone->ipw_read32(ALM_APMG_RFKILL),0) & 0x1) clone->ipw_write32(ALM_APMG_RFKILL, 0x0);
+				else
+				clone->ipw_write32(ALM_APMG_RFKILL, 0x1);
 			}
-			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_SW_BIT_RFKILL);
-			clone->ipw_write32(CSR_UCODE_DRV_GP1_SET, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);*/
-			//if ((clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) // ~STATUS_RF_KILL_HW
-			//	clone->ipw_write32(CSR_GP_CNTRL, clone->ipw_read32(CSR_GP_CNTRL) | ~CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
-				
-			//clone->_ipw_release_restricted_access(clone->priv);
-			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x rfkill2 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill, rfkill2);
+			rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
+			if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
+			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x rfkill2 0x%x rfkill3 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill, rfkill2, clone->ipw_read32(ALM_APMG_RFKILL));
 			clone->setLinkStatus(kIONetworkLinkValid);
-			clone->ipw_down(clone->priv);
+			clone->queue_te(12,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_down),clone->priv,NULL,true);
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status |= STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
