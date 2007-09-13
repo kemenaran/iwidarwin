@@ -10653,26 +10653,17 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
-				if (clone->ipw_read32(0x30)==0x40001)// clone->ipw_write32(0x30, 0x1);//0x0f0ff);
-				//else 
-				clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
-				
-				if (clone->ipw_read32(0x30)!=0x50000)
+				if (BITC(clone->ipw_read32(0x30),0) & 0x1) clone->ipw_write32(0x30, 0x0);
+				else
 				{
 					UInt32 r1=0;
+					clone->priv->status &= ~STATUS_SCANNING;
 					while (!((clone->priv->status & STATUS_SCANNING)))
-					//( clone->ipw_read32(0x30)!=0x50000 ) 
 					{
-						clone->ipw_write32(0x30, 0x1);// clone->ipw_read32(0x30) + 0x1);
-						//if (clone->priv->status & STATUS_SCANNING) break;
+						clone->ipw_write32(0x30, 0x1);
 						r1++;
-						//if (r1==5000000) break;
+						if (r1==5000000) return 1;
 					}
-					//UInt32 r=0x50001 - clone->ipw_read32(0x30);
-					clone->ipw_write32(0x30, 0x50001);//clone->ipw_read32(0x30) + r);
-					//UInt32 r=clone->ipw_read32(0x30)- 0x50000;
-					//clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
-					//if (r1==5000000 && (clone->priv->status & STATUS_RF_KILL_HW)) return 0;
 				}
 			} else q=1;
 			//IOFree(clone->priv->ieee->networks, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
@@ -10692,24 +10683,10 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		else
 		{
 			if (!(clone->rf_kill_active(clone->priv))) 
-			
 			{
-				if (clone->ipw_read32(0x30)==0x50000) clone->ipw_write32(0x30, 0x1);
-				else 
-				clone->ipw_write32(0x30, clone->ipw_read32(0x30) - 0x1);
-				
-				if (clone->ipw_read32(0x30)!=0x40000)
-				{
-					UInt32 r1=0;
-					while ( clone->ipw_read32(0x30)!=0x40000 ) 
-					{
-						clone->ipw_write32(0x30, clone->ipw_read32(0x30) + 0x1);
-						r1++;
-						if (r1==5000000) break;
-					}
-					UInt32 r=clone->ipw_read32(0x30)- 0x40000;
-					clone->ipw_write32(0x30, clone->ipw_read32(0x30) - r+1);
-				}
+				if (BITC(clone->ipw_read32(0x30),0) & 0x1) clone->ipw_write32(0x30, 0x0);
+				else
+				clone->ipw_write32(0x30, 0x1);
 			}
 			
 			clone->priv->status |= STATUS_RF_KILL_HW;
