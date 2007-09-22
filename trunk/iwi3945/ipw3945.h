@@ -1488,6 +1488,7 @@ struct ipw_queue {
 	int first_empty;	       /**< 1-st empty entry (index) */
 	int last_used;		       /**< last used entry (index) */
 	dma_addr_t dma_addr;		/**< physical addr for BD's */
+	IOBufferMemoryDescriptor *memD;
 	int n_window;
 	u32 id;
 	u32 element_size;

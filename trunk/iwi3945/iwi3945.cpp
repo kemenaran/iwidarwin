@@ -1,4 +1,4 @@
-//iwlwifi-3945-ucode-2.14.1.5
+//iwlwifi-3945-ucode-2.14.3
 #include "firmware/ipw3945.ucode.h"
 #include "defines.h"
 
@@ -1069,7 +1069,7 @@ bool darwin_iwi3945::start(IOService *provider)
 	UInt16	reg;
 //linking the kext control clone to the driver:
 		clone=this;
-		
+		firstifup=0;
 	do {
 				
 		if ( super::start(provider) == 0) {
@@ -1235,15 +1235,11 @@ bool darwin_iwi3945::start(IOService *provider)
 		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_bg_post_associate),NULL,NULL,false);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),NULL,NULL,false);
 		queue_te(13,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::iwl_irq_tasklet),NULL,NULL,false);
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,NULL,false);
 
 		
-		
-		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
-		//ipw_nic_init(priv);
-		//ipw_nic_reset(priv);
-		//ipw_bg_resume_work();
-		pl=1;
-		ipw_up(priv);
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),priv,1000,true);
+
 
 		return true;			// end start successfully
 	} while (false);
@@ -1251,6 +1247,19 @@ bool darwin_iwi3945::start(IOService *provider)
 	//stop(provider);
 	free();
 	return false;			// end start insuccessfully
+}
+
+void darwin_iwi3945::check_firstup(struct ipw_priv *priv)
+{
+	if (firstifup==0) 
+	{
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),priv,1000,true);
+		return;
+	}
+	disable(fNetif);
+	pl=1;
+	ipw_up(priv);
+	
 }
 
 void darwin_iwi3945::ipw_bg_resume_work()
@@ -1483,12 +1492,12 @@ void darwin_iwi3945::ipw_rf_kill(ipw_priv *priv)
 		return;
 
 	//mutex_lock(&priv->mutex);
-
+	if (!(ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) priv->status |= STATUS_RF_KILL_HW;
+	
 	if (!(priv->status & STATUS_RF_KILL_MASK)) {
 			IOLog("HW RF Kill no longer active, restarting device\n");
 		if (!(priv->status & STATUS_EXIT_PENDING))
 		{
-			queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 			pl=1;
 			ipw_up(priv);
 		}
@@ -1540,16 +1549,16 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 	u32 gp_ctl;
 
 	if (priv->status & STATUS_RF_KILL_MASK) {
-		IOLog("gra WARNING: Requesting MAC access during RFKILL "
-			"wakes up NIC\n");
+		//IOLog("gra WARNING: Requesting MAC access during RFKILL "
+		//	"wakes up NIC\n");
 
 		/* 10 msec allows time for NIC to complete its data save */
 		gp_ctl = ipw_read32( CSR_GP_CNTRL);
 		if (gp_ctl & CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY) {
-			IOLog("gra Wait for complete power-down gpctl = 0x%08x\n", gp_ctl);
+			//IOLog("gra Wait for complete power-down gpctl = 0x%08x\n", gp_ctl);
 			mdelay(10);
 		} else {
-			IOLog("gra power-down complete gpctl = 0x%08x\n", gp_ctl);
+			//IOLog("gra power-down complete gpctl = 0x%08x\n", gp_ctl);
 		}
 	}
 
@@ -1560,7 +1569,7 @@ int darwin_iwi3945::ipw_grab_restricted_access(struct ipw_priv *priv)
 			   (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
 			    CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
 	if (rc < 0) {
-		IOLog("gra MAC is in deep sleep!\n");
+		//IOLog("gra MAC is in deep sleep!\n");
 		return -EIO;
 	}
 
@@ -1903,26 +1912,32 @@ int darwin_iwi3945::ipw_eeprom_init_sram(struct ipw_priv *priv)
 	int rc;
 	u16 addr;
 
-	if (sizeof(priv->eeprom) != 1024) {
-		IOLog("EEPROM structure size incorrect!\n");
-		return -EINVAL;
+	/* The EEPROM structure has several padding buffers within it
+	 * and when adding new EEPROM maps is subject to programmer errors
+	 * which may be very difficult to identify without explicitly
+	 * checking the resulting size of the eeprom map. */
+	if (sizeof(priv->eeprom) != 1024) 
+	{
+	   IOLog("bug IWL_EEPROM_IMAGE_SIZE\n");
+	   return -1;
 	}
-
 	if ((gp & 0x00000007) == 0x00000000) {
 		IOLog("EEPROM not found, EEPROM_GP=0x%08x", gp);
 		return -ENOENT;
 	}
+//#if IWL == 3945
+	ipw_clear_bit( 0x030, 0x00000180);
+//#endif
 
-	ipw_clear_bit( CSR_EEPROM_GP, 0x00000180);
 	for (addr = 0, r = 0; addr < sz; addr += 2) {
-		ipw_write32( CSR_EEPROM_REG, addr << 1);
-		ipw_clear_bit( CSR_EEPROM_REG, 0x00000002);
-		rc=	ipw_grab_restricted_access(priv);
+		ipw_write32( 0x02c, addr << 1);
+		ipw_clear_bit( 0x02c, 0x00000002);
+		rc = ipw_grab_restricted_access(priv);
 		if (rc)
 			return rc;
 
 		for (to = 0; to < 10; to++) {
-			r = _ipw_read_restricted(priv, CSR_EEPROM_REG);
+			r = _ipw_read_restricted(priv, 0x02c);
 			if (r & 1)
 				break;
 			udelay(5);
@@ -2418,8 +2433,8 @@ void darwin_iwi3945::ipw_queue_tx_free(struct ipw_priv *priv, struct ipw_tx_queu
 
 	len = (sizeof(txq->cmd[0]) * q->n_window) + IPW_MAX_SCAN_SIZE;
 	//pci_free_consistent(dev, len, txq->cmd, txq->dma_addr_cmd);
-
-	txq->dma_addr_cmd=NULL;
+	//q->memD->release();
+	//txq->dma_addr_cmd=NULL;
 	/* free buffers belonging to queue itself */
 	ipw3945_queue_tx_free(priv, txq);
 
@@ -2445,6 +2460,7 @@ int darwin_iwi3945::ipw3945_queue_tx_free(struct ipw_priv *priv,
 	/* free buffers belonging to queue itself */
 	//pci_free_consistent(dev, sizeof(struct tfd_frame) * q->n_bd,
 	//		    txq->bd, q->dma_addr);
+	q->memD->release();
 	q->dma_addr=NULL;
 	return 0;
 }
@@ -2522,13 +2538,14 @@ int darwin_iwi3945::ipw_queue_tx_init(struct ipw_priv *priv,
 	 * same time */
 	len = (sizeof(struct ipw_cmd) * count) + IPW_MAX_SCAN_SIZE;
 	//q->cmd = pci_alloc_consistent(dev, len, &q->dma_addr_cmd);
-	MemoryDmaAlloc(len, &(q->q.dma_addr), &(q->cmd));
+	q->q.memD=MemoryDmaAlloc(len, &(q->q.dma_addr), &(q->cmd));
 	if (!q->cmd)
 		return -ENOMEM;
 
 	rc = ipw3945_queue_tx_init(priv, q, count, id);
 	if (rc) {
 		//pci_free_consistent(dev, len, q->cmd, q->dma_addr_cmd);
+		q->q.memD->release();
 		q->dma_addr_cmd=NULL;
 		return -ENOMEM;
 	}
@@ -2554,12 +2571,13 @@ int darwin_iwi3945::ipw3945_queue_tx_init(struct ipw_priv *priv,
 	} else
 		q->txb = NULL;
 
+	q->q.id = id;
 	/*q->bd = (u8 *)
 	    pci_alloc_consistent(dev,
 				 sizeof(struct tfd_frame) *
 				 TFD_QUEUE_SIZE_MAX, &q->q.dma_addr);*/
 
-	MemoryDmaAlloc(sizeof(struct tfd_frame) *
+	q->q.memD=MemoryDmaAlloc(sizeof(struct tfd_frame) *
 				 TFD_QUEUE_SIZE_MAX, &(q->q.dma_addr), &(q->bd));
 	
 	q->q.element_size = sizeof(struct tfd_frame);
@@ -3178,7 +3196,8 @@ int darwin_iwi3945::ipw_up(struct ipw_priv *priv)
 
 		memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
 		//memcpy(priv->ieee->perm_addr, priv->mac_addr, ETH_ALEN);
-
+		
+		
 		return 0;
 	}
 
@@ -3202,7 +3221,12 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface * netif )
 		memcpy(&priv->net_dev->name,ii,sizeof(ii));
 		IWI_DEBUG("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	}
-	if ((priv->status & STATUS_RF_KILL_HW)) return -1;
+	if (firstifup==0)
+	{
+		firstifup=1;
+		return -1;
+	}
+	
 	IWI_DEBUG("ifconfig up\n");
 	switch ((fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING))
 	{
@@ -3726,8 +3750,8 @@ UInt32 darwin_iwi3945::handleInterrupt(void)
 	  //   inta, inta_mask, inta_fh);
 
 	/* iwl_irq_tasklet() will service interrupts and re-enable them */
-	queue_te(13,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::iwl_irq_tasklet),priv,NULL,true);
-
+	//queue_te(13,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::iwl_irq_tasklet),priv,NULL,true);
+	iwl_irq_tasklet(priv);
 	return true;
 
  none:
@@ -3835,7 +3859,9 @@ void darwin_iwi3945::iwl_irq_tasklet(struct ipw_priv *priv)
 
 	if (inta & IWI_INTR_RADIO_OFF)// this is new! need to find out how to handle this
 	{
-		IWI_LOG("IWI_INTR_RADIO_OFF\n");
+		IWI_DEBUG_FN("IWI_INTR_RADIO_OFF\n");
+		if (!(ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) 
+		{
 		priv->status |= STATUS_RF_KILL_HW;
 		priv->status &= ~STATUS_RF_KILL_SW;
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
@@ -3844,6 +3870,11 @@ void darwin_iwi3945::iwl_irq_tasklet(struct ipw_priv *priv)
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 		//if ((fNetif->getFlags() & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
 		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,2,true);
+		}
+		else
+		{
+			IWI_DEBUG_FN("IGNORED!\n");
+		}
 		handled |= IWI_INTR_RADIO_OFF;
 	}
 	
@@ -4839,7 +4870,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 
 	if (!ipw_is_ready(priv)) {
 		IOLog("request scan called when driver not ready.\n");
-		return -1;
+		//return -1;
 	}
 
 	//mutex_lock(&priv->mutex);
@@ -4851,9 +4882,9 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 		    ("Multiple concurrent scan requests in parallel. "
 		     "Ignoring second request.\n");
 		rc = -EIO;
-		goto done;
+		//goto done;
 	}
-
+	rc=0;
 	if (priv->status & STATUS_EXIT_PENDING) {
 		IOLog("Aborting scan due to device shutdown\n");
 		priv->status |= STATUS_SCAN_PENDING;
@@ -4869,7 +4900,7 @@ int darwin_iwi3945::ipw_scan(struct ipw_priv *priv, int type)
 	if (priv->status & STATUS_RF_KILL_MASK) {
 		IOLog("Aborting scan due to RF Kill activation\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		//goto done;
+		goto done;
 	}
 
 	if (!(priv->status & STATUS_READY)) {
@@ -5028,6 +5059,8 @@ int darwin_iwi3945::is_cmd_small(struct ipw_host_cmd *cmd)
 	return !(cmd->meta.flags & CMD_SIZE_HUGE);
 }
 
+#define QUEUE_TO_SEQ(x)  ((x & 0xbf) << 8)
+
 int darwin_iwi3945::ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd)
 {
 	struct ipw_tx_queue *txq = &priv->txq[priv->hw_setting.cmd_queue_no];
@@ -5038,14 +5071,11 @@ int darwin_iwi3945::ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd
 	u32 idx = 0;
 	u16 fix_size = (u16) (cmd->meta.len + sizeof(out_cmd->hdr));
 	dma_addr_t phys_addr;
-	u8 fifo = priv->hw_setting.cmd_queue_no;
 	int rc;
 	int pad;
 	u16 count;
 
-	/* If any of the command structures end up being larger than
-	 * the TFD_MAX_PAYLOAD_SIZE, and it sent as a 'small' command then
-	 * we will need to increase the size of the TFD entries */
+
 	if((fix_size > TFD_MAX_PAYLOAD_SIZE)
 	       && is_cmd_small(cmd)) return -1;
 	if (ipw_queue_space(q) < (is_cmd_sync(cmd) ? 1 : 2)) {
@@ -5065,48 +5095,34 @@ int darwin_iwi3945::ipw_queue_tx_hcmd(struct ipw_priv *priv, struct ipw_host_cmd
 	memcpy(&out_cmd->meta, &cmd->meta, sizeof(cmd->meta));
 	memcpy(&out_cmd->cmd.payload, cmd->data, cmd->meta.len);
 
-	/* At this point, the out_cmd now has all of the incoming cmd
-	 * information */
 
 	out_cmd->hdr.flags = 0;
-	out_cmd->hdr.sequence = FIFO_TO_SEQ(fifo) |
+	out_cmd->hdr.sequence = QUEUE_TO_SEQ(IWL_CMD_QUEUE_NUM) |
 	    INDEX_TO_SEQ(q->first_empty);
 	if (out_cmd->meta.flags & CMD_SIZE_HUGE)
 		out_cmd->hdr.sequence |= SEQ_HUGE_FRAME;
 
 	phys_addr = txq->dma_addr_cmd + sizeof(txq->cmd[0]) * idx +
 	    offsetof(struct ipw_cmd, hdr);
+	attach_buffer_to_tfd_frame( tfd, phys_addr, fix_size);
 
-	attach_buffer_to_tfd_frame(tfd, phys_addr, fix_size);
+	pad = U32_PAD(out_cmd->meta.len);
+	count = TFD_CTL_COUNT_GET(*control_flags);
+	*control_flags = TFD_CTL_COUNT_SET(count) | TFD_CTL_PAD_SET(pad);
 
-	if (priv->is_3945) {
-		pad = U32_PAD(out_cmd->meta.len);
-		count = TFD_CTL_COUNT_GET(*control_flags);
-		*control_flags = TFD_CTL_COUNT_SET(count) |
-		    TFD_CTL_PAD_SET(pad);
-	}
 
-	if ((out_cmd->hdr.cmd != 0x23 &&
-	     out_cmd->hdr.cmd != 0x24 && out_cmd->hdr.cmd != 0x22)) {
-		IOLog("Sending command %s (#%x), seq: 0x%04X, "
-			     "%d bytes at %d[%d]:%d\n",
-			     get_cmd_string(out_cmd->hdr.cmd),
-			     out_cmd->hdr.cmd, out_cmd->hdr.sequence,
-			     fix_size, q->first_empty, idx, fifo);
-		//printk_buf(IPW_DL_HOST_COMMAND, cmd->data, cmd->len);
-	}
+	IOLog("Sending command %s (#%x), seq: 0x%04X, "
+		     "%d bytes at %d[%d]:%d\n",
+		     get_cmd_string(out_cmd->hdr.cmd),
+		     out_cmd->hdr.cmd, out_cmd->hdr.sequence,
+		     fix_size, q->first_empty, idx, IWL_CMD_QUEUE_NUM);
 
 	txq->need_update = 1;
-	/*rc = priv->hw_setting.tx_queue_update_wr_ptr(priv, txq,
-						     priv->hw_setting.
-						     cmd_queue_no, 0);*/
+
 	q->first_empty = ipw_queue_inc_wrap(q->first_empty, q->n_bd);
-	rc=ipw_tx_queue_update_write_ptr(priv, &txq[priv->hw_setting.cmd_queue_no]);
 
-	if (rc)
-		return rc;
+	return ipw_tx_queue_update_write_ptr(priv, &txq[priv->hw_setting.cmd_queue_no]);
 
-	return 0;
 }
 
 int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd)
@@ -5125,21 +5141,21 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 	 */
 
 	/* A command can not be asynchronous AND expect an SKB to be set */
-	if((cmd->meta.flags & CMD_ASYNC)
-	       && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
+	//if((cmd->meta.flags & CMD_ASYNC)
+	  //     && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
 
 	/* The skb/callback union must be NULL if an SKB is requested */
-	if(cmd->meta.u.skb && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
+	//if(cmd->meta.u.skb && (cmd->meta.flags & CMD_WANT_SKB)) return -1;
 
 	/* A command can not be synchronous AND have a callback set */
-	if(is_cmd_sync(cmd) && cmd->meta.u.callback) return -1;
+	//if(is_cmd_sync(cmd) && cmd->meta.u.callback) return -1;
 
 	/* An asynchronous command MUST have a callback */
-	if((cmd->meta.flags & CMD_ASYNC)
-	       && !cmd->meta.u.callback) return -1;
+	//if((cmd->meta.flags & CMD_ASYNC)
+	  //     && !cmd->meta.u.callback) return -1;
 
 	/* A command can not be synchronous AND not use locks */
-	if(is_cmd_sync(cmd) && (cmd->meta.flags & CMD_NO_LOCK)) return -1;
+	//if(is_cmd_sync(cmd) && (cmd->meta.flags & CMD_NO_LOCK)) return -1;
 
 	//if (cmd_needs_lock(cmd))
 	//	spin_lock_irqsave(&priv->lock, flags);
@@ -5160,10 +5176,10 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 	 * a backpointer to the originating caller so it can
 	 * actually copy the skb there */
 	if (cmd->meta.flags & CMD_WANT_SKB)
+	{
 		cmd->meta.u.source = &cmd->meta;
-
-	cmd->meta.len = cmd->len;
-
+		cmd->meta.len = cmd->len;
+	}
 	rc = ipw_queue_tx_hcmd(priv, cmd);
 	if (rc) {
 		if (is_cmd_sync(cmd))
@@ -5187,9 +5203,9 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 	{
 		rc2++;
 		IODelay(HZ);
-		if (rc2==HZ) break;
+		if (rc2==HZ*HZ) break;
 	}
-		if (rc2 == HZ) 
+		if (rc2 == HZ*HZ) 
 		{
 			//if (cmd_needs_lock(cmd))
 			//	spin_lock_irqsave(&priv->lock, flags);
@@ -5200,7 +5216,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 					  get_cmd_string(cmd->id),
 					  0);
 				priv->status &= ~STATUS_HCMD_ACTIVE;
-				/*if ((cmd->meta.flags & CMD_WANT_SKB)
+				if ((cmd->meta.flags & CMD_WANT_SKB)
 				    && cmd->meta.u.skb) {
 					if (!(mbuf_type(cmd->meta.u.skb) == MBUF_TYPE_FREE) ) freePacket(cmd->meta.u.skb);
 					cmd->meta.u.skb = NULL;
@@ -5208,7 +5224,7 @@ int darwin_iwi3945::ipw_send_cmd(struct ipw_priv *priv, struct ipw_host_cmd *cmd
 				//if (cmd_needs_lock(cmd))
 				//	spin_unlock_irqrestore(&priv->
 				//			       lock, flags);
-				return -ETIMEDOUT;*/
+				return -ETIMEDOUT;
 			}
 			//if (cmd_needs_lock(cmd))
 			//	spin_unlock_irqrestore(&priv->lock, flags);
@@ -6691,6 +6707,33 @@ u8 darwin_iwi3945::ipw_add_station(struct ipw_priv *priv, u8 * bssid,
 
 }
 
+int darwin_iwi3945::ipw_add_sta_sync_callback(struct ipw_priv *priv,
+				     struct ipw_cmd *cmd, mbuf_t skb)
+{
+	struct ipw_rx_packet *res = NULL;
+
+	if (!skb) {
+		IWI_DEBUG_FN("Error: Response NULL in " "REPLY_ADD_STA.\n");
+		return 1;
+	}
+
+	res = (struct ipw_rx_packet *)mbuf_data(skb);
+	if (res->hdr.flags & 0x40) {
+		IWI_DEBUG_FN("Bad return from REPLY_ADD_STA (0x%08X)\n",
+			  res->hdr.flags);
+		return 1;
+	}
+
+	switch (res->u.add_sta.status) {
+	case ADD_STA_SUCCESS_MSK:
+		break;
+	default:
+		break;
+	}
+
+	return 1;		/* We didn't cache the SKB; let the caller free it */
+}
+
 int darwin_iwi3945::ipw_send_add_station(struct ipw_priv *priv,
 				struct iwl_addsta_cmd *sta, u8 flags)
 {
@@ -6702,9 +6745,9 @@ int darwin_iwi3945::ipw_send_add_station(struct ipw_priv *priv,
 		cmd.meta.flags = flags;
 		cmd.data = sta;
 
-	if (!(flags & CMD_ASYNC))
-		//cmd.meta.u.callback = ipw_add_sta_sync_callback;
-	//else
+	if (flags & CMD_ASYNC)
+		cmd.meta.u.callback = ipw_add_sta_sync_callback;
+	else
 		cmd.meta.flags |= CMD_WANT_SKB;
 
 	rc = ipw_send_cmd(priv, &cmd);
@@ -7458,6 +7501,7 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	{
 		IWI_DEBUG_FN("turnning radio off\n");
 		priv->status |= STATUS_RF_KILL_HW;
+		return;
 	}
 	//IOLog("ipw_init_channel_map\n");
 	rc = ipw_init_channel_map(priv);
@@ -7531,9 +7575,9 @@ void darwin_iwi3945::ipw_bg_alive_start()
 	//mutex_unlock(&priv->mutex);
 	
 	IOLog("ipw_bg_alive_start done\n");
+	
 	//hack: force scan
 	ipw_scan_initiate(priv,0);
-
 }
 
 
@@ -7953,7 +7997,7 @@ int darwin_iwi3945::ipw_scan_initiate(struct ipw_priv *priv, unsigned long ms)
 	if (priv->status & STATUS_RF_KILL_MASK) {
 		IOLog("Aborting scan due to RF Kill activation\n");
 		priv->status |= STATUS_SCAN_PENDING;
-		//return 0;
+		return 0;
 	}
 
 	if (!(priv->status & STATUS_READY)) {
@@ -8996,7 +9040,7 @@ int darwin_iwi3945::ipw_queue_tx_reclaim(struct ipw_priv *priv, int fifo, int in
 		if (is_next) {
 			IOLog("XXXL we have skipped command\n");
 			//queue_delayed_work(priv->workqueue, &priv->down, 0);
-			queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
+			//queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_down),priv,NULL,true);
 		}
 		if (fifo != CMD_QUEUE_NUM) {
 			ipw_queue_tx_free_tfd(priv, txq);
@@ -9047,34 +9091,48 @@ u8 darwin_iwi3945::get_next_cmd_index(struct ipw_queue *q, u32 index, int is_hug
 void darwin_iwi3945::ipw_tx_complete(struct ipw_priv *priv,
 			    struct ipw_rx_mem_buffer *rxb)
 {
-	struct ipw_rx_packet *pkt = (struct ipw_rx_packet *)mbuf_data(rxb->skb);
-	int fifo = SEQ_TO_FIFO(pkt->hdr.sequence);
+	IWI_DEBUG_FN("\n");
+	
+	
+	struct ipw_rx_packet *pkt = (struct ipw_rx_packet *)rxb->skb->data;
+	int txq_id = SEQ_TO_QUEUE(pkt->hdr.sequence);
 	int index = SEQ_TO_INDEX(pkt->hdr.sequence);
 	int is_huge = (pkt->hdr.sequence & SEQ_HUGE_FRAME);
 	int cmd_index;
 	struct ipw_cmd *cmd;
-	if (fifo > MAX_REAL_TX_QUEUE_NUM)
-		return;
-	if (fifo != priv->hw_setting.cmd_queue_no) {
-		ipw_queue_tx_reclaim(priv, fifo, index);
+
+	/* If a Tx command is being handled and it isn't in the actual
+	 * command queue then there a command routing bug has been introduced
+	 * in the queue management code. */
+	if (txq_id != IWL_CMD_QUEUE_NUM) 
+	{
+		IWI_DEBUG_FN("txq_id != IWL_CMD_QUEUE_NUM\n");
 		return;
 	}
+	cmd_index = get_next_cmd_index(&priv->txq[IWL_CMD_QUEUE_NUM].q, index,
+				       is_huge);
+	cmd = &priv->txq[IWL_CMD_QUEUE_NUM].cmd[cmd_index];
 
-	cmd_index =
-	    get_next_cmd_index(&priv->txq[priv->hw_setting.cmd_queue_no].q,
-			       index, is_huge);
-	cmd = &priv->txq[priv->hw_setting.cmd_queue_no].cmd[cmd_index];
 	/* Input error checking is done when commands are added to queue. */
 	if (cmd->meta.flags & CMD_WANT_SKB) {
-		cmd->meta.u.source->u.skb = rxb->skb;
-		rxb->skb = NULL;
+		/* FIXME: we use cmd->meta.magic to indicate the
+		 * memory cmd->meta.source points to is still valid or
+		 * not at this point since caller may pass a local
+		 * variable to us and returned before we get here.
+		 * In this case, caller must ensure the ->magic field
+		 * is set correctly to indicate the availability of the
+		 * pointer cmd->meta.source. */
+		if (cmd->meta.source->magic == CMD_VAR_MAGIC) {
+			cmd->meta.source->u.skb = rxb->skb;
+			cmd->meta.source->magic = 0;
+			rxb->skb = NULL;
+		}
 	} else if (cmd->meta.u.callback &&
 		   !cmd->meta.u.callback(priv, cmd, rxb->skb))
 		rxb->skb = NULL;
 
-	ipw_queue_tx_reclaim(priv, fifo, index);
+	ipw_queue_tx_reclaim(priv, txq_id, index);
 
-	/* is_cmd_sync(cmd) works with ipw_host_cmd... here we only have ipw_cmd */
 	if (!(cmd->meta.flags & CMD_ASYNC)) {
 		priv->status &= ~STATUS_HCMD_ACTIVE;
 		//wake_up_interruptible(&priv->wait_command_queue);
@@ -9095,8 +9153,6 @@ void darwin_iwi3945::RxQueueIntr()
 		if (rxb == NULL) return;
 		priv->rxq->queue[i] = NULL;
 
-		mbuf_setlen(rxb->skb,IPW_RX_BUF_SIZE);
-		mbuf_pkthdr_setlen(rxb->skb,IPW_RX_BUF_SIZE);
 		if( mbuf_next(rxb->skb)) 
 		{
 			IOLog("rx mbuf_next\n");
@@ -9108,12 +9164,15 @@ void darwin_iwi3945::RxQueueIntr()
 			break;
 		}
 		
+		mbuf_setlen(rxb->skb,IPW_RX_BUF_SIZE);
+		mbuf_pkthdr_setlen(rxb->skb,IPW_RX_BUF_SIZE);
+
 		pkt = (struct ipw_rx_packet *)mbuf_data(rxb->skb);
 
 		/* If this frame wasn't received then it is a response from
 		 * a host request */
-		pkt_from_hardware = !(pkt->hdr.sequence & SEQ_RX_FRAME);
-
+		pkt_from_hardware = !(pkt->hdr.sequence & SEQ_RX_FRAME) && (pkt->hdr.cmd != REPLY_TX);
+			
 		/* Don't report replies covered by debug messages below ...
 		 * switch statement for readability ... compiler may optimize.
 		 * Hack at will to see/not-see what you want in logs. */
@@ -9391,16 +9450,17 @@ void darwin_iwi3945::RxQueueIntr()
 				priv->status &=
 				    ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 
-				ipw_scan_cancel(priv);
+				
 
 				if (((status & STATUS_RF_KILL_HW) !=
 				     (priv->status & STATUS_RF_KILL_HW))
 				    || ((status & STATUS_RF_KILL_SW)
 					!= (priv->status & STATUS_RF_KILL_SW))) {
+					ipw_scan_cancel(priv);
 					queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_rf_kill),priv,NULL,true);
 					//queue_delayed_work(priv->workqueue,
 					//		   &priv->rf_kill, 0);
-				};// else
+				}
 					//wake_up_interruptible(&priv->
 					//		      wait_command_queue);
 				
@@ -9410,17 +9470,14 @@ void darwin_iwi3945::RxQueueIntr()
 			break;
 		}
 
-		if (pkt_from_hardware) {
-			/* Invoke any callbacks, transfer the skb to
-			 * caller, and fire off the (possibly) blocking
-			 * ipw_send_cmd() via as we reclaim the queue... */
-			if (rxb && rxb->skb)
+		//if (pkt_from_hardware) {
+			if (rxb) 
 			{
-				ipw_tx_complete(priv, rxb);
+				if (rxb->skb) ipw_tx_complete(priv, rxb);
 			}
-			else
-				IOLog("Claim null rxb?\n");
-		}
+			//else
+			//	IOLog("Claim null rxb?\n");
+		//}
 
 		/* For now we just don't re-use anything.  We can tweak this
 		 * later to try and re-use notification packets and SKBs that
@@ -9454,12 +9511,14 @@ int darwin_iwi3945::ipw_scan_cancel(struct ipw_priv *priv)
 		IWI_DEBUG("Cancelling pending scan request.\n");
 		priv->status &= ~STATUS_SCAN_PENDING;
 		//cancel_delayed_work(&priv->request_scan);
+		queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::ipw_scan));
 	}
 
 	if (priv->status & STATUS_SCANNING) {
 		if (!(priv->status & STATUS_SCAN_ABORTING)) {
 			IWI_DEBUG("Queuing scan abort.\n");
 			priv->status |= STATUS_SCAN_ABORTING;
+			ipw_abort_scan(priv);
 			//queue_work(priv->workqueue, &priv->abort_scan);
 		} else {
 			IWI_DEBUG("Scan abort already in progress.\n");
@@ -11397,50 +11456,48 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	if (opt==1) //HACK: start/stop the nic
 	{
 		u32 rfkill,r1, rfkill2=0;
+		//clone->ipw_grab_restricted_access(clone->priv);
 		rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
+		//clone->_ipw_release_restricted_access(clone->priv);
 		if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
-		IOLog("RFKILL base status: 0x%x rfkill2 0x%x rfkill3 0x%x\n", rfkill, rfkill2, clone->ipw_read32(ALM_APMG_RFKILL));
+		IOLog("RFKILL base status: 0x%x rfkill2 0x%x\n", rfkill, rfkill2);
 
 		if ((clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW))) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
 			IOLog("Trying to turn card on...\n");	
-			if (rfkill & 0x0) //which value??
-			{	
-				if (BITC(clone->ipw_read32(ALM_APMG_RFKILL),0) & 0x1) clone->ipw_write32(ALM_APMG_RFKILL, 0x0);
-				else
-				{
-					UInt32 r1=0;
-					clone->priv->status &= ~STATUS_READY; //maybe other state
-					while (!((clone->priv->status & STATUS_READY)))
-					{
-						clone->ipw_write32(ALM_APMG_RFKILL, 0x1);
-						r1++;
-						if (r1==5000000) break;//return 1;
-					}
-				}
+			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_rf_kill),clone->priv,NULL,true);
+			if (!(rfkill & 0x1)) clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, 0x1);
+			if (rfkill2==1) //clone->ipw_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
+			{
+				clone->ipw_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);	
 			}
-			rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
-			if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
-			IWI_LOG("radio on CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x rfkill2 0x%x rfkill3 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill, rfkill2, clone->ipw_read32(ALM_APMG_RFKILL));
+			IODelay(1000*1000);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_rf_kill),clone->priv,NULL,true);
-
+			//clone->ipw_grab_restricted_access(clone->priv);
+			rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
+			//clone->_ipw_release_restricted_access(clone->priv);
+			rfkill2=0;
+			if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
+			IWI_LOG("radio on rfkill 0x%x rfkill2 0x%x\n", rfkill, rfkill2);
 		}
 		else
 		{
-			IOLog("Trying to turn card off...\n");	
-			if (rfkill & 0x1) 
+			IOLog("Trying to turn card off...\n");
+			if (rfkill & 0x1) clone->_ipw_write_restricted_reg(clone->priv, ALM_APMG_RFKILL, 0x0);
+			if (rfkill2==0) 
 			{
-				if (BITC(clone->ipw_read32(ALM_APMG_RFKILL),0) & 0x1) clone->ipw_write32(ALM_APMG_RFKILL, 0x0);
-				else
-				clone->ipw_write32(ALM_APMG_RFKILL, 0x1);
+				clone->ipw_clear_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);	
 			}
+			IODelay(1000*1000);
+			//clone->ipw_grab_restricted_access(clone->priv);
 			rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
+			//clone->_ipw_release_restricted_access(clone->priv);
+			rfkill2=0;
 			if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
-			IWI_LOG("radio off CSR_UCODE_DRV_GP1 0x%x CSR_UCODE_DRV_GP2 0x%x rfkill 0x%x rfkill2 0x%x rfkill3 0x%x\n",clone->ipw_read32(CSR_UCODE_DRV_GP1), clone->ipw_read32(CSR_UCODE_DRV_GP2), rfkill, rfkill2, clone->ipw_read32(ALM_APMG_RFKILL));
+			IWI_LOG("radio off rfkill 0x%x rfkill2 0x%x\n", rfkill, rfkill2);
 			clone->setLinkStatus(kIONetworkLinkValid);
 			clone->queue_te(12,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_down),clone->priv,NULL,true);
 			clone->priv->status |= STATUS_RF_KILL_HW;
