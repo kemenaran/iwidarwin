@@ -56,6 +56,12 @@
 		402F07BF0BF934E600038DCA /* icons.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icons.icns; sourceTree = "<group>"; };
 		406E55DA0BECD5B800AB0131 /* MainController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = MainController.h; sourceTree = "<group>"; };
 		406E55DB0BECD5B800AB0131 /* MainController.mm */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.objcpp; path = MainController.mm; sourceTree = "<group>"; };
+		6103AC190CA4707000A47FC4 /* defines.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
+		6103AC1A0CA4707000A47FC4 /* ipw2200.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw2200.h; sourceTree = "<group>"; };
+		6103AC1C0CA4707000A47FC4 /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
+		6103AC1D0CA4707000A47FC4 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		6103AC1E0CA4707000A47FC4 /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
+		6103AC1F0CA4707000A47FC4 /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
 		611AA94D0C0C974200A4B5DA /* NetworkSelector icon 64x64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "NetworkSelector icon 64x64.png"; path = "GFX/NetworkSelector icon 64x64.png"; sourceTree = "<group>"; };
 		611AA94E0C0C974200A4B5DA /* NetworkSelector icon 128X128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "NetworkSelector icon 128X128.png"; path = "GFX/NetworkSelector icon 128X128.png"; sourceTree = "<group>"; };
 		611AA94F0C0C974200A4B5DA /* sig0.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = sig0.png; path = GFX/sig0.png; sourceTree = "<group>"; };
@@ -121,6 +127,7 @@
 		29B97314FDCFA39411CA2CEA /* nsGUI */ = {
 			isa = PBXGroup;
 			children = (
+				6103AC180CA4707000A47FC4 /* 2200 */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -180,6 +187,27 @@
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		6103AC180CA4707000A47FC4 /* 2200 */ = {
+			isa = PBXGroup;
+			children = (
+				6103AC190CA4707000A47FC4 /* defines.h */,
+				6103AC1A0CA4707000A47FC4 /* ipw2200.h */,
+				6103AC1B0CA4707000A47FC4 /* net */,
+			);
+			path = 2200;
+			sourceTree = "<group>";
+		};
+		6103AC1B0CA4707000A47FC4 /* net */ = {
+			isa = PBXGroup;
+			children = (
+				6103AC1C0CA4707000A47FC4 /* compat.h */,
+				6103AC1D0CA4707000A47FC4 /* ieee80211.h */,
+				6103AC1E0CA4707000A47FC4 /* ieee80211_crypt.h */,
+				6103AC1F0CA4707000A47FC4 /* ieee80211_radiotap.h */,
+			);
+			path = net;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
