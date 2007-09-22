@@ -992,6 +992,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual int ipw_rate_scale_rxon_handle(struct ipw_priv *priv, s32 sta_id);
 	virtual struct ipw_tpt_entry *ipw_get_tpt_by_rssi(s32 rssi, u8 mode);
 	virtual u8 ipw_rate_scale2plcp(int x);
+	void check_firstup(struct ipw_priv *priv);
 	virtual u8 ipw_sync_station(struct ipw_priv *priv, int sta_id,
 			   u16 tx_rate, u8 flags);
 	virtual int ieee80211_register_hw(struct ieee80211_hw *hw);
@@ -1031,7 +1032,8 @@ inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
 }	
 	virtual int iwl_set_rxon_channel(struct ipw_priv *priv, u8 phymode, u8 channel);
 	virtual void iwl_irq_tasklet(struct ipw_priv *priv);
-	
+	static int ipw_add_sta_sync_callback(struct ipw_priv *priv,
+				     struct ipw_cmd *cmd, mbuf_t skb);
 	
 	
 	
@@ -1162,7 +1164,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
 							
-							
+	int firstifup;						
 };
 
 #endif

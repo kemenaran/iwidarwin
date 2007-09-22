@@ -318,7 +318,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>6107F3580C8EF2E700CF78B0</string>
+										<string>61CCEF930CA5BE5300360C60</string>
 										<key>history</key>
 										<array>
 											<string>61B125000B592DD600E4BC65</string>
@@ -332,30 +332,33 @@
 											<string>61ADCC8C0BA5E5830031B225</string>
 											<string>61F149AC0BAECBB000A13F2E</string>
 											<string>610FFEF30C0FB88800CCC720</string>
-											<string>61D354590C7B56620000E730</string>
 											<string>61D3C6300C7F3B9100BA7C39</string>
-											<string>6109BBE90C873C0800D64DD3</string>
 											<string>6101109F0C8A384C00CE87F0</string>
 											<string>61F545570C8B3720002DE3DF</string>
-											<string>613863B20C8B3AD300898B48</string>
-											<string>61D58AAC0C8C8460007F55F0</string>
-											<string>61D599480C8CA81C00C91B39</string>
-											<string>61D540990C8CCFDD00B1C92C</string>
 											<string>61D5409A0C8CCFDD00B1C92C</string>
 											<string>61D5409B0C8CCFDD00B1C92C</string>
 											<string>61D5409C0C8CCFDD00B1C92C</string>
-											<string>61D540BB0C8CD28D00B1C92C</string>
-											<string>61D540BC0C8CD28D00B1C92C</string>
-											<string>61D511950C8DFF8600E58A88</string>
-											<string>61D511970C8DFF8600E58A88</string>
-											<string>61D996A80C8E2448009E7037</string>
-											<string>61D996AA0C8E2448009E7037</string>
-											<string>61D996AB0C8E2448009E7037</string>
-											<string>61D996EB0C8E29F5009E7037</string>
-											<string>61D996FE0C8E2D67009E7037</string>
-											<string>61E9AF3E0C8E3945008FA923</string>
-											<string>6107F3540C8EF2E700CF78B0</string>
-											<string>6107F3550C8EF2E700CF78B0</string>
+											<string>61B5F5A00C8EF48600B4C5EB</string>
+											<string>61D3DCF00C8F350A000188AE</string>
+											<string>610EF9870C8F40C500461F96</string>
+											<string>61D49C410C922A5F008854F3</string>
+											<string>611647090C9325AE00390234</string>
+											<string>6116470A0C9325AE00390234</string>
+											<string>61D3B0B40C94C8CF0044D865</string>
+											<string>61D3E2F50C97576C00E3BD8F</string>
+											<string>610481960C985A0B00F2AC28</string>
+											<string>61D3F1000C99B9FA0099F819</string>
+											<string>61F85C440C9A247A003CD68A</string>
+											<string>61FC646C0C9B233200D88B1F</string>
+											<string>61D251180C9B529D00013C48</string>
+											<string>61D2511A0C9B529D00013C48</string>
+											<string>61D3A6CD0C9B715900EA8103</string>
+											<string>61FB89380C9C2C4A00A6DFD0</string>
+											<string>61D68B6C0C9CA73C008AD912</string>
+											<string>614783520E8146A700A6781C</string>
+											<string>61D228040CA16A8C008F5734</string>
+											<string>61D228050CA16A8C008F5734</string>
+											<string>61CF3C240CA5A64300B3902E</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -384,7 +387,6 @@
 											<string>61D3545D0C7B56620000E730</string>
 											<string>61D3545F0C7B56620000E730</string>
 											<string>61D3C6350C7F3B9100BA7C39</string>
-											<string>61D3013A0C8369E100D24738</string>
 											<string>610110C20C8A3CDC00CE87F0</string>
 											<string>613863B60C8B3AD300898B48</string>
 											<string>61D5994B0C8CA81C00C91B39</string>
@@ -394,8 +396,10 @@
 											<string>61D540A30C8CCFDD00B1C92C</string>
 											<string>61D540A40C8CCFDD00B1C92C</string>
 											<string>61D540A50C8CCFDD00B1C92C</string>
-											<string>6107F3560C8EF2E700CF78B0</string>
-											<string>6107F3570C8EF2E700CF78B0</string>
+											<string>610EF9890C8F40C500461F96</string>
+											<string>61D49C460C922A5F008854F3</string>
+											<string>611647100C9325AE00390234</string>
+											<string>61D239570C9CBEBD00DAEA6B</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -453,9 +457,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>6107F3590C8EF2E700CF78B0</string>
+				<string>61CCEF8E0CA5BD9400360C60</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>6107F35A0C8EF2E700CF78B0</string>
+				<string>61CCEF8F0CA5BD9400360C60</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -670,7 +674,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61B06E030B58957A000DD1AE</string>
-				<string>6107F35B0C8EF2E700CF78B0</string>
+				<string>61CCEF920CA5BE2300360C60</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -826,7 +830,7 @@
 										<key>Frame</key>
 										<string>{{0, 0}, {794, 317}}</string>
 										<key>RubberWindowFrame</key>
-										<string>206 105 794 575 0 0 1024 746 </string>
+										<string>193 163 794 575 0 0 1024 746 </string>
 									</dict>
 									<key>Module</key>
 									<string>PBXNavigatorGroup</string>
@@ -850,7 +854,7 @@
 								<key>Frame</key>
 								<string>{{0, 322}, {794, 212}}</string>
 								<key>RubberWindowFrame</key>
-								<string>206 105 794 575 0 0 1024 746 </string>
+								<string>193 163 794 575 0 0 1024 746 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXProjectFindModule</string>
@@ -873,13 +877,13 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61D2CCDD0C8E3D9F00220732</string>
-				<string>61D2CCDE0C8E3D9F00220732</string>
+				<string>61D227FC0CA15E4C008F5734</string>
+				<string>61D227FD0CA15E4C008F5734</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
 			<key>WindowString</key>
-			<string>206 105 794 575 0 0 1024 746 </string>
+			<string>193 163 794 575 0 0 1024 746 </string>
 			<key>WindowToolGUID</key>
 			<string>1C530D57069F1CE1000CFCEE</string>
 			<key>WindowToolIsVisible</key>
@@ -1337,6 +1341,8 @@
 					<key>Dock</key>
 					<array>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>OptionsSetName</key>
@@ -1396,7 +1402,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C0AD2AF069F1E9B00FABCE6</string>
-				<string>613502200BEE439300E7902B</string>
+				<string>61D37B830C908CF300703F1F</string>
 				<string>1CA6456E063B45B4001379D8</string>
 			</array>
 			<key>ToolbarConfiguration</key>
