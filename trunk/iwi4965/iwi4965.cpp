@@ -727,7 +727,7 @@ int darwin_iwi4965::ipw_sw_reset(int option)
 	}
 
 	/*************************************/
-	switch (mode) {
+	/*switch (mode) {
 	case 1:
 		priv->iw_mode = IW_MODE_ADHOC;
 		break;
@@ -738,8 +738,9 @@ int darwin_iwi4965::ipw_sw_reset(int option)
 	case 0:
 		priv->iw_mode = IW_MODE_INFRA;
 		break;
-	}
+	}*/
 
+	priv->iw_mode =IEEE80211_IF_TYPE_STA;
 	priv->freq_band = IEEE80211_24GHZ_BAND;
 	
 	u32 pci_id;//(priv->pci_dev->device << 16) | priv->pci_dev->subsystem_device;
@@ -1024,7 +1025,7 @@ bool darwin_iwi4965::start(IOService *provider)
 	UInt16	reg;
 //linking the kext control clone to the driver:
 		clone=this;
-		
+		firstifup=0;
 	do {
 				
 		if ( super::start(provider) == 0) {
@@ -1115,6 +1116,8 @@ bool darwin_iwi4965::start(IOService *provider)
 		}
 		fTransmitQueue->setCapacity(1024);
 		
+		ipw_sw_reset(1);
+		ipw_bg_resume_work();
 
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -1186,21 +1189,30 @@ bool darwin_iwi4965::start(IOService *provider)
 		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::reg_txpower_periodic),NULL,NULL,false);
 		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::ipw_bg_post_associate),NULL,NULL,false);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::ipw_down),NULL,NULL,false);
+		queue_te(13,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::check_firstup),NULL,NULL,false);
 		
 		ipw_sw_reset(1);
-		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
-		//ipw_nic_init(priv);
-		//ipw_nic_reset(priv);
-		//ipw_bg_resume_work();
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::check_firstup),priv,1000,true);
 		
-		pl=1;
-		ipw_up(priv);
 		return true;			// end start successfully
 	} while (false);
 		
 	//stop(provider);
 	free();
 	return false;			// end start insuccessfully
+}
+
+void darwin_iwi4965::check_firstup(struct ipw_priv *priv)
+{
+	if (firstifup==0) 
+	{
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::check_firstup),priv,1000,true);
+		return;
+	}
+	disable(fNetif);
+	pl=1;
+	ipw_up(priv);
+	
 }
 
 void darwin_iwi4965::ipw_bg_resume_work()
@@ -1378,10 +1390,9 @@ void darwin_iwi4965::ipw_start_nic()
 
 inline void darwin_iwi4965::ipw_enable_interrupts(struct ipw_priv *priv)
 {
-	if (priv->status & STATUS_INT_ENABLED)
-		return;
-	priv->status |= STATUS_INT_ENABLED;
-	ipw_write32(CSR_INT_MASK, CSR_INI_SET_MASK);}
+		priv->status |= STATUS_INT_ENABLED;
+	ipw_write32(CSR_INT_MASK, CSR_INI_SET_MASK);
+}
 
 int darwin_iwi4965::ipw_load(struct ipw_priv *priv)
 {
@@ -1485,19 +1496,33 @@ void darwin_iwi4965::ipw_init_ordinals(struct ipw_priv *priv)
 
 int darwin_iwi4965::ipw_grab_restricted_access(struct ipw_priv *priv)
 {
-	//if (priv->is_3945) {
 		int rc;
-		ipw_set_bit( CSR_GP_CNTRL,
-			    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
-		rc = ipw_poll_bit( priv,CSR_GP_CNTRL,
-				  CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN,
-				  (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
-				   CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
-		if (rc < 0) {
-			//IOLog("MAC is in deep sleep!\n");
-			return -EIO;
+	u32 gp_ctl;
+
+	if (priv->status & STATUS_RF_KILL_MASK) {
+		//IOLog("gra WARNING: Requesting MAC access during RFKILL "
+		//	"wakes up NIC\n");
+
+		/* 10 msec allows time for NIC to complete its data save */
+		gp_ctl = ipw_read32( CSR_GP_CNTRL);
+		if (gp_ctl & CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY) {
+			//IOLog("gra Wait for complete power-down gpctl = 0x%08x\n", gp_ctl);
+			mdelay(10);
+		} else {
+			//IOLog("gra power-down complete gpctl = 0x%08x\n", gp_ctl);
 		}
-	//}
+	}
+
+	/* this bit wakes up the NIC */
+	ipw_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+	rc = ipw_poll_bit( priv, CSR_GP_CNTRL,
+			   CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN,
+			   (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
+			    CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
+	if (rc < 0) {
+		//IOLog("gra MAC is in deep sleep!\n");
+		return -EIO;
+	}
 
 	priv->status |= STATUS_RESTRICTED;
 
@@ -1945,6 +1970,7 @@ void darwin_iwi4965::__ipw_set_bits_restricted_reg(u32 line, struct ipw_priv
 
 int darwin_iwi4965::ipw_eeprom_init_sram(struct ipw_priv *priv)
 {
+	IWI_DEBUG_FN("\n");
 	u16 *e = (u16 *) & priv->eeprom;
 	u32 r;
 	int to;
@@ -1953,26 +1979,32 @@ int darwin_iwi4965::ipw_eeprom_init_sram(struct ipw_priv *priv)
 	int rc;
 	u16 addr;
 
-	if (sizeof(priv->eeprom) != 1024) {
-		IOLog("EEPROM structure size incorrect!\n");
-		//return -EINVAL;
+	/* The EEPROM structure has several padding buffers within it
+	 * and when adding new EEPROM maps is subject to programmer errors
+	 * which may be very difficult to identify without explicitly
+	 * checking the resulting size of the eeprom map. */
+	if (sizeof(priv->eeprom) != 1024) 
+	{
+	   IOLog("bug IWL_EEPROM_IMAGE_SIZE\n");
+	   return -1;
 	}
-
 	if ((gp & 0x00000007) == 0x00000000) {
 		IOLog("EEPROM not found, EEPROM_GP=0x%08x", gp);
-		//return -ENOENT;
+		return -ENOENT;
 	}
+//#if IWL == 3945
+	//ipw_clear_bit( 0x030, 0x00000180);
+//#endif
 
-//	ipw_clear_bit( CSR_EEPROM_GP, 0x00000180);
 	for (addr = 0, r = 0; addr < sz; addr += 2) {
-		ipw_write32( CSR_EEPROM_REG, addr << 1);
-		ipw_clear_bit( CSR_EEPROM_REG, 0x00000002);
-		ipw_grab_restricted_access(priv);
-		//if (rc)
-		//	return rc;
+		ipw_write32( 0x02c, addr << 1);
+		ipw_clear_bit( 0x02c, 0x00000002);
+		rc = ipw_grab_restricted_access(priv);
+		if (rc)
+			return rc;
 
 		for (to = 0; to < 10; to++) {
-			r = _ipw_read_restricted(priv, CSR_EEPROM_REG);
+			r = _ipw_read_restricted(priv, 0x02c);
 			if (r & 1)
 				break;
 			udelay(5);
@@ -1982,13 +2014,14 @@ int darwin_iwi4965::ipw_eeprom_init_sram(struct ipw_priv *priv)
 
 		if (!(r & 1)) {
 			IOLog("Time out reading EEPROM[%d]", addr);
-			//return -ETIMEDOUT;
+			return -ETIMEDOUT;
 		}
 
 		e[addr / 2] = r >> 16;
 	}
 
 	return 0;
+
 }
 
 int darwin_iwi4965::ipw_rate_scale_clear_window(struct ipw_rate_scale_data
@@ -2095,14 +2128,12 @@ int darwin_iwi4965::ipw_nic_set_pwr_src(struct ipw_priv *priv, int pwr_max)
 {
 	int rc = 0;
 	unsigned long flags;
-
+IOLog("ipw_nic_set_pwr_src\n");
 	//spin_lock_irqsave(&priv->lock, flags);
 	rc = ipw_grab_restricted_access(priv);
-	rc=0;
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
-		return rc;
-	}*/
+	if (rc) {
+		return 1;
+	}
 
 	if (!pwr_max) {
 		u32 val;
@@ -2303,11 +2334,10 @@ int darwin_iwi4965::ipw_nic_init(struct ipw_priv *priv)
 	}
 
 	rc = ipw_grab_restricted_access(priv);
-	rc=0;
-	//if (rc) {
+	if (rc) {
 	//	spin_unlock_irqrestore(&priv->lock, flags);
-	//	return rc;
-	//}
+		return rc;
+	}
 
 	_ipw_read_restricted_reg(priv, APMG_CLK_CTRL_REG);
 
@@ -2350,51 +2380,52 @@ int darwin_iwi4965::ipw_nic_init(struct ipw_priv *priv)
 	rc = ipw_eeprom_init_sram(priv);
 	if (rc)
 		return rc;
-
-	/*if (priv->eeprom.calib_version < EEPROM_TX_POWER_VERSION_NEW) {
+IOLog("1\n");
+	if (priv->eeprom.calib_version < EEPROM_TX_POWER_VERSION_NEW) {
 		IOLog("Older EEPROM detected!  Aborting.\n");
 		return -EINVAL;
-	}*/
+	}
 
 	//pci_read_config_byte(priv->pci_dev, PCI_LINK_CTRL, &val_link);
-	val_link=fPCIDevice->configRead8(PCI_LINK_CTRL);
+	//val_link=fPCIDevice->configRead8(PCI_LINK_CTRL);
 
 	/* disable L1 entry -- workaround for pre-B1 */
 	//pci_write_config_byte(priv->pci_dev, PCI_LINK_CTRL, val_link & ~0x02);
-	fPCIDevice->configWrite8(PCI_LINK_CTRL, val_link & ~0x02);
+	//fPCIDevice->configWrite8(PCI_LINK_CTRL, val_link & ~0x02);
 	
 	//spin_lock_irqsave(&priv->lock, flags);
 
 	/* set CSR_HW_CONFIG_REG for uCode use */
-
+IOLog("2\n");
 	ipw_set_bit( CSR_SW_VER, CSR_HW_IF_CONFIG_REG_BIT_KEDRON_R |
 		    CSR_HW_IF_CONFIG_REG_BIT_RADIO_SI |
 		    CSR_HW_IF_CONFIG_REG_BIT_MAC_SI);
-
+IOLog("3\n");
 	rc = ipw_grab_restricted_access(priv);
-	rc=0;
-	/*if (rc < 0) {
-		spin_unlock_irqrestore(&priv->lock, flags);
-		IWL_DEBUG_INFO("Failed to init the card\n");
+	if (rc < 0) {
+		IOLog("Failed to init the card\n");
 		return rc;
-	}*/
-
+	}
+IOLog("4\n");
 	_ipw_read_restricted_reg(priv, ALM_APMG_PS_CTL);
+	IOLog("5\n");
 	ipw_set_bits_restricted_reg(priv, ALM_APMG_PS_CTL,
 				    APMG_PS_CTRL_REG_VAL_ALM_R_RESET_REQ);
 	udelay(5);
+	IOLog("6\n");
 	ipw_clear_bits_restricted_reg(priv, ALM_APMG_PS_CTL,
 				      APMG_PS_CTRL_REG_VAL_ALM_R_RESET_REQ);
-
+IOLog("7\n");
 	_ipw_release_restricted_access(priv);
 	//spin_unlock_irqrestore(&priv->lock, flags);
-
+IOLog("8\n");
 	ipw_card_show_info(priv);
 
 	/* end nic_init */
-
+IOLog("9\n");
 	/* Allocate the RX queue, or reset if it is already allocated */
 	if (!rxq) {
+	IOLog("10\n");
 		rxq = ipw_rx_queue_alloc(priv);
 		if (rc) {
 			IOLog("Unable to initialize Rx queue\n");
@@ -2402,30 +2433,31 @@ int darwin_iwi4965::ipw_nic_init(struct ipw_priv *priv)
 		}
 	} else
 		ipw_rx_queue_reset(priv, rxq);
-
+IOLog("11\n");
 	ipw_rx_queue_replenish(priv);
-
+IOLog("12\n");
 	ipw_rx_init(priv, rxq);
 
 	//spin_lock_irqsave(&priv->lock, flags);
 
 	rxq->need_update = 1;
+	IOLog("13\n");
 	ipw_rx_queue_update_write_ptr(priv, rxq);
-
+IOLog("14\n");
 	//spin_unlock_irqrestore(&priv->lock, flags);
 	ipw_queue_reset(priv);
 	/*rc = iwl4965_txq_ctx_reset(priv);
 	if (rc)
 		return rc;*/
-
+IOLog("15\n");
 	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
 		IOLog("SW RF KILL supported in EEPROM.\n");
-
+IOLog("16\n");
 	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
 		IOLog("HW RF KILL supported in EEPROM.\n");
 
 	priv->status |= STATUS_INIT;
-
+IOLog("17\n");
 	return 0;
 
 }
@@ -2782,13 +2814,10 @@ int darwin_iwi4965::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 	int rc;
 	unsigned long flags;
 
-	//spin_lock_irqsave(&priv->lock, flags);
 	rc = ipw_grab_restricted_access(priv);
-	rc=0;
-	/*if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
+	if (rc) {
 		return rc;
-	}*/
+	}
 
 	/* stop HW */
 	_ipw_write_restricted(priv, FH_MEM_RCSR_CHNL0_CONFIG_REG, 0);
@@ -2815,7 +2844,6 @@ int darwin_iwi4965::ipw_rx_init(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 
 	_ipw_release_restricted_access(priv);
 
-	//spin_unlock_irqrestore(&priv->lock, flags);
 
 	return 0;
 
@@ -3484,7 +3512,12 @@ IOReturn darwin_iwi4965::enable( IONetworkInterface * netif )
 		memcpy(&priv->net_dev->name,ii,sizeof(ii));
 		IWI_DEBUG("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	}
-	if ((priv->status & STATUS_RF_KILL_HW)) return -1;
+	if (firstifup==0)
+	{
+		firstifup=1;
+		return -1;
+	}
+	
 	IWI_DEBUG("ifconfig up\n");
 	switch ((fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING))
 	{
@@ -3688,13 +3721,13 @@ void darwin_iwi4965::ipw_deinit(struct ipw_priv *priv)
 
 inline void darwin_iwi4965::ipw_disable_interrupts(struct ipw_priv *priv)
 {
-	if (!(priv->status & STATUS_INT_ENABLED))
-		return;
-	priv->status &= ~STATUS_INT_ENABLED;
-	ipw_write32(CSR_INT_MASK, 0x00000000);
-	ipw_write32(CSR_INT, CSR_INI_SET_MASK);
-	ipw_write32( CSR_FH_INT_STATUS, 0xff);
-	ipw_write32( CSR_FH_INT_STATUS, 0x00070000);
+		/* disable interrupts from uCode/NIC to host */
+	ipw_write32( CSR_INT_MASK, 0x00000000);
+
+	/* acknowledge/clear/reset any interrupts still pending
+	 * from uCode or flow handler (Rx/Tx DMA) */
+	ipw_write32( CSR_INT, 0xffffffff);
+	ipw_write32( CSR_FH_INT_STATUS, 0xffffffff);
 
 }
 

@@ -1008,6 +1008,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	{
 	return &hw->conf;
 	}
+	void check_firstup(struct ipw_priv *priv);
 	virtual struct ieee80211_hw_mode *ipw_get_current_hw(struct ipw_priv *priv);
 	virtual int ipw_get_channels_for_scan(struct ipw_priv *priv, int phymode,
 				     u8 is_active, u8 direct_mask,
@@ -1163,7 +1164,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	//open link to user interface application flag:
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
-							
+	int firstifup;						
 							
 };
 
