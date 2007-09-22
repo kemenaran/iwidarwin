@@ -1347,7 +1347,7 @@ struct ieee80211_device {
 
 	int iw_mode;		/* operating mode (IW_MODE_*) */
 	struct iw_spy_data spy_data;	/* iwspy support */
-	spinlock_t lock;
+	IOSimpleLock *lock;
 	int tx_headroom;	/* Set to size of any additional room needed at front
 				 * of allocated Tx SKBs */
 	u32 config;

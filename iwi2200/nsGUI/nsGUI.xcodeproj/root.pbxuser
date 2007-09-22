@@ -8,8 +8,7 @@
 			8D1107260486CEB800E47090 /* nsGUI */,
 		);
 		breakpoints = (
-			61D0DACC0C15F53500C3EE04 /* MainController.mm:623 */,
-			61CC6FB40C32B88000AA9C48 /* MainController.mm:443 */,
+			6100B5BB0C9F360300FD30CE /* MainController.mm:645 */,
 		);
 		breakpointsGroup = 61D0DAE40C15F56A00C3EE04 /* XCBreakpointsBucket */;
 		codeSenseManager = 617938870BEFAC5C00AD3EA5 /* Code sense */;
@@ -83,14 +82,17 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 204656551;
-			PBXWorkspaceStateSaveDate = 204656551;
+			PBXPerProjectTemplateStateSaveDate = 212103212;
+			PBXWorkspaceStateSaveDate = 212103212;
 		};
 		perUserProjectItems = {
-			611EEE640C32D27C003C6DBD /* PBXTextBookmark */ = 611EEE640C32D27C003C6DBD /* PBXTextBookmark */;
+			6103AC250CA470B900A47FC4 /* PBXTextBookmark */ = 6103AC250CA470B900A47FC4 /* PBXTextBookmark */;
+			6103AC260CA470B900A47FC4 /* PBXTextBookmark */ = 6103AC260CA470B900A47FC4 /* PBXTextBookmark */;
+			6103AC270CA470B900A47FC4 /* PBXTextBookmark */ = 6103AC270CA470B900A47FC4 /* PBXTextBookmark */;
+			6103AC280CA470B900A47FC4 /* PBXTextBookmark */ = 6103AC280CA470B900A47FC4 /* PBXTextBookmark */;
+			6103AC2E0CA470D600A47FC4 /* PBXTextBookmark */ = 6103AC2E0CA470D600A47FC4 /* PBXTextBookmark */;
 			6126369B0C15EB8800E90989 /* PBXTextBookmark */ = 6126369B0C15EB8800E90989 /* PBXTextBookmark */;
 			6179388A0BEFACA200AD3EA5 /* PBXTextBookmark */ = 6179388A0BEFACA200AD3EA5 /* PBXTextBookmark */;
-			617AD85E0C32CEB200B05E8E /* PBXTextBookmark */ = 617AD85E0C32CEB200B05E8E /* PBXTextBookmark */;
 			61CD74A60BF3E09800403B9B /* PBXTextBookmark */ = 61CD74A60BF3E09800403B9B /* PBXTextBookmark */;
 			61CD74AA0BF3E09800403B9B /* PBXTextBookmark */ = 61CD74AA0BF3E09800403B9B /* PBXTextBookmark */;
 			61CD96230C15FEC5009DCDDB /* PBXTextBookmark */ = 61CD96230C15FEC5009DCDDB /* PBXTextBookmark */;
@@ -108,7 +110,7 @@
 	29B97316FDCFA39411CA2CEA /* main.mm */ = {
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {775, 353}}";
-			sepNavSelRange = "{0, 0}";
+			sepNavSelRange = "{247, 0}";
 			sepNavVisRect = "{{0, 0}, {775, 353}}";
 		};
 	};
@@ -129,19 +131,88 @@
 	406E55DB0BECD5B800AB0131 /* MainController.mm */ = {
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {890, 9240}}";
-			sepNavSelRange = "{18971, 0}";
-			sepNavVisRect = "{{0, 8098}, {775, 353}}";
+			sepNavSelRange = "{20174, 0}";
+			sepNavVisRect = "{{0, 8736}, {775, 353}}";
 		};
 	};
-	611EEE640C32D27C003C6DBD /* PBXTextBookmark */ = {
+	6100B5BB0C9F360300FD30CE /* MainController.mm:645 */ = {
+		isa = PBXFileBreakpoint;
+		actions = (
+		);
+		breakpointStyle = 0;
+		continueAfterActions = 0;
+		delayBeforeContinue = 0;
+		fileReference = 406E55DB0BECD5B800AB0131 /* MainController.mm */;
+		functionName = "-createAdHoc:";
+		hitCount = 1;
+		lineNumber = 645;
+		location = nsGUI;
+		modificationTime = 211760669.24334;
+		state = 1;
+	};
+	6103AC1A0CA4707000A47FC4 /* ipw2200.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {775, 27748}}";
+			sepNavSelRange = "{21465, 0}";
+			sepNavVisRect = "{{0, 9757}, {775, 353}}";
+		};
+	};
+	6103AC1D0CA4707000A47FC4 /* ieee80211.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {740, 23058}}";
+			sepNavSelRange = "{39567, 0}";
+			sepNavVisRect = "{{0, 18845}, {740, 180}}";
+		};
+	};
+	6103AC250CA470B900A47FC4 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = 406E55DB0BECD5B800AB0131 /* MainController.mm */;
-		name = "MainController.mm: 585";
+		name = "MainController.mm: 631";
 		rLen = 0;
-		rLoc = 18971;
+		rLoc = 20174;
 		rType = 0;
-		vrLen = 655;
-		vrLoc = 18918;
+		vrLen = 930;
+		vrLoc = 19959;
+	};
+	6103AC260CA470B900A47FC4 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 6103AC1A0CA4707000A47FC4 /* ipw2200.h */;
+		name = "ipw2200.h: 710";
+		rLen = 0;
+		rLoc = 21465;
+		rType = 0;
+		vrLen = 975;
+		vrLoc = 20809;
+	};
+	6103AC270CA470B900A47FC4 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 406E55DB0BECD5B800AB0131 /* MainController.mm */;
+		name = "MainController.mm: 631";
+		rLen = 0;
+		rLoc = 20174;
+		rType = 0;
+		vrLen = 930;
+		vrLoc = 19959;
+	};
+	6103AC280CA470B900A47FC4 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 6103AC1A0CA4707000A47FC4 /* ipw2200.h */;
+		name = "ipw2200.h: 710";
+		rLen = 0;
+		rLoc = 21465;
+		rType = 0;
+		vrLen = 975;
+		vrLoc = 20809;
+	};
+	6103AC2E0CA470D600A47FC4 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 29B97316FDCFA39411CA2CEA /* main.mm */;
+		name = "main.mm: 13";
+		rLen = 0;
+		rLoc = 247;
+		rType = 0;
+		vrLen = 250;
+		vrLoc = 0;
 	};
 	6126369B0C15EB8800E90989 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -203,31 +274,6 @@
 		vrLen = 617;
 		vrLoc = 0;
 	};
-	617AD85E0C32CEB200B05E8E /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 406E55DB0BECD5B800AB0131 /* MainController.mm */;
-		name = "- (IBAction)createAdHoc:(id)sender";
-		rLen = 35;
-		rLoc = 19665;
-		rType = 0;
-		vrLen = 912;
-		vrLoc = 20221;
-	};
-	61CC6FB40C32B88000AA9C48 /* MainController.mm:443 */ = {
-		isa = PBXFileBreakpoint;
-		actions = (
-		);
-		breakpointStyle = 0;
-		continueAfterActions = 0;
-		delayBeforeContinue = 0;
-		fileReference = 406E55DB0BECD5B800AB0131 /* MainController.mm */;
-		functionName = "-preAction";
-		hitCount = 1;
-		lineNumber = 443;
-		location = nsGUI;
-		modificationTime = 204656929.501439;
-		state = 1;
-	};
 	61CD74A60BF3E09800403B9B /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = 61CD74A70BF3E09800403B9B /* NSDate.h */;
@@ -272,27 +318,11 @@
 		vrLen = 833;
 		vrLoc = 1521;
 	};
-	61D0DACC0C15F53500C3EE04 /* MainController.mm:623 */ = {
-		isa = PBXFileBreakpoint;
-		actions = (
-		);
-		breakpointStyle = 0;
-		continueAfterActions = 0;
-		delayBeforeContinue = 0;
-		fileReference = 406E55DB0BECD5B800AB0131 /* MainController.mm */;
-		functionName = "-createAdHoc:";
-		hitCount = 1;
-		lineNumber = 623;
-		location = nsGUI;
-		modificationTime = 204656929.501422;
-		state = 1;
-	};
 	61D0DAE40C15F56A00C3EE04 /* XCBreakpointsBucket */ = {
 		isa = XCBreakpointsBucket;
-		name = "Project Breakpoints";
+		name = nsGUI;
 		objects = (
-			61D0DACC0C15F53500C3EE04 /* MainController.mm:623 */,
-			61CC6FB40C32B88000AA9C48 /* MainController.mm:443 */,
+			6100B5BB0C9F360300FD30CE /* MainController.mm:645 */,
 		);
 	};
 	61D13A9A0BF113D0005EB1EE /* PBXTextBookmark */ = {

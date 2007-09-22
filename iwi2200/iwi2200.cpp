@@ -1,5 +1,5 @@
 #include "iwi2200.h"
-//ipw-2.3 firmware
+//ipw-3.0 firmware
 #include "firmware/iwi_boot.fw.h"
 #include "firmware/iwi_ucode_bss.fw.h"
 #include "firmware/iwi_bss.fw.h"
@@ -490,6 +490,11 @@ int darwin_iwi2200::ipw_sw_reset(int option)
 	
 	
 	//priv->pci_dev = pdev;
+	//spin_lock_init(&priv->irq_lock);
+	priv->irq_lock=IOSimpleLockAlloc();
+	//spin_lock_init(&priv->lock);
+	priv->lock=IOSimpleLockAlloc();
+	priv->ieee->lock=IOSimpleLockAlloc();
 	for (i = 0; i < IPW_IBSS_MAC_HASH_SIZE; i++)
 		INIT_LIST_HEAD(&priv->ibss_mac_hash[i]);
 
@@ -623,7 +628,7 @@ bool darwin_iwi2200::start(IOService *provider)
 	UInt16	reg;
 	//linking the kext control clone to the driver:
 		clone=this;
-		
+	firstifup=0;	
 	do {
 				
 		if ( super::start(provider) == 0) {
@@ -718,13 +723,14 @@ bool darwin_iwi2200::start(IOService *provider)
 		fInterruptSrc->enable();
 
 		
-		fTransmitQueue = createOutputQueue();
+		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
 		if (fTransmitQueue == NULL)
 		{
 			IWI_ERR("ERR: getOutputQueue()\n");
 			break;
 		}
 		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+		//fTransmitQueue->start();
 		
 		resetDevice((UInt16 *)memBase);
 		
@@ -732,19 +738,29 @@ bool darwin_iwi2200::start(IOService *provider)
 			IWI_ERR("%s attach failed\n", getName());
 			break;
 		}
+		
+		
+
+		
 		/*setProperty(kIOFeatures,kIONetworkFeatureNoBSDWait | kIONetworkFeatureHardwareVlan);
-		setProperty(kIOPacketFilters, kIOPacketFilterMulticastAll | kIOPacketFilterBroadcast | kIOPacketFilterUnicast);
-		fNetif->setProperty(kIOActivePacketFilters, kIOPacketFilterMulticastAll | kIOPacketFilterBroadcast | kIOPacketFilterUnicast);
+		setProperty(kIOPacketFilters, kIOPacketFilterPromiscuous | kIOPacketFilterMulticastAll | kIOPacketFilterBroadcast | kIOPacketFilterUnicast);
+		fNetif->setProperty(kIOActivePacketFilters, kIOPacketFilterPromiscuous | kIOPacketFilterMulticastAll | kIOPacketFilterBroadcast | kIOPacketFilterUnicast);
 		fNetif->setProperty(kIOEthernetWakeOnLANFilterGroup, kIOEthernetWakeOnMagicPacket | kIOEthernetWakeOnPacketAddressMatch);
 		setMulticastMode(true);
 		setPromiscuousMode(false);
 		setWakeOnMagicPacket(true);*/
+		//setProperty(kIOMinPacketSize,10);
+		//setProperty(kIOMaxPacketSize, IPW_RX_BUF_SIZE);
+		//setMaxPacketSize(IPW_RX_BUF_SIZE);
+		//fNetif->setProperty(kIORequiredPacketFilters, kIOPacketFilterPromiscuous | kIOPacketFilterMulticastAll | kIOPacketFilterBroadcast | kIOPacketFilterUnicast);
+		//fNetif->setProperty(kIOActivePacketFilters, kIOPacketFilterPromiscuous | kIOPacketFilterMulticastAll | kIOPacketFilterBroadcast | kIOPacketFilterUnicast);
 		setProperty(kIOMinPacketSize,10);
 		setProperty(kIOMaxPacketSize, IPW_RX_BUF_SIZE);
-		//setMaxPacketSize(IPW_RX_BUF_SIZE);
+	
 		fNetif->registerOutputHandler(this,getOutputHandler());
 
 		fNetif->registerService();
+				
 		registerService();
 		
 		mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
@@ -754,7 +770,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		publishMediumDictionary(mediumDict);
 		setCurrentMedium(mediumTable[MEDIUM_TYPE_AUTO]);
 		setSelectedMedium(mediumTable[MEDIUM_TYPE_AUTO]);
-		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_NONE]);
+		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
 		
 		//kext control registration:
 		//these functions registers the control which enables
@@ -776,7 +792,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		
 		mutex=IOLockAlloc();
 		spin=IOSimpleLockAlloc();
-
+		
 		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_scan),NULL,NULL,false);
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),NULL,NULL,false);
 		queue_te(2,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_led_link_on),NULL,NULL,false);
@@ -791,22 +807,40 @@ bool darwin_iwi2200::start(IOService *provider)
 		queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_led_link_off),NULL,NULL,false);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_disassociate),NULL,NULL,false);
 		queue_te(13,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_send_system_config),NULL,NULL,false);
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,NULL,false);
+		queue_te(15,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::handleInterrupt),NULL,NULL,false);
+		queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),NULL,NULL,false);
+		queue_te(17,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::outputPacket2),NULL,NULL,false);
+	
 		
-		_mbufCursor = IOMbufLittleMemoryCursor::withSpecification(IPW_RX_BUF_SIZE, 1);
-		for (int i=0;i<20;i++) memset(&nonets[i],0,sizeof(struct ieee80211_network));
-		pl=1;
+		//_mbufCursor = IOMbufLittleMemoryCursor::withSpecification(IPW_RX_BUF_SIZE, 1);
+		//for (int i=0;i<20;i++) memset(&nonets[i],0,sizeof(struct ieee80211_network));
+
 
 	ipw_sw_reset(1);
-	//super::enable(fNetif);
-	ipw_up(priv);
+	queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),priv,1000,true);
 
-
-		return true;			// end start successfully
+	return true;			// end start successfully
 	} while (false);
 		
 	//stop(provider);
 	free();
 	return false;			// end start insuccessfully
+}
+
+void darwin_iwi2200::check_firstup(struct ipw_priv *priv)
+{
+	if (firstifup==0) 
+	{
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),priv,1000,true);
+		return;
+	}
+	//disable(fNetif);
+	//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+	//fTransmitQueue->start();
+	pl=1;
+	ipw_up(priv);
+	
 }
 
 IOReturn darwin_iwi2200::selectMedium(const IONetworkMedium * medium)
@@ -855,7 +889,7 @@ IOOutputQueue * darwin_iwi2200::createOutputQueue( void )
     // the driver's work loop, which simplifies the driver but also
     // carries a small performance cost (relatively for 10/100 Mb).
 	//return super::createOutputQueue();
-    return IOGatedOutputQueue::withTarget( this, getWorkLoop() );
+    return IOGatedOutputQueue::withTarget(this,(IOOutputAction)&darwin_iwi2200::outputPacket2,getWorkLoop(),0);//getWorkLoop() );
 }
 
 bool darwin_iwi2200::createWorkLoop( void )
@@ -981,6 +1015,7 @@ struct ipw_rx_queue *darwin_iwi2200::ipw_rx_queue_alloc(struct ipw_priv *priv)
 		return NULL;
 	}
 	//spin_lock_init(&rxq->lock);
+	rxq->lock=IOSimpleLockAlloc();
 	INIT_LIST_HEAD(&rxq->rx_free);
 	INIT_LIST_HEAD(&rxq->rx_used);
 
@@ -1010,8 +1045,8 @@ inline void darwin_iwi2200::ipw_enable_interrupts(struct ipw_priv *priv)
 void darwin_iwi2200::ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 {
 	int i;
-
-	//spin_lock_irqsave(&rxq->lock, flags);
+	IOInterruptState flags;
+	spin_lock_irqsave(rxq->lock, flags);
 	//IOLockLock(mutex);
 	
 	INIT_LIST_HEAD(&rxq->rx_free);
@@ -1039,7 +1074,7 @@ void darwin_iwi2200::ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_que
 	rxq->read = rxq->write = 0;
 	rxq->processed = RX_QUEUE_SIZE - 1;
 	rxq->free_count = 0;
-	//spin_unlock_irqrestore(&rxq->lock, flags);
+	spin_unlock_irqrestore(rxq->lock, flags);
 	//IOLockUnlock(mutex);
 }
 
@@ -1083,17 +1118,17 @@ void darwin_iwi2200::ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 
 void darwin_iwi2200::ieee80211_txb_free(struct ieee80211_txb *txb)
 {
-	/*int i;
+	int i;
 	if (txb==NULL)	return;
 	for (i = 0; i < txb->nr_frags; i++)
 		if (txb->fragments[i]) 
 		{
-			freePacket(txb->fragments[i]);
+			if (!(mbuf_type(txb->fragments[i]) == MBUF_TYPE_FREE)) freePacket(txb->fragments[i]);
 			//txb->fragments[i]=NULL;
 		}
 	IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8 *) * txb->nr_frags));
 	//kfree(txb);
-	//txb=NULL;*/
+	//txb=NULL;
 }
 
 void darwin_iwi2200::ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_queue *txq, int count)
@@ -1117,7 +1152,7 @@ void darwin_iwi2200::ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_que
 	//q->dma_addr=NULL;
 	//kfree(txq->txb);
 	IOFree(txq->txb,sizeof(txq->txb[0]) * count);// todo: check size
-	txq->txb=NULL;
+	//txq->txb=NULL;
 	/* 0 fill whole structure */
 	memset(txq, 0, sizeof(*txq));
 }
@@ -1254,7 +1289,8 @@ void darwin_iwi2200::ipw_rx_queue_replenish(void *data)
 	struct list_head *element;
 	struct ipw_rx_mem_buffer *rxb;
 	IWI_DEBUG("ipw_rx_queue_replenish\n");
-	//spin_lock_irqsave(&rxq->lock, flags);
+	IOInterruptState flags;
+	spin_lock_irqsave(rxq->lock, flags);
 	//IOInterruptState	instate;
 	//instate = IOSimpleLockLockDisableInterrupt( spin);
 
@@ -1265,7 +1301,7 @@ void darwin_iwi2200::ipw_rx_queue_replenish(void *data)
 		//rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
 		//rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
 		//if (!_allocPacketForFragment(&rxb->skb,&rxb->fskb)) {
-		if (mbuf_getpacket(MBUF_WAITOK , &rxb->skb)!=0) {
+		if (mbuf_getpacket(MBUF_DONTWAIT , &rxb->skb)!=0) {
 		//if (rxb->skb==0) {
 			IWI_ERR( "%s: Can not allocate SKB buffers.\n",
 			       priv->net_dev->name);
@@ -1289,7 +1325,7 @@ void darwin_iwi2200::ipw_rx_queue_replenish(void *data)
 		list_add_tail(&rxb->list, &rxq->rx_free);
 		rxq->free_count++;
 	}
-	//spin_unlock_irqrestore(&rxq->lock, flags);
+	spin_unlock_irqrestore(rxq->lock, flags);
 	//IOLockUnlock(mutex);
 	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	ipw_rx_queue_restock(priv);
@@ -1301,8 +1337,9 @@ void darwin_iwi2200::ipw_rx_queue_restock(struct ipw_priv *priv)
 	struct list_head *element;
 	struct ipw_rx_mem_buffer *rxb;
 	int write;
+	IOInterruptState flags;
 	IWI_DEBUG("ipw_rx_queue_restock\n");
-	//spin_lock_irqsave(&rxq->lock, flags);
+	spin_lock_irqsave(rxq->lock, flags);
 	//IOLockLock(mutex);
 	//IOInterruptState	instate;
 	//instate = IOSimpleLockLockDisableInterrupt( spin);
@@ -1320,16 +1357,18 @@ void darwin_iwi2200::ipw_rx_queue_restock(struct ipw_priv *priv)
 		rxq->free_count--;
 	}
 	//IOLockUnlock(mutex);
-	//spin_unlock_irqrestore(&rxq->lock, flags);
+	spin_unlock_irqrestore(rxq->lock, flags);
 	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	
 	/* If the pre-allocated buffer pool is dropping low, schedule to
 	 * refill it */
 	//if (rxq->free_count <= RX_LOW_WATERMARK) queue_work(priv->workqueue, &priv->rx_replenish);
+	
+		
 	if (rxq->free_count <= RX_LOW_WATERMARK) 
 	{
-		ipw_rx_queue_replenish(priv);
-		//queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rx_queue_replenish),priv,NULL,true);
+		//ipw_rx_queue_replenish(priv);
+		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rx_queue_replenish),priv,NULL,true);
 	}
 	/* If we've added more space for the firmware to place data, tell it */
 	if (write != rxq->write)
@@ -1589,7 +1628,7 @@ void darwin_iwi2200::ipw_adapter_restart(ipw_priv *adapter)
 	priv->ieee->scans=0;
 	
 	if (priv->ieee->iw_mode == IW_MODE_INFRA)
-	for (int i=0;i<20;i++) if (nonets[i].bssid) memset(&nonets[i],0,sizeof(struct ieee80211_network));
+	//for (int i=0;i<20;i++) if (nonets[i].bssid) memset(&nonets[i],0,sizeof(struct ieee80211_network));
 
 	//queue_td(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_scan));
 	//queue_td(4,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_scan_check));
@@ -1628,10 +1667,12 @@ void darwin_iwi2200::ipw_remove_current_network(struct ipw_priv *priv)
 void darwin_iwi2200::ipw_rf_kill(ipw_priv *priv)
 {
 	//struct ipw_priv *priv = adapter;
-
+	IOInterruptState flags;
+	spin_lock_irqsave(priv->lock, flags);
+	
 	//IOSimpleLockLock(spin);
 	//flags=IOSimpleLockLockDisableInterrupt(spin);
-	if (rf_kill_active(priv)) {
+	if (rf_kill_active(priv) || priv->status & STATUS_RF_KILL_MASK) {
 		IWI_DEBUG("RF Kill active, rescheduling GPIO check\n");
 		//IODelay(5000*1000);
 		//ipw_rf_kill();
@@ -1646,16 +1687,17 @@ void darwin_iwi2200::ipw_rf_kill(ipw_priv *priv)
 	if (!(priv->status & STATUS_RF_KILL_MASK)) {
 		IWI_DEBUG("HW RF Kill no longer active, restarting "
 				  "device\n");
-
+		priv->status &= ~STATUS_EXIT_PENDING;
 		/* we can not do an adapter restart while inside an irq lock */
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),priv,NULL,true);
 	} else
 		IWI_DEBUG("HW RF Kill deactivated.  SW RF Kill still "
 				  "enabled\n");
-
+ 
       exit_unlock:
 	//IOSimpleLockUnlock(spin);
 	//IOSimpleLockUnlockEnableInterrupt(spin,flags);
+	spin_unlock_irqrestore(priv->lock, flags);
 
 	return;
 }
@@ -1716,18 +1758,19 @@ int darwin_iwi2200::ipw_up(struct ipw_priv *priv)
 			rc = ipw_load(priv);
 			if (rc) {
 				IWI_DEBUG("Unable to load firmware: %d\n", rc);
-				ipw_adapter_restart(priv);
+				queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),priv,NULL,true);
 				return rc;
 			}
 			
-		for (int x=0;x<64;x++) 
+		/*for (int x=0;x<64;x++) //allocate txq for recycle
 		{
 			priv->txq[0].txb[x]=(struct ieee80211_txb *)IOMalloc(sizeof(struct ieee80211_txb) 
 			+ (sizeof(u8 *) * 1));
-			mbuf_getpacket(MBUF_WAITOK, &priv->txq[0].txb[x]->fragments[0]);// = allocatePacket(IPW_RX_BUF_SIZE);
-			mbuf_setlen(priv->txq[0].txb[x]->fragments[0], IPW_RX_BUF_SIZE);
-			mbuf_pkthdr_setlen(priv->txq[0].txb[x]->fragments[0], IPW_RX_BUF_SIZE);
-		}
+			mbuf_getpacket(MBUF_DONTWAIT, &priv->txq[0].txb[x]->fragments[0]);
+			// priv->txq[0].txb[x]->fragments[0]= allocatePacket(IPW_RX_BUF_SIZE);
+			mbuf_setlen(priv->txq[0].txb[x]->fragments[0], 0);
+			mbuf_pkthdr_setlen(priv->txq[0].txb[x]->fragments[0], 0);
+		}*/
 		ipw_init_ordinals(priv);
 		if (!(config & CFG_CUSTOM_MAC))
 				memcpy(priv->net_dev->dev_addr, priv->mac_addr, ETH_ALEN);
@@ -1751,10 +1794,10 @@ int darwin_iwi2200::ipw_up(struct ipw_priv *priv)
 		IWI_LOG("geography %d = %s\n",j,ipw_geos[j].name);
 		
 		if (priv->status & STATUS_RF_KILL_SW) {
-			IWI_DEBUG("Radio disabled by module parameter.\n");
+			IWI_WARN("Radio disabled by module parameter.\n");
 			return 0;
-		} else if (rf_kill_active(priv)) {
-			IWI_DEBUG("Radio Frequency Kill Switch is On:\n"
+		} else if (rf_kill_active(priv) || (priv->status & STATUS_RF_KILL_HW)) {
+			IWI_WARN("Radio Frequency Kill Switch is On:\n"
 				    "Kill switch must be turned off for "
 				    "wireless networking to work.\n");
 			queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rf_kill),priv,2000,true);
@@ -1790,9 +1833,8 @@ IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
 {
 	
 	IWI_DEBUG("ifconfig down\n");
-	switch ((fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING))
+	if ((fNetif->getFlags() & IFF_RUNNING)!=0)
 	{
-	case true:
 		IWI_DEBUG("ifconfig going down\n");
 		//super::disable(fNetif);
 		//fNetif->setPoweredOnByUser(false);
@@ -1801,7 +1843,7 @@ IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
 		//fNetif->syncSIOCSIFFLAGS( /*IONetworkController * */this);
 		//(if_flags & ~mask) | (new_flags & mask) if mask has IFF_UP if_updown fires up (kpi_interface.c in xnu)
-		ifnet_set_flags(fifnet, 0 , IFF_UP | IFF_RUNNING );
+		ifnet_set_flags(fifnet, 0 , IFF_RUNNING);
 		
 		
 		fTransmitQueue->setCapacity(0);
@@ -1812,11 +1854,11 @@ IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
 		
 		return kIOReturnSuccess;
 		
-		break;
-	default:
+	}
+	else
+	{
 		IWI_DEBUG("ifconfig already down\n");
 		return -1;
-		break;
 	}
 }
 
@@ -1830,28 +1872,36 @@ IOReturn darwin_iwi2200::enable( IONetworkInterface * netif )
 		memcpy(&priv->ieee->dev->name,ii,sizeof(ii));
 		IWI_DEBUG("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	}
-	if ((priv->status & STATUS_RF_KILL_HW)) return -1;
-	IWI_DEBUG("ifconfig up\n");
-	switch ((fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING))
+	if (firstifup==0)
 	{
-	case false:
+		firstifup=1;
+		//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+		//fTransmitQueue->start();
+		//return -1;
+	}
+	IWI_DEBUG("ifconfig up\n");
+	if ((fNetif->getFlags() & IFF_RUNNING)==0)
+	{
 		IWI_DEBUG("ifconfig going up\n ");
 		//super::enable(fNetif);
 		//fNetif->setPoweredOnByUser(true);
 		//fNetif->setLinkState(kIO80211NetworkLinkUp);
-
+		
 		//(if_flags & ~mask) | (new_flags & mask) if mask has IFF_UP if_updown fires up (kpi_interface.c in xnu)	
-		ifnet_set_flags(fifnet, IFF_UP|IFF_RUNNING|IFF_BROADCAST|IFF_SIMPLEX|IFF_MULTICAST|IFF_NOTRAILERS 		, IFF_UP | IFF_RUNNING );
+		//ifnet_set_flags(fifnet, IFF_UP|IFF_RUNNING|IFF_BROADCAST|IFF_SIMPLEX|IFF_MULTICAST|IFF_NOTRAILERS 		
+		//, IFF_UP | IFF_RUNNING );
+		ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		//fNetif->inputEvent(kIONetworkEventTypeLinkUp,NULL);
 		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
 		fTransmitQueue->start();
-		
 		return kIOReturnSuccess;
-		break;
-	default:
+
+	}
+	else
+	{
 		IWI_DEBUG("ifconfig already up\n");
 		return kIOReturnExclusiveAccess;
-		break;
+
 	}
 	
 }
@@ -2071,7 +2121,7 @@ void darwin_iwi2200::ipw_deinit(struct ipw_priv *priv)
 	if (priv->status & STATUS_ASSOCIATED) {
 		IWI_DEBUG("Disassociating during shutdown.\n");
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
-		setLinkStatus(kIONetworkLinkValid);
+		//setLinkStatus(kIONetworkLinkValid);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_disassociate),priv,NULL,true);
 	}
 
@@ -2112,7 +2162,7 @@ void darwin_iwi2200::ipw_down(struct ipw_priv *priv)
 	if (priv->status & (STATUS_ASSOCIATED | STATUS_ASSOCIATING))
 	{
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
-		setLinkStatus(kIONetworkLinkValid);
+		//setLinkStatus(kIONetworkLinkValid);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_disassociate),priv,NULL,true);
 	}
 	int exit_pending = priv->status & STATUS_EXIT_PENDING;
@@ -2153,7 +2203,56 @@ void darwin_iwi2200::interruptOccurred(OSObject * owner,
 {
 	darwin_iwi2200 *self = (darwin_iwi2200 *)owner;
 	//IWI_LOG("interruptOccurred 0x%x 0x%x 0x%x 0x%x\n",owner,src,nub,source);
-	self->handleInterrupt();
+	
+	struct ipw_priv *priv = self->priv;
+		u32 inta, inta_mask;
+
+	if (!priv)
+		return;
+
+	//spin_lock(&priv->irq_lock);
+	IOSimpleLockLock(priv->irq_lock);
+	if (!(priv->status & STATUS_INT_ENABLED)) {
+		/* Shared IRQ */
+		goto none;
+	}
+
+	inta = self->ipw_read32( IPW_INTA_RW);
+	inta_mask = self->ipw_read32( IPW_INTA_MASK_R);
+
+	if (inta == 0xFFFFFFFF) {
+		/* Hardware disappeared */
+		IWI_DEBUG_FULL("IRQ INTA == 0xFFFFFFFF\n");
+		goto none;
+	}
+
+	if (!(inta & (IPW_INTA_MASK_ALL & inta_mask))) {
+		/* Shared interrupt */
+		goto none;
+	}
+
+	/* tell the device to stop sending interrupts */
+	self->ipw_disable_interrupts(priv);
+
+	/* ack current interrupts */
+	inta &= (IPW_INTA_MASK_ALL & inta_mask);
+	self->ipw_write32( IPW_INTA_RW, inta);
+
+	/* Cache INTA value for our tasklet */
+	priv->isr_inta = inta;
+
+	//tasklet_schedule(&priv->irq_tasklet);
+	//self->handleInterrupt();
+	self->queue_te(15,OSMemberFunctionCast(thread_call_func_t,self,&darwin_iwi2200::handleInterrupt),NULL,NULL,true);
+	
+	//spin_unlock(&priv->irq_lock);
+	IOSimpleLockUnlock(priv->irq_lock);
+	return;
+      none:
+	//spin_unlock(&priv->irq_lock);
+	IOSimpleLockUnlock(priv->irq_lock);
+	return;
+	
 }
 
 int darwin_iwi2200::ipw_queue_tx_reclaim(struct ipw_priv *priv,
@@ -2179,12 +2278,12 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(struct ipw_priv *priv,
 #ifdef TX_QUEUE_CHECK	  
 	if ((ipw_queue_space(q) > q->low_mark) &&
 	    (qindex >= 0) &&
-	    (priv->status & STATUS_ASSOCIATED) && (fNetif->getFlags() & IFF_RUNNING)){ //&& netif_running(priv->net_dev)){
+	    (priv->status & STATUS_ASSOCIATED) && ((fNetif->getFlags() & IFF_RUNNING)!=0)){ //&& netif_running(priv->net_dev)){
 		IWI_DEBUG("queue is available\n");
 		//ipw_send_cmd_simple(priv, IPW_CMD_TX_FLUSH);
-		//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
-		//fTransmitQueue->service();
+		//////fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+		////fTransmitQueue->start();
+		//////fTransmitQueue->service();
 	}
 #endif	
 	//netif_wake_queue(priv->net_dev);
@@ -2194,65 +2293,57 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(struct ipw_priv *priv,
 	return used;
 }
 
+void darwin_iwi2200::spin_lock_irqsave(IOSimpleLock *lock, IOInterruptState flags)
+{
+//if (!lock) return;
+IWI_DEBUG_FULL("irqsave lock %x flags %x\n",lock,flags);
+flags = IOSimpleLockLockDisableInterrupt( lock);
+}
+
+void darwin_iwi2200::spin_unlock_irqrestore(IOSimpleLock *lock, IOInterruptState flags)
+{
+//if (!lock) return;
+IWI_DEBUG_FULL("irqrestore lock %x flags %x\n",lock,flags);
+IOSimpleLockUnlockEnableInterrupt( lock, flags );
+}
+
 UInt32 darwin_iwi2200::handleInterrupt(void)
 {
-	UInt32 r,inta_mask;
-	UInt32 ret;
+	//fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	//fTransmitQueue->start();
+	 
+	u32 inta, inta_mask, handled = 0;
+	IOInterruptState flags;
 
-	if (!priv)
-		return false;
+	spin_lock_irqsave(priv->irq_lock, flags);
 
-	if (!(priv->status & STATUS_INT_ENABLED)) {
-		/* Shared IRQ */
-		return false;
-	}
-
-	r = ipw_read32( IPW_INTA_RW);
+	inta = ipw_read32( IPW_INTA_RW);
 	inta_mask = ipw_read32( IPW_INTA_MASK_R);
+	inta &= (IPW_INTA_MASK_ALL & inta_mask);
 
-	if (r == 0xFFFFFFFF) {
-		/* Hardware disappeared */
-		IWI_WARN("IRQ INTA == 0xFFFFFFFF\n");
-		return false;
-	}
-
-	if (!(r & (IPW_INTA_MASK_ALL & inta_mask))) {
-		/* Shared interrupt */
-		return false;
-	}
-
-	ipw_disable_interrupts(priv);
-
-	/* ack current interrupts */
-	r &= (IPW_INTA_MASK_ALL & inta_mask);
-	ipw_write32( IPW_INTA_RW, r);
-
-	/* Cache INTA value for our tasklet */
-	priv->isr_inta = r;
-	
-	r = ipw_read32(IPW_INTA_RW);
-	inta_mask = ipw_read32(IPW_INTA_MASK_R);
-	r &= (IPW_INTA_MASK_ALL & inta_mask);
-	
 	/* Add any cached INTA values that need to be handled */
-	r |= priv->isr_inta;
+	inta |= priv->isr_inta;
+
+	spin_unlock_irqrestore(priv->irq_lock, flags);
+
+	spin_lock_irqsave(priv->lock, flags);
 	
-	IWI_DEBUG_FULL("%s: GotInterrupt: 0x%8x\t (", getName(), r);
+	IWI_DEBUG_FULL("%s: GotInterrupt: 0x%8x\t (", getName(), inta);
 
-
-	if (r & IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE)
+	if (inta & IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE)
 	{
 		IWI_DEBUG_FULL("PHY_OFF_DONE Restarting\n");
 		priv->status |= STATUS_RF_KILL_HW;
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
-		setLinkStatus(kIONetworkLinkValid);
-		if ((fNetif->getFlags() & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
+		//setLinkStatus(kIONetworkLinkValid);
+		queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),priv,NULL,true);
+		//if ((fNetif->getFlags() & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),priv,NULL,true);
-		ret |= IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE;		
+		handled |= IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE;		
 	}
 	
-	if ( (r & IPW_INTA_BIT_FATAL_ERROR) || (r & IWI_INTR_PARITY_ERROR) )
+	if ( (inta & IPW_INTA_BIT_FATAL_ERROR) || (inta & IWI_INTR_PARITY_ERROR) )
 	{
 		IWI_DEBUG_FULL("Firmware error detected.  Restarting.\n");
 		priv->status |= STATUS_RF_KILL_HW;
@@ -2260,119 +2351,122 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 		priv->status &= ~STATUS_HCMD_ACTIVE;
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
-		setLinkStatus(kIONetworkLinkValid);
-		if ((fNetif->getFlags() & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
+		//setLinkStatus(kIONetworkLinkValid);
+		queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),priv,NULL,true);
+		//if ((fNetif->getFlags() & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),priv,NULL,true);
-		ret |= IPW_INTA_BIT_FATAL_ERROR;
+		handled |= IPW_INTA_BIT_FATAL_ERROR;
 	}
 
-	if (r & IPW_INTA_BIT_RF_KILL_DONE)
+	if (inta & IPW_INTA_BIT_RF_KILL_DONE)
 	{
 		IWI_LOG("IPW_INTA_BIT_RF_KILL_DONE\nPress wireless button to turn interface on\n");
 		priv->status |= STATUS_RF_KILL_HW;
 		priv->status &= ~STATUS_RF_KILL_SW;
 		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
-		setLinkStatus(kIONetworkLinkValid);
-		if ((fNetif->getFlags() & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
-		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rf_kill),priv,2000,true);
-		ret |= IPW_INTA_BIT_RF_KILL_DONE;
+		//setLinkStatus(kIONetworkLinkValid);
+		queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),priv,NULL,true);
+		//ipw_link_down(priv);
+		//if ((fNetif->getFlags() & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
+		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rf_kill),priv,NULL,true);
+		handled |= IPW_INTA_BIT_RF_KILL_DONE;
 	}
 
-	if ( r & IPW_INTA_BIT_RX_TRANSFER)
+	if ( inta & IPW_INTA_BIT_RX_TRANSFER)
 	{
 		IWI_DEBUG_FULL("IPW_INTA_BIT_RX_TRANSFER)\n");
 		ipw_rx(priv);
 		//fNetif->clearInputQueue();
 		//releaseFreePackets();
-		ret = IPW_INTA_BIT_RX_TRANSFER;
+		handled = IPW_INTA_BIT_RX_TRANSFER;
 	}
 
-	if ( r & IPW_INTA_BIT_TX_CMD_QUEUE)
+	if ( inta & IPW_INTA_BIT_TX_CMD_QUEUE)
 	{
 		IWI_DEBUG_FULL("IPW_INTA_BIT_TX_CMD_QUEUE\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq_cmd, -1);
 		priv->status &= ~STATUS_HCMD_ACTIVE;
 		//wake_up_interruptible(&priv->wait_command_queue);
-		ret |= IPW_INTA_BIT_TX_CMD_QUEUE;
+		handled |= IPW_INTA_BIT_TX_CMD_QUEUE;
 		//ret = IWI_INTR_CMD_DONE;
 	}
 	
-	if ( r & IPW_INTA_BIT_TX_QUEUE_1)
+	if ( inta & IPW_INTA_BIT_TX_QUEUE_1)
 	{
 		IWI_DEBUG_FULL("TX_QUEUE_1\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq[0], 0);
-		ret |= IPW_INTA_BIT_TX_QUEUE_1;
+		handled |= IPW_INTA_BIT_TX_QUEUE_1;
 	}
 
-	if ( r & IPW_INTA_BIT_TX_QUEUE_2)
+	if ( inta & IPW_INTA_BIT_TX_QUEUE_2)
 	{
 		IWI_DEBUG_FULL("TX_QUEUE_2\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq[1], 1);
-		ret |= IPW_INTA_BIT_TX_QUEUE_2;
+		handled |= IPW_INTA_BIT_TX_QUEUE_2;
 	}
 
-	if ( r & IPW_INTA_BIT_TX_QUEUE_3)
+	if ( inta & IPW_INTA_BIT_TX_QUEUE_3)
 	{
 		IWI_DEBUG_FULL("TX_QUEUE_3\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq[2], 2);
-		ret |= IPW_INTA_BIT_TX_QUEUE_3;
+		handled |= IPW_INTA_BIT_TX_QUEUE_3;
 	}
 
-	if ( r & IPW_INTA_BIT_TX_QUEUE_4)
+	if ( inta & IPW_INTA_BIT_TX_QUEUE_4)
 	{
 		IWI_DEBUG_FULL("TX_QUEUE_4\n");
 		ipw_queue_tx_reclaim(priv, &priv->txq[3], 3);
-		ret |= IPW_INTA_BIT_TX_QUEUE_4;
+		handled |= IPW_INTA_BIT_TX_QUEUE_4;
 	}
 
-	if ( r & IPW_INTA_BIT_STATUS_CHANGE)
+	if ( inta & IPW_INTA_BIT_STATUS_CHANGE)
 	{
 		IWI_DEBUG("STATUS_CHANGE\n");
-		ret |= IPW_INTA_BIT_STATUS_CHANGE;
+		handled |= IPW_INTA_BIT_STATUS_CHANGE;
 	}
 
-	if ( r & IPW_INTA_BIT_BEACON_PERIOD_EXPIRED)
+	if ( inta & IPW_INTA_BIT_BEACON_PERIOD_EXPIRED)
 	{
 		IWI_DEBUG_FULL("TX_PERIOD_EXPIRED\n");
-		ret |= IPW_INTA_BIT_BEACON_PERIOD_EXPIRED;
+		handled |= IPW_INTA_BIT_BEACON_PERIOD_EXPIRED;
 	}
 
-	if ( r & IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE)
+	if ( inta & IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE)
 	{
 		IWI_DEBUG_FULL("IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE\n");
-		ret |= IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE;
+		handled |= IPW_INTA_BIT_SLAVE_MODE_HOST_CMD_DONE;
 	}
 
-	if ( r & IPW_INTA_BIT_FW_INITIALIZATION_DONE)
+	if ( inta & IPW_INTA_BIT_FW_INITIALIZATION_DONE)
 	{
 		IWI_DEBUG_FULL("FW_INITIALIZATION_DONE\n");
-		ret |= IPW_INTA_BIT_FW_INITIALIZATION_DONE;
+		handled |= IPW_INTA_BIT_FW_INITIALIZATION_DONE;
 	}
 
 
 #ifdef TX_QUEUE_CHECK	
-		if( (ret & 
-			( IPW_INTA_BIT_TX_QUEUE_1 | IPW_INTA_BIT_TX_QUEUE_2 | IPW_INTA_BIT_TX_QUEUE_3  | IPW_INTA_BIT_TX_QUEUE_4) ) 
-			&& (fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING) )
+		if( (handled & 
+			( IPW_INTA_BIT_TX_QUEUE_1 | IPW_INTA_BIT_TX_QUEUE_2 | IPW_INTA_BIT_TX_QUEUE_3  | IPW_INTA_BIT_TX_QUEUE_4) ) )
 		{
 			 IWI_DEBUG("fTrasmitQueue->TX_QUEUE_CHECK()\n");
-			/*if (fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync)==false)
+			/*if (////fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync)==false)
 			{
-				IWI_ERR("fTransmitQueue->service error\n");
-				fTransmitQueue->stop();
-				fTransmitQueue->setCapacity(0);
-				fTransmitQueue->flush();
+				IWI_ERR("////fTransmitQueue->service error\n");
+				////fTransmitQueue->stop();
+				////fTransmitQueue->setCapacity(0);
+				////fTransmitQueue->flush();
 			}*/
 			 //fNetif->clearInputQueue();
 			 //ipw_send_cmd_simple(priv, IPW_CMD_TX_FLUSH);
 		}
 #endif
 
-		
+	spin_unlock_irqrestore(priv->lock, flags);
+	
 	ipw_enable_interrupts(priv);
 	
-	return ret;
+	return handled;
 }
 
 
@@ -3348,6 +3442,9 @@ int darwin_iwi2200::ipw_queue_tx_hcmd(struct ipw_priv *priv, int hcmd, void *buf
 
 	if (ipw_queue_space(q) < (sync ? 1 : 2)) {
 		IWI_ERR("No space for Tx\n");
+		//fTransmitQueue->stop();
+		//fTransmitQueue->flush();
+		//fTransmitQueue->start();
 		return -EBUSY;
 	}
 
@@ -3371,27 +3468,29 @@ int darwin_iwi2200::ipw_queue_tx_hcmd(struct ipw_priv *priv, int hcmd, void *buf
 int darwin_iwi2200::__ipw_send_cmd(struct ipw_priv *priv, struct host_cmd *cmd)
 {
 	int rc = 0;
-
-	//spin_lock_irqsave(&priv->lock, flags);
+	IOInterruptState flags;
+	
+	
+	spin_lock_irqsave(priv->lock, flags);
 	//IOLockLock(mutex);
 	if (priv->status & STATUS_HCMD_ACTIVE) {
 		IWI_DEBUG("Failed to send %s: Already sending a command.\n",
 			  get_cmd_string(cmd->cmd));
-		//spin_unlock_irqrestore(&priv->lock, flags);
+		spin_unlock_irqrestore(priv->lock, flags);
 		//IOLockUnlock(mutex);
 		return -EAGAIN;
 	}
-
+	
 	if (priv->status & STATUS_ASSOCIATING) {
 		IWI_DEBUG("abandon a command while associating\n");
-		//spin_unlock_irqrestore(&priv->lock, flags);
+		spin_unlock_irqrestore(priv->lock, flags);
 		//IOLockUnlock(mutex);
 		return -1;
 	}
 
 	if (priv->status & STATUS_DISASSOCIATING) {
 		IWI_DEBUG("abandon a command while disassociating\n");
-		//spin_unlock_irqrestore(&priv->lock, flags);
+		spin_unlock_irqrestore(priv->lock, flags);
 		//IOLockUnlock(mutex);
 		return -1;
 	}
@@ -3411,18 +3510,18 @@ int darwin_iwi2200::__ipw_send_cmd(struct ipw_priv *priv, struct host_cmd *cmd)
 		     priv->status);
 
 
-	IWI_DEBUG_DUMP((u8 *) cmd->param, cmd->len);
+	//IWI_DEBUG_DUMP((u8 *) cmd->param, cmd->len);
 
 	rc = ipw_queue_tx_hcmd(priv, cmd->cmd, cmd->param, cmd->len, 0);
 	if (rc) {
 		priv->status &= ~STATUS_HCMD_ACTIVE;		
 		IWI_DEBUG("Failed to send %s: Reason %d\n",
 			  get_cmd_string(cmd->cmd), rc);
-		//spin_unlock_irqrestore(&priv->lock, flags);
+		spin_unlock_irqrestore(priv->lock, flags);
 		//IOLockUnlock(mutex);
 		goto exit;
 	}
-	//spin_unlock_irqrestore(&priv->lock, flags);
+	spin_unlock_irqrestore(priv->lock, flags);
 	//IOLockUnlock(mutex);
 
 	//rc = wait_event_interruptible_timeout(priv->wait_command_queue,	!(priv->status & STATUS_HCMD_ACTIVE), HOST_COMPLETE_TIMEOUT);
@@ -3430,22 +3529,23 @@ int darwin_iwi2200::__ipw_send_cmd(struct ipw_priv *priv, struct host_cmd *cmd)
 	while (priv->status & STATUS_HCMD_ACTIVE) 
 	{
 		rc++;
+		//handleInterrupt();
 		IODelay(HZ);
 		if (rc==HZ) break;
 	}
-	if (rc == 0) {
-		//spin_lock_irqsave(&priv->lock, flags);
+	if (rc == HZ) {
+		spin_lock_irqsave(priv->lock, flags);
 		//IOLockLock(mutex);
 		if (priv->status & STATUS_HCMD_ACTIVE) {
 			IWI_DEBUG("Failed to send %s: Command timed out.\n",
 				  get_cmd_string(cmd->cmd));
 			priv->status &= ~STATUS_HCMD_ACTIVE;
-			//spin_unlock_irqrestore(&priv->lock, flags);
+			spin_unlock_irqrestore(priv->lock, flags);
 			//IOLockUnlock(mutex);
 			rc = -EIO;
 			goto exit;
 		}
-		//spin_unlock_irqrestore(&priv->lock, flags);
+		spin_unlock_irqrestore(priv->lock, flags);
 		//IOLockUnlock(mutex);
 	} else
 		rc = 0;
@@ -3928,12 +4028,13 @@ int darwin_iwi2200::configu(struct ipw_priv *priv)
 u8 darwin_iwi2200::ipw_qos_current_mode(struct ipw_priv *priv)
 {
 	u8 mode = 0;
-
+	IOInterruptState flags;
+	
 	if (priv->status & STATUS_ASSOCIATED) {
 
-		//spin_lock_irqsave(&priv->ieee->lock, flags);
+		spin_lock_irqsave(priv->ieee->lock, flags);
 		mode = priv->assoc_network->mode;
-		//spin_unlock_irqrestore(&priv->ieee->lock, flags);
+		spin_unlock_irqrestore(priv->ieee->lock, flags);
 	} else {
 		mode = priv->ieee->mode;
 	}
@@ -3966,7 +4067,8 @@ int darwin_iwi2200::ipw_qos_activate(struct ipw_priv *priv,
 	u32 burst_duration;
 	int i;
 	u8 type;
-
+	IOInterruptState flags;
+	
 	type = ipw_qos_current_mode(priv);
 
 	active_one = &(qos_parameters[QOS_PARAM_SET_DEF_CCK]);
@@ -4004,13 +4106,13 @@ int darwin_iwi2200::ipw_qos_activate(struct ipw_priv *priv,
 	} else {
 		int active;
 
-		//spin_lock_irqsave(&priv->ieee->lock, flags);
+		spin_lock_irqsave(priv->ieee->lock, flags);
 		active_one = &(qos_network_data->parameters);
 		qos_network_data->old_param_count =
 		    qos_network_data->param_count;
 		memcpy(&qos_parameters[QOS_PARAM_SET_ACTIVE], active_one, size);
 		active = qos_network_data->supported;
-		//spin_unlock_irqrestore(&priv->ieee->lock, flags);
+		spin_unlock_irqrestore(priv->ieee->lock, flags);
 
 		if (active == 0) {
 			burst_duration = ipw_qos_get_burst_duration(priv);
@@ -4589,7 +4691,7 @@ void darwin_iwi2200::ipw_handle_mgmt_packet(struct ipw_priv *priv,
 	
 	mbuf_t skb = rxb->skb;
 	struct ipw_rx_packet *pkt = (struct ipw_rx_packet *)(mbuf_data(skb));
-	//mbuf_prepend(&rxb->skb,IPW_RX_FRAME_SIZE,MBUF_WAITOK);
+	//mbuf_prepend(&rxb->skb,IPW_RX_FRAME_SIZE,MBUF_DONTWAIT);
 	//mbuf_align_32(skb,IPW_RX_FRAME_SIZE);
 	//struct ieee80211_hdr_4addr *header = (struct ieee80211_hdr_4addr *)(mbuf_datastart(skb));// + IPW_RX_FRAME_SIZE);
 	//struct ieee80211_hdr_4addr *header =(struct ieee80211_hdr_4addr *)mbuf_pkthdr_header(skb);
@@ -4739,15 +4841,16 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	if (unlikely((le16_to_cpu(pkt->u.frame.length) + IPW_RX_FRAME_SIZE) >
 		     mbuf_pkthdr_len(rxb->skb))) {
           //		     mbuf_trailingspace(rxb->skb))) {
-		priv->ieee->stats.rx_errors++;
+		//priv->ieee->stats.rx_errors++;
 		netStats->inputErrors++;
 		//priv->wstats.discard.misc++;
 		IWI_ERR("Corruption detected! Oh no!\n");
 		return false;
 	} //else if (unlikely(!netif_running(priv->net_dev))) {
 		else if (!(fNetif->getFlags() & IFF_RUNNING)) {
-		priv->ieee->stats.rx_dropped++;
+		//priv->ieee->stats.rx_dropped++;
 		//priv->wstats.discard.misc++;
+		netStats->inputErrors++;
 		IWI_ERR("Dropping packet while interface is not up.\n");
 		return false;
 	}
@@ -4762,11 +4865,14 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	mbuf_setdata(rxb->skb, 
 	                      (UInt8*)mbuf_data(rxb->skb) + offsetof(struct ipw_rx_packet, u.frame.data),
 			  pkt->u.frame.length);
+			  
+mbuf_setlen(rxb->skb, pkt->u.frame.length);
 
 	if( mbuf_flags(rxb->skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(rxb->skb, pkt->u.frame.length);
+			
 	
-	//mbuf_setlen(rxb->skb, pkt->u.frame.length);
+	
 	IWI_DEBUG("dump rx packet size mbuf_len = %d,mbuf_pkthdr_len %d , rx frame size %d. cluster size %d "
 		       " mbuf_next is %s\n", mbuf_len(rxb->skb),  
 			                              mbuf_pkthdr_len(rxb->skb),
@@ -4776,8 +4882,8 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 #ifdef IW_RX_REPLACING									
 	inputPkt = replaceOrCopyPacket(&rxb->skb,	mbuf_len(rxb->skb),&replaced);
 	if(inputPkt == 0){
-		IWI_DEBUG("fail to replace or copy packet \n");
-		priv->ieee->stats.rx_errors++;
+		IWI_ERR("fail to replace or copy packet \n");
+		//priv->ieee->stats.rx_errors++;
 		netStats->inputErrors++;
 		return doFlushQueue;
 	}
@@ -4789,11 +4895,11 @@ bool darwin_iwi2200::ipw_handle_data_packet(struct ipw_priv *priv,
 	if (!ieee80211_rx(priv->ieee, rxb->skb, stats))
 #endif	
 	{
-			priv->ieee->stats.rx_errors++;
+			//priv->ieee->stats.rx_errors++;
 			netStats->inputErrors++;
 	}
 	else {			/* ieee80211_rx succeeded, so it now owns the SKB */
-		doFlushQueue = true;
+			doFlushQueue = true;
 		//rxb->skb = NULL;
 		__ipw_led_activity_on(priv);
 	}
@@ -4885,7 +4991,7 @@ int darwin_iwi2200::is_duplicate_packet(struct ipw_priv *priv,
 
 void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 {
-	
+	 
 	struct ipw_rx_mem_buffer *rxb;
 	struct ipw_rx_packet *pkt;
 	struct ieee80211_hdr_4addr *header;
@@ -4908,8 +5014,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 			IWI_DEBUG( "Queue not allocated!\n");
 			break;
 		}
-		mbuf_setlen(rxb->skb,IPW_RX_BUF_SIZE);
-		mbuf_pkthdr_setlen(rxb->skb,IPW_RX_BUF_SIZE);
+
 		if( mbuf_next(rxb->skb)) 
 		{
 			IWI_ERR("rx mbuf_next\n");
@@ -4920,6 +5025,8 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 			IWI_DEBUG( "Queue not allocated!\n");
 			break;
 		}
+		mbuf_setlen(rxb->skb,IPW_RX_BUF_SIZE);
+		mbuf_pkthdr_setlen(rxb->skb,IPW_RX_BUF_SIZE);
 		//IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,IPW_RX_BUF_SIZE,kIODirectionOutIn)->prepare();
 		//pci_dma_sync_single_for_cpu(priv->pci_dev, rxb->dma_addr,IPW_RX_BUF_SIZE,PCI_DMA_FROMDEVICE);
 		
@@ -4963,7 +5070,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 					break;
 				}
 				//mbuf_align_32(rxb->skb,IPW_RX_FRAME_SIZE);
-				//mbuf_prepend(&rxb->skb,IPW_RX_FRAME_SIZE,MBUF_WAITOK);
+				//mbuf_prepend(&rxb->skb,IPW_RX_FRAME_SIZE,MBUF_DONTWAIT);
 				//header =(struct ieee80211_hdr_4addr *)mbuf_pkthdr_header(rxb->skb);
 				//header =(struct ieee80211_hdr_4addr *)(mbuf_datastart(rxb->skb) );//+  IPW_RX_FRAME_SIZE);
 				header = (struct ieee80211_hdr_4addr *)((UInt8*)mbuf_data(rxb->skb)+IPW_RX_FRAME_SIZE);
@@ -4991,11 +5098,11 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 				if (le16_to_cpu(pkt->u.frame.length) <
 				    ieee80211_get_hdrlen(le16_to_cpu
 							 (header->frame_ctl))) {
-					IWI_DEBUG_FULL
+					IWI_WARN
 					    ("Received packet is too small. "
 					     "Dropping.\n");
-					priv->ieee->stats.rx_errors++;
-					netStats->inputErrors++;
+					//priv->ieee->stats.rx_errors++;
+					//netStats->inputErrors++;
 					//priv->wstats.discard.misc++;
 					break;
 				}
@@ -5045,6 +5152,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 								       addr3));
 					}
 #endif
+					
 					doFlushQueue = ipw_handle_data_packet(priv, rxb,&stats);
 
 					break;
@@ -5100,16 +5208,18 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 	// if called ipw_handle_data_packet and queued, flushInputQueue()
 	if(doFlushQueue){
 		IWI_DEBUG("flushing Input Queue\n");
-		fNetif->flushInputQueue();		
-		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		
+		fNetif->flushInputQueue();	
 	}
+	//fTransmitQueue->service();//IOBasicOutputQueue::kServiceAsync);
+	//fTransmitQueue->start();
 	//fNetif->clearInputQueue();
 	//releaseFreePackets();
+	
 	/* Backtrack one entry */
 	priv->rxq->processed = (i ? i : RX_QUEUE_SIZE) - 1;
-
-
 	ipw_rx_queue_restock(priv);
+	
 }
 
 
@@ -6117,7 +6227,7 @@ int darwin_iwi2200::ipw_associate(ipw_priv *data)
 	IWI_DEBUG("associate...\n");
 	if (priv->ieee->iw_mode == IW_MODE_MONITOR) {
 		IWI_DEBUG("Not attempting association (monitor mode)\n");
-		//return 0;
+		return 0;
 	}
 
 	if (priv->status & (STATUS_ASSOCIATED | STATUS_ASSOCIATING)) {
@@ -6194,7 +6304,7 @@ int darwin_iwi2200::ipw_associate(ipw_priv *data)
 	 * matching APs */
 	 
 	if (!network) {
-		IWI_LOG("no network found\n");
+		IWI_DEBUG("no network found\n");
 		if (!(priv->status & STATUS_SCANNING)) {
 			if (!(priv->config & CFG_SPEED_SCAN))
 				queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_scan),priv,3000,true);
@@ -6725,9 +6835,9 @@ void darwin_iwi2200::ipw_reset_stats(struct ipw_priv *priv)
 	priv->rx_packets = 0;
 	
 	netStats->inputPackets=0;
-        netStats->  inputErrors=0;
-        netStats->  outputPackets=0;
-        netStats->  outputErrors=0;
+    netStats->  inputErrors=0;
+    netStats->  outputPackets=0;
+    netStats->  outputErrors=0;
 	
 }
 
@@ -6780,6 +6890,7 @@ void darwin_iwi2200::ipw_link_up(struct ipw_priv *priv)
 	//configu(priv);
 	//fNetif->attachToDataLinkLayer(0,0);
 	//ifnet_set_lladdr(fifnet, tt, ETHER_ADDR_LEN);
+
 	enable(fNetif);
 	/*netif_carrier_on(priv->net_dev);
 	if (netif_queue_stopped(priv->net_dev)) {
@@ -6794,7 +6905,7 @@ void darwin_iwi2200::ipw_link_up(struct ipw_priv *priv)
 	ipw_reset_stats(priv);
 	/* Ensure the rate is updated immediately */
 	priv->last_rate = ipw_get_current_rate(priv);
-	setLinkStatus(kIONetworkLinkValid | (priv->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_AUTO],priv->last_rate);
+	setLinkStatus(kIONetworkLinkValid | (priv->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_NONE],priv->last_rate);
 
 	ipw_gather_stats(priv);
 	ipw_led_link_on(priv);
@@ -6901,6 +7012,8 @@ void darwin_iwi2200::ipw_gather_stats(struct ipw_priv *priv)
 			beacon_quality, missed_beacons_percent);
 
 	priv->last_rate = ipw_get_current_rate(priv);
+	setLinkStatus(kIONetworkLinkValid | (priv->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_NONE],priv->last_rate);
+
 	max_rate = ipw_get_max_rate(priv);
 	rate_quality = priv->last_rate * 40 / max_rate + 60;
 	IWI_DEBUG("Rate quality : %3d%% (%dMbs)\n",
@@ -7069,7 +7182,9 @@ void darwin_iwi2200::ipw_link_down(struct ipw_priv *priv)
 
 	priv->status &= ~(STATUS_ASSOCIATED);
 
-	disable(fNetif);
+	//disable(fNetif);
+	//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+	//fTransmitQueue->start();
 	//netif_carrier_off(priv->net_dev);
 	//netif_stop_queue(priv->net_dev);
 	//notify_wx_assoc_event(priv);
@@ -7105,7 +7220,7 @@ void darwin_iwi2200::ipw_adhoc_check(void *data)
 			  priv->missed_adhoc_beacons);
 		ipw_remove_current_network(priv);
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
-		setLinkStatus(kIONetworkLinkValid);
+		//setLinkStatus(kIONetworkLinkValid);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_disassociate),priv,NULL,true);
 		return;
 	}
@@ -7138,7 +7253,7 @@ void darwin_iwi2200::ipw_handle_missed_beacon(struct ipw_priv *priv, int missed_
 			ipw_abort_scan(priv);
 		}
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
-		setLinkStatus(kIONetworkLinkValid);
+		//setLinkStatus(kIONetworkLinkValid);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_disassociate),priv,NULL,true);
 		//queue_work(priv->workqueue, &priv->disassociate);
 		return;
@@ -7294,7 +7409,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 						      STATUS_AUTH |
 						      STATUS_ASSOCIATED);
 
-						ipw_link_down(priv);
+						queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),priv,NULL,true);
 						break;
 					}
 
@@ -7337,7 +7452,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 						ipw_remove_current_network
 						    (priv);
 
-					ipw_link_down(priv);
+					queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),priv,NULL,true);
 
 					break;
 				}
@@ -7384,7 +7499,7 @@ void darwin_iwi2200::notifIntr(struct ipw_priv *priv,
 						  STATUS_AUTH |
 						  STATUS_ASSOCIATED);
 
-				ipw_link_down(priv);
+				queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),priv,NULL,true);
 				break;
 
 			case CMAS_TX_AUTH_SEQ_1:
@@ -7663,18 +7778,18 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 	struct ieee80211_txb *txb;
 	int i;
 	//txb = (struct ieee80211_txb *)kmalloc(sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags), NULL);//gfp_mask);
-	/*txb = (struct ieee80211_txb *)IOMalloc(sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags));//, NULL);//gfp_mask);
+	txb = (struct ieee80211_txb *)IOMalloc(sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags));//, NULL);//gfp_mask);
 	if (!txb)
 		return NULL;
 
-	memset(txb, 0, sizeof(struct ieee80211_txb));*/
-	txb=priv->txq[0].txb[priv->txq[0].q.first_empty];
+	memset(txb, 0, sizeof(struct ieee80211_txb));
+	//txb=priv->txq[0].txb[priv->txq[0].q.first_empty];
 	txb->nr_frags = nr_frags;
 	txb->frag_size = txb_size;
 
 	for (i = 0; i < nr_frags; i++) {
 		//txb->fragments[i] = allocatePacket(txb_size + headroom);
-		//if (mbuf_getpacket(MBUF_WAITOK, &txb->fragments[i])!=0) return NULL;
+		if (mbuf_getpacket(MBUF_DONTWAIT, &txb->fragments[i])!=0) return NULL;
 		//__dev_alloc_skb(txb_size + headroom,						    gfp_mask);
 		if (unlikely(!txb->fragments[i])) {
 			i--;
@@ -7682,12 +7797,12 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 		}
 		// default m_len is alocated size in mbuf
 		// must set 0 m_len , pkthdr.len . 
-		//mbuf_setlen(txb->fragments[i],0);
-		//mbuf_pkthdr_setlen(txb->fragments[i],0);
+		mbuf_setlen(txb->fragments[i],0);
+		mbuf_pkthdr_setlen(txb->fragments[i],0);
 
 		//skb_reserve(txb->fragments[i], headroom);
-		// recycle mbufs :)
-		mbuf_setlen(txb->fragments[i],  headroom);
+
+		mbuf_setlen(txb->fragments[i], headroom);
 		mbuf_pkthdr_setlen(txb->fragments[i], headroom);
 	}
 	if (unlikely(i != nr_frags)) {
@@ -7695,14 +7810,15 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 		{
 			i--;
 			if (txb->fragments[i]!=NULL){
-				//freePacket(txb->fragments[i]);
+			if (!(mbuf_type(txb->fragments[i]) == MBUF_TYPE_FREE))
+				freePacket(txb->fragments[i]);
 				// txb->fragments[i]=NULL;
 			}
 			//txb->fragments[i--]=NULL;
 		//	dev_kfree_skb_any(txb->fragments[i--]);
 		}
 		//kfree(txb);
-		//IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags));
+		IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags));
 		//txb=NULL;
 		return NULL;
 	}
@@ -7745,10 +7861,11 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 {
 	//struct ipw_priv *priv = ieee80211_priv(dev);
 	int ret;
+	IOInterruptState flags;
 	//IOInterruptState	instate;
 
 	IWI_DEBUG("dev->xmit(%d bytes)\n", txb->payload_size);
-	//spin_lock_irqsave(&priv->lock, flags);
+	spin_lock_irqsave(priv->lock, flags);
 	//IOLockLock(mutex);
 	// this is checking of race conditions
 	/*if (test_lock > 0) {
@@ -7762,9 +7879,9 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 		IWI_ERR("Tx attempt while not associated.\n");
 		//priv->ieee->stats.tx_carrier_errors++;
 		//netif_stop_queue(dev);
-		//fTransmitQueue->stop();
-		////fTransmitQueue->setCapacity(0);
-		//fTransmitQueue->flush();
+		//////fTransmitQueue->stop();
+		////////fTransmitQueue->setCapacity(0);
+		//////fTransmitQueue->flush();
 		goto fail_unlock;
 	}
 	if (txb->payload_size==0) goto fail_unlock;
@@ -7772,7 +7889,7 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 	ret = ipw_tx_skb(priv, txb, pri);
 	if (ret == kIOReturnOutputSuccess)//NETDEV_TX_OK)
 		__ipw_led_activity_on(priv);
-	//spin_unlock_irqrestore(&priv->lock, flags);
+	spin_unlock_irqrestore(priv->lock, flags);
 	//IOLockUnlock(mutex);
 	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	//test_lock--;
@@ -7781,7 +7898,7 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb,
 
       fail_unlock:
 	  //IOLockUnlock(mutex);
-	//spin_unlock_irqrestore(&priv->lock, flags);
+	spin_unlock_irqrestore(priv->lock, flags);
 	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	//test_lock--;
 	return kIOReturnOutputDropped;//kIOReturnOutputStall;
@@ -7807,6 +7924,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	int priority = 0;//skb->priority;
 	int snapped = 0;
 	int ret;	  
+	IOInterruptState flags;
 	//IWI_DEBUG_FN("%d \n",call_count++);
 	if (/* ieee->is_queue_full  && */ ipw_net_is_queue_full(dev, priority))
 	{
@@ -7815,7 +7933,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		return kIOReturnOutputDropped;//kIOReturnOutputStall;//NETDEV_TX_BUSY;
 	}
 	//IOLockLock(mutex);
-	//spin_lock_irqsave(&ieee->lock, flags);
+	spin_lock_irqsave(ieee->lock, flags);
 	//IOInterruptState	instate;
 	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	/* If there is no driver handler to take the TXB, dont' bother
@@ -8101,7 +8219,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	}
 
       success:
-	//spin_unlock_irqrestore(&ieee->lock, flags);
+	spin_unlock_irqrestore(ieee->lock, flags);
 	//IOLockUnlock(mutex);
 	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	//dev_kfree_skb_any(skb);
@@ -8134,7 +8252,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 
       failed:
 	   
-	//spin_unlock_irqrestore(&ieee->lock, flags);
+	spin_unlock_irqrestore(ieee->lock, flags);
 	//IOLockUnlock(mutex);
 	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
 	//netif_stop_queue(dev);
@@ -8144,9 +8262,9 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	ieee80211_txb_free(txb);
 	//freePacket(skb_frag);
 	//skb_frag=NULL;
-	//fTransmitQueue->stop();
-	////fTransmitQueue->setCapacity(0);
-	//fTransmitQueue->flush();
+	//////fTransmitQueue->stop();
+	////////fTransmitQueue->setCapacity(0);
+	//////fTransmitQueue->flush();
 	stats->tx_errors++;
 	netStats->outputErrors++;
 	return kIOReturnOutputDropped;
@@ -8369,9 +8487,9 @@ frg:
 	//	netif_stop_queue(priv->net_dev);
 		// FIXME
 		IWI_ERR("no TransmitQueue space\n ");
-		//fTransmitQueue->stop();
-		//fTransmitQueue->setCapacity(0);
-		//fTransmitQueue->flush();
+		//////fTransmitQueue->stop();
+		//////fTransmitQueue->setCapacity(0);
+		//////fTransmitQueue->flush();
 		return kIOReturnOutputDropped;//kIOReturnOutputStall;
 	}
 #endif	
@@ -8407,7 +8525,8 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 
 	/* allocate and Initialize New mbuf */
 	//nm = allocatePacket(mbuf_pkthdr_len(m));
-	if (mbuf_getpacket(MBUF_WAITOK, &nm)!=0) return NULL;
+	//if (nm==0) return NULL;
+	if (mbuf_getpacket(MBUF_DONTWAIT, &nm)!=0) return NULL;
 	mbuf_setlen(nm,0);
 	mbuf_pkthdr_setlen(nm,0);
 	if( mbuf_next(nm)) IWI_ERR("merged mbuf_next\n");
@@ -8433,7 +8552,7 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 	return NULL;
 
 copy_packet: 
-		if (mbuf_dup(m, MBUF_WAITOK , &nm)!=0)
+		if (mbuf_dup(m, MBUF_DONTWAIT , &nm)!=0)
 		{
 			if (m)
 			if (!(mbuf_type(m) == MBUF_TYPE_FREE)) freePacket(m);
@@ -8445,58 +8564,29 @@ copy_packet:
 		//return copyPacket(m, 0); 
 }
 
-void darwin_iwi2200::freePacket2(mbuf_t m)
+UInt32 darwin_iwi2200::outputPacket2(mbuf_t m, void * param)
 {
-	if (m && m!=0)
-	if (!(mbuf_type(m) == MBUF_TYPE_FREE) )
+	//IOLockLock(mutex);
+	//IOInterruptState	instate;
+	//instate = IOSimpleLockLockDisableInterrupt( spin);
+	if (!(priv->status & STATUS_ASSOCIATED))
 	{
-		if (!(mbuf_type(m) == MBUF_TYPE_FREE) && mbuf_data(m)!=NULL)
-		if (!mbuf_next(m))
-		{
-			//if (mbuf_flags(m) & MBUF_PKTHDR) mbuf_pkthdr_setheader(m,NULL);
-			//mbuf_setdata(m,mbuf_data(m),0);
-			freePacket(m);
-			return;
-		}
-		mbuf_t nm=m;
-		while (nm) 
-		{
-			if (!(mbuf_type(nm) == MBUF_TYPE_FREE) && mbuf_data(nm)!=NULL) 
-			{
-				//if (mbuf_flags(m) & MBUF_PKTHDR) mbuf_pkthdr_setheader(m,NULL);
-				//mbuf_setdata(m,mbuf_data(m),0);
-				nm=mbuf_free(nm);
-				//releaseFreePackets();
-			}
-			else 
-			{
-				if (nm)
-				{
-					mbuf_setlen(nm,0);
-					if (mbuf_next(nm))
-					{
-						nm=mbuf_next(nm);
-					}
-					else nm=NULL;
-				}
-			}
-		}
+		//disable(fNetif);
+		//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+		//fTransmitQueue->start();
 	}
-}
-
-UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
-{
 	if(!(fNetif->getFlags() & IFF_RUNNING))
 	{
 		if (m)
 		if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 		//m=NULL;
 		netStats->outputErrors++;
-		return kIOReturnOutputDropped;
+		goto finish;
+		//return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
 
 	mbuf_t nm;
-	int ret = kIOReturnOutputDropped;
+	//int ret = kIOReturnOutputDropped;
 
 	//checking supported packet
 	
@@ -8509,46 +8599,64 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 		if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 		//m=NULL;
 		netStats->outputErrors++;
-		return kIOReturnOutputDropped;
+		goto finish;
+		//return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
 	
 	if(mbuf_type(m) == MBUF_TYPE_FREE){
 		IWI_ERR("BUG: this is freed packet and dropped \n");
 		netStats->outputErrors++;
-		return kIOReturnOutputDropped;
+		goto finish;
+		//return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
-	//IOLockLock(mutex);
-	nm = mergePacket(m);
+	
+if(mbuf_next(m)){
+		nm = mergePacket(m);
 	//if (m!=nm) freePacket(m);
-	m=nm;
-	if (m==NULL) 
-	{
+		m=nm;
+		if (m==NULL) 
+		{
+			netStats->outputErrors++;
+			goto finish;
+		}
+}		
+	if(mbuf_next(m)){
+		IWI_ERR("BUG: dont support chains mbuf\n");
+		//IWI_ERR("BUG: tx packet is not single mbuf mbuf_len(%d) mbuf_pkthdr_len(%d)\n",mbuf_len(m) , mbuf_pkthdr_len(m) );
+		//IWI_ERR("BUG: next mbuf size %d\n",mbuf_len(mbuf_next(m)));
 		netStats->outputErrors++;
 		goto finish;
 	}
-	
-	if(mbuf_next(m)){
-		IWI_ERR("BUG: dont support chains mbuf\n");
-		IWI_ERR("BUG: tx packet is not single mbuf mbuf_len(%d) mbuf_pkthdr_len(%d)\n",mbuf_len(m) , mbuf_pkthdr_len(m) );
-		//IWI_ERR("BUG: next mbuf size %d\n",mbuf_len(mbuf_next(m)));
-		//netStats->outputErrors++;
-		//goto finish;
-	}
 
 	IWI_DEBUG_FULL("call ieee80211_xmit\n");
-	ret  = ieee80211_xmit(m,priv->net_dev);
+	//ret  = 
+	ieee80211_xmit(m,priv->net_dev);
 
-	
 finish:	
-	
+	return 0;
 	/* free finished packet */
 	
-	if (ret !=  kIOReturnOutputSuccess) { 
-		//freePacket(m);
+	//if (ret !=  kIOReturnOutputSuccess) { 
+		//if (m)
+		//if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
 		//nm=NULL;
-	}
+	//}
 	//IOLockUnlock(mutex);
-	return ret;	
+	//IOSimpleLockUnlockEnableInterrupt( spin, instate );
+	//return kIOReturnOutputSuccess;//ret;	
+}
+
+UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
+{
+	
+	//UInt32 ret=0;
+	//outputPacket2(m);
+	//if (fTransmitQueue->getState()==0) fTransmitQueue->start();
+	fTransmitQueue->enqueue(m, param);
+
+	//queue_te(17,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::outputPacket2),m,NULL,true);
+
+	return kIOReturnOutputSuccess;
 }
 
 /*bool darwin_iwi2200::_fillFragment(volatile gt_fragment *f, mbuf_t packet, UInt16 flags) 
@@ -8665,12 +8773,13 @@ mbuf_t darwin_iwi2200::ieee80211_frag_cache_get(struct ieee80211_device *ieee,
 
 	if (frag == 0) {
 		/* Reserve enough space to fit maximum frame length */
-		if (mbuf_getpacket(MBUF_WAITOK , &skb)!=0) return NULL;
+		if (mbuf_getpacket(MBUF_DONTWAIT , &skb)!=0) return NULL;
 		//skb = allocatePacket(ieee->dev->mtu +
 		//		    sizeof(struct ieee80211_hdr_4addr) +
 		//		    8 /* LLC */  +
 		//		    2 /* alignment */  +
 		//		    8 /* WEP */  + ETH_ALEN /* WDS */ );
+		//if (skb==0) return NULL;
 		mbuf_setlen(skb,ieee->dev->mtu +
 				    sizeof(struct ieee80211_hdr_4addr) +
 				    8 /* LLC */  +
@@ -8892,15 +9001,16 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 	  //  (keyidx = ieee80211_rx_frame_decrypt(ieee, skb, crypt)) < 0 */ )
 	//	goto rx_dropped;
 
-	//hdr = (struct ieee80211_hdr_4addr *)mbuf_data(skb);
+	hdr = (struct ieee80211_hdr_4addr *)mbuf_data(skb);
 
 	// skb: hdr + (possibly fragmented) plaintext payload 
 	// PR: FIXME: hostap has additional conditions in the "if" below:
 	// ieee->host_decrypt && (fc & IEEE80211_FCTL_PROTECTED) &&
-	/*if ((frag != 0) || (fc & IEEE80211_FCTL_MOREFRAGS)) {
+	if ((frag != 0) || (fc & IEEE80211_FCTL_MOREFRAGS)) 
+	{
 		int flen;
 		mbuf_t frag_skb = ieee80211_frag_cache_get(ieee, hdr);
-		IWI_DEBUG_FULL("Rx Fragment received (%u)\n", frag);
+		IWI_LOG("Rx Fragment received (%u)\n", frag);
 
 		if (!frag_skb) {
 			IWI_DEBUG("Rx cannot get skb from fragment "
@@ -8920,7 +9030,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		if (  (UInt8*)mbuf_data(frag_skb) + mbuf_len(frag_skb)  + flen > (UInt8*)mbuf_datastart(frag_skb) + mbuf_maxlen(frag_skb)  ) {
 			IWI_DEBUG( "%s: host decrypted and "
 			       "reassembled frame did not fit skb\n",
-			       dev->name);
+			       ieee->dev->name);
 			ieee80211_frag_cache_invalidate(ieee, hdr);
 			goto rx_dropped;
 		}
@@ -8937,9 +9047,9 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		}
 		//dev_kfree_skb_any(skb);
 		if (skb != NULL) {
-			freePacket(skb);
+			if (!(mbuf_type(skb) == MBUF_TYPE_FREE)) freePacket(skb);
 		}
-		skb = NULL;
+		//skb = NULL;
 
 		if (fc & IEEE80211_FCTL_MOREFRAGS) {
 			// more fragments expected - leave the skb in fragment
@@ -8953,7 +9063,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		skb = frag_skb;
 		hdr = (struct ieee80211_hdr_4addr *)(mbuf_data(skb));
 		ieee80211_frag_cache_invalidate(ieee, hdr);
-	}*/
+	}
 
 	/* skb: hdr + (possible reassembled) full MSDU payload; possibly still
 	  encrypted/authenticated  */
@@ -9030,8 +9140,28 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		//skb->ip_summed = CHECKSUM_NONE;	/* 802.11 crc not sufficient */
 		if( mbuf_flags(skb) & MBUF_PKTHDR){
 		
+			mbuf_setflags(skb, MBUF_EXT | MBUF_PKTHDR);
+			mbuf_settype(skb,MBUF_TYPE_DATA);
+			mbuf_clear_csum_performed(skb);
+			mbuf_clear_csum_requested(skb);
+			mbuf_clear_vlan_tag(skb);
+			//if ((request & MBUF_CSUM_REQ_IP)!=0) performed|=MBUF_CSUM_DID_IP | MBUF_CSUM_IP_GOOD;
+			//if ((request & (MBUF_CSUM_REQ_IP | MBUF_CSUM_REQ_TCP))!=0) performed|=MBUF_CSUM_DID_DATA;
+			//mbuf_set_csum_performed(skb, performed,0);
 			//if (ifnet_input(fifnet,skb,NULL)!=0) goto rx_dropped;
+			////fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+			
+			//if (fNetif->inputPacket(skb, mbuf_pkthdr_len(skb),IONetworkInterface::kInputOptionQueuePacket)==0)
+			//{
+			//fNetif->flushInputQueue();
+			//}
+			//fNetif->flushInputQueue();
 			fNetif->inputPacket(skb,mbuf_pkthdr_len(skb),IONetworkInterface::kInputOptionQueuePacket);
+			
+				
+			//fNetif->inputPacket(skb,mbuf_pkthdr_len(skb),IONetworkInterface::kInputOptionQueuePacket);
+			//fNetif->flushInputQueue();
+			
 		}else{
 			IWI_ERR("this packet dont have MBUF_PKTHDR\n");
 			//fNetif->inputPacket(skb,mbuf_len(skb),IONetworkInterface::kInputOptionQueuePacket);
@@ -9051,7 +9181,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 	return 1;
 
       rx_dropped:
-	IWI_DEBUG("rx dropped %d\n",stats->rx_dropped);
+	IWI_WARN("rx dropped %d\n",stats->rx_dropped);
 	stats->rx_dropped++;
 	netStats->inputErrors++;
 	/* Returning 0 indicates to caller that we have not handled the SKB--
@@ -9127,6 +9257,7 @@ int darwin_iwi2200::ipw_qos_association_resp(struct ipw_priv *priv,
 	int ret = 0;
 	u32 size = sizeof(struct ieee80211_qos_parameters);
 	int set_qos_param = 0;
+	IOInterruptState flags;
 
 	if ((priv == NULL) || (network == NULL) ||
 	    (priv->assoc_network == NULL))
@@ -9138,7 +9269,7 @@ int darwin_iwi2200::ipw_qos_association_resp(struct ipw_priv *priv,
 	if ((priv->ieee->iw_mode != IW_MODE_INFRA))
 		return ret;
 
-	//spin_lock_irqsave(&priv->ieee->lock, flags);
+	spin_lock_irqsave(priv->ieee->lock, flags);
 	if (network->flags & NETWORK_HAS_QOS_PARAMETERS) {
 		memcpy(&priv->assoc_network->qos_data, &network->qos_data,
 		       sizeof(struct ieee80211_qos_data));
@@ -9162,7 +9293,7 @@ int darwin_iwi2200::ipw_qos_association_resp(struct ipw_priv *priv,
 		set_qos_param = 1;
 	}
 
-	//spin_unlock_irqrestore(&priv->ieee->lock, flags);
+	spin_unlock_irqrestore(priv->ieee->lock, flags);
 
 	if (set_qos_param == 1)
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_bg_qos_activate),priv,NULL,true);
@@ -10016,6 +10147,7 @@ void darwin_iwi2200::ieee80211_process_probe_response(struct ieee80211_device *i
 		network.ibss_dfs = NULL;
 	struct ieee80211_network *target;
 	struct ieee80211_network *oldest = NULL;
+	IOInterruptState flags;
 	
 	IEEE80211_DEBUG_SCAN("'%s' (" MAC_FMT
 			     "): %c%c%c%c %c%c%c%c-%c%c%c%c %c%c%c%c\n",
@@ -10059,7 +10191,7 @@ void darwin_iwi2200::ieee80211_process_probe_response(struct ieee80211_device *i
 	/* Search for this entry in the list and update it if it is
 	 * already there. */
 
-	//spin_lock_irqsave(&ieee->lock, flags);
+	spin_lock_irqsave(ieee->lock, flags);
 	//IOLockLock(mutex);
 	list_for_each_entry(target, &ieee->network_list, list) {
 		if (is_same_network(target, &network))
@@ -10104,7 +10236,7 @@ void darwin_iwi2200::ieee80211_process_probe_response(struct ieee80211_device *i
 		network.ibss_dfs = NULL;
 	}
 
-	//spin_unlock_irqrestore(&ieee->lock, flags);
+	spin_unlock_irqrestore(ieee->lock, flags);
 	//IOLockUnlock(mutex);
 	
 	if (is_beacon(beacon->header.frame_ctl)) {
@@ -10369,6 +10501,8 @@ void darwin_iwi2200::ipw_merge_adhoc_network(void *data)
 	//struct ipw_priv *priv = data;
 	struct ieee80211_network *network = NULL;
 	struct ipw_network_match match;
+	IOInterruptState flags;
+	
 		match.network = priv->assoc_network;
 
 
@@ -10377,13 +10511,13 @@ void darwin_iwi2200::ipw_merge_adhoc_network(void *data)
 		/* First pass through ROAM process -- look for a better
 		 * network */
 
-		//spin_lock_irqsave(&priv->ieee->lock, flags);
+		spin_lock_irqsave(priv->ieee->lock, flags);
 		list_for_each_entry(network, &priv->ieee->network_list, list) {
 			if (network != priv->assoc_network)
 				ipw_find_adhoc_network(priv, &match, network,
 						       1);
 		}
-		//spin_unlock_irqrestore(&priv->ieee->lock, flags);
+		spin_unlock_irqrestore(priv->ieee->lock, flags);
 
 		if (match.network == priv->assoc_network) {
 			IWI_DEBUG("No better ADHOC in this network to "
@@ -10399,7 +10533,7 @@ void darwin_iwi2200::ipw_merge_adhoc_network(void *data)
 			ipw_remove_current_network(priv);
 		}
 		//fNetif->setLinkState(kIO80211NetworkLinkDown);
-		setLinkStatus(kIONetworkLinkValid);
+		//setLinkStatus(kIONetworkLinkValid);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_disassociate),priv,NULL,true);
 		priv->assoc_network = match.network;
 		//mutex_unlock(&priv->mutex);
@@ -10532,7 +10666,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 
 	if (opt==5) //create adhoc network:
 	{
-			IWI_LOG("nsGUI/network selector called network create ssid: %s len:%d\n",(char*)data,strlen((char*)data) );
+			
 			/*if (clone->priv->ieee->iw_mode == IW_MODE_ADHOC &&
 				clone->priv->config & CFG_ADHOC_CREATE &&
 				!list_empty(&clone->priv->ieee->network_free_list)) {
@@ -10548,7 +10682,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				}
 				network = match.network;
 				rates = &match.rates;*/
-				IODelay(5000*1000);
+				//IODelay(5000*1000);
 				struct ieee80211_network *network = NULL;
 				struct ipw_supported_rates *rates;
 				struct list_head *element;
@@ -10558,6 +10692,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				char cc[strlen((char*)data)];
 				sprintf(cc,(char*)data);
 				memcpy(network->ssid,cc,sizeof(cc));
+				IWI_LOG("nsGUI/network selector called network create ssid: %s len:%d\n",network->ssid,len );
 				network->ssid_len=len;//strlen((char*)data);
 				rates = &clone->priv->rates;
 				list_del(element);
@@ -10565,15 +10700,15 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				//clone->queue_td(0,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_scan));
 				//clone->ipw_associate_network(clone->priv, network, rates, 0);
 				int rep=0;
-				while (!(clone->priv->status & STATUS_ASSOCIATED)) 
-				{
-					clone->ipw_adapter_restart(clone->priv);
-					IODelay(5000*1000);
+				//while (!(clone->priv->status & STATUS_ASSOCIATED)) 
+				//{
+					//clone->ipw_adapter_restart(clone->priv);
+					//IODelay(5000*1000);
 					clone->ipw_associate_network(clone->priv, network, rates, 0);
-					IODelay(5000*1000);
-					rep++;
-					if (rep==2) break;
-				}
+					//IODelay(2000*1000);
+					//rep++;
+					//if (rep==2) return 1;
+				//}
 		//}
 		
 	}
@@ -10606,8 +10741,9 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		//todo: check other priv status
 		clone->priv->status |= STATUS_RF_KILL_HW;
 		clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		clone->setLinkStatus(kIONetworkLinkValid);
-		if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
+		//clone->setLinkStatus(kIONetworkLinkValid);
+		clone->queue_te(16,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_link_down),clone->priv,NULL,true);
+		//if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
 		clone->priv->status &= ~STATUS_RF_KILL_HW;
 		struct ieee80211_network *network = NULL;	
 		struct ipw_network_match match = {NULL};
@@ -10632,16 +10768,17 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		int rep=0;
 		while (!(clone->priv->status & STATUS_ASSOCIATED)) 
 		{
-			clone->ipw_adapter_restart(clone->priv);
-			IODelay(5000*1000);
+			//clone->ipw_adapter_restart(clone->priv);
+			//IODelay(5000*1000);
 			clone->ipw_associate_network(clone->priv, network, rates, 0);
-			IODelay(5000*1000);
+			IODelay(2000*1000);
 			rep++;
-			if (rep==2) break;
+			if (rep==10) break;
 		}
-		if (rep == 2)
+		if (rep == 10)
 		{
 			IWI_LOG("failed when associating to this network\n");
+			//clone->ipw_link_down(clone->priv);
 			return 1;
 		}
 	}
@@ -10650,23 +10787,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
-			int q=0;
-			if (clone->rf_kill_active(clone->priv)) 
-			{	
-				if (BITC(clone->ipw_read32(0x30),0) & 0x1) clone->ipw_write32(0x30, 0x0);
-				else
-				{
-					UInt32 r1=0;
-					clone->priv->status &= ~STATUS_SCANNING;
-					while (!((clone->priv->status & STATUS_SCANNING)))
-					{
-						clone->ipw_write32(0x30, 0x1);
-						r1++;
-						if (r1==5000000) return 1;
-					}
-				}
-			} else q=1;
-			//IOFree(clone->priv->ieee->networks, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
+			clone->priv->status |= STATUS_RF_KILL_HW;
+			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_rf_kill),clone->priv,NULL,true);
 			clone->priv->ieee->networks = (struct ieee80211_network*)IOMalloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));//, NULL);
 			memset(clone->priv->ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 			INIT_LIST_HEAD(&clone->priv->ieee->network_free_list);
@@ -10674,10 +10796,30 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			for (int i = 0; i < MAX_NETWORK_COUNT; i++)
 			list_add_tail(&clone->priv->ieee->networks[i].list,
 			      &clone->priv->ieee->network_free_list);
+				  
+			int q=0;
+			if (clone->rf_kill_active(clone->priv)) 
+			{	
+				if (BITC(clone->ipw_read32(0x30),0) & 0x1) clone->ipw_write32(0x30, 0x0);
+				else
+				{
+					//UInt32 r1=0;
+					clone->priv->status &= ~STATUS_SCANNING;
+					while (!((clone->priv->status & STATUS_SCANNING)))
+					{
+						if (!(BITC(clone->ipw_read32(0x30),0) & 0x1)) clone->ipw_write32(0x30, 0x1);
+						IODelay(2000*1000);
+						//r1++;
+						//if (r1==5) return 1
+					}
+				}
+			} else q=1;
+			//IOFree(clone->priv->ieee->networks, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
+
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			if (q==1) clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_rf_kill),clone->priv,2000,true);
+			//if (q==1) clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_rf_kill),clone->priv,2000,true);
 			IWI_LOG("radio on 0x50000 = 0x%x\n", clone->ipw_read32(0x30));
 		}
 		else
@@ -10692,14 +10834,13 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			clone->setLinkStatus(kIONetworkLinkValid);
+			//clone->setLinkStatus(kIONetworkLinkValid);
 			int w=0;
-			if ((clone->fNetif->getFlags() & IFF_RUNNING))
+			if (((clone->fNetif->getFlags() & IFF_RUNNING)!=0))
 			{
 			  w=1;
-			  clone->ipw_link_down(clone->priv); 
 			}
-			else clone->ipw_led_link_off(clone->priv);
+			clone->queue_te(16,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2200::ipw_link_down),clone->priv,NULL,true);
 			//IOFree(clone->priv->ieee->networks, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 			clone->priv->ieee->networks = (struct ieee80211_network*)IOMalloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));//, NULL);
 			memset(clone->priv->ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
@@ -10723,6 +10864,7 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 	if (opt==1) memcpy(data,clone->priv->ieee,*len);
 	if (opt==2)
 	{
+		if (clone->priv->ieee->scans<5) return 1;
 		struct ieee80211_network *n=NULL,*n2=(struct ieee80211_network*)data;
 		int i=0;
 		list_for_each_entry(n, &clone->priv->ieee->network_list, list)
@@ -10744,7 +10886,7 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 			}
 		}
 		ex:
-		IWI_LOG("found %d networks\n",i);
+		if (clone->priv->status & STATUS_SCANNING) IWI_LOG("found %d networks\n",i);
 	}
 	if (opt==3) memcpy(data,clone->priv->assoc_network,*len);
 	if (opt==4)
@@ -10790,9 +10932,9 @@ return 0;
 void darwin_iwi2200::ieee80211_crypt_deinit_entries(struct ieee80211_device *ieee, int force)
 {
 	struct ieee80211_crypt_data *entry, *next;
-//	unsigned long flags;
+	IOInterruptState flags;
 
-//	spin_lock_irqsave(&ieee->lock, flags);
+	spin_lock_irqsave(ieee->lock, flags);
 	list_for_each_entry_safe(entry, next, &ieee->crypt_deinit_list,list) {
 		if (atomic_read(&entry->refcnt) != 0 && !force)
 			continue;
@@ -10805,23 +10947,23 @@ void darwin_iwi2200::ieee80211_crypt_deinit_entries(struct ieee80211_device *iee
 		}
 		kfree(entry);
 	}
-//	spin_unlock_irqrestore(&ieee->lock, flags);
+	spin_unlock_irqrestore(ieee->lock, flags);
 }
 
 void darwin_iwi2200::ieee80211_crypt_quiescing(struct ieee80211_device *ieee)
 {
-//	unsigned long flags;
+	IOInterruptState flags;
 
-//	spin_lock_irqsave(&ieee->lock, flags);
+	spin_lock_irqsave(ieee->lock, flags);
 	ieee->crypt_quiesced = 1;
-//	spin_unlock_irqrestore(&ieee->lock, flags);
+	spin_unlock_irqrestore(ieee->lock, flags);
 }
 
 void darwin_iwi2200::ieee80211_crypt_delayed_deinit(struct ieee80211_device *ieee,
 				    struct ieee80211_crypt_data **crypt)
 {
 	struct ieee80211_crypt_data *tmp;
-//	unsigned long flags;
+	IOInterruptState flags;
 
 	if (*crypt == NULL)
 		return;
@@ -10833,7 +10975,7 @@ void darwin_iwi2200::ieee80211_crypt_delayed_deinit(struct ieee80211_device *iee
 	 * decrypt operations. Use a list of delayed deinits to avoid needing
 	 * locking. */
 
-	//spin_lock_irqsave(&ieee->lock, flags);
+	spin_lock_irqsave(ieee->lock, flags);
 	if (!ieee->crypt_quiesced) {
 		list_add(&tmp->list, &ieee->crypt_deinit_list);
 		if (!timer_pending(&ieee->crypt_deinit_timer)) {
@@ -10841,7 +10983,7 @@ void darwin_iwi2200::ieee80211_crypt_delayed_deinit(struct ieee80211_device *iee
 			//add_timer(&ieee->crypt_deinit_timer); // bug with k_compat.h
 		}
 	}
-	//spin_unlock_irqrestore(&ieee->lock, flags);
+	spin_unlock_irqrestore(ieee->lock, flags);
 }
 
 
@@ -10856,7 +10998,7 @@ int darwin_iwi2200::ieee80211_register_crypto_ops(struct ieee80211_crypto_ops *o
 
 	alg->ops = ops;
 
-//	spin_lock_irqsave(&ieee80211_crypto_lock, flags);
+	//spin_lock_irqsave(ieee80211_crypto_lock, flags);
 	list_add(&alg->list, &ieee80211_crypto_algs);
 //	spin_unlock_irqrestore(&ieee80211_crypto_lock, flags);
 
@@ -10872,7 +11014,7 @@ int darwin_iwi2200::ieee80211_unregister_crypto_ops(struct ieee80211_crypto_ops 
 	struct ieee80211_crypto_alg *alg;
 //	unsigned long flags;
 
-//	spin_lock_irqsave(&ieee80211_crypto_lock, flags);
+	//spin_lock_irqsave(ieee80211_crypto_lock, flags);
 	list_for_each_entry(alg, &ieee80211_crypto_algs, list) {
 		if (alg->ops == ops)
 			goto found;
@@ -10895,7 +11037,7 @@ struct ieee80211_crypto_ops* darwin_iwi2200::ieee80211_get_crypto_ops(const char
 	struct ieee80211_crypto_alg *alg;
 //	unsigned long flags;
 
-//	spin_lock_irqsave(&ieee80211_crypto_lock, flags);
+	//spin_lock_irqsave(ieee80211_crypto_lock, flags);
 	list_for_each_entry(alg, &ieee80211_crypto_algs, list) {
 		if (strcmp(alg->ops->name, name) == 0)
 			goto found;

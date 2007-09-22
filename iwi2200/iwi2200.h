@@ -19,7 +19,7 @@
 	#define IWI_LOG(...) printf("iwi2200: " __VA_ARGS__)
 #endif
 
-#define IOLog(...) IWI_LOG(__VA_ARGS__)
+//#define IOLog(...) IWI_LOG(__VA_ARGS__)
 
 #if defined(IWI_DEBUG_FULL_MODE) || defined(IWI_DEBUG_NORMAL)
 	#define IWI_DEBUG(fmt,...)IWI_LOG(" %s() " fmt, __FUNCTION__, ##__VA_ARGS__)
@@ -206,7 +206,7 @@ inline void *skb_pull(mbuf_t skb, unsigned int len)
 	return data;
 }
 
-#define kTransmitQueueCapacity 1024
+#define kTransmitQueueCapacity RX_FREE_BUFFERS + RX_QUEUE_SIZE
 //64
 
 
@@ -882,7 +882,7 @@ public:
 virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 
 protected:
-	 void freePacket2(mbuf_t  m);
+	 UInt32 outputPacket2(mbuf_t m, void * param);
 	 bool		addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name = 0);			
 	 int			sendCommand(UInt8 type,void *data,UInt8 len,bool async);
 	 int			ipw_scan(struct ipw_priv *priv, int type);
@@ -1204,6 +1204,8 @@ protected:
 						 int headroom, int gfp_mask);
 	 int ipw_is_qos_active(struct net_device *dev, mbuf_t skb);
 	 int ipw_send_system_config(struct ipw_priv *priv);
+	 void spin_lock_irqsave(IOSimpleLock *lock, IOInterruptState flags);
+	 void spin_unlock_irqrestore(IOSimpleLock *lock, IOInterruptState flags);
 	 inline void *kzalloc(size_t size, unsigned flags)
 		{
 			void *ret = kmalloc(size, flags);
@@ -1224,8 +1226,9 @@ protected:
 /*	bool _fillFragment(volatile gt_fragment *f, mbuf_t packet, UInt16 flags=0);
 	bool _allocPacketForFragment(mbuf_t *packet, volatile gt_fragment *f);
 	bool _freePacketForFragment(mbuf_t *packet, volatile gt_fragment *f);*/
-	
+	void check_firstup(struct ipw_priv *priv);
 
+	
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
 
 	IOPCIDevice *				fPCIDevice;		// PCI nub
@@ -1236,7 +1239,7 @@ protected:
 	IONetworkInterface*			fNetif;
 	IOInterruptEventSource *	fInterruptSrc;	// ???
 //	IOTimerEventSource *		fWatchdogTimer;	// ???
-	IOOutputQueue *				fTransmitQueue;	// ???
+	IOBasicOutputQueue *				fTransmitQueue;	// ???
 	UInt16 *					memBase;
 	UInt32						event;
 	u8 eeprom[0x100];
@@ -1335,7 +1338,7 @@ protected:
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
 	IOMbufLittleMemoryCursor *_mbufCursor;
-	
+	int firstifup;
 };
 
 

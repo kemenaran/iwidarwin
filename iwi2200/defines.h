@@ -949,7 +949,7 @@ typedef unsigned char UInt8;
 #define IP_LIST(ip)	IP_CH(ip)[2],IP_CH(ip)[3],IP_CH(ip)[4],IP_CH(ip)[5]
 
 // 3000 is the size expected by firmware!!
-#define IPW_RX_BUF_SIZE (1600)
+#define IPW_RX_BUF_SIZE (3000)
 //#define IPW_RX_BUF_SIZE (1600)
 
 #define memcpy_toio(a,b,c)	memcpy((void *)(a),(b),(c))

@@ -707,7 +707,7 @@ struct ipw_rx_queue {
 	/* Each of these lists is used as a FIFO for ipw_rx_mem_buffers */
 	struct list_head rx_free;	/* Own an SKBs */
 	struct list_head rx_used;	/* No SKB allocated */
-	//spinlock_t lock;
+	IOSimpleLock *lock;
 };				/* Not transferred over network, so not  __attribute__ ((packed)) */
 
 struct alive_command_responce {
@@ -1151,8 +1151,8 @@ struct ipw_rt_hdr {
 struct ipw_priv {
 	/* ieee device used by generic ieee processing code */
 	struct ieee80211_device *ieee;
-	//spinlock_t lock;
-	//spinlock_t irq_lock;
+	IOSimpleLock *lock;
+	IOSimpleLock *irq_lock;
 	//struct mutex mutex;
 
 	/* basic pci-network driver stuff */
