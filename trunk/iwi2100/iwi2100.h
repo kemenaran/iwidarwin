@@ -961,6 +961,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	virtual void isr_scan_complete(struct ipw2100_priv *priv, u32 status);
 	virtual void isr_indicate_rf_kill(struct ipw2100_priv *priv, u32 status);
 	virtual void isr_indicate_scanning(struct ipw2100_priv *priv, u32 status);
+	void check_firstup(struct ipw2100_priv *priv);
 	virtual int ieee80211_handle_assoc_resp(struct ieee80211_device *ieee, struct ieee80211_assoc_response
 				       *frame, struct ieee80211_rx_stats *stats);
 	virtual int ieee80211_parse_info_param(struct ieee80211_info_element
@@ -1121,7 +1122,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	u16 rts_threshold;
 	struct list_head network_list;
 	struct list_head network_free_list;
-	thread_call_t tlink[9];
+	thread_call_t tlink[20];
 	ipw2100_priv *priv;
 	ieee80211_device ieee2;
 	ipw2100_priv priv2;
@@ -1140,7 +1141,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	//open link to user interface application flag:
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
-	
+	int firstifup;
 };
 
 #endif

@@ -1621,7 +1621,7 @@ int darwin_iwi2100::ipw2100_hw_send_command(struct ipw2100_priv *priv,
 		//priv->fatal_error = IPW2100_ERR_MSG_TIMEOUT;
 		//priv->status &= ~STATUS_CMD_ACTIVE;
 		//schedule_reset(priv);
-		//return -EIO;
+		return -EIO;
 	}
 
 	if (priv->fatal_error) {
@@ -1742,7 +1742,7 @@ bool darwin_iwi2100::start(IOService *provider)
 	UInt16	reg;
 //linking the kext control clone to the driver:
 		clone=this;
-		
+		firstifup=0;
 	do {
 				
 		if ( super::start(provider) == 0) {
@@ -1905,16 +1905,30 @@ bool darwin_iwi2100::start(IOService *provider)
 		queue_te(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_hang_check),NULL,NULL,false);
 		queue_te(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter),NULL,NULL,false);
 		queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),NULL,NULL,false);
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::check_firstup),NULL,NULL,false);
 		
 		//ipw2100_sw_reset(1);
-		pl=1;
-		ipw2100_up(priv,0);
+
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::check_firstup),priv,1000,true);
 		return true;			// end start successfully
 	} while (false);
 		
 	//stop(provider);
 	free();
 	return false;			// end start insuccessfully
+}
+
+void darwin_iwi2100::check_firstup(struct ipw2100_priv *priv)
+{
+	if (firstifup==0) 
+	{
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::check_firstup),priv,1000,true);
+		return;
+	}
+	disable(fNetif);
+	pl=1;
+	ipw2100_up(priv,0);
+	
 }
 
 IOReturn darwin_iwi2100::selectMedium(const IONetworkMedium * medium)
@@ -3641,8 +3655,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 			IOLog(
 			       ": %s: Could not cycle adapter.\n",
 			       priv->net_dev->name);
-			//rc = 1;
-			//goto exit;
+			rc = 1;
+			goto exit;
 		}
 	} else
 		priv->status |= STATUS_POWERED;
@@ -3651,8 +3665,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to start the firmware.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	ipw2100_initialize_ordinals(priv);
@@ -3662,14 +3676,14 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to determine HW features.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	/* Initialize the geo */
 	if (ipw_set_geo(priv->ieee, &ipw_geos[0])) {
 		IOLog( "Could not set geo\n");
-		//return 0;
+		return 0;
 	}
 	priv->ieee->freq_band = IEEE80211_24GHZ_BAND;
 
@@ -3678,8 +3692,8 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 		IOLog(
 		       ": %s: Failed to clear ordinal lock.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	priv->status &= ~STATUS_SCANNING;
@@ -3713,8 +3727,8 @@ if (!deferred) {
 	if (ipw2100_adapter_setup(priv)) {
 		IOLog( ": %s: Failed to start the card.\n",
 		       priv->net_dev->name);
-		//rc = 1;
-		//goto exit;
+		rc = 1;
+		goto exit;
 	}
 
 	
@@ -3723,9 +3737,9 @@ if (!deferred) {
 			IOLog( ": "
 			       "%s: failed in call to enable adapter.\n",
 			       priv->net_dev->name);
-			//ipw2100_hw_stop_adapter(priv);
-			//rc = 1;
-			//goto exit;
+			ipw2100_hw_stop_adapter(priv);
+			rc = 1;
+			goto exit;
 		}
 
 		/* Start a scan . . . */
@@ -3749,7 +3763,11 @@ IOReturn darwin_iwi2100::enable( IONetworkInterface * netif )
 		memcpy(&priv->ieee->dev->name,ii,sizeof(ii));
 		IWI_DEBUG("ifnet_t %s%d = %x\n",ifnet_name(fifnet),ifnet_unit(fifnet),fifnet);
 	}
-	if ((priv->status & STATUS_RF_KILL_HW)) return -1;
+	if (firstifup==0)
+	{
+		firstifup=1;
+		return -1;
+	}
 	IWI_DEBUG("ifconfig up\n");
 	switch ((fNetif->getFlags() & IFF_UP) && (fNetif->getFlags() & IFF_RUNNING))
 	{
@@ -8503,7 +8521,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	}
 	if (opt==1) //HACK: start/stop the nic
 	{
-		u32 reg;
+		u32 reg=0;
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
