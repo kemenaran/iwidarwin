@@ -58,7 +58,18 @@
 
 
 //#define IWI_DEBUG_STATUS(priv)  IWI_DEBUG("priv->status 0x%08x\n",priv->status)
-#define IWI_DEBUG_STATUS(priv) do{ }while(0)
+//#define IWI_DEBUG_STATUS(priv) do{ }while(0)
+
+#ifdef IWI_DEBUG_FULL_MODE
+	#define IWI_DEBUG_DUMP(...) printk_buf(__VA_ARGS__)
+#else
+	#define IWI_DEBUG_DUMP(...)
+#endif
+
+#define IWI_DUMP_MBUF(f, skb, len) \
+    IWI_DEBUG_FULL(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
+        f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
+
 
 #define min_t(type,x,y) \
         ({ type __x = (x); type __y = (y); __x < __y ? __x: __y; })
@@ -134,17 +145,6 @@ inline void printk_buf(const u8 * data, u32 len)
 	}
 }
 
-#ifdef IWI_DEBUG_FULL_MODE
-	#define IWI_DEBUG_DUMP(...) printk_buf(__VA_ARGS__)
-#else
-	#define IWI_DEBUG_DUMP(...) do{ }while(0)
-#endif
-
-#define IWI_DUMP_MBUF(f, skb, len) \
-    IWI_DEBUG_FULL(" %d(%s) DumpMbuf m_data 0x%08x datastart 0x%08x pktlen %d m_len  %d args len %d\n", \
-        f , __FUNCTION__, mbuf_data(skb) ,mbuf_datastart(skb)  ,mbuf_len(skb) , mbuf_pkthdr_len(skb) , len  )
-
-
 inline void skb_reserve(mbuf_t skb, int len)
 {
 	//skb->data += len;
@@ -206,12 +206,7 @@ inline void *skb_pull(mbuf_t skb, unsigned int len)
 	return data;
 }
 
-#define kTransmitQueueCapacity RX_FREE_BUFFERS + RX_QUEUE_SIZE
-//64
-
-
-
-
+#define kTransmitQueueCapacity 1000
 
 typedef __u16 __be16;
 struct ethhdr {
@@ -1227,16 +1222,16 @@ protected:
 	bool _allocPacketForFragment(mbuf_t *packet, volatile gt_fragment *f);
 	bool _freePacketForFragment(mbuf_t *packet, volatile gt_fragment *f);*/
 	void check_firstup(struct ipw_priv *priv);
-
+	
 	
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
 
 	IOPCIDevice *				fPCIDevice;		// PCI nub
 	IOEthernetAddress			fEnetAddr;		// holds the mac address currently hardcoded
 	IOWorkLoop *				fWorkLoop;		// the workloop
-    //IO80211Interface*			fNetif;			// ???
-	//IOEthernetInterface*			fNetif;
-	IONetworkInterface*			fNetif;
+   // IO80211Interface*			fNetif;			// ???
+	IOEthernetInterface*			fNetif;
+	//IONetworkInterface*			fNetif;
 	IOInterruptEventSource *	fInterruptSrc;	// ???
 //	IOTimerEventSource *		fWatchdogTimer;	// ???
 	IOBasicOutputQueue *				fTransmitQueue;	// ???
@@ -1338,7 +1333,8 @@ protected:
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
 	IOMbufLittleMemoryCursor *_mbufCursor;
-	int firstifup;
+	int firstifup,checkrx,checktx;
+
 };
 
 
