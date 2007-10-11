@@ -110,8 +110,6 @@ inline static int snprint_line(char *buf, size_t count,
 	return out;
 }
 
-
-
 inline static int snprintk_buf(u8 * output, size_t size, const u8 * data, size_t len)
 {
 	size_t out = size;
@@ -168,12 +166,19 @@ inline void *skb_put(mbuf_t skb, unsigned int len)
 	skb->len  += len;
 	return tmp;*/
 	void *data = (UInt8*)mbuf_data(skb) + mbuf_len(skb);
-	//mbuf_prepend(&skb,len,1); /* no prepend work */
+	
 	IWI_DUMP_MBUF(1,skb,len);  
+	
 	if(mbuf_trailingspace(skb) > len ){
+	//mbuf_prepend(&skb,len,MBUF_DONTWAIT); /* no prepend work */
 		mbuf_setlen(skb,mbuf_len(skb)+len);
 		if(mbuf_flags(skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(skb,mbuf_pkthdr_len(skb)+len); 
+	}
+	else
+	{
+		IWI_ERR("skb_put failed\n");
+		data = (UInt8*)mbuf_data(skb);
 	}
 	IWI_DUMP_MBUF(2,skb,len);  
 	return data;
@@ -189,7 +194,7 @@ inline void *skb_push(mbuf_t skb, unsigned int len)
 	/* void *data=(UInt8*)mbuf_data(skb)-len;
 	mbuf_setdata(skb,data,mbuf_len(skb)+len); */
 	IWI_DUMP_MBUF(1,skb,len); 
-	mbuf_prepend(&skb,len,0);
+	mbuf_prepend(&skb,len,MBUF_DONTWAIT);
 	IWI_DUMP_MBUF(2,skb,len);
 	return  (UInt8 *)mbuf_data(skb);
 }
@@ -771,7 +776,6 @@ public:
 	struct ieee80211_crypto_ops *ieee80211_get_crypto_ops(const char *name);
 	
 	//end of ieee80211_crypt functions.
-
 	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
 	virtual bool		init(OSDictionary *dictionary = 0);
 	virtual void		free(void);
@@ -949,7 +953,7 @@ protected:
 	 void ipw_led_link_on(struct ipw_priv *priv);
 	 void ipw_led_band_on(struct ipw_priv *priv);
 	 int ipw_sw_reset(int option);
-	 int ipw_get_fw(const struct firmware **fw, const char *name);
+	 int ipw_get_fw(const struct firmware **raw, const char *name);
 	 void ipw_led_link_down(struct ipw_priv *priv);
 	 void ipw_rf_kill(ipw_priv *priv);
 	 int ipw_best_network(struct ipw_priv *priv,
@@ -1125,6 +1129,7 @@ protected:
 
 			if (network->ibss_dfs) {
 			IOFree(network->ibss_dfs,sizeof(*network->ibss_dfs));
+			//kfree(network->ibss_dfs);
 			network->ibss_dfs = NULL;
 			}
 		}			  
@@ -1218,20 +1223,20 @@ protected:
 			CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
 			return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
 		}
+
 /*	bool _fillFragment(volatile gt_fragment *f, mbuf_t packet, UInt16 flags=0);
 	bool _allocPacketForFragment(mbuf_t *packet, volatile gt_fragment *f);
 	bool _freePacketForFragment(mbuf_t *packet, volatile gt_fragment *f);*/
 	void check_firstup(struct ipw_priv *priv);
-	
-	
+								  
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
 
 	IOPCIDevice *				fPCIDevice;		// PCI nub
 	IOEthernetAddress			fEnetAddr;		// holds the mac address currently hardcoded
 	IOWorkLoop *				fWorkLoop;		// the workloop
    // IO80211Interface*			fNetif;			// ???
-	IOEthernetInterface*			fNetif;
-	//IONetworkInterface*			fNetif;
+	//IOEthernetInterface*			fNetif;
+	IONetworkInterface*			fNetif;
 	IOInterruptEventSource *	fInterruptSrc;	// ???
 //	IOTimerEventSource *		fWatchdogTimer;	// ???
 	IOBasicOutputQueue *				fTransmitQueue;	// ???
@@ -1333,8 +1338,9 @@ protected:
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
 	IOMbufLittleMemoryCursor *_mbufCursor;
-	int firstifup,checkrx,checktx;
-
+	int firstifup;
+	struct ieee80211_txb txb0;
+	
 };
 
 
