@@ -45,6 +45,7 @@ extern "C" {
 #include <sys/malloc.h>
 #include <sys/queue.h>
 #include <sys/kern_control.h>
+#include <libkern/libkern.h>
 }
 
 #include "net/ieee80211.h"
@@ -949,8 +950,8 @@ typedef unsigned char UInt8;
 #define IP_LIST(ip)	IP_CH(ip)[2],IP_CH(ip)[3],IP_CH(ip)[4],IP_CH(ip)[5]
 
 // 3000 is the size expected by firmware!!
-//#define IPW_RX_BUF_SIZE (3000)
-#define IPW_RX_BUF_SIZE (1600)
+#define IPW_RX_BUF_SIZE (3000)
+//#define IPW_RX_BUF_SIZE (1532+IPW_RX_FRAME_SIZE)
 
 #define memcpy_toio(a,b,c)	memcpy((void *)(a),(b),(c))
 
@@ -1006,6 +1007,7 @@ typedef unsigned char UInt8;
 #define CRYPTO_ALG_DYING                0x00000040
 #define CRYPTO_ALG_ASYNC                0x00000080
  
+#define HOST_COMPLETE_TIMEOUT HZ
 			 
 
 

@@ -691,9 +691,7 @@ struct ipw_rx_packet {
                                  sizeof(struct ipw_rx_frame))
 struct ipw_rx_mem_buffer {
 	dma_addr_t dma_addr;
-	//IOBufferMemoryDescriptor *memD;
 	mbuf_t skb;
-	//gt_fragment fskb;
 	struct list_head list;
 };				/* Not transferred over network, so not  __attribute__ ((packed)) */
 
@@ -1090,6 +1088,14 @@ struct ipw_event {
 	u32 time;
 	u32 data;
 } __attribute__ ((packed));
+
+struct ipw_fw {
+	u32 ver;
+	u32 boot_size;
+	u32 ucode_size;
+	u32 fw_size;
+	u8 data[0];
+};
 
 struct ipw_fw_error {
 	//unsigned long jiffies;

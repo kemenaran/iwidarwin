@@ -174,18 +174,20 @@ static int networkMenuCount = 0;
 							char SSID[256];
 							char MAC[17];
 							char ch[3];
+							char fla[10];
 
 							cn++;
 							sprintf(SSID,"%s",escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len));
 							sprintf(MAC,"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid));
 							sprintf(ch,"%d",priv.ieee->networks[ii].channel);
-							
+							sprintf(fla,"0x%x",priv.ieee->networks[ii].capability);
 							NSString *sSSID = [NSString stringWithCString:SSID];
 							NSString *sMAC = [NSString stringWithCString:MAC];
 							NSString *sch = [NSString stringWithCString:ch];
 							NSImage *sig; // = [NSImage new];
 							NSImage *prot;// = [NSImage new];
 							prot = [[NSImage alloc] init];
+							NSString *sflags = [NSString stringWithCString:fla];
 							
 							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
 							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS) ? 1 : 1)
@@ -222,8 +224,10 @@ static int networkMenuCount = 0;
 
 							
 							NSMutableArray *data = [NSMutableArray new];
-							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];[data addObject:sig];[data addObject:prot];
-							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", @"Info",nil];
+							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];
+							[data addObject:sig];[data addObject:prot];[data addObject:sflags];
+							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", 
+							@"Info",@"Flags",nil];
 							
 							NSMutableDictionary *temp = [[NSMutableDictionary alloc] initWithObjects: data forKeys: keys];
 							
