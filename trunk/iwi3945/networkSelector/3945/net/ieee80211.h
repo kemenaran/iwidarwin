@@ -26,13 +26,6 @@
 #ifndef IEEE80211_H
 #define IEEE80211_H
 
-#include "../defines.h"
-#define min(a,b) ((a) < (b) ? (a) : (b))
-struct timer_list {
-        unsigned long expires;
-        void (*function)(unsigned long);
-        unsigned long data;
-};
 #ifdef __KERNEL__
 #include <linux/netdevice.h>
 #include <linux/if_ether.h>	/* ETH_ALEN */
@@ -41,7 +34,7 @@ struct timer_list {
 #include <linux/if_arp.h>	/* ARPHRD_ETHER */
 #include <net/iw_handler.h>	/* new driver API */
 #endif
-
+#include "defines.h"
 #include "ieee80211_crypt.h"
 #include "ieee80211_radiotap.h"
 
@@ -235,7 +228,7 @@ struct net_device
 	int			allmulti;
 
 	int			watchdog_timeo;
-	struct timer_list	watchdog_timer;
+	int	watchdog_timer;
 
 	/* Protocol specific pointers */
 	
@@ -444,7 +437,7 @@ static const char *escape_essid(const char *essid, u8 essid_len)
 		return escaped;
 	}
 
-	essid_len = min(essid_len, (u8) IW_ESSID_MAX_SIZE);
+	//essid_len = min(essid_len, (u8) IW_ESSID_MAX_SIZE);
 	while (essid_len--) {
 		if (*s == '\0') {
 			*d++ = '\\';
@@ -951,6 +944,48 @@ struct ieee80211_mgmt {
 
 
 
+struct ieee80211_conf {
+	int channel;			/* IEEE 802.11 channel number */
+	int freq;			/* MHz */
+	int channel_val;		/* hw specific value for the channel */
+
+	int phymode;			/* MODE_IEEE80211A, .. */
+	unsigned int regulatory_domain;
+	int radio_enabled;
+
+	int beacon_int;
+
+#define IEEE80211_CONF_SHORT_SLOT_TIME	(1<<0) /* use IEEE 802.11g Short Slot
+						* Time */
+#define IEEE80211_CONF_SSID_HIDDEN	(1<<1) /* do not broadcast the ssid */
+	u32 flags;			/* configuration flags defined above */
+
+	u8 power_level;			/* transmit power limit for current
+					 * regulatory domain; in dBm */
+	u8 antenna_max;			/* maximum antenna gain */
+	short tx_power_reduction; /* in 0.1 dBm */
+
+	/* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
+	u8 antenna_sel_tx;
+	u8 antenna_sel_rx;
+
+	int antenna_def;
+	int antenna_mode;
+
+	/* Following five fields are used for IEEE 802.11H */
+	unsigned int radar_detect;
+	unsigned int spect_mgmt;
+	unsigned int quiet_duration; /* duration of quiet period */
+	unsigned int quiet_offset; /* how far into the beacon is the quiet
+				    * period */
+	unsigned int quiet_period;
+	u8 radar_firpwr_threshold;
+	u8 radar_rssi_threshold;
+	u8 pulse_height_threshold;
+	u8 pulse_rssi_threshold;
+	u8 pulse_inband_threshold;
+};
+
 struct ieee80211_rate {
 	int rate; /* rate in 100 kbps */
 	int val; /* hw specific value for the rate */
@@ -966,7 +1001,6 @@ struct ieee80211_rate {
 	int rate_inv; /* inverse of the rate (LCM(all rates) / rate) for
 		       * optimizing channel utilization estimates */
 };
-
 
 
 #define IEEE80211_CHAN_W_RADAR_DETECT 0x00000010
@@ -989,7 +1023,99 @@ struct ieee80211_rate {
 (f & (IEEE80211_RATE_CCK | IEEE80211_RATE_OFDM))
 
 
+struct ieee80211_hw {
+	/* points to the cfg80211 wiphy for this piece. Note
+	 * that you must fill in the perm_addr and dev fields
+	 * of this structure, use the macros provided below. */
+	//struct wiphy *wiphy;
 
+	/* assigned by mac80211, don't write */
+	struct ieee80211_conf conf;
+
+	/* Pointer to the private area that was
+	 * allocated with this struct for you. */
+	void *priv;
+
+	/* The rest is information about your hardware */
+
+	/* TODO: frame_type 802.11/802.3, sw_encryption requirements */
+
+	/* Some wireless LAN chipsets generate beacons in the hardware/firmware
+	 * and others rely on host generated beacons. This option is used to
+	 * configure the upper layer IEEE 802.11 module to generate beacons.
+	 * The low-level driver can use ieee80211_beacon_get() to fetch the
+	 * next beacon frame. */
+#define IEEE80211_HW_HOST_GEN_BEACON (1<<0)
+
+	/* The device needs to be supplied with a beacon template only. */
+#define IEEE80211_HW_HOST_GEN_BEACON_TEMPLATE (1<<1)
+
+	/* Some devices handle decryption internally and do not
+	 * indicate whether the frame was encrypted (unencrypted frames
+	 * will be dropped by the hardware, unless specifically allowed
+	 * through) */
+#define IEEE80211_HW_DEVICE_HIDES_WEP (1<<2)
+
+	/* Whether RX frames passed to ieee80211_rx() include FCS in the end */
+#define IEEE80211_HW_RX_INCLUDES_FCS (1<<3)
+
+	/* Some wireless LAN chipsets buffer broadcast/multicast frames for
+	 * power saving stations in the hardware/firmware and others rely on
+	 * the host system for such buffering. This option is used to
+	 * configure the IEEE 802.11 upper layer to buffer broadcast/multicast
+	 * frames when there are power saving stations so that low-level driver
+	 * can fetch them with ieee80211_get_buffered_bc(). */
+#define IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING (1<<4)
+
+#define IEEE80211_HW_WEP_INCLUDE_IV (1<<5)
+
+	/* will data nullfunc frames get proper TX status callback */
+#define IEEE80211_HW_DATA_NULLFUNC_ACK (1<<6)
+
+	/* Force software encryption for TKIP packets if WMM is enabled. */
+#define IEEE80211_HW_NO_TKIP_WMM_HWACCEL (1<<7)
+
+	/* Some devices handle Michael MIC internally and do not include MIC in
+	 * the received packets passed up. device_strips_mic must be set
+	 * for such devices. The 'encryption' frame control bit is expected to
+	 * be still set in the IEEE 802.11 header with this option unlike with
+	 * the device_hides_wep configuration option.
+	 */
+#define IEEE80211_HW_DEVICE_STRIPS_MIC (1<<8)
+
+	/* Device is capable of performing full monitor mode even during
+	 * normal operation. */
+#define IEEE80211_HW_MONITOR_DURING_OPER (1<<9)
+
+	/* please fill this gap when adding new flags */
+
+	/* calculate Michael MIC for an MSDU when doing hwcrypto */
+#define IEEE80211_HW_TKIP_INCLUDE_MMIC (1<<12)
+	/* Do TKIP phase1 key mixing in stack to support cards only do
+	 * phase2 key mixing when doing hwcrypto */
+#define IEEE80211_HW_TKIP_REQ_PHASE1_KEY (1<<13)
+	/* Do TKIP phase1 and phase2 key mixing in stack and send the generated
+	 * per-packet RC4 key with each TX frame when doing hwcrypto */
+#define IEEE80211_HW_TKIP_REQ_PHASE2_KEY (1<<14)
+
+	u32 flags;			/* hardware flags defined above */
+
+	/* Set to the size of a needed device specific skb headroom for TX skbs. */
+	unsigned int extra_tx_headroom;
+
+	/* This is the time in us to change channels
+	 */
+	int channel_change_time;
+	/* Maximum values for various statistics.
+	 * Leave at 0 to indicate no support. Use negative numbers for dBm. */
+	s8 max_rssi;
+	s8 max_signal;
+	s8 max_noise;
+
+	/* Number of available hardware TX queues for data packets.
+	 * WMM requires at least four queues. */
+	int queues;
+};
 
 struct ieee80211_channel {
 	short chan; /* channel number (IEEE 802.11) */
@@ -1528,7 +1654,7 @@ struct ieee80211_device {
 	struct list_head crypt_deinit_list;
 	struct ieee80211_crypt_data *crypt[WEP_KEYS];
 	int tx_keyidx;		/* default TX key index (crypt[tx_keyidx]) */
-	struct timer_list crypt_deinit_timer;
+	int crypt_deinit_timer;
 	int crypt_quiesced;
 
 	int bcrx_sta_key;	/* use individual keys to override default keys even
