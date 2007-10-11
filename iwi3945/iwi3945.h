@@ -332,6 +332,18 @@ struct iwi_rx_radiotap_header {
 	 (1 << IEEE80211_RADIOTAP_DB_ANTSIGNAL) |			\
 	 (1 << IEEE80211_RADIOTAP_ANTENNA))
 
+struct iwl_driver_hw_info {
+	u16 max_queue_number;
+	u16 ac_queue_count;
+	u32 rx_buffer_size;
+	u16 tx_cmd_len;
+	u16 max_rxq_size;
+	u16 max_rxq_log;
+	u32 cck_flag;
+	void *shared_virt;
+	dma_addr_t shared_phys;
+};
+
 struct iwi_tx_radiotap_header {
 //	struct ieee80211_radiotap_header wt_ihdr;
 	UInt8		wt_flags;
@@ -1008,6 +1020,11 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 	{
 	return &hw->conf;
 	}
+	static inline struct ieee80211_hw *local_to_hw(
+	struct ieee80211_local *local)
+{
+	return &local->hw;
+}
 	virtual struct ieee80211_hw_mode *ipw_get_current_hw(struct ipw_priv *priv);
 	virtual int ipw_get_channels_for_scan(struct ipw_priv *priv, int phymode,
 				     u8 is_active, u8 direct_mask,
@@ -1030,6 +1047,8 @@ inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
 	if (ETH_ALEN != 6) return -1;
 	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
 }	
+	struct ieee80211_hw *darwin_iwi3945::ieee80211_alloc_hw(size_t priv_data_len,
+					const struct ieee80211_ops *ops);
 	virtual int iwl_set_rxon_channel(struct ipw_priv *priv, u8 phymode, u8 channel);
 	virtual void iwl_irq_tasklet(struct ipw_priv *priv);
 	static int ipw_add_sta_sync_callback(struct ipw_priv *priv,
@@ -1045,19 +1064,6 @@ inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
     IOOutputQueue                               *transmitQueue;
     IOMbufNaturalMemoryCursor                   *rxMbufCursor;
     IOMbufNaturalMemoryCursor                   *txMbufCursor;
-
-
-inline UInt32 MEM_READ_4(UInt16 *base, UInt32 addr)
-{
-	CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr & IWI_INDIRECT_ADDR_MASK);
-	return CSR_READ_4(base, IWI_CSR_INDIRECT_DATA);
-}
-
-inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
-{
-	CSR_WRITE_4(base, IWI_CSR_INDIRECT_ADDR, addr);
-	return CSR_READ_1(base, IWI_CSR_INDIRECT_DATA);
-}
 
 
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
@@ -1133,7 +1139,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	u16 rates_mask;
 	u8 essid[IW_ESSID_MAX_SIZE];
 	u8 essid_len;
-	u8 speed_scan[MAX_SPEED_SCAN];
+	//u8 speed_scan[MAX_SPEED_SCAN];
 	u8 speed_scan_pos;
 	//struct ipw_rx_queue *rxq;
 	//struct clx2_tx_queue txq_cmd;

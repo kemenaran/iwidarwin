@@ -1145,19 +1145,6 @@ struct statistics {
 
 #define PCI_CFG_PMC_PME_FROM_D3COLD_SUPPORT         (0x80000000)
 /*   interrupt flags */
-#define BIT_INT_RX           (1<<31)
-#define BIT_INT_SWERROR      (1<<25)
-#define BIT_INT_ERR          (1<<29)
-#define BIT_INT_TX           (1<<27)
-#define BIT_INT_WAKEUP       (1<< 1)
-#define BIT_INT_ALIVE        (1<<0)
-
-#define CSR_INI_SET_MASK      ( BIT_INT_RX      |  \
-                                BIT_INT_SWERROR |  \
-                                BIT_INT_ERR     |  \
-                                BIT_INT_TX      |  \
-                                BIT_INT_ALIVE   |  \
-                                BIT_INT_WAKEUP )
 
 /* RESET */
 #define CSR_RESET_REG_FLAG_NEVO_RESET                (0x00000001)
@@ -1260,41 +1247,34 @@ struct statistics {
 #define TFD_QUEUE_MAX           6
 #define TFD_QUEUE_SIZE_MAX      (256)
 
+
+/* interrupt flags in INTA, set by uCode or hardware (e.g. dma),
+ * acknowledged (reset) by host writing "1" to flagged bits. */
+#define BIT_INT_FH_RX        (1<<31) /* Rx DMA, cmd responses, FH_INT[17:16] */
+#define BIT_INT_ERR          (1<<29) /* DMA hardware error FH_INT[31] */
+#define BIT_INT_FH_TX        (1<<27) /* Tx DMA FH_INT[1:0] */
+#define BIT_INT_MAC_CLK_ACTV (1<<26) /* NIC controller's clock toggled on/off */
+#define BIT_INT_SWERROR      (1<<25) /* uCode error */
+#define BIT_INT_RF_KILL      (1<<7)  /* HW RFKILL switch GP_CNTRL[27] toggled */
+#define BIT_INT_CT_KILL      (1<<6)  /* Critical temp (chip too hot) rfkill */
+#define BIT_INT_SW_RX        (1<<3)  /* Rx, command responses, 3945 */
+#define BIT_INT_WAKEUP       (1<<1)  /* NIC controller waking up (pwr mgmt) */
+#define BIT_INT_ALIVE        (1<<0)  /* uCode interrupts once it initializes */
+
+#define CSR_INI_SET_MASK      ( BIT_INT_FH_RX   |  \
+				BIT_INT_ERR     |  \
+				BIT_INT_FH_TX   |  \
+				BIT_INT_SWERROR |  \
+				BIT_INT_SW_RX   |  \
+				BIT_INT_WAKEUP  |  \
+				BIT_INT_ALIVE )
 /* Eeprom */
 
 #define MSB                             1
 #define LSB                             0
 #define WORD_TO_BYTE(_word)             ((_word) * sizeof(u16))
 
-#define EEPROM_ADDR(_wordoffset,_byteoffset)    \
-    ( WORD_TO_BYTE(_wordoffset) + (_byteoffset) )
 
-/* EEPROM access by BYTE */
-
-/* General */
-#define EEPROM_MAC_ADDRESS                  (EEPROM_ADDR(0x15,LSB))	/* 6  bytes */
-
-#define EEPROM_BOARD_REVISION               (EEPROM_ADDR(0x35,LSB))	/* 2  bytes */
-#define EEPROM_BOARD_PBA_NUMBER             (EEPROM_ADDR(0x3B,MSB))	/* 9  bytes */
-#define EEPROM_SKU_CAP                      (EEPROM_ADDR(0x45,LSB))	/* 1  bytes */
-#define EEPROM_LEDS_MODE                    (EEPROM_ADDR(0x45,MSB))	/* 1  bytes */
-#define EEPROM_ALMGOR_M_VERSION             (EEPROM_ADDR(0x4A,LSB))	/* 1  bytes */
-#define EEPROM_ANTENNA_SWITCH_TYPE          (EEPROM_ADDR(0x4A,MSB))	/* 1  bytes */
-
-/* LED definitions */
-#define EEPROM_LEDS_TIME_INTERVAL           (EEPROM_ADDR(0x48,LSB))	/* 2  bytes */
-#define EEPROM_LEDS_ON_TIME                 (EEPROM_ADDR(0x49,MSB))	/* 1  bytes */
-#define EEPROM_LEDS_OFF_TIME                (EEPROM_ADDR(0x49,LSB))	/* 1  bytes */
-
-/* EEPROM field values */
-
-/* EEPROM field lengths */
-#define EEPROM_BOARD_PBA_NUMBER_LENTGH                  11
-
-/* SKU Capabilities */
-#define EEPROM_SKU_CAP_SW_RF_KILL_ENABLE                (1 << 0)
-#define EEPROM_SKU_CAP_HW_RF_KILL_ENABLE                (1 << 1)
-#define EEPROM_SKU_CAP_OP_MODE_MRC                      (1 << 7)
 
 /* LEDs mode */
 
@@ -1518,6 +1498,7 @@ struct tfd_frame {
 #define INDEX_TO_SEQ(x) (x & 0xff)
 #define SEQ_HUGE_FRAME  (0x4000)
 #define SEQ_RX_FRAME    (0x8000)
+#define SEQ_TO_QUEUE(x)  ((x >> 8) & 0xbf)
 
 enum {
 	/* CMD_SIZE_NORMAL = 0, */
@@ -1543,8 +1524,8 @@ typedef int (*IPW_CALLBACK_FUNC) (struct ipw_priv * priv,
 #define TFD_CMD_SLOTS 32
 
 struct ipw_cmd_meta {
+	struct ipw_cmd_meta *source;
 	union {
-		struct ipw_cmd_meta *source;
 		mbuf_t skb;
 		IPW_CALLBACK_FUNC callback;
 	} __attribute__ ((packed)) u;
@@ -1556,6 +1537,7 @@ struct ipw_cmd_meta {
 	u8 flags;
 
 	u8 token;
+	u16 magic;
 } __attribute__ ((packed));
 
 struct ipw_cmd_header {
@@ -1573,6 +1555,7 @@ struct ipw_cmd_header {
 	 *
 	 */
 	u16 sequence;
+	u8 data[0];
 } __attribute__ ((packed));
 
 struct ipw_host_cmd {
@@ -1850,7 +1833,6 @@ struct ipw_associate {
 } __attribute__ ((packed));
 
 #define IPW_SUPPORTED_RATES_IE_LEN         8
-#define IPW_MAX_RATES                     12
 
 struct ipw_supported_rates {
 	u8 ieee_mode;
@@ -2020,9 +2002,9 @@ struct ipw_led_info {
 };
 
 struct ipw_shared_t {
-	volatile u32 tx_base_ptr[8];
-	volatile u32 rx_read_ptr[3];
-};
+	u32 tx_base_ptr[8];
+	u32 rx_read_ptr[3];
+} __attribute__ ((packed));
 
 struct fw_image_desc {
 	void *v_addr;
@@ -2814,6 +2796,7 @@ struct ipw_priv {
 	int interface_id;
 	int freq_band;
 	int iw_mode;
+	mbuf_t ibss_beacon;
 	u16 assoc_id;
 	u16 assoc_capability;
 	u32 timestamp0;
@@ -3066,6 +3049,111 @@ struct ipw_scan_cmd {
 
 	 */
 } __attribute__ ((packed));
+
+struct ieee80211_ops
+{
+
+};
+
+enum {
+	IWL_RATE_6M_INDEX = 0,
+	IWL_RATE_9M_INDEX,
+	IWL_RATE_12M_INDEX,
+	IWL_RATE_18M_INDEX,
+	IWL_RATE_24M_INDEX,
+	IWL_RATE_36M_INDEX,
+	IWL_RATE_48M_INDEX,
+	IWL_RATE_54M_INDEX,
+	IWL_RATE_1M_INDEX,
+	IWL_RATE_2M_INDEX,
+	IWL_RATE_5M_INDEX,
+	IWL_RATE_11M_INDEX,
+	IWL_RATE_COUNT,
+	IWL_RATE_INVM_INDEX,
+	IWL_RATE_INVALID = IWL_RATE_INVM_INDEX
+};
+
+/* #define vs. enum to keep from defaulting to 'large integer' */
+#define	IWL_RATE_6M_MASK   (1<<IWL_RATE_6M_INDEX)
+#define	IWL_RATE_9M_MASK   (1<<IWL_RATE_9M_INDEX)
+#define	IWL_RATE_12M_MASK  (1<<IWL_RATE_12M_INDEX)
+#define	IWL_RATE_18M_MASK  (1<<IWL_RATE_18M_INDEX)
+#define	IWL_RATE_24M_MASK  (1<<IWL_RATE_24M_INDEX)
+#define	IWL_RATE_36M_MASK  (1<<IWL_RATE_36M_INDEX)
+#define	IWL_RATE_48M_MASK  (1<<IWL_RATE_48M_INDEX)
+#define	IWL_RATE_54M_MASK  (1<<IWL_RATE_54M_INDEX)
+#define	IWL_RATE_1M_MASK   (1<<IWL_RATE_1M_INDEX)
+#define	IWL_RATE_2M_MASK   (1<<IWL_RATE_2M_INDEX)
+#define	IWL_RATE_5M_MASK   (1<<IWL_RATE_5M_INDEX)
+#define	IWL_RATE_11M_MASK  (1<<IWL_RATE_11M_INDEX)
+
+enum {
+	IWL_RATE_6M_PLCP = 13,
+	IWL_RATE_9M_PLCP = 15,
+	IWL_RATE_12M_PLCP = 5,
+	IWL_RATE_18M_PLCP = 7,
+	IWL_RATE_24M_PLCP = 9,
+	IWL_RATE_36M_PLCP = 11,
+	IWL_RATE_48M_PLCP = 1,
+	IWL_RATE_54M_PLCP = 3,
+	IWL_RATE_1M_PLCP = 10,
+	IWL_RATE_2M_PLCP = 20,
+	IWL_RATE_5M_PLCP = 55,
+	IWL_RATE_11M_PLCP = 110,
+};
+
+enum {
+	IWL_RATE_6M_IEEE = 12,
+	IWL_RATE_9M_IEEE = 18,
+	IWL_RATE_12M_IEEE = 24,
+	IWL_RATE_18M_IEEE = 36,
+	IWL_RATE_24M_IEEE = 48,
+	IWL_RATE_36M_IEEE = 72,
+	IWL_RATE_48M_IEEE = 96,
+	IWL_RATE_54M_IEEE = 108,
+	IWL_RATE_1M_IEEE = 2,
+	IWL_RATE_2M_IEEE = 4,
+	IWL_RATE_5M_IEEE = 11,
+	IWL_RATE_11M_IEEE = 22,
+};
+
+#define IWL_CCK_BASIC_RATES_MASK    \
+       (IWL_RATE_1M_MASK          | \
+	IWL_RATE_2M_MASK)
+
+#define IWL_CCK_RATES_MASK          \
+       (IWL_BASIC_RATES_MASK      | \
+	IWL_RATE_5M_MASK          | \
+	IWL_RATE_11M_MASK)
+
+#define IWL_OFDM_BASIC_RATES_MASK   \
+	(IWL_RATE_6M_MASK         | \
+	IWL_RATE_12M_MASK         | \
+	IWL_RATE_24M_MASK)
+
+#define IWL_OFDM_RATES_MASK         \
+       (IWL_OFDM_BASIC_RATES_MASK | \
+	IWL_RATE_9M_MASK          | \
+	IWL_RATE_18M_MASK         | \
+	IWL_RATE_36M_MASK         | \
+	IWL_RATE_48M_MASK         | \
+	IWL_RATE_54M_MASK)
+
+#define IWL_BASIC_RATES_MASK         \
+	(IWL_OFDM_BASIC_RATES_MASK | \
+	 IWL_CCK_BASIC_RATES_MASK)
+
+#define IWL_RATES_MASK ((1<<IWL_RATE_COUNT)-1)
+
+#define IWL_POWER_MODE_CAM           0x00	/*(always on) */
+#define IWL_POWER_INDEX_3            0x03
+#define IWL_POWER_INDEX_5            0x05
+#define IWL_POWER_AC                 0x06
+#define IWL_POWER_BATTERY            0x07
+#define IWL_POWER_LIMIT              0x07
+#define IWL_POWER_MASK               0x0F
+#define IWL_POWER_ENABLED            0x10
+#define IWL_POWER_LEVEL(x)           ((x) & IWL_POWER_MASK)
 
 struct ieee80211_local {
 	/* embed the driver visible part.

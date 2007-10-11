@@ -2738,139 +2738,26 @@ struct ipw_channel_info {
 	struct ipw_scan_power_info scan_pwr_info[IPW_NUM_SCAN_RATES];
 };
 
+struct iwl_rxon_cmd {
+	u8 node_addr[6];
+	__le16 reserved1;
+	u8 bssid_addr[6];
+	__le16 reserved2;
+	u8 wlap_bssid_addr[6];
+	__le16 reserved3;
+	u8 dev_type;
+	u8 air_propagation;
+	__le16 reserved4;
+	u8 ofdm_basic_rates;
+	u8 cck_basic_rates;
+	__le16 assoc_id;
+	u32 flags;
+	u32 filter_flags;
+	__le16 channel;
+	__le16 reserved5;
+} __attribute__ ((packed));
 
-struct ieee80211_conf {
-	int channel;			/* IEEE 802.11 channel number */
-	int freq;			/* MHz */
-	int channel_val;		/* hw specific value for the channel */
 
-	int phymode;			/* MODE_IEEE80211A, .. */
-	unsigned int regulatory_domain;
-	int radio_enabled;
-
-	int beacon_int;
-
-	u32 flags;			/* configuration flags defined above */
-
-	u8 power_level;			/* transmit power limit for current
-					 * regulatory domain; in dBm */
-	u8 antenna_max;			/* maximum antenna gain */
-	short tx_power_reduction; /* in 0.1 dBm */
-
-	/* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
-	u8 antenna_sel_tx;
-	u8 antenna_sel_rx;
-
-	int antenna_def;
-	int antenna_mode;
-
-	/* Following five fields are used for IEEE 802.11H */
-	unsigned int radar_detect;
-	unsigned int spect_mgmt;
-	unsigned int quiet_duration; /* duration of quiet period */
-	unsigned int quiet_offset; /* how far into the beacon is the quiet
-				    * period */
-	unsigned int quiet_period;
-	u8 radar_firpwr_threshold;
-	u8 radar_rssi_threshold;
-	u8 pulse_height_threshold;
-	u8 pulse_rssi_threshold;
-	u8 pulse_inband_threshold;
-};
-
-struct ieee80211_hw {
-	/* points to the cfg80211 wiphy for this piece. Note
-	 * that you must fill in the perm_addr and dev fields
-	 * of this structure, use the macros provided below. */
-	//struct wiphy *wiphy;
-
-	/* assigned by mac80211, don't write */
-	struct ieee80211_conf conf;
-
-	/* Pointer to the private area that was
-	 * allocated with this struct for you. */
-	void *priv;
-
-	/* The rest is information about your hardware */
-
-	/* TODO: frame_type 802.11/802.3, sw_encryption requirements */
-
-	/* Some wireless LAN chipsets generate beacons in the hardware/firmware
-	 * and others rely on host generated beacons. This option is used to
-	 * configure the upper layer IEEE 802.11 module to generate beacons.
-	 * The low-level driver can use ieee80211_beacon_get() to fetch the
-	 * next beacon frame. */
-#define IEEE80211_HW_HOST_GEN_BEACON (1<<0)
-
-	/* The device needs to be supplied with a beacon template only. */
-#define IEEE80211_HW_HOST_GEN_BEACON_TEMPLATE (1<<1)
-
-	/* Some devices handle decryption internally and do not
-	 * indicate whether the frame was encrypted (unencrypted frames
-	 * will be dropped by the hardware, unless specifically allowed
-	 * through) */
-#define IEEE80211_HW_DEVICE_HIDES_WEP (1<<2)
-
-	/* Whether RX frames passed to ieee80211_rx() include FCS in the end */
-#define IEEE80211_HW_RX_INCLUDES_FCS (1<<3)
-
-	/* Some wireless LAN chipsets buffer broadcast/multicast frames for
-	 * power saving stations in the hardware/firmware and others rely on
-	 * the host system for such buffering. This option is used to
-	 * configure the IEEE 802.11 upper layer to buffer broadcast/multicast
-	 * frames when there are power saving stations so that low-level driver
-	 * can fetch them with ieee80211_get_buffered_bc(). */
-#define IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING (1<<4)
-
-#define IEEE80211_HW_WEP_INCLUDE_IV (1<<5)
-
-	/* will data nullfunc frames get proper TX status callback */
-#define IEEE80211_HW_DATA_NULLFUNC_ACK (1<<6)
-
-	/* Force software encryption for TKIP packets if WMM is enabled. */
-#define IEEE80211_HW_NO_TKIP_WMM_HWACCEL (1<<7)
-
-	/* Some devices handle Michael MIC internally and do not include MIC in
-	 * the received packets passed up. device_strips_mic must be set
-	 * for such devices. The 'encryption' frame control bit is expected to
-	 * be still set in the IEEE 802.11 header with this option unlike with
-	 * the device_hides_wep configuration option.
-	 */
-#define IEEE80211_HW_DEVICE_STRIPS_MIC (1<<8)
-
-	/* Device is capable of performing full monitor mode even during
-	 * normal operation. */
-#define IEEE80211_HW_MONITOR_DURING_OPER (1<<9)
-
-	/* please fill this gap when adding new flags */
-
-	/* calculate Michael MIC for an MSDU when doing hwcrypto */
-#define IEEE80211_HW_TKIP_INCLUDE_MMIC (1<<12)
-	/* Do TKIP phase1 key mixing in stack to support cards only do
-	 * phase2 key mixing when doing hwcrypto */
-#define IEEE80211_HW_TKIP_REQ_PHASE1_KEY (1<<13)
-	/* Do TKIP phase1 and phase2 key mixing in stack and send the generated
-	 * per-packet RC4 key with each TX frame when doing hwcrypto */
-#define IEEE80211_HW_TKIP_REQ_PHASE2_KEY (1<<14)
-
-	u32 flags;			/* hardware flags defined above */
-
-	/* Set to the size of a needed device specific skb headroom for TX skbs. */
-	unsigned int extra_tx_headroom;
-
-	/* This is the time in us to change channels
-	 */
-	int channel_change_time;
-	/* Maximum values for various statistics.
-	 * Leave at 0 to indicate no support. Use negative numbers for dBm. */
-	s8 max_rssi;
-	s8 max_signal;
-	s8 max_noise;
-
-	/* Number of available hardware TX queues for data packets.
-	 * WMM requires at least four queues. */
-	int queues;
-};
 
 struct ipw_priv {
 	/* ieee device used by generic ieee processing code */
@@ -2881,7 +2768,6 @@ struct ipw_priv {
 	struct ieee80211_hw_mode *modes;
 	struct ipw_channel_info *channel_info;	/* channel info array */
 	u8 channel_count;	/* # of channels */
-	//const struct ipw_clip_group clip_groups[5];
 	struct ipw_clip_group clip_groups[5];
 	
 	int curr_temperature;
@@ -2889,7 +2775,8 @@ struct ipw_priv {
 	struct ieee80211_channel *ieee_channels;
 	struct ieee80211_rate *ieee_rates;
 	//struct iw_public_data wireless_data;
-
+	u8 phymode;
+	
 	struct ipw_driver_hw_info hw_setting;
 	u8 is_3945;
 	int interface_id;
@@ -2951,8 +2838,8 @@ struct ipw_priv {
 	unsigned long hw_len;
 	struct ipw_lq_mngr lq_mngr;
 	
-	struct ipw_rxon_cmd active_rxon;
-	struct ipw_rxon_cmd staging_rxon;
+	struct iwl_rxon_cmd active_rxon;
+	struct iwl_rxon_cmd staging_rxon;
 	
 	struct fw_image_desc ucode_code;
 	struct fw_image_desc ucode_data;
