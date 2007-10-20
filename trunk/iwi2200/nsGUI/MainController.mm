@@ -26,6 +26,9 @@ static int networkMenuCount = 0;
 	[statusItem setToolTip: @"NetworkSelector"];
 	[statusItem setHighlightMode: YES];
 	[networkName setTarget:self];
+	//set all textboxs to null to avoid errors when sending to iwi2200
+	[passwordName setStringValue:@""];
+	[networkName setStringValue:@""];
 }
 
 - (id) init
@@ -87,6 +90,7 @@ static int networkMenuCount = 0;
 }
 - (IBAction)NetworkAction:(id)sender
 {
+		if (priv.ieee->scans<2) return;
 		[ConnectButton setEnabled:true];
 		[ConnectButton setHidden:false];
 		[listWindow setHidden:false];
@@ -171,23 +175,13 @@ static int networkMenuCount = 0;
 					{
 						if (priv.ieee->networks[ii].ssid_len>0)
 						{
-							char SSID[256];
-							char MAC[17];
-							char ch[3];
-							char fla[10];
-
 							cn++;
-							sprintf(SSID,"%s",escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len));
-							sprintf(MAC,"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid));
-							sprintf(ch,"%d",priv.ieee->networks[ii].channel);
-							sprintf(fla,"0x%x",priv.ieee->networks[ii].capability);
-							NSString *sSSID = [NSString stringWithCString:SSID];
-							NSString *sMAC = [NSString stringWithCString:MAC];
-							NSString *sch = [NSString stringWithCString:ch];
+							NSString *sSSID = [NSString stringWithFormat:@"%s",escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len)];
+							NSString *sMAC = [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid)];
+							NSString *sch = [NSString stringWithFormat:@"%d",priv.ieee->networks[ii].channel];
 							NSImage *sig; // = [NSImage new];
 							NSImage *prot;// = [NSImage new];
 							prot = [[NSImage alloc] init];
-							NSString *sflags = [NSString stringWithCString:fla];
 							
 							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
 							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_IBSS) ? 1 : 1)
@@ -225,9 +219,9 @@ static int networkMenuCount = 0;
 							
 							NSMutableArray *data = [NSMutableArray new];
 							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];
-							[data addObject:sig];[data addObject:prot];[data addObject:sflags];
+							[data addObject:sig];[data addObject:prot];
 							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", 
-							@"Info",@"Flags",nil];
+							@"Info",nil];
 							
 							NSMutableDictionary *temp = [[NSMutableDictionary alloc] initWithObjects: data forKeys: keys];
 							
@@ -247,10 +241,7 @@ static int networkMenuCount = 0;
 						}
 					}
 				}
-
 		[dataOutlet reloadData];
-		
-				
 }
 
 - (IBAction)PowerAction:(id)sender
@@ -307,16 +298,28 @@ static int networkMenuCount = 0;
 - (IBAction)Connect:(id)sender
 {
 	int sel0 = [dataOutlet selectedRow];
-	sel0++;
-	if (sel0>0)
+	if (sel0>=0)
 	{
 		int ii;
-		int vi=0;
+		int vi=-1;
+		NSString *mac0,*mac1;
+		mac1 = [[networksData objectAtIndex:sel0] objectForKey:@"MAC"];
 		for (ii=0; ii<MAX_NETWORK_COUNT ;ii++)
 		if (priv.ieee->networks[ii].ssid_len>0)
 		{
-			vi++;
-			if (vi==sel0) break;
+			mac0 = [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid)];
+			if ([mac0 isEqualToString:mac1]) 
+			{
+				vi=ii;
+				break;
+			}
+		}
+		if (vi==-1) return;
+		ii=vi;
+		if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY)!=0)
+		{
+			[self createPasswordSelected:sender];
+			return;
 		}
 		[textOutlet setStringValue:[NSString stringWithCString:"connecting to network..."]];
 		[ProgressAnim setHidden:false];
@@ -588,11 +591,11 @@ static int networkMenuCount = 0;
 		
 		
 }
-- (void)tableView:(NSTableView *)tableView sortDescriptorsDidChange:(NSArray *)oldDescriptors {
+/*- (void)tableView:(NSTableView *)tableView sortDescriptorsDidChange:(NSArray *)oldDescriptors {
 	NSArray *newDescriptors = [tableView sortDescriptors];
-	[networksData sortUsingDescriptors:newDescriptors];
+	[networksData sortUsingDescriptors:NULL];
 	[dataOutlet reloadData];
-}
+}*/
 - (NSMenu *)applicationDockMenu:(NSApplication *)sender
 {
     return networksMenu;
@@ -656,7 +659,54 @@ static int networkMenuCount = 0;
 - (IBAction)createAdHocSelected:(id)sender
 {
 	[self cancelModeChange:nil];
+	[networkName setStringValue:@""];
 	[NSApp beginSheet:cr_networkDialog modalForWindow:mainWindow
+        modalDelegate:self didEndSelector:nil contextInfo:nil];
+}
+
+- (IBAction)createPassword:(id)sender
+{
+
+	[cr_passwordDialog orderOut:nil];
+    [NSApp endSheet:cr_passwordDialog];
+	if ([[passwordName stringValue] isEqualToString:@""]) return;
+	if ([[passwordName stringValue] length]>14) return;
+	setsockopt(fd,SYSPROTO_CONTROL,6,[[passwordName stringValue] cString] ,[[passwordName stringValue] length]);
+	[passwordName setStringValue:@""];
+		[textOutlet setStringValue:[NSString stringWithCString:"connecting to network..."]];
+		[ProgressAnim setHidden:false];
+		[ProgressAnim startAnimation:self];
+		wait_conect=YES;
+		int sel0 = [dataOutlet selectedRow];
+		if (sel0<0) return;
+		int ii;
+		int vi=-1;
+		NSString *mac0,*mac1;
+		mac1 = [[networksData objectAtIndex:sel0] objectForKey:@"MAC"];
+		for (ii=0; ii<MAX_NETWORK_COUNT ;ii++)
+		if (priv.ieee->networks[ii].ssid_len>0)
+		{
+			mac0 = [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid)];
+			if ([mac0 isEqualToString:mac1]) 
+			{
+				vi=ii;
+				break;
+			}
+		}
+		if (vi==-1) return;
+		ii=vi;
+		int r=setsockopt(fd,SYSPROTO_CONTROL,2,&priv.ieee->networks[ii], sizeof(priv.ieee->networks[ii]));
+		[ProgressAnim stopAnimation:self];
+		[ProgressAnim setHidden:true];
+		if (r==1)
+		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
+		wait_conect=NO;
+}
+- (IBAction)createPasswordSelected:(id)sender
+{
+	[self cancelModeChange:nil];
+	[passwordName setStringValue:@""];
+	[NSApp beginSheet:cr_passwordDialog modalForWindow:mainWindow
         modalDelegate:self didEndSelector:nil contextInfo:nil];
 }
 

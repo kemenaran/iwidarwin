@@ -14,6 +14,8 @@
                 cancelModeChange = id; 
                 createAdHoc = id; 
                 createAdHocSelected = id; 
+                createPassword = id; 
+                createPasswordSelected = id; 
                 openAboutWindow = id; 
                 openMainWindow = id; 
                 quit = id; 
@@ -35,6 +37,7 @@
                 cancelChangeButton = NSButton; 
                 changeModeButton = NSButton; 
                 "cr_networkDialog" = NSPanel; 
+                "cr_passwordDialog" = NSPanel; 
                 createButton = NSButton; 
                 createNetworkTitle = NSTextField; 
                 dataOutlet = NSTableView; 
@@ -43,6 +46,7 @@
                 modeChangeTitle = NSTextField; 
                 networkName = NSTextField; 
                 networksMenu = NSMenu; 
+                passwordName = NSTextField; 
                 selectedMode = NSMatrix; 
                 textOutlet = NSTextField; 
             }; 

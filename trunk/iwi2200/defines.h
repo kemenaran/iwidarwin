@@ -46,6 +46,9 @@ extern "C" {
 #include <sys/queue.h>
 #include <sys/kern_control.h>
 #include <libkern/libkern.h>
+#include <netinet/ip6.h>
+#include <sys/random.h>
+#include <sys/mbuf.h>
 }
 
 #include "net/ieee80211.h"
@@ -1008,10 +1011,7 @@ typedef unsigned char UInt8;
 #define CRYPTO_ALG_ASYNC                0x00000080
  
 #define HOST_COMPLETE_TIMEOUT HZ
-			 
-
-
-
- 
-			 
+#define IEEE80211_MAX_RATES (IEEE80211_NUM_OFDM_RATES + \
+                             IEEE80211_NUM_CCK_RATES)
+#define FREE_FRAME_THRESHOLD 5
 

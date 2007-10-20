@@ -240,6 +240,15 @@ int main (int argc, char * const argv[]) {
 								vi++;
 								if (vi==sel0) break;
 							}
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY)!=0)
+							{
+								u8 key[13 + 1];
+								printf("enter password for the network\n");
+								cin>>key;
+								if (key!=NULL)
+								setsockopt(fd,SYSPROTO_CONTROL,6,key ,strlen((const char*)key));
+								else break;
+							}
 							printf("connecting to '%s (%02x:%02x:%02x:%02x:%02x:%02x)'...\n",
 							escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len),
 							MAC_ARG(priv.ieee->networks[ii].bssid));
