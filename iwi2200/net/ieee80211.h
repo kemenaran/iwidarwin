@@ -433,7 +433,7 @@ static const char *escape_essid(const char *essid, u8 essid_len)
 	char *d = escaped;
 
 	if (ieee80211_is_empty_essid(essid, essid_len)) {
-		memcpy(escaped, "<hidden>", sizeof("<hidden>"));
+		bcopy( "<hidden>", escaped, sizeof("<hidden>"));
 		return escaped;
 	}
 

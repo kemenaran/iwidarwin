@@ -56,8 +56,8 @@ struct ieee80211_crypto_ops {
 	/* deinitialize crypto context and free allocated private data */
 	void (*deinit) (void *priv);
 
-	//int (*build_iv) (struct sk_buff * skb, int hdr_len,
-	//		 u8 *key, int keylen, void *priv);
+	int (*build_iv) (void* skb, int hdr_len,
+			 int *key, int keylen, void *priv);
 
 	/* encrypt/decrypt return < 0 on error or >= 0 on success. The return
 	 * value from decrypt_mpdu is passed as the keyidx value for
@@ -65,17 +65,18 @@ struct ieee80211_crypto_ops {
 	 * encryption; if not, error will be returned; these functions are
 	 * called for all MPDUs (i.e., fragments).
 	 */
-	int (*encrypt_mpdu) (struct sk_buff * skb, int hdr_len, void *priv);
-	int (*decrypt_mpdu) (struct sk_buff * skb, int hdr_len, void *priv);
+	 
+	int (*encrypt_mpdu) (void* skb, int hdr_len, void *priv);
+	int (*decrypt_mpdu) (void* skb, int hdr_len, void *priv);
 
 	/* These functions are called for full MSDUs, i.e. full frames.
 	 * These can be NULL if full MSDU operations are not needed. */
-	/*int (*encrypt_msdu) (struct sk_buff * skb, int hdr_len, void *priv);
+	int (*encrypt_msdu) (struct sk_buff * skb, int hdr_len, void *priv);
 	int (*decrypt_msdu) (struct sk_buff * skb, int keyidx, int hdr_len,
 			     void *priv);
 
-	int (*set_key) (void *key, int len, u8 * seq, void *priv);
-	int (*get_key) (void *key, int len, u8 * seq, void *priv);*/
+	int (*set_key) (void *key, int len, int * seq, void *priv);
+	int (*get_key) (void *key, int len, int * seq, void *priv);
 
 	/* procfs handler for printing out key information and possible
 	 * statistics */

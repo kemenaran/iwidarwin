@@ -1332,7 +1332,8 @@ struct ipw_priv {
 	struct ipw_qos_info qos_data;
 	//struct work_struct qos_activate;
 	/*********************************/
-
+	struct list_head free_frames;
+	int frames_count;
 	/* debugging info */
 	u32 indirect_dword;
 	u32 direct_dword;

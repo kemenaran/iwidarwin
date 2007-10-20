@@ -83,6 +83,8 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 	IBOutlet NSMenu *DockMenu;
 	IBOutlet NSMenu *networksMenu;
 	IBOutlet NSTextField *networkName;
+	IBOutlet NSPanel *cr_passwordDialog;
+	IBOutlet NSTextField *passwordName;
 	
 	NSTimer *timecheck;
 	NSTimeInterval tinterval;
@@ -119,13 +121,15 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 - (IBAction)openMainWindow:(id)sender;
 - (IBAction)createAdHoc:(id)sender;
 - (IBAction)createAdHocSelected:(id)sender;
+- (IBAction)createPassword:(id)sender;
+- (IBAction)createPasswordSelected:(id)sender;
 
 - (void)tableView:(NSTableView *)aTableView
     setObjectValue:anObject
     forTableColumn:(NSTableColumn *)aTableColumn
 	row:(int)rowIndex;
 - (void)preAction;
-- (void)tableView:(NSTableView *)tableView sortDescriptorsDidChange:(NSArray *)oldDescriptors;
+//- (void)tableView:(NSTableView *)tableView sortDescriptorsDidChange:(NSArray *)oldDescriptors;
 - (NSMenu *)applicationDockMenu:(NSApplication *)sender;
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 @end

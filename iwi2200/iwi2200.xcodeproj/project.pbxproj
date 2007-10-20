@@ -13,6 +13,7 @@
 		4618D8B008D8FD43002CFAD7 /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 4618D8AF08D8FD43002CFAD7 /* defines.h */; };
 		61AE94370B9A261300186530 /* WiFiPower.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61AE94360B9A261300186530 /* WiFiPower.cpp */; };
 		61D25D300B34458D00CAED01 /* ipw2200.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D25D280B34458D00CAED01 /* ipw2200.h */; };
+		61D43C620CC27C560078DAD9 /* ieee80211_crypt_wep.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D43C610CC27C560078DAD9 /* ieee80211_crypt_wep.cpp */; };
 		61F316380CBAFCD100BB2174 /* bss.h in Headers */ = {isa = PBXBuildFile; fileRef = 61F316350CBAFCD100BB2174 /* bss.h */; };
 		61F316390CBAFCD100BB2174 /* ibss.h in Headers */ = {isa = PBXBuildFile; fileRef = 61F316360CBAFCD100BB2174 /* ibss.h */; };
 		61F3163A0CBAFCD100BB2174 /* sniffer.h in Headers */ = {isa = PBXBuildFile; fileRef = 61F316370CBAFCD100BB2174 /* sniffer.h */; };
@@ -89,6 +90,7 @@
 		61D25D2E0B34458D00CAED01 /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
 		61D25D2F0B34458D00CAED01 /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
 		61D25D3D0B3445D500CAED01 /* iwi2200.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwi2200.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		61D43C610CC27C560078DAD9 /* ieee80211_crypt_wep.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = ieee80211_crypt_wep.cpp; sourceTree = "<group>"; };
 		61DC18D70B9BDD960098549A /* compat.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = compat.c; sourceTree = "<group>"; };
 		61DC18D80B9BDD960098549A /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
 		61DC18E00B9BDD960098549A /* Kconfig.ipw2200 */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig.ipw2200; sourceTree = "<group>"; };
@@ -148,6 +150,7 @@
 		247142CAFF3F8F9811CA285C /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				61D43C610CC27C560078DAD9 /* ieee80211_crypt_wep.cpp */,
 				61AE94360B9A261300186530 /* WiFiPower.cpp */,
 				61D25D2B0B34458D00CAED01 /* net */,
 				4618D8AF08D8FD43002CFAD7 /* defines.h */,
@@ -422,6 +425,7 @@
 			files = (
 				32D94FCA0562CBF700B6AF17 /* iwi2200.cpp in Sources */,
 				61AE94370B9A261300186530 /* WiFiPower.cpp in Sources */,
+				61D43C620CC27C560078DAD9 /* ieee80211_crypt_wep.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
