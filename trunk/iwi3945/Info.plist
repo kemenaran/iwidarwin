@@ -34,11 +34,7 @@
 			<string>0x42228086 0x42278086</string>
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
-			<key>p_disable</key>
-			<integer>0</integer>
-			<key>p_led</key>
-			<integer>1</integer>
-			<key>p_mode</key>
+			<key>param_disable</key>
 			<integer>0</integer>
 		</dict>
 	</dict>
@@ -52,6 +48,8 @@
             <string>6.0</string>
 			<key>com.apple.kpi.bsd</key>
 			<string>8.0</string>
+			<key>com.apple.kpi.libkern</key>
+			<string>8.0.0b2</string>
 	</dict>
 </dict>
 </plist>
