@@ -180,6 +180,7 @@ static int networkMenuCount = 0;
 							NSString *sMAC = [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid)];
 							NSString *sch = [NSString stringWithFormat:@"%d",priv.ieee->networks[ii].channel];
 							NSImage *sig; // = [NSImage new];
+							NSString *ssig = [NSString stringWithFormat:@"%d",priv.ieee->networks[ii].stats.signal];
 							NSImage *prot;// = [NSImage new];
 							prot = [[NSImage alloc] init];
 							
@@ -214,14 +215,14 @@ static int networkMenuCount = 0;
 							
 							sig = [[NSImage alloc] initWithContentsOfFile:imageName];
 							
-							cout<<prot;
+							//cout<<prot;
 
 							
 							NSMutableArray *data = [NSMutableArray new];
 							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];
-							[data addObject:sig];[data addObject:prot];
-							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", 
-							@"Info",nil];
+							[data addObject:sig];[data addObject:ssig];[data addObject:prot];
+							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",
+							@"Signal", @"Value",@"Info",nil];
 							
 							NSMutableDictionary *temp = [[NSMutableDictionary alloc] initWithObjects: data forKeys: keys];
 							
@@ -582,6 +583,10 @@ static int networkMenuCount = 0;
 					sta0=[NSString stringWithCString:"no internet connection!\n"];
 					sta=[sta stringByAppendingString:sta0];
 					//[textOutlet setStringValue:[NSString stringWithCString:sta]];
+				}else
+				{
+					sta0=[NSString stringWithFormat:@"Quality %d\n",priv.quality];
+					sta=[sta stringByAppendingString:sta0];
 				}
 			}
 		}

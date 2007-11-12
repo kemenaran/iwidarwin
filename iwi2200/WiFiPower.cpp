@@ -178,7 +178,7 @@ IOReturn darwin_iwi2200::setPowerState(unsigned long powerStateOrdinal, IOServic
             break;
 
         case kWiFiControllerPowerStateOn:
-			IWI_DEBUG("power state off\n");
+			IWI_DEBUG("power state on\n");
             // The driver is being told to turn on the device.  It does so
             // and then restores any state or context which it has previously
             // saved.
@@ -187,6 +187,7 @@ IOReturn darwin_iwi2200::setPowerState(unsigned long powerStateOrdinal, IOServic
             // a thread to power up the device and returns immediately to
             // the policy-maker giving an upper bound on the time it will need
             // to complete the power state transition.
+
 
             if (_powerOnThreadCall) {
                 // Prevent the object from being freed while a call is pending.
