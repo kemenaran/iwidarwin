@@ -10,9 +10,24 @@
 		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
 		61054AFD0C2EF71100D9DDF0 /* iwi4965.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61054AFB0C2EF71100D9DDF0 /* iwi4965.cpp */; };
 		61054AFE0C2EF71100D9DDF0 /* iwi4965.h in Headers */ = {isa = PBXBuildFile; fileRef = 61054AFC0C2EF71100D9DDF0 /* iwi4965.h */; };
-		61054EB30C2EF80100D9DDF0 /* ipw4965.h in Headers */ = {isa = PBXBuildFile; fileRef = 61054EB20C2EF80100D9DDF0 /* ipw4965.h */; };
 		610553180C2EFDE800D9DDF0 /* ipw4965.ucode.h in Headers */ = {isa = PBXBuildFile; fileRef = 610553170C2EFDE800D9DDF0 /* ipw4965.ucode.h */; };
 		61B0347E0B59837C00286B6C /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B0347B0B59837C00286B6C /* defines.h */; };
+		61D2BABF0CE38C9B00C7FE2D /* base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D2BAAF0CE38C9B00C7FE2D /* base.cpp */; };
+		61D2BAC00CE38C9B00C7FE2D /* iwl-4965-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB00CE38C9B00C7FE2D /* iwl-4965-hw.h */; };
+		61D2BAC10CE38C9B00C7FE2D /* iwl-4965-rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D2BAB10CE38C9B00C7FE2D /* iwl-4965-rs.cpp */; };
+		61D2BAC20CE38C9B00C7FE2D /* iwl-4965-rs.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB20CE38C9B00C7FE2D /* iwl-4965-rs.h */; };
+		61D2BAC30CE38C9B00C7FE2D /* iwl-4965.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D2BAB30CE38C9B00C7FE2D /* iwl-4965.cpp */; };
+		61D2BAC40CE38C9B00C7FE2D /* iwl-4965.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB40CE38C9B00C7FE2D /* iwl-4965.h */; };
+		61D2BAC50CE38C9B00C7FE2D /* iwl-channel.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB50CE38C9B00C7FE2D /* iwl-channel.h */; };
+		61D2BAC60CE38C9B00C7FE2D /* iwl-commands.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB60CE38C9B00C7FE2D /* iwl-commands.h */; };
+		61D2BAC70CE38C9B00C7FE2D /* iwl-debug.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB70CE38C9B00C7FE2D /* iwl-debug.h */; };
+		61D2BAC80CE38C9B00C7FE2D /* iwl-eeprom.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB80CE38C9B00C7FE2D /* iwl-eeprom.h */; };
+		61D2BAC90CE38C9B00C7FE2D /* iwl-helpers.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB90CE38C9B00C7FE2D /* iwl-helpers.h */; };
+		61D2BACA0CE38C9B00C7FE2D /* iwl-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BABA0CE38C9B00C7FE2D /* iwl-hw.h */; };
+		61D2BACB0CE38C9B00C7FE2D /* iwl-io.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BABB0CE38C9B00C7FE2D /* iwl-io.h */; };
+		61D2BACC0CE38C9B00C7FE2D /* iwl-priv.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BABC0CE38C9B00C7FE2D /* iwl-priv.h */; };
+		61D2BACD0CE38C9B00C7FE2D /* iwl-spectrum.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BABD0CE38C9B00C7FE2D /* iwl-spectrum.h */; };
+		61D2BACE0CE38C9B00C7FE2D /* iwlwifi.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BABE0CE38C9B00C7FE2D /* iwlwifi.h */; };
 		61F149980BAEC94000A13F2E /* WiFiPower.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61F149970BAEC94000A13F2E /* WiFiPower.cpp */; };
 /* End PBXBuildFile section */
 
@@ -22,160 +37,327 @@
 		32D94FD00562CBF700B6AF17 /* iwi4965.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwi4965.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		61054AFB0C2EF71100D9DDF0 /* iwi4965.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = iwi4965.cpp; sourceTree = "<group>"; };
 		61054AFC0C2EF71100D9DDF0 /* iwi4965.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi4965.h; sourceTree = "<group>"; };
-		61054EB20C2EF80100D9DDF0 /* ipw4965.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw4965.h; sourceTree = "<group>"; };
-		61054EB70C2EF83E00D9DDF0 /* CHANGES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = CHANGES; sourceTree = "<group>"; };
-		61054EB80C2EF83E00D9DDF0 /* dvals */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = dvals; sourceTree = "<group>"; };
-		61054EB90C2EF83E00D9DDF0 /* FILES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = FILES; sourceTree = "<group>"; };
-		61054EBA0C2EF83E00D9DDF0 /* GIT_SHA1 */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = GIT_SHA1; sourceTree = "<group>"; };
-		61054EBB0C2EF83E00D9DDF0 /* INSTALL */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = INSTALL; sourceTree = "<group>"; };
-		61054EBC0C2EF83E00D9DDF0 /* ISSUES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = ISSUES; sourceTree = "<group>"; };
-		61054EBD0C2EF83E00D9DDF0 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
-		61054EBE0C2EF83E00D9DDF0 /* LICENSE.BSD */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE.BSD; sourceTree = "<group>"; };
-		61054EBF0C2EF83E00D9DDF0 /* LICENSE.GPL */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE.GPL; sourceTree = "<group>"; };
-		61054EC00C2EF83E00D9DDF0 /* load */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = load; sourceTree = "<group>"; };
-		61054EC10C2EF83E00D9DDF0 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
-		61054EC30C2EF83E00D9DDF0 /* base.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = base.c; sourceTree = "<group>"; };
-		61054EC40C2EF83E00D9DDF0 /* iwl-3945-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-hw.h"; sourceTree = "<group>"; };
-		61054EC50C2EF83E00D9DDF0 /* iwl-3945-rs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-3945-rs.c"; sourceTree = "<group>"; };
-		61054EC60C2EF83E00D9DDF0 /* iwl-3945-rs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-rs.h"; sourceTree = "<group>"; };
-		61054EC70C2EF83E00D9DDF0 /* iwl-3945.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-3945.c"; sourceTree = "<group>"; };
-		61054EC80C2EF83E00D9DDF0 /* iwl-3945.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945.h"; sourceTree = "<group>"; };
-		61054EC90C2EF83E00D9DDF0 /* iwl-4965-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-hw.h"; sourceTree = "<group>"; };
-		61054ECA0C2EF83E00D9DDF0 /* iwl-4965-rs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-4965-rs.c"; sourceTree = "<group>"; };
-		61054ECB0C2EF83E00D9DDF0 /* iwl-4965-rs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-rs.h"; sourceTree = "<group>"; };
-		61054ECC0C2EF83E00D9DDF0 /* iwl-4965.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-4965.c"; sourceTree = "<group>"; };
-		61054ECD0C2EF83E00D9DDF0 /* iwl-4965.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965.h"; sourceTree = "<group>"; };
-		61054ECE0C2EF83E00D9DDF0 /* iwl-channel.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-channel.h"; sourceTree = "<group>"; };
-		61054ECF0C2EF83E00D9DDF0 /* iwl-commands.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-commands.h"; sourceTree = "<group>"; };
-		61054ED00C2EF83E00D9DDF0 /* iwl-debug.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-debug.h"; sourceTree = "<group>"; };
-		61054ED10C2EF83E00D9DDF0 /* iwl-eeprom.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom.h"; sourceTree = "<group>"; };
-		61054ED20C2EF83E00D9DDF0 /* iwl-helpers.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-helpers.h"; sourceTree = "<group>"; };
-		61054ED30C2EF83E00D9DDF0 /* iwl-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-hw.h"; sourceTree = "<group>"; };
-		61054ED40C2EF83E00D9DDF0 /* iwl-io.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-io.h"; sourceTree = "<group>"; };
-		61054ED50C2EF83E00D9DDF0 /* iwl-priv.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-priv.h"; sourceTree = "<group>"; };
-		61054ED60C2EF83E00D9DDF0 /* iwl-spectrum.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-spectrum.h"; sourceTree = "<group>"; };
-		61054ED70C2EF83E00D9DDF0 /* iwlwifi.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwlwifi.h; sourceTree = "<group>"; };
-		61054ED80C2EF83E00D9DDF0 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
-		61054ED90C2EF83E00D9DDF0 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
-		61054EDB0C2EF83E00D9DDF0 /* .keep */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = .keep; sourceTree = "<group>"; };
-		61054EDC0C2EF83E00D9DDF0 /* 01-queue_delayed_work.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = "01-queue_delayed_work.sh"; sourceTree = "<group>"; };
-		61054EDD0C2EF83E00D9DDF0 /* 02-cancel_delayed_work.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = "02-cancel_delayed_work.sh"; sourceTree = "<group>"; };
-		61054EDE0C2EF83E00D9DDF0 /* 02-kcompat_delayed_work.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "02-kcompat_delayed_work.patch"; sourceTree = "<group>"; };
-		61054EDF0C2EF83E00D9DDF0 /* 03-isr.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "03-isr.patch"; sourceTree = "<group>"; };
-		61054EE00C2EF83E00D9DDF0 /* 04-rx_flag_radiotap.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "04-rx_flag_radiotap.patch"; sourceTree = "<group>"; };
-		61054EE10C2EF83E00D9DDF0 /* 05-delayed_work_define.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "05-delayed_work_define.patch"; sourceTree = "<group>"; };
-		61054EE20C2EF83E00D9DDF0 /* d80211-v1.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "d80211-v1.patch"; sourceTree = "<group>"; };
-		61054EE30C2EF83E00D9DDF0 /* wlan_80211.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = wlan_80211.patch; sourceTree = "<group>"; };
-		61054EE40C2EF83E00D9DDF0 /* README.iwlwifi */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = README.iwlwifi; sourceTree = "<group>"; };
-		61054EE60C2EF83E00D9DDF0 /* check_kernel */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = check_kernel; sourceTree = "<group>"; };
-		61054EE70C2EF83E00D9DDF0 /* determine_compat */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = determine_compat; sourceTree = "<group>"; };
-		61054EE80C2EF83E00D9DDF0 /* generate_compatible */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_compatible; sourceTree = "<group>"; };
-		61054EE90C2EF83E00D9DDF0 /* make_snapshot */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = make_snapshot; sourceTree = "<group>"; };
-		61054EEA0C2EF83E00D9DDF0 /* patch_kernel */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = patch_kernel; sourceTree = "<group>"; };
-		61054EEB0C2EF83E00D9DDF0 /* unload */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = unload; sourceTree = "<group>"; };
-		61054EEE0C2EF87000D9DDF0 /* CHANGES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = CHANGES; sourceTree = "<group>"; };
-		61054EEF0C2EF87000D9DDF0 /* FILES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = FILES; sourceTree = "<group>"; };
-		61054EF00C2EF87000D9DDF0 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
-		61054EF20C2EF87000D9DDF0 /* GIT */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = GIT; sourceTree = "<group>"; };
-		61054EF50C2EF87000D9DDF0 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
-		61054EF60C2EF87000D9DDF0 /* nl80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = nl80211.h; sourceTree = "<group>"; };
-		61054EF70C2EF87000D9DDF0 /* wireless.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wireless.h; sourceTree = "<group>"; };
-		61054EF90C2EF87000D9DDF0 /* cfg80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = cfg80211.h; sourceTree = "<group>"; };
-		61054EFA0C2EF87000D9DDF0 /* iw_handler.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iw_handler.h; sourceTree = "<group>"; };
-		61054EFB0C2EF87000D9DDF0 /* mac80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mac80211.h; sourceTree = "<group>"; };
-		61054EFC0C2EF87000D9DDF0 /* wext.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wext.h; sourceTree = "<group>"; };
-		61054EFD0C2EF87000D9DDF0 /* wireless.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wireless.h; sourceTree = "<group>"; };
-		61054F000C2EF87000D9DDF0 /* aes_ccm.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = aes_ccm.c; sourceTree = "<group>"; };
-		61054F010C2EF87000D9DDF0 /* aes_ccm.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = aes_ccm.h; sourceTree = "<group>"; };
-		61054F020C2EF87000D9DDF0 /* debugfs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs.c; sourceTree = "<group>"; };
-		61054F030C2EF87000D9DDF0 /* debugfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs.h; sourceTree = "<group>"; };
-		61054F040C2EF87000D9DDF0 /* debugfs_key.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_key.c; sourceTree = "<group>"; };
-		61054F050C2EF87000D9DDF0 /* debugfs_key.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_key.h; sourceTree = "<group>"; };
-		61054F060C2EF87000D9DDF0 /* debugfs_netdev.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_netdev.c; sourceTree = "<group>"; };
-		61054F070C2EF87000D9DDF0 /* debugfs_netdev.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_netdev.h; sourceTree = "<group>"; };
-		61054F080C2EF87000D9DDF0 /* debugfs_sta.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_sta.c; sourceTree = "<group>"; };
-		61054F090C2EF87000D9DDF0 /* debugfs_sta.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_sta.h; sourceTree = "<group>"; };
-		61054F0A0C2EF87000D9DDF0 /* hostapd_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = hostapd_ioctl.h; sourceTree = "<group>"; };
-		61054F0B0C2EF87000D9DDF0 /* ieee80211.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211.c; sourceTree = "<group>"; };
-		61054F0C0C2EF87000D9DDF0 /* ieee80211_cfg.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_cfg.c; sourceTree = "<group>"; };
-		61054F0D0C2EF87000D9DDF0 /* ieee80211_cfg.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_cfg.h; sourceTree = "<group>"; };
-		61054F0E0C2EF87000D9DDF0 /* ieee80211_common.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_common.h; sourceTree = "<group>"; };
-		61054F0F0C2EF87000D9DDF0 /* ieee80211_i.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_i.h; sourceTree = "<group>"; };
-		61054F100C2EF87000D9DDF0 /* ieee80211_iface.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_iface.c; sourceTree = "<group>"; };
-		61054F110C2EF87000D9DDF0 /* ieee80211_ioctl.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_ioctl.c; sourceTree = "<group>"; };
-		61054F120C2EF87000D9DDF0 /* ieee80211_key.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_key.h; sourceTree = "<group>"; };
-		61054F130C2EF87000D9DDF0 /* ieee80211_led.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_led.c; sourceTree = "<group>"; };
-		61054F140C2EF87000D9DDF0 /* ieee80211_led.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_led.h; sourceTree = "<group>"; };
-		61054F150C2EF87000D9DDF0 /* ieee80211_rate.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_rate.c; sourceTree = "<group>"; };
-		61054F160C2EF87000D9DDF0 /* ieee80211_rate.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_rate.h; sourceTree = "<group>"; };
-		61054F170C2EF87000D9DDF0 /* ieee80211_sta.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_sta.c; sourceTree = "<group>"; };
-		61054F180C2EF87000D9DDF0 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
-		61054F190C2EF87000D9DDF0 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
-		61054F1A0C2EF87000D9DDF0 /* michael.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = michael.c; sourceTree = "<group>"; };
-		61054F1B0C2EF87000D9DDF0 /* michael.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = michael.h; sourceTree = "<group>"; };
-		61054F1C0C2EF87000D9DDF0 /* rc80211_simple.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = rc80211_simple.c; sourceTree = "<group>"; };
-		61054F1D0C2EF87000D9DDF0 /* sta_info.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = sta_info.c; sourceTree = "<group>"; };
-		61054F1E0C2EF87000D9DDF0 /* sta_info.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = sta_info.h; sourceTree = "<group>"; };
-		61054F1F0C2EF87000D9DDF0 /* tkip.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = tkip.c; sourceTree = "<group>"; };
-		61054F200C2EF87000D9DDF0 /* tkip.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = tkip.h; sourceTree = "<group>"; };
-		61054F210C2EF87000D9DDF0 /* wep.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wep.c; sourceTree = "<group>"; };
-		61054F220C2EF87000D9DDF0 /* wep.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wep.h; sourceTree = "<group>"; };
-		61054F230C2EF87000D9DDF0 /* wme.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wme.c; sourceTree = "<group>"; };
-		61054F240C2EF87000D9DDF0 /* wme.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wme.h; sourceTree = "<group>"; };
-		61054F250C2EF87000D9DDF0 /* wpa.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wpa.c; sourceTree = "<group>"; };
-		61054F260C2EF87000D9DDF0 /* wpa.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wpa.h; sourceTree = "<group>"; };
-		61054F280C2EF87000D9DDF0 /* core.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = core.c; sourceTree = "<group>"; };
-		61054F290C2EF87000D9DDF0 /* core.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
-		61054F2A0C2EF87000D9DDF0 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
-		61054F2B0C2EF87000D9DDF0 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
-		61054F2C0C2EF87000D9DDF0 /* sysfs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = sysfs.c; sourceTree = "<group>"; };
-		61054F2D0C2EF87000D9DDF0 /* sysfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = sysfs.h; sourceTree = "<group>"; };
-		61054F2E0C2EF87000D9DDF0 /* wext.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wext.c; sourceTree = "<group>"; };
-		61054F2F0C2EF87000D9DDF0 /* ORIGIN_FILES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = ORIGIN_FILES; sourceTree = "<group>"; };
-		61054F310C2EF87000D9DDF0 /* block-cipher.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "block-cipher.patch"; sourceTree = "<group>"; };
-		61054F320C2EF87000D9DDF0 /* class_dev_to_dev-wireless-ieee80211_ptr.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "class_dev_to_dev-wireless-ieee80211_ptr.patch"; sourceTree = "<group>"; };
-		61054F330C2EF87000D9DDF0 /* class_dev_to_dev-wireless.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "class_dev_to_dev-wireless.patch"; sourceTree = "<group>"; };
-		61054F340C2EF87000D9DDF0 /* delayed_work.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = delayed_work.patch; sourceTree = "<group>"; };
-		61054F350C2EF87000D9DDF0 /* delayed_work.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = delayed_work.sh; sourceTree = "<group>"; };
-		61054F360C2EF87000D9DDF0 /* dev_release.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = dev_release.patch; sourceTree = "<group>"; };
-		61054F370C2EF87000D9DDF0 /* device_rename.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = device_rename.patch; sourceTree = "<group>"; };
-		61054F380C2EF87000D9DDF0 /* div_round_up.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = div_round_up.patch; sourceTree = "<group>"; };
-		61054F390C2EF87000D9DDF0 /* fix-qos-sysfs-no-class_dev.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "fix-qos-sysfs-no-class_dev.patch"; sourceTree = "<group>"; };
-		61054F3A0C2EF87000D9DDF0 /* ieee80211_cfg.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = ieee80211_cfg.patch; sourceTree = "<group>"; };
-		61054F3B0C2EF87000D9DDF0 /* ieee80211_ptr.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = ieee80211_ptr.patch; sourceTree = "<group>"; };
-		61054F3C0C2EF87000D9DDF0 /* ieee80211_ptr.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = ieee80211_ptr.sh; sourceTree = "<group>"; };
-		61054F3D0C2EF87000D9DDF0 /* ilog2.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = ilog2.sh; sourceTree = "<group>"; };
-		61054F3E0C2EF87000D9DDF0 /* kcompat-delayed_work.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "kcompat-delayed_work.h"; sourceTree = "<group>"; };
-		61054F3F0C2EF87000D9DDF0 /* kcompat-math.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "kcompat-math.h"; sourceTree = "<group>"; };
-		61054F400C2EF87000D9DDF0 /* kcompat-skb_mac_header.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "kcompat-skb_mac_header.h"; sourceTree = "<group>"; };
-		61054F410C2EF87000D9DDF0 /* net_sch_fifo.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = net_sch_fifo.patch; sourceTree = "<group>"; };
-		61054F420C2EF87000D9DDF0 /* nl80211-remove-kconfig.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "nl80211-remove-kconfig.patch"; sourceTree = "<group>"; };
-		61054F430C2EF87000D9DDF0 /* nl80211-remove.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "nl80211-remove.patch"; sourceTree = "<group>"; };
-		61054F440C2EF87000D9DDF0 /* nl80211_remove.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = nl80211_remove.patch; sourceTree = "<group>"; };
-		61054F450C2EF87000D9DDF0 /* nlmsg_trim.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = nlmsg_trim.patch; sourceTree = "<group>"; };
-		61054F460C2EF87000D9DDF0 /* qdisc-api.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "qdisc-api.patch"; sourceTree = "<group>"; };
-		61054F470C2EF87000D9DDF0 /* remove_debugfs.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = remove_debugfs.patch; sourceTree = "<group>"; };
-		61054F480C2EF87000D9DDF0 /* rtnl_notify.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = rtnl_notify.patch; sourceTree = "<group>"; };
-		61054F490C2EF87000D9DDF0 /* seq_open_const.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = seq_open_const.patch; sourceTree = "<group>"; };
-		61054F4A0C2EF87000D9DDF0 /* skb_mac_header.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = skb_mac_header.patch; sourceTree = "<group>"; };
-		61054F4B0C2EF87000D9DDF0 /* tcf_destroy_chain.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = tcf_destroy_chain.patch; sourceTree = "<group>"; };
-		61054F4C0C2EF87000D9DDF0 /* README */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
-		61054F4E0C2EF87000D9DDF0 /* determine_compat */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = determine_compat; sourceTree = "<group>"; };
-		61054F4F0C2EF87000D9DDF0 /* generate_compatible */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_compatible; sourceTree = "<group>"; };
-		61054F500C2EF87000D9DDF0 /* generate_modified */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_modified; sourceTree = "<group>"; };
-		61054F510C2EF87000D9DDF0 /* generate_origin */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_origin; sourceTree = "<group>"; };
-		61054F520C2EF87000D9DDF0 /* git-clean-unreachable */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "git-clean-unreachable"; sourceTree = "<group>"; };
-		61054F530C2EF87000D9DDF0 /* make_change_log */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = make_change_log; sourceTree = "<group>"; };
-		61054F540C2EF87000D9DDF0 /* patch_kernel */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = patch_kernel; sourceTree = "<group>"; };
-		61054F550C2EF87000D9DDF0 /* push-to-bughost */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "push-to-bughost"; sourceTree = "<group>"; };
-		61054F570C2EF87000D9DDF0 /* README */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
-		61054F580C2EF87000D9DDF0 /* TODO */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = TODO; sourceTree = "<group>"; };
 		610553170C2EFDE800D9DDF0 /* ipw4965.ucode.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw4965.ucode.h; sourceTree = "<group>"; };
 		61B0347B0B59837C00286B6C /* defines.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
-		61B06DFE0B589546000DD1AE /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
 		61B06DFF0B589546000DD1AE /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
 		61B06E000B589546000DD1AE /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
 		61B06E010B589546000DD1AE /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
+		61CEE3610CE3CF2D00778032 /* CHANGES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = CHANGES; sourceTree = "<group>"; };
+		61CEE3620CE3CF2D00778032 /* dvals */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = dvals; sourceTree = "<group>"; };
+		61CEE3630CE3CF2D00778032 /* FILES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = FILES; sourceTree = "<group>"; };
+		61CEE3640CE3CF2D00778032 /* GIT_SHA1 */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = GIT_SHA1; sourceTree = "<group>"; };
+		61CEE3650CE3CF2D00778032 /* INSTALL */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = INSTALL; sourceTree = "<group>"; };
+		61CEE3660CE3CF2D00778032 /* ISSUES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = ISSUES; sourceTree = "<group>"; };
+		61CEE3670CE3CF2D00778032 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		61CEE3680CE3CF2D00778032 /* LICENSE.BSD */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE.BSD; sourceTree = "<group>"; };
+		61CEE3690CE3CF2D00778032 /* LICENSE.GPL */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE.GPL; sourceTree = "<group>"; };
+		61CEE36A0CE3CF2D00778032 /* load */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = load; sourceTree = "<group>"; };
+		61CEE36B0CE3CF2D00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE36D0CE3CF2D00778032 /* base.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = base.c; sourceTree = "<group>"; };
+		61CEE36E0CE3CF2D00778032 /* iwl-3945-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-hw.h"; sourceTree = "<group>"; };
+		61CEE36F0CE3CF2D00778032 /* iwl-3945-rs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-3945-rs.c"; sourceTree = "<group>"; };
+		61CEE3700CE3CF2D00778032 /* iwl-3945-rs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-rs.h"; sourceTree = "<group>"; };
+		61CEE3710CE3CF2D00778032 /* iwl-3945.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-3945.c"; sourceTree = "<group>"; };
+		61CEE3720CE3CF2D00778032 /* iwl-3945.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945.h"; sourceTree = "<group>"; };
+		61CEE3730CE3CF2D00778032 /* iwl-4965-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-hw.h"; sourceTree = "<group>"; };
+		61CEE3740CE3CF2D00778032 /* iwl-4965-rs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-4965-rs.c"; sourceTree = "<group>"; };
+		61CEE3750CE3CF2D00778032 /* iwl-4965-rs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-rs.h"; sourceTree = "<group>"; };
+		61CEE3760CE3CF2D00778032 /* iwl-4965.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-4965.c"; sourceTree = "<group>"; };
+		61CEE3770CE3CF2D00778032 /* iwl-4965.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965.h"; sourceTree = "<group>"; };
+		61CEE3780CE3CF2D00778032 /* iwl-channel.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-channel.h"; sourceTree = "<group>"; };
+		61CEE3790CE3CF2D00778032 /* iwl-commands.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-commands.h"; sourceTree = "<group>"; };
+		61CEE37A0CE3CF2D00778032 /* iwl-debug.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-debug.h"; sourceTree = "<group>"; };
+		61CEE37B0CE3CF2D00778032 /* iwl-eeprom.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom.h"; sourceTree = "<group>"; };
+		61CEE37C0CE3CF2D00778032 /* iwl-helpers.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-helpers.h"; sourceTree = "<group>"; };
+		61CEE37D0CE3CF2D00778032 /* iwl-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-hw.h"; sourceTree = "<group>"; };
+		61CEE37E0CE3CF2D00778032 /* iwl-io.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-io.h"; sourceTree = "<group>"; };
+		61CEE37F0CE3CF2D00778032 /* iwl-priv.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-priv.h"; sourceTree = "<group>"; };
+		61CEE3800CE3CF2D00778032 /* iwl-spectrum.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-spectrum.h"; sourceTree = "<group>"; };
+		61CEE3810CE3CF2D00778032 /* iwlwifi.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwlwifi.h; sourceTree = "<group>"; };
+		61CEE3820CE3CF2D00778032 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
+		61CEE3830CE3CF2D00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE3850CE3CF2D00778032 /* .keep */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = .keep; sourceTree = "<group>"; };
+		61CEE3860CE3CF2D00778032 /* 01-queue_delayed_work.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = "01-queue_delayed_work.sh"; sourceTree = "<group>"; };
+		61CEE3870CE3CF2D00778032 /* 02-cancel_delayed_work.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = "02-cancel_delayed_work.sh"; sourceTree = "<group>"; };
+		61CEE3880CE3CF2D00778032 /* 02-kcompat_delayed_work.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "02-kcompat_delayed_work.patch"; sourceTree = "<group>"; };
+		61CEE3890CE3CF2D00778032 /* 03-isr.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "03-isr.patch"; sourceTree = "<group>"; };
+		61CEE38A0CE3CF2D00778032 /* 04-rx_flag_radiotap.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "04-rx_flag_radiotap.patch"; sourceTree = "<group>"; };
+		61CEE38B0CE3CF2D00778032 /* 05-delayed_work_define.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "05-delayed_work_define.patch"; sourceTree = "<group>"; };
+		61CEE38C0CE3CF2D00778032 /* d80211-v1.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "d80211-v1.patch"; sourceTree = "<group>"; };
+		61CEE38D0CE3CF2D00778032 /* wlan_80211.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = wlan_80211.patch; sourceTree = "<group>"; };
+		61CEE38E0CE3CF2D00778032 /* README.iwlwifi */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = README.iwlwifi; sourceTree = "<group>"; };
+		61CEE3900CE3CF2D00778032 /* check_kernel */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = check_kernel; sourceTree = "<group>"; };
+		61CEE3910CE3CF2D00778032 /* determine_compat */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = determine_compat; sourceTree = "<group>"; };
+		61CEE3920CE3CF2D00778032 /* generate_compatible */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_compatible; sourceTree = "<group>"; };
+		61CEE3930CE3CF2D00778032 /* make_snapshot */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = make_snapshot; sourceTree = "<group>"; };
+		61CEE3940CE3CF2D00778032 /* patch_kernel */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = patch_kernel; sourceTree = "<group>"; };
+		61CEE3950CE3CF2D00778032 /* unload */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = unload; sourceTree = "<group>"; };
+		61CEE3970CE3CF2D00778032 /* CHANGES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = CHANGES; sourceTree = "<group>"; };
+		61CEE3980CE3CF2D00778032 /* dvals */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = dvals; sourceTree = "<group>"; };
+		61CEE3990CE3CF2D00778032 /* FILES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = FILES; sourceTree = "<group>"; };
+		61CEE39A0CE3CF2D00778032 /* GIT_SHA1 */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = GIT_SHA1; sourceTree = "<group>"; };
+		61CEE39B0CE3CF2D00778032 /* INSTALL */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = INSTALL; sourceTree = "<group>"; };
+		61CEE39C0CE3CF2D00778032 /* ISSUES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = ISSUES; sourceTree = "<group>"; };
+		61CEE39D0CE3CF2D00778032 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		61CEE39E0CE3CF2D00778032 /* LICENSE.BSD */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE.BSD; sourceTree = "<group>"; };
+		61CEE39F0CE3CF2D00778032 /* LICENSE.GPL */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = LICENSE.GPL; sourceTree = "<group>"; };
+		61CEE3A00CE3CF2D00778032 /* load */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = load; sourceTree = "<group>"; };
+		61CEE3A10CE3CF2D00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE3A30CE3CF2D00778032 /* iwl-3945-commands.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-commands.h"; sourceTree = "<group>"; };
+		61CEE3A40CE3CF2D00778032 /* iwl-3945-debug.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-debug.h"; sourceTree = "<group>"; };
+		61CEE3A50CE3CF2D00778032 /* iwl-3945-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-hw.h"; sourceTree = "<group>"; };
+		61CEE3A60CE3CF2D00778032 /* iwl-3945-io.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-io.h"; sourceTree = "<group>"; };
+		61CEE3A70CE3CF2D00778032 /* iwl-3945-rs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-3945-rs.c"; sourceTree = "<group>"; };
+		61CEE3A80CE3CF2D00778032 /* iwl-3945-rs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-rs.h"; sourceTree = "<group>"; };
+		61CEE3A90CE3CF2D00778032 /* iwl-3945.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-3945.c"; sourceTree = "<group>"; };
+		61CEE3AA0CE3CF2D00778032 /* iwl-3945.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945.h"; sourceTree = "<group>"; };
+		61CEE3AB0CE3CF2D00778032 /* iwl-4965-commands.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-commands.h"; sourceTree = "<group>"; };
+		61CEE3AC0CE3CF2D00778032 /* iwl-4965-debug.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-debug.h"; sourceTree = "<group>"; };
+		61CEE3AD0CE3CF2D00778032 /* iwl-4965-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-hw.h"; sourceTree = "<group>"; };
+		61CEE3AE0CE3CF2D00778032 /* iwl-4965-io.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-io.h"; sourceTree = "<group>"; };
+		61CEE3AF0CE3CF2D00778032 /* iwl-4965-rs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-4965-rs.c"; sourceTree = "<group>"; };
+		61CEE3B00CE3CF2D00778032 /* iwl-4965-rs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-rs.h"; sourceTree = "<group>"; };
+		61CEE3B10CE3CF2D00778032 /* iwl-4965.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl-4965.c"; sourceTree = "<group>"; };
+		61CEE3B20CE3CF2D00778032 /* iwl-4965.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965.h"; sourceTree = "<group>"; };
+		61CEE3B30CE3CF2D00778032 /* iwl-helpers.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-helpers.h"; sourceTree = "<group>"; };
+		61CEE3B40CE3CF2D00778032 /* iwl-prph.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-prph.h"; sourceTree = "<group>"; };
+		61CEE3B50CE3CF2D00778032 /* iwl-spectrum.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-spectrum.h"; sourceTree = "<group>"; };
+		61CEE3B60CE3CF2D00778032 /* iwl3945-base.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl3945-base.c"; sourceTree = "<group>"; };
+		61CEE3B70CE3CF2D00778032 /* iwl4965-base.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = "iwl4965-base.c"; sourceTree = "<group>"; };
+		61CEE3B80CE3CF2D00778032 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
+		61CEE3B90CE3CF2D00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE3BB0CE3CF2D00778032 /* .keep */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = .keep; sourceTree = "<group>"; };
+		61CEE3BC0CE3CF2D00778032 /* 01-queue_delayed_work.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = "01-queue_delayed_work.sh"; sourceTree = "<group>"; };
+		61CEE3BD0CE3CF2D00778032 /* 02-cancel_delayed_work.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = "02-cancel_delayed_work.sh"; sourceTree = "<group>"; };
+		61CEE3BE0CE3CF2D00778032 /* 02-kcompat_delayed_work.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "02-kcompat_delayed_work.patch"; sourceTree = "<group>"; };
+		61CEE3BF0CE3CF2D00778032 /* 03-isr.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "03-isr.patch"; sourceTree = "<group>"; };
+		61CEE3C00CE3CF2D00778032 /* 04-rx_flag_radiotap.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "04-rx_flag_radiotap.patch"; sourceTree = "<group>"; };
+		61CEE3C10CE3CF2D00778032 /* 05-delayed_work_define.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "05-delayed_work_define.patch"; sourceTree = "<group>"; };
+		61CEE3C20CE3CF2D00778032 /* 06-csa.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "06-csa.patch"; sourceTree = "<group>"; };
+		61CEE3C30CE3CF2D00778032 /* 07-hex_dump.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "07-hex_dump.patch"; sourceTree = "<group>"; };
+		61CEE3C40CE3CF2D00778032 /* 08-is_power_of_2.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "08-is_power_of_2.patch"; sourceTree = "<group>"; };
+		61CEE3C50CE3CF2D00778032 /* 09-cancel_work_sync.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "09-cancel_work_sync.patch"; sourceTree = "<group>"; };
+		61CEE3C60CE3CF2D00778032 /* 10-preferred_rate_control.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "10-preferred_rate_control.patch"; sourceTree = "<group>"; };
+		61CEE3C70CE3CF2D00778032 /* i_private.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = i_private.sh; sourceTree = "<group>"; };
+		61CEE3C80CE3CF2D00778032 /* wlan_80211.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = wlan_80211.patch; sourceTree = "<group>"; };
+		61CEE3C90CE3CF2D00778032 /* README.iwlwifi */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = README.iwlwifi; sourceTree = "<group>"; };
+		61CEE3CB0CE3CF2D00778032 /* check_kernel */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = check_kernel; sourceTree = "<group>"; };
+		61CEE3CC0CE3CF2D00778032 /* determine_compat */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = determine_compat; sourceTree = "<group>"; };
+		61CEE3CD0CE3CF2D00778032 /* generate_compatible */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_compatible; sourceTree = "<group>"; };
+		61CEE3CE0CE3CF2D00778032 /* make_snapshot */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = make_snapshot; sourceTree = "<group>"; };
+		61CEE3CF0CE3CF2D00778032 /* patch_kernel */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = patch_kernel; sourceTree = "<group>"; };
+		61CEE3D00CE3CF2D00778032 /* unload */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = unload; sourceTree = "<group>"; };
+		61CEE3D20CE3CF2D00778032 /* CHANGES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = CHANGES; sourceTree = "<group>"; };
+		61CEE3D30CE3CF2D00778032 /* FILES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = FILES; sourceTree = "<group>"; };
+		61CEE3D40CE3CF2D00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE3D60CE3CF2D00778032 /* GIT */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = GIT; sourceTree = "<group>"; };
+		61CEE3D90CE3CF2D00778032 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		61CEE3DA0CE3CF2D00778032 /* nl80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = nl80211.h; sourceTree = "<group>"; };
+		61CEE3DB0CE3CF2D00778032 /* wireless.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wireless.h; sourceTree = "<group>"; };
+		61CEE3DD0CE3CF2D00778032 /* cfg80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = cfg80211.h; sourceTree = "<group>"; };
+		61CEE3DE0CE3CF2D00778032 /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
+		61CEE3DF0CE3CF2D00778032 /* iw_handler.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iw_handler.h; sourceTree = "<group>"; };
+		61CEE3E00CE3CF2D00778032 /* mac80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mac80211.h; sourceTree = "<group>"; };
+		61CEE3E10CE3CF2D00778032 /* wext.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wext.h; sourceTree = "<group>"; };
+		61CEE3E20CE3CF2D00778032 /* wireless.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wireless.h; sourceTree = "<group>"; };
+		61CEE3E50CE3CF2D00778032 /* aes_ccm.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = aes_ccm.c; sourceTree = "<group>"; };
+		61CEE3E60CE3CF2D00778032 /* aes_ccm.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = aes_ccm.h; sourceTree = "<group>"; };
+		61CEE3E70CE3CF2D00778032 /* debugfs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs.c; sourceTree = "<group>"; };
+		61CEE3E80CE3CF2D00778032 /* debugfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs.h; sourceTree = "<group>"; };
+		61CEE3E90CE3CF2D00778032 /* debugfs_key.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_key.c; sourceTree = "<group>"; };
+		61CEE3EA0CE3CF2D00778032 /* debugfs_key.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_key.h; sourceTree = "<group>"; };
+		61CEE3EB0CE3CF2D00778032 /* debugfs_netdev.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_netdev.c; sourceTree = "<group>"; };
+		61CEE3EC0CE3CF2D00778032 /* debugfs_netdev.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_netdev.h; sourceTree = "<group>"; };
+		61CEE3ED0CE3CF2D00778032 /* debugfs_sta.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_sta.c; sourceTree = "<group>"; };
+		61CEE3EE0CE3CF2D00778032 /* debugfs_sta.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_sta.h; sourceTree = "<group>"; };
+		61CEE3EF0CE3CF2D00778032 /* hostapd_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = hostapd_ioctl.h; sourceTree = "<group>"; };
+		61CEE3F00CE3CF2D00778032 /* ieee80211.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211.c; sourceTree = "<group>"; };
+		61CEE3F10CE3CF2D00778032 /* ieee80211_cfg.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_cfg.c; sourceTree = "<group>"; };
+		61CEE3F20CE3CF2D00778032 /* ieee80211_cfg.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_cfg.h; sourceTree = "<group>"; };
+		61CEE3F30CE3CF2D00778032 /* ieee80211_common.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_common.h; sourceTree = "<group>"; };
+		61CEE3F40CE3CF2E00778032 /* ieee80211_i.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_i.h; sourceTree = "<group>"; };
+		61CEE3F50CE3CF2E00778032 /* ieee80211_iface.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_iface.c; sourceTree = "<group>"; };
+		61CEE3F60CE3CF2E00778032 /* ieee80211_ioctl.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_ioctl.c; sourceTree = "<group>"; };
+		61CEE3F70CE3CF2E00778032 /* ieee80211_key.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_key.h; sourceTree = "<group>"; };
+		61CEE3F80CE3CF2E00778032 /* ieee80211_led.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_led.c; sourceTree = "<group>"; };
+		61CEE3F90CE3CF2E00778032 /* ieee80211_led.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_led.h; sourceTree = "<group>"; };
+		61CEE3FA0CE3CF2E00778032 /* ieee80211_rate.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_rate.c; sourceTree = "<group>"; };
+		61CEE3FB0CE3CF2E00778032 /* ieee80211_rate.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_rate.h; sourceTree = "<group>"; };
+		61CEE3FC0CE3CF2E00778032 /* ieee80211_sta.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_sta.c; sourceTree = "<group>"; };
+		61CEE3FD0CE3CF2E00778032 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
+		61CEE3FE0CE3CF2E00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE3FF0CE3CF2E00778032 /* michael.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = michael.c; sourceTree = "<group>"; };
+		61CEE4000CE3CF2E00778032 /* michael.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = michael.h; sourceTree = "<group>"; };
+		61CEE4010CE3CF2E00778032 /* rc80211_simple.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = rc80211_simple.c; sourceTree = "<group>"; };
+		61CEE4020CE3CF2E00778032 /* regdomain.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = regdomain.c; sourceTree = "<group>"; };
+		61CEE4030CE3CF2E00778032 /* sta_info.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = sta_info.c; sourceTree = "<group>"; };
+		61CEE4040CE3CF2E00778032 /* sta_info.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = sta_info.h; sourceTree = "<group>"; };
+		61CEE4050CE3CF2E00778032 /* tkip.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = tkip.c; sourceTree = "<group>"; };
+		61CEE4060CE3CF2E00778032 /* tkip.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = tkip.h; sourceTree = "<group>"; };
+		61CEE4070CE3CF2E00778032 /* wep.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wep.c; sourceTree = "<group>"; };
+		61CEE4080CE3CF2E00778032 /* wep.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wep.h; sourceTree = "<group>"; };
+		61CEE4090CE3CF2E00778032 /* wme.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wme.c; sourceTree = "<group>"; };
+		61CEE40A0CE3CF2E00778032 /* wme.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wme.h; sourceTree = "<group>"; };
+		61CEE40B0CE3CF2E00778032 /* wpa.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wpa.c; sourceTree = "<group>"; };
+		61CEE40C0CE3CF2E00778032 /* wpa.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wpa.h; sourceTree = "<group>"; };
+		61CEE40E0CE3CF2E00778032 /* core.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = core.c; sourceTree = "<group>"; };
+		61CEE40F0CE3CF2E00778032 /* core.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
+		61CEE4100CE3CF2E00778032 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
+		61CEE4110CE3CF2E00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE4120CE3CF2E00778032 /* radiotap.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = radiotap.c; sourceTree = "<group>"; };
+		61CEE4130CE3CF2E00778032 /* sysfs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = sysfs.c; sourceTree = "<group>"; };
+		61CEE4140CE3CF2E00778032 /* sysfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = sysfs.h; sourceTree = "<group>"; };
+		61CEE4150CE3CF2E00778032 /* wext.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wext.c; sourceTree = "<group>"; };
+		61CEE4170CE3CF2E00778032 /* GIT */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = GIT; sourceTree = "<group>"; };
+		61CEE41A0CE3CF2E00778032 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		61CEE41B0CE3CF2E00778032 /* nl80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = nl80211.h; sourceTree = "<group>"; };
+		61CEE41C0CE3CF2E00778032 /* wireless.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wireless.h; sourceTree = "<group>"; };
+		61CEE41E0CE3CF2E00778032 /* cfg80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = cfg80211.h; sourceTree = "<group>"; };
+		61CEE41F0CE3CF2E00778032 /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
+		61CEE4200CE3CF2E00778032 /* iw_handler.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iw_handler.h; sourceTree = "<group>"; };
+		61CEE4210CE3CF2E00778032 /* mac80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mac80211.h; sourceTree = "<group>"; };
+		61CEE4220CE3CF2E00778032 /* wext.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wext.h; sourceTree = "<group>"; };
+		61CEE4230CE3CF2E00778032 /* wireless.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wireless.h; sourceTree = "<group>"; };
+		61CEE4260CE3CF2E00778032 /* aes_ccm.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = aes_ccm.c; sourceTree = "<group>"; };
+		61CEE4270CE3CF2E00778032 /* aes_ccm.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = aes_ccm.h; sourceTree = "<group>"; };
+		61CEE4280CE3CF2E00778032 /* debugfs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs.c; sourceTree = "<group>"; };
+		61CEE4290CE3CF2E00778032 /* debugfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs.h; sourceTree = "<group>"; };
+		61CEE42A0CE3CF2E00778032 /* debugfs_key.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_key.c; sourceTree = "<group>"; };
+		61CEE42B0CE3CF2E00778032 /* debugfs_key.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_key.h; sourceTree = "<group>"; };
+		61CEE42C0CE3CF2E00778032 /* debugfs_netdev.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_netdev.c; sourceTree = "<group>"; };
+		61CEE42D0CE3CF2E00778032 /* debugfs_netdev.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_netdev.h; sourceTree = "<group>"; };
+		61CEE42E0CE3CF2E00778032 /* debugfs_sta.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = debugfs_sta.c; sourceTree = "<group>"; };
+		61CEE42F0CE3CF2E00778032 /* debugfs_sta.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debugfs_sta.h; sourceTree = "<group>"; };
+		61CEE4300CE3CF2E00778032 /* hostapd_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = hostapd_ioctl.h; sourceTree = "<group>"; };
+		61CEE4310CE3CF2E00778032 /* ieee80211.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211.c; sourceTree = "<group>"; };
+		61CEE4320CE3CF2E00778032 /* ieee80211_cfg.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_cfg.c; sourceTree = "<group>"; };
+		61CEE4330CE3CF2E00778032 /* ieee80211_cfg.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_cfg.h; sourceTree = "<group>"; };
+		61CEE4340CE3CF2E00778032 /* ieee80211_common.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_common.h; sourceTree = "<group>"; };
+		61CEE4350CE3CF2E00778032 /* ieee80211_i.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_i.h; sourceTree = "<group>"; };
+		61CEE4360CE3CF2E00778032 /* ieee80211_iface.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_iface.c; sourceTree = "<group>"; };
+		61CEE4370CE3CF2E00778032 /* ieee80211_ioctl.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_ioctl.c; sourceTree = "<group>"; };
+		61CEE4380CE3CF2E00778032 /* ieee80211_key.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_key.h; sourceTree = "<group>"; };
+		61CEE4390CE3CF2E00778032 /* ieee80211_led.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_led.c; sourceTree = "<group>"; };
+		61CEE43A0CE3CF2E00778032 /* ieee80211_led.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_led.h; sourceTree = "<group>"; };
+		61CEE43B0CE3CF2E00778032 /* ieee80211_rate.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_rate.c; sourceTree = "<group>"; };
+		61CEE43C0CE3CF2E00778032 /* ieee80211_rate.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_rate.h; sourceTree = "<group>"; };
+		61CEE43D0CE3CF2E00778032 /* ieee80211_sta.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ieee80211_sta.c; sourceTree = "<group>"; };
+		61CEE43E0CE3CF2E00778032 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
+		61CEE43F0CE3CF2E00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE4400CE3CF2E00778032 /* michael.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = michael.c; sourceTree = "<group>"; };
+		61CEE4410CE3CF2E00778032 /* michael.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = michael.h; sourceTree = "<group>"; };
+		61CEE4420CE3CF2E00778032 /* rc80211_simple.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = rc80211_simple.c; sourceTree = "<group>"; };
+		61CEE4430CE3CF2E00778032 /* regdomain.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = regdomain.c; sourceTree = "<group>"; };
+		61CEE4440CE3CF2E00778032 /* sta_info.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = sta_info.c; sourceTree = "<group>"; };
+		61CEE4450CE3CF2E00778032 /* sta_info.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = sta_info.h; sourceTree = "<group>"; };
+		61CEE4460CE3CF2E00778032 /* tkip.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = tkip.c; sourceTree = "<group>"; };
+		61CEE4470CE3CF2E00778032 /* tkip.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = tkip.h; sourceTree = "<group>"; };
+		61CEE4480CE3CF2E00778032 /* wep.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wep.c; sourceTree = "<group>"; };
+		61CEE4490CE3CF2E00778032 /* wep.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wep.h; sourceTree = "<group>"; };
+		61CEE44A0CE3CF2E00778032 /* wme.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wme.c; sourceTree = "<group>"; };
+		61CEE44B0CE3CF2E00778032 /* wme.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wme.h; sourceTree = "<group>"; };
+		61CEE44C0CE3CF2E00778032 /* wpa.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wpa.c; sourceTree = "<group>"; };
+		61CEE44D0CE3CF2E00778032 /* wpa.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wpa.h; sourceTree = "<group>"; };
+		61CEE44F0CE3CF2E00778032 /* core.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = core.c; sourceTree = "<group>"; };
+		61CEE4500CE3CF2E00778032 /* core.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
+		61CEE4510CE3CF2E00778032 /* Kconfig */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Kconfig; sourceTree = "<group>"; };
+		61CEE4520CE3CF2E00778032 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		61CEE4530CE3CF2E00778032 /* radiotap.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = radiotap.c; sourceTree = "<group>"; };
+		61CEE4540CE3CF2E00778032 /* sysfs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = sysfs.c; sourceTree = "<group>"; };
+		61CEE4550CE3CF2E00778032 /* sysfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = sysfs.h; sourceTree = "<group>"; };
+		61CEE4560CE3CF2E00778032 /* wext.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wext.c; sourceTree = "<group>"; };
+		61CEE4570CE3CF2E00778032 /* ORIGIN_FILES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = ORIGIN_FILES; sourceTree = "<group>"; };
+		61CEE4590CE3CF2E00778032 /* block-cipher.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "block-cipher.patch"; sourceTree = "<group>"; };
+		61CEE45A0CE3CF2E00778032 /* class_dev_to_dev-wireless-ieee80211_ptr.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "class_dev_to_dev-wireless-ieee80211_ptr.patch"; sourceTree = "<group>"; };
+		61CEE45B0CE3CF2E00778032 /* class_dev_to_dev-wireless.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "class_dev_to_dev-wireless.patch"; sourceTree = "<group>"; };
+		61CEE45C0CE3CF2E00778032 /* debugfs_rename.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = debugfs_rename.patch; sourceTree = "<group>"; };
+		61CEE45D0CE3CF2E00778032 /* delayed_work.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = delayed_work.patch; sourceTree = "<group>"; };
+		61CEE45E0CE3CF2E00778032 /* delayed_work.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = delayed_work.sh; sourceTree = "<group>"; };
+		61CEE45F0CE3CF2E00778032 /* dev_release.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = dev_release.patch; sourceTree = "<group>"; };
+		61CEE4600CE3CF2E00778032 /* device_rename.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = device_rename.patch; sourceTree = "<group>"; };
+		61CEE4610CE3CF2E00778032 /* div_round_up.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = div_round_up.patch; sourceTree = "<group>"; };
+		61CEE4620CE3CF2E00778032 /* fix-qos-sysfs-no-class_dev.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "fix-qos-sysfs-no-class_dev.patch"; sourceTree = "<group>"; };
+		61CEE4630CE3CF2E00778032 /* ieee80211_ptr.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = ieee80211_ptr.patch; sourceTree = "<group>"; };
+		61CEE4640CE3CF2E00778032 /* ieee80211_ptr.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = ieee80211_ptr.sh; sourceTree = "<group>"; };
+		61CEE4650CE3CF2E00778032 /* ilog2.sh */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = ilog2.sh; sourceTree = "<group>"; };
+		61CEE4660CE3CF2E00778032 /* kcompat-delayed_work.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "kcompat-delayed_work.h"; sourceTree = "<group>"; };
+		61CEE4670CE3CF2E00778032 /* kcompat-math.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "kcompat-math.h"; sourceTree = "<group>"; };
+		61CEE4680CE3CF2E00778032 /* kcompat-skb_mac_header.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "kcompat-skb_mac_header.h"; sourceTree = "<group>"; };
+		61CEE4690CE3CF2E00778032 /* net_sch_fifo.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = net_sch_fifo.patch; sourceTree = "<group>"; };
+		61CEE46A0CE3CF2E00778032 /* nl80211-remove-kconfig.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "nl80211-remove-kconfig.patch"; sourceTree = "<group>"; };
+		61CEE46B0CE3CF2E00778032 /* nl80211-remove.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "nl80211-remove.patch"; sourceTree = "<group>"; };
+		61CEE46C0CE3CF2E00778032 /* nla_policy.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = nla_policy.patch; sourceTree = "<group>"; };
+		61CEE46D0CE3CF2E00778032 /* nla_put_flag.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = nla_put_flag.patch; sourceTree = "<group>"; };
+		61CEE46E0CE3CF2E00778032 /* nlmsg_new.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = nlmsg_new.patch; sourceTree = "<group>"; };
+		61CEE46F0CE3CF2E00778032 /* nlmsg_trim.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = nlmsg_trim.patch; sourceTree = "<group>"; };
+		61CEE4700CE3CF2E00778032 /* post-genlmsg_put.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "post-genlmsg_put.patch"; sourceTree = "<group>"; };
+		61CEE4710CE3CF2E00778032 /* post-nla_binary.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "post-nla_binary.patch"; sourceTree = "<group>"; };
+		61CEE4720CE3CF2E00778032 /* post-nla_nul_string.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "post-nla_nul_string.patch"; sourceTree = "<group>"; };
+		61CEE4730CE3CF2E00778032 /* qdisc-api.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "qdisc-api.patch"; sourceTree = "<group>"; };
+		61CEE4740CE3CF2E00778032 /* rtnl_notify.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = rtnl_notify.patch; sourceTree = "<group>"; };
+		61CEE4750CE3CF2E00778032 /* seq_open_const.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = seq_open_const.patch; sourceTree = "<group>"; };
+		61CEE4760CE3CF2E00778032 /* skb_mac_header.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = skb_mac_header.patch; sourceTree = "<group>"; };
+		61CEE4770CE3CF2E00778032 /* tcf_destroy_chain.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = tcf_destroy_chain.patch; sourceTree = "<group>"; };
+		61CEE4790CE3CF2E00778032 /* 0001-mac80211-Add-basic-IEEE-802.11n-support.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0001-mac80211-Add-basic-IEEE-802.11n-support.patch"; sourceTree = "<group>"; };
+		61CEE47A0CE3CF2E00778032 /* 0002-mac80211-add-IEEE802.11e-WMM-structures.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0002-mac80211-add-IEEE802.11e-WMM-structures.patch"; sourceTree = "<group>"; };
+		61CEE47B0CE3CF2E00778032 /* 0003-mac80211-IEEE802.11e-WMM-TS-management-and-DLS-supp.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0003-mac80211-IEEE802.11e-WMM-TS-management-and-DLS-supp.patch"; sourceTree = "<group>"; };
+		61CEE47C0CE3CF2E00778032 /* 0004-mac80211-debugfs-support-for-TSM-and-DLS.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0004-mac80211-debugfs-support-for-TSM-and-DLS.patch"; sourceTree = "<group>"; };
+		61CEE47D0CE3CF2E00778032 /* 0005-mac80211-IEEE802.11e-WMM-misc-fix-and-cleanup.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0005-mac80211-IEEE802.11e-WMM-misc-fix-and-cleanup.patch"; sourceTree = "<group>"; };
+		61CEE47E0CE3CF2E00778032 /* 0006-mac80211-add-WE-nick-power-and-txpower-capabilitie.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0006-mac80211-add-WE-nick-power-and-txpower-capabilitie.patch"; sourceTree = "<group>"; };
+		61CEE47F0CE3CF2E00778032 /* 0007-mac80211-Fix-user-specified-TXPOWER-from-being-over.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0007-mac80211-Fix-user-specified-TXPOWER-from-being-over.patch"; sourceTree = "<group>"; };
+		61CEE4800CE3CF2E00778032 /* 0008-mac80211-HT-IEEE_802.11n_TX_AMPDU-send-actframes.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0008-mac80211-HT-IEEE_802.11n_TX_AMPDU-send-actframes.patch"; sourceTree = "<group>"; };
+		61CEE4810CE3CF2E00778032 /* 0009-mac80211-HT-add-IEEE-802.11n-TX_AMPDU-API.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0009-mac80211-HT-add-IEEE-802.11n-TX_AMPDU-API.patch"; sourceTree = "<group>"; };
+		61CEE4820CE3CF2E00778032 /* 0010-mac80211-HT-add-TX-AMPDU-MLME-data.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0010-mac80211-HT-add-TX-AMPDU-MLME-data.patch"; sourceTree = "<group>"; };
+		61CEE4830CE3CF2E00778032 /* 0011-mac80211-HT-IEEE-802.11n-TX-AMPDU-MLME-implementa.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0011-mac80211-HT-IEEE-802.11n-TX-AMPDU-MLME-implementa.patch"; sourceTree = "<group>"; };
+		61CEE4840CE3CF2E00778032 /* 0012-mac80211-HT-IEEE-802.11n-debugfs-support.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0012-mac80211-HT-IEEE-802.11n-debugfs-support.patch"; sourceTree = "<group>"; };
+		61CEE4850CE3CF2E00778032 /* 0013-mac80211-HT-IEEE-802.11n-block-ack-support.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0013-mac80211-HT-IEEE-802.11n-block-ack-support.patch"; sourceTree = "<group>"; };
+		61CEE4860CE3CF2E00778032 /* 0014-mac80211-HT-IEEE-802.11n-block-ack-debugfs-suppor.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0014-mac80211-HT-IEEE-802.11n-block-ack-debugfs-suppor.patch"; sourceTree = "<group>"; };
+		61CEE4870CE3CF2E00778032 /* 0015-mac80211-HT-add-IEEE-802.11n-qos-queues.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0015-mac80211-HT-add-IEEE-802.11n-qos-queues.patch"; sourceTree = "<group>"; };
+		61CEE4880CE3CF2E00778032 /* 0016-mac80211-HT-IEEE-802.11n-RX-aggregation-BAR-supor.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0016-mac80211-HT-IEEE-802.11n-RX-aggregation-BAR-supor.patch"; sourceTree = "<group>"; };
+		61CEE4890CE3CF2E00778032 /* 0017-mac80211-HT-IEEE-802.11n-RX-aggregation-API-and-M.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0017-mac80211-HT-IEEE-802.11n-RX-aggregation-API-and-M.patch"; sourceTree = "<group>"; };
+		61CEE48A0CE3CF2E00778032 /* 0018-mac80211-HT-add-addtional-type-parameter-for-ieee.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0018-mac80211-HT-add-addtional-type-parameter-for-ieee.patch"; sourceTree = "<group>"; };
+		61CEE48B0CE3CF2E00778032 /* 0019-mac80211-HT-fix-ieee80211_send_addba_resp-interfa.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0019-mac80211-HT-fix-ieee80211_send_addba_resp-interfa.patch"; sourceTree = "<group>"; };
+		61CEE48C0CE3CF2E00778032 /* 0020-mac80211-HT-fix-master-mode-net-type.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0020-mac80211-HT-fix-master-mode-net-type.patch"; sourceTree = "<group>"; };
+		61CEE48D0CE3CF2E00778032 /* 0021-mac80211-HT-IEEE-802.11n-RX-aggregation-MLME-supp.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0021-mac80211-HT-IEEE-802.11n-RX-aggregation-MLME-supp.patch"; sourceTree = "<group>"; };
+		61CEE48E0CE3CF2E00778032 /* 0022-mac80211-HT-IEEE-802.11n-RX-aggregation-debugfs-s.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0022-mac80211-HT-IEEE-802.11n-RX-aggregation-debugfs-s.patch"; sourceTree = "<group>"; };
+		61CEE48F0CE3CF2E00778032 /* 0023-mac80211-HT-AP-mode-block-ack-MLME-support.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0023-mac80211-HT-AP-mode-block-ack-MLME-support.patch"; sourceTree = "<group>"; };
+		61CEE4900CE3CF2E00778032 /* 0024-mac80211-HT-fix-wrong-param-used-for-ieee80211_ht.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0024-mac80211-HT-fix-wrong-param-used-for-ieee80211_ht.patch"; sourceTree = "<group>"; };
+		61CEE4910CE3CF2E00778032 /* 0025-mac80211-HT-use-KERN_DEBUG-for-HT-debugging-messa.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0025-mac80211-HT-use-KERN_DEBUG-for-HT-debugging-messa.patch"; sourceTree = "<group>"; };
+		61CEE4920CE3CF2E00778032 /* 0026-mac80211-rssi-averaging-filter.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0026-mac80211-rssi-averaging-filter.patch"; sourceTree = "<group>"; };
+		61CEE4930CE3CF2E00778032 /* 0027-mac80211-add-802.11h-channel-switch-packet-handling.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0027-mac80211-add-802.11h-channel-switch-packet-handling.patch"; sourceTree = "<group>"; };
+		61CEE4940CE3CF2E00778032 /* 0028-mac80211-fix-compile-error-if-CONFIG_NET_SCHED-unde.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0028-mac80211-fix-compile-error-if-CONFIG_NET_SCHED-unde.patch"; sourceTree = "<group>"; };
+		61CEE4950CE3CF2E00778032 /* 0029-mac80211-add-rate-scaling-algorithm-selection-capab.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0029-mac80211-add-rate-scaling-algorithm-selection-capab.patch"; sourceTree = "<group>"; };
+		61CEE4960CE3CF2E00778032 /* 0030-mac80211-fix-monitor-mode.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0030-mac80211-fix-monitor-mode.patch"; sourceTree = "<group>"; };
+		61CEE4970CE3CF2E00778032 /* 0031-mac80211-fix-an-printk-warning-for-size_t.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0031-mac80211-fix-an-printk-warning-for-size_t.patch"; sourceTree = "<group>"; };
+		61CEE4980CE3CF2E00778032 /* 0032-mac80211-fix-kernel-panic-during-shutdown-time.patch */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "0032-mac80211-fix-kernel-panic-during-shutdown-time.patch"; sourceTree = "<group>"; };
+		61CEE4990CE3CF2E00778032 /* README */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		61CEE49B0CE3CF2E00778032 /* determine_compat */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = determine_compat; sourceTree = "<group>"; };
+		61CEE49C0CE3CF2E00778032 /* generate_compatible */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_compatible; sourceTree = "<group>"; };
+		61CEE49D0CE3CF2E00778032 /* generate_modified */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_modified; sourceTree = "<group>"; };
+		61CEE49E0CE3CF2E00778032 /* generate_origin */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = generate_origin; sourceTree = "<group>"; };
+		61CEE49F0CE3CF2E00778032 /* git-clean-unreachable */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "git-clean-unreachable"; sourceTree = "<group>"; };
+		61CEE4A00CE3CF2E00778032 /* make_change_log */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = make_change_log; sourceTree = "<group>"; };
+		61CEE4A10CE3CF2E00778032 /* patch_kernel */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = patch_kernel; sourceTree = "<group>"; };
+		61CEE4A20CE3CF2E00778032 /* patch_kernel_post */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = patch_kernel_post; sourceTree = "<group>"; };
+		61CEE4A30CE3CF2E00778032 /* push-to-bughost */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = "push-to-bughost"; sourceTree = "<group>"; };
+		61CEE4A50CE3CF2E00778032 /* README */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		61CEE4A60CE3CF2E00778032 /* TODO */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = TODO; sourceTree = "<group>"; };
+		61D2BAAF0CE38C9B00C7FE2D /* base.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = base.cpp; sourceTree = "<group>"; };
+		61D2BAB00CE38C9B00C7FE2D /* iwl-4965-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-hw.h"; sourceTree = "<group>"; };
+		61D2BAB10CE38C9B00C7FE2D /* iwl-4965-rs.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = "iwl-4965-rs.cpp"; sourceTree = "<group>"; };
+		61D2BAB20CE38C9B00C7FE2D /* iwl-4965-rs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-rs.h"; sourceTree = "<group>"; };
+		61D2BAB30CE38C9B00C7FE2D /* iwl-4965.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = "iwl-4965.cpp"; sourceTree = "<group>"; };
+		61D2BAB40CE38C9B00C7FE2D /* iwl-4965.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-4965.h"; sourceTree = "<group>"; };
+		61D2BAB50CE38C9B00C7FE2D /* iwl-channel.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-channel.h"; sourceTree = "<group>"; };
+		61D2BAB60CE38C9B00C7FE2D /* iwl-commands.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-commands.h"; sourceTree = "<group>"; };
+		61D2BAB70CE38C9B00C7FE2D /* iwl-debug.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-debug.h"; sourceTree = "<group>"; };
+		61D2BAB80CE38C9B00C7FE2D /* iwl-eeprom.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom.h"; sourceTree = "<group>"; };
+		61D2BAB90CE38C9B00C7FE2D /* iwl-helpers.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-helpers.h"; sourceTree = "<group>"; };
+		61D2BABA0CE38C9B00C7FE2D /* iwl-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-hw.h"; sourceTree = "<group>"; };
+		61D2BABB0CE38C9B00C7FE2D /* iwl-io.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-io.h"; sourceTree = "<group>"; };
+		61D2BABC0CE38C9B00C7FE2D /* iwl-priv.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-priv.h"; sourceTree = "<group>"; };
+		61D2BABD0CE38C9B00C7FE2D /* iwl-spectrum.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-spectrum.h"; sourceTree = "<group>"; };
+		61D2BABE0CE38C9B00C7FE2D /* iwlwifi.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwlwifi.h; sourceTree = "<group>"; };
 		61F149970BAEC94000A13F2E /* WiFiPower.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = WiFiPower.cpp; sourceTree = "<group>"; };
 		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
@@ -194,8 +376,9 @@
 		089C166AFE841209C02AAC07 /* iwi3945 */ = {
 			isa = PBXGroup;
 			children = (
-				61054EED0C2EF87000D9DDF0 /* mac80211-8.0.1 copy */,
-				61054EB60C2EF83E00D9DDF0 /* iwlwifi-0.0.32 */,
+				61CEE3600CE3CF2D00778032 /* iwlwifi-1.0.0-1 */,
+				61CEE3960CE3CF2D00778032 /* iwlwifi-1.1.21 */,
+				61CEE3D10CE3CF2D00778032 /* mac80211-10.0.0 */,
 				247142CAFF3F8F9811CA285C /* Source */,
 				8DA8362C06AD9B9200E5AC22 /* Kernel.framework */,
 				089C167CFE841241C02AAC07 /* Resources */,
@@ -224,7 +407,22 @@
 		247142CAFF3F8F9811CA285C /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				61054EB20C2EF80100D9DDF0 /* ipw4965.h */,
+				61D2BAAF0CE38C9B00C7FE2D /* base.cpp */,
+				61D2BAB00CE38C9B00C7FE2D /* iwl-4965-hw.h */,
+				61D2BAB10CE38C9B00C7FE2D /* iwl-4965-rs.cpp */,
+				61D2BAB20CE38C9B00C7FE2D /* iwl-4965-rs.h */,
+				61D2BAB30CE38C9B00C7FE2D /* iwl-4965.cpp */,
+				61D2BAB40CE38C9B00C7FE2D /* iwl-4965.h */,
+				61D2BAB50CE38C9B00C7FE2D /* iwl-channel.h */,
+				61D2BAB60CE38C9B00C7FE2D /* iwl-commands.h */,
+				61D2BAB70CE38C9B00C7FE2D /* iwl-debug.h */,
+				61D2BAB80CE38C9B00C7FE2D /* iwl-eeprom.h */,
+				61D2BAB90CE38C9B00C7FE2D /* iwl-helpers.h */,
+				61D2BABA0CE38C9B00C7FE2D /* iwl-hw.h */,
+				61D2BABB0CE38C9B00C7FE2D /* iwl-io.h */,
+				61D2BABC0CE38C9B00C7FE2D /* iwl-priv.h */,
+				61D2BABD0CE38C9B00C7FE2D /* iwl-spectrum.h */,
+				61D2BABE0CE38C9B00C7FE2D /* iwlwifi.h */,
 				61054AFB0C2EF71100D9DDF0 /* iwi4965.cpp */,
 				61054AFC0C2EF71100D9DDF0 /* iwi4965.h */,
 				61F149970BAEC94000A13F2E /* WiFiPower.cpp */,
@@ -233,273 +431,6 @@
 				61B06DFD0B589546000DD1AE /* net */,
 			);
 			name = Source;
-			sourceTree = "<group>";
-		};
-		61054EB60C2EF83E00D9DDF0 /* iwlwifi-0.0.32 */ = {
-			isa = PBXGroup;
-			children = (
-				61054EB70C2EF83E00D9DDF0 /* CHANGES */,
-				61054EB80C2EF83E00D9DDF0 /* dvals */,
-				61054EB90C2EF83E00D9DDF0 /* FILES */,
-				61054EBA0C2EF83E00D9DDF0 /* GIT_SHA1 */,
-				61054EBB0C2EF83E00D9DDF0 /* INSTALL */,
-				61054EBC0C2EF83E00D9DDF0 /* ISSUES */,
-				61054EBD0C2EF83E00D9DDF0 /* LICENSE */,
-				61054EBE0C2EF83E00D9DDF0 /* LICENSE.BSD */,
-				61054EBF0C2EF83E00D9DDF0 /* LICENSE.GPL */,
-				61054EC00C2EF83E00D9DDF0 /* load */,
-				61054EC10C2EF83E00D9DDF0 /* Makefile */,
-				61054EC20C2EF83E00D9DDF0 /* origin */,
-				61054EDA0C2EF83E00D9DDF0 /* patches */,
-				61054EE40C2EF83E00D9DDF0 /* README.iwlwifi */,
-				61054EE50C2EF83E00D9DDF0 /* scripts */,
-				61054EEB0C2EF83E00D9DDF0 /* unload */,
-			);
-			name = "iwlwifi-0.0.32";
-			path = "../../../4965/iwlwifi-0.0.32";
-			sourceTree = SOURCE_ROOT;
-		};
-		61054EC20C2EF83E00D9DDF0 /* origin */ = {
-			isa = PBXGroup;
-			children = (
-				61054EC30C2EF83E00D9DDF0 /* base.c */,
-				61054EC40C2EF83E00D9DDF0 /* iwl-3945-hw.h */,
-				61054EC50C2EF83E00D9DDF0 /* iwl-3945-rs.c */,
-				61054EC60C2EF83E00D9DDF0 /* iwl-3945-rs.h */,
-				61054EC70C2EF83E00D9DDF0 /* iwl-3945.c */,
-				61054EC80C2EF83E00D9DDF0 /* iwl-3945.h */,
-				61054EC90C2EF83E00D9DDF0 /* iwl-4965-hw.h */,
-				61054ECA0C2EF83E00D9DDF0 /* iwl-4965-rs.c */,
-				61054ECB0C2EF83E00D9DDF0 /* iwl-4965-rs.h */,
-				61054ECC0C2EF83E00D9DDF0 /* iwl-4965.c */,
-				61054ECD0C2EF83E00D9DDF0 /* iwl-4965.h */,
-				61054ECE0C2EF83E00D9DDF0 /* iwl-channel.h */,
-				61054ECF0C2EF83E00D9DDF0 /* iwl-commands.h */,
-				61054ED00C2EF83E00D9DDF0 /* iwl-debug.h */,
-				61054ED10C2EF83E00D9DDF0 /* iwl-eeprom.h */,
-				61054ED20C2EF83E00D9DDF0 /* iwl-helpers.h */,
-				61054ED30C2EF83E00D9DDF0 /* iwl-hw.h */,
-				61054ED40C2EF83E00D9DDF0 /* iwl-io.h */,
-				61054ED50C2EF83E00D9DDF0 /* iwl-priv.h */,
-				61054ED60C2EF83E00D9DDF0 /* iwl-spectrum.h */,
-				61054ED70C2EF83E00D9DDF0 /* iwlwifi.h */,
-				61054ED80C2EF83E00D9DDF0 /* Kconfig */,
-				61054ED90C2EF83E00D9DDF0 /* Makefile */,
-			);
-			path = origin;
-			sourceTree = "<group>";
-		};
-		61054EDA0C2EF83E00D9DDF0 /* patches */ = {
-			isa = PBXGroup;
-			children = (
-				61054EDB0C2EF83E00D9DDF0 /* .keep */,
-				61054EDC0C2EF83E00D9DDF0 /* 01-queue_delayed_work.sh */,
-				61054EDD0C2EF83E00D9DDF0 /* 02-cancel_delayed_work.sh */,
-				61054EDE0C2EF83E00D9DDF0 /* 02-kcompat_delayed_work.patch */,
-				61054EDF0C2EF83E00D9DDF0 /* 03-isr.patch */,
-				61054EE00C2EF83E00D9DDF0 /* 04-rx_flag_radiotap.patch */,
-				61054EE10C2EF83E00D9DDF0 /* 05-delayed_work_define.patch */,
-				61054EE20C2EF83E00D9DDF0 /* d80211-v1.patch */,
-				61054EE30C2EF83E00D9DDF0 /* wlan_80211.patch */,
-			);
-			path = patches;
-			sourceTree = "<group>";
-		};
-		61054EE50C2EF83E00D9DDF0 /* scripts */ = {
-			isa = PBXGroup;
-			children = (
-				61054EE60C2EF83E00D9DDF0 /* check_kernel */,
-				61054EE70C2EF83E00D9DDF0 /* determine_compat */,
-				61054EE80C2EF83E00D9DDF0 /* generate_compatible */,
-				61054EE90C2EF83E00D9DDF0 /* make_snapshot */,
-				61054EEA0C2EF83E00D9DDF0 /* patch_kernel */,
-			);
-			path = scripts;
-			sourceTree = "<group>";
-		};
-		61054EED0C2EF87000D9DDF0 /* mac80211-8.0.1 copy */ = {
-			isa = PBXGroup;
-			children = (
-				61054EEE0C2EF87000D9DDF0 /* CHANGES */,
-				61054EEF0C2EF87000D9DDF0 /* FILES */,
-				61054EF00C2EF87000D9DDF0 /* Makefile */,
-				61054EF10C2EF87000D9DDF0 /* origin */,
-				61054F2F0C2EF87000D9DDF0 /* ORIGIN_FILES */,
-				61054F300C2EF87000D9DDF0 /* patches */,
-				61054F4C0C2EF87000D9DDF0 /* README */,
-				61054F4D0C2EF87000D9DDF0 /* scripts */,
-				61054F560C2EF87000D9DDF0 /* stubs */,
-				61054F580C2EF87000D9DDF0 /* TODO */,
-			);
-			name = "mac80211-8.0.1 copy";
-			path = "../../../4965/mac80211-8.0.1 copy";
-			sourceTree = SOURCE_ROOT;
-		};
-		61054EF10C2EF87000D9DDF0 /* origin */ = {
-			isa = PBXGroup;
-			children = (
-				61054EF20C2EF87000D9DDF0 /* GIT */,
-				61054EF30C2EF87000D9DDF0 /* include */,
-				61054EFE0C2EF87000D9DDF0 /* net */,
-			);
-			path = origin;
-			sourceTree = "<group>";
-		};
-		61054EF30C2EF87000D9DDF0 /* include */ = {
-			isa = PBXGroup;
-			children = (
-				61054EF40C2EF87000D9DDF0 /* linux */,
-				61054EF80C2EF87000D9DDF0 /* net */,
-			);
-			path = include;
-			sourceTree = "<group>";
-		};
-		61054EF40C2EF87000D9DDF0 /* linux */ = {
-			isa = PBXGroup;
-			children = (
-				61054EF50C2EF87000D9DDF0 /* ieee80211.h */,
-				61054EF60C2EF87000D9DDF0 /* nl80211.h */,
-				61054EF70C2EF87000D9DDF0 /* wireless.h */,
-			);
-			path = linux;
-			sourceTree = "<group>";
-		};
-		61054EF80C2EF87000D9DDF0 /* net */ = {
-			isa = PBXGroup;
-			children = (
-				61054EF90C2EF87000D9DDF0 /* cfg80211.h */,
-				61054EFA0C2EF87000D9DDF0 /* iw_handler.h */,
-				61054EFB0C2EF87000D9DDF0 /* mac80211.h */,
-				61054EFC0C2EF87000D9DDF0 /* wext.h */,
-				61054EFD0C2EF87000D9DDF0 /* wireless.h */,
-			);
-			path = net;
-			sourceTree = "<group>";
-		};
-		61054EFE0C2EF87000D9DDF0 /* net */ = {
-			isa = PBXGroup;
-			children = (
-				61054EFF0C2EF87000D9DDF0 /* mac80211 */,
-				61054F270C2EF87000D9DDF0 /* wireless */,
-			);
-			path = net;
-			sourceTree = "<group>";
-		};
-		61054EFF0C2EF87000D9DDF0 /* mac80211 */ = {
-			isa = PBXGroup;
-			children = (
-				61054F000C2EF87000D9DDF0 /* aes_ccm.c */,
-				61054F010C2EF87000D9DDF0 /* aes_ccm.h */,
-				61054F020C2EF87000D9DDF0 /* debugfs.c */,
-				61054F030C2EF87000D9DDF0 /* debugfs.h */,
-				61054F040C2EF87000D9DDF0 /* debugfs_key.c */,
-				61054F050C2EF87000D9DDF0 /* debugfs_key.h */,
-				61054F060C2EF87000D9DDF0 /* debugfs_netdev.c */,
-				61054F070C2EF87000D9DDF0 /* debugfs_netdev.h */,
-				61054F080C2EF87000D9DDF0 /* debugfs_sta.c */,
-				61054F090C2EF87000D9DDF0 /* debugfs_sta.h */,
-				61054F0A0C2EF87000D9DDF0 /* hostapd_ioctl.h */,
-				61054F0B0C2EF87000D9DDF0 /* ieee80211.c */,
-				61054F0C0C2EF87000D9DDF0 /* ieee80211_cfg.c */,
-				61054F0D0C2EF87000D9DDF0 /* ieee80211_cfg.h */,
-				61054F0E0C2EF87000D9DDF0 /* ieee80211_common.h */,
-				61054F0F0C2EF87000D9DDF0 /* ieee80211_i.h */,
-				61054F100C2EF87000D9DDF0 /* ieee80211_iface.c */,
-				61054F110C2EF87000D9DDF0 /* ieee80211_ioctl.c */,
-				61054F120C2EF87000D9DDF0 /* ieee80211_key.h */,
-				61054F130C2EF87000D9DDF0 /* ieee80211_led.c */,
-				61054F140C2EF87000D9DDF0 /* ieee80211_led.h */,
-				61054F150C2EF87000D9DDF0 /* ieee80211_rate.c */,
-				61054F160C2EF87000D9DDF0 /* ieee80211_rate.h */,
-				61054F170C2EF87000D9DDF0 /* ieee80211_sta.c */,
-				61054F180C2EF87000D9DDF0 /* Kconfig */,
-				61054F190C2EF87000D9DDF0 /* Makefile */,
-				61054F1A0C2EF87000D9DDF0 /* michael.c */,
-				61054F1B0C2EF87000D9DDF0 /* michael.h */,
-				61054F1C0C2EF87000D9DDF0 /* rc80211_simple.c */,
-				61054F1D0C2EF87000D9DDF0 /* sta_info.c */,
-				61054F1E0C2EF87000D9DDF0 /* sta_info.h */,
-				61054F1F0C2EF87000D9DDF0 /* tkip.c */,
-				61054F200C2EF87000D9DDF0 /* tkip.h */,
-				61054F210C2EF87000D9DDF0 /* wep.c */,
-				61054F220C2EF87000D9DDF0 /* wep.h */,
-				61054F230C2EF87000D9DDF0 /* wme.c */,
-				61054F240C2EF87000D9DDF0 /* wme.h */,
-				61054F250C2EF87000D9DDF0 /* wpa.c */,
-				61054F260C2EF87000D9DDF0 /* wpa.h */,
-			);
-			path = mac80211;
-			sourceTree = "<group>";
-		};
-		61054F270C2EF87000D9DDF0 /* wireless */ = {
-			isa = PBXGroup;
-			children = (
-				61054F280C2EF87000D9DDF0 /* core.c */,
-				61054F290C2EF87000D9DDF0 /* core.h */,
-				61054F2A0C2EF87000D9DDF0 /* Kconfig */,
-				61054F2B0C2EF87000D9DDF0 /* Makefile */,
-				61054F2C0C2EF87000D9DDF0 /* sysfs.c */,
-				61054F2D0C2EF87000D9DDF0 /* sysfs.h */,
-				61054F2E0C2EF87000D9DDF0 /* wext.c */,
-			);
-			path = wireless;
-			sourceTree = "<group>";
-		};
-		61054F300C2EF87000D9DDF0 /* patches */ = {
-			isa = PBXGroup;
-			children = (
-				61054F310C2EF87000D9DDF0 /* block-cipher.patch */,
-				61054F320C2EF87000D9DDF0 /* class_dev_to_dev-wireless-ieee80211_ptr.patch */,
-				61054F330C2EF87000D9DDF0 /* class_dev_to_dev-wireless.patch */,
-				61054F340C2EF87000D9DDF0 /* delayed_work.patch */,
-				61054F350C2EF87000D9DDF0 /* delayed_work.sh */,
-				61054F360C2EF87000D9DDF0 /* dev_release.patch */,
-				61054F370C2EF87000D9DDF0 /* device_rename.patch */,
-				61054F380C2EF87000D9DDF0 /* div_round_up.patch */,
-				61054F390C2EF87000D9DDF0 /* fix-qos-sysfs-no-class_dev.patch */,
-				61054F3A0C2EF87000D9DDF0 /* ieee80211_cfg.patch */,
-				61054F3B0C2EF87000D9DDF0 /* ieee80211_ptr.patch */,
-				61054F3C0C2EF87000D9DDF0 /* ieee80211_ptr.sh */,
-				61054F3D0C2EF87000D9DDF0 /* ilog2.sh */,
-				61054F3E0C2EF87000D9DDF0 /* kcompat-delayed_work.h */,
-				61054F3F0C2EF87000D9DDF0 /* kcompat-math.h */,
-				61054F400C2EF87000D9DDF0 /* kcompat-skb_mac_header.h */,
-				61054F410C2EF87000D9DDF0 /* net_sch_fifo.patch */,
-				61054F420C2EF87000D9DDF0 /* nl80211-remove-kconfig.patch */,
-				61054F430C2EF87000D9DDF0 /* nl80211-remove.patch */,
-				61054F440C2EF87000D9DDF0 /* nl80211_remove.patch */,
-				61054F450C2EF87000D9DDF0 /* nlmsg_trim.patch */,
-				61054F460C2EF87000D9DDF0 /* qdisc-api.patch */,
-				61054F470C2EF87000D9DDF0 /* remove_debugfs.patch */,
-				61054F480C2EF87000D9DDF0 /* rtnl_notify.patch */,
-				61054F490C2EF87000D9DDF0 /* seq_open_const.patch */,
-				61054F4A0C2EF87000D9DDF0 /* skb_mac_header.patch */,
-				61054F4B0C2EF87000D9DDF0 /* tcf_destroy_chain.patch */,
-			);
-			path = patches;
-			sourceTree = "<group>";
-		};
-		61054F4D0C2EF87000D9DDF0 /* scripts */ = {
-			isa = PBXGroup;
-			children = (
-				61054F4E0C2EF87000D9DDF0 /* determine_compat */,
-				61054F4F0C2EF87000D9DDF0 /* generate_compatible */,
-				61054F500C2EF87000D9DDF0 /* generate_modified */,
-				61054F510C2EF87000D9DDF0 /* generate_origin */,
-				61054F520C2EF87000D9DDF0 /* git-clean-unreachable */,
-				61054F530C2EF87000D9DDF0 /* make_change_log */,
-				61054F540C2EF87000D9DDF0 /* patch_kernel */,
-				61054F550C2EF87000D9DDF0 /* push-to-bughost */,
-			);
-			path = scripts;
-			sourceTree = "<group>";
-		};
-		61054F560C2EF87000D9DDF0 /* stubs */ = {
-			isa = PBXGroup;
-			children = (
-				61054F570C2EF87000D9DDF0 /* README */,
-			);
-			path = stubs;
 			sourceTree = "<group>";
 		};
 		61B0346E0B59819700286B6C /* firmware */ = {
@@ -513,12 +444,527 @@
 		61B06DFD0B589546000DD1AE /* net */ = {
 			isa = PBXGroup;
 			children = (
-				61B06DFE0B589546000DD1AE /* compat.h */,
 				61B06DFF0B589546000DD1AE /* ieee80211.h */,
 				61B06E000B589546000DD1AE /* ieee80211_crypt.h */,
 				61B06E010B589546000DD1AE /* ieee80211_radiotap.h */,
 			);
 			path = net;
+			sourceTree = "<group>";
+		};
+		61CEE3600CE3CF2D00778032 /* iwlwifi-1.0.0-1 */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3610CE3CF2D00778032 /* CHANGES */,
+				61CEE3620CE3CF2D00778032 /* dvals */,
+				61CEE3630CE3CF2D00778032 /* FILES */,
+				61CEE3640CE3CF2D00778032 /* GIT_SHA1 */,
+				61CEE3650CE3CF2D00778032 /* INSTALL */,
+				61CEE3660CE3CF2D00778032 /* ISSUES */,
+				61CEE3670CE3CF2D00778032 /* LICENSE */,
+				61CEE3680CE3CF2D00778032 /* LICENSE.BSD */,
+				61CEE3690CE3CF2D00778032 /* LICENSE.GPL */,
+				61CEE36A0CE3CF2D00778032 /* load */,
+				61CEE36B0CE3CF2D00778032 /* Makefile */,
+				61CEE36C0CE3CF2D00778032 /* origin */,
+				61CEE3840CE3CF2D00778032 /* patches */,
+				61CEE38E0CE3CF2D00778032 /* README.iwlwifi */,
+				61CEE38F0CE3CF2D00778032 /* scripts */,
+				61CEE3950CE3CF2D00778032 /* unload */,
+			);
+			name = "iwlwifi-1.0.0-1";
+			path = "../../../4965/iwlwifi-1.0.0-1";
+			sourceTree = SOURCE_ROOT;
+		};
+		61CEE36C0CE3CF2D00778032 /* origin */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE36D0CE3CF2D00778032 /* base.c */,
+				61CEE36E0CE3CF2D00778032 /* iwl-3945-hw.h */,
+				61CEE36F0CE3CF2D00778032 /* iwl-3945-rs.c */,
+				61CEE3700CE3CF2D00778032 /* iwl-3945-rs.h */,
+				61CEE3710CE3CF2D00778032 /* iwl-3945.c */,
+				61CEE3720CE3CF2D00778032 /* iwl-3945.h */,
+				61CEE3730CE3CF2D00778032 /* iwl-4965-hw.h */,
+				61CEE3740CE3CF2D00778032 /* iwl-4965-rs.c */,
+				61CEE3750CE3CF2D00778032 /* iwl-4965-rs.h */,
+				61CEE3760CE3CF2D00778032 /* iwl-4965.c */,
+				61CEE3770CE3CF2D00778032 /* iwl-4965.h */,
+				61CEE3780CE3CF2D00778032 /* iwl-channel.h */,
+				61CEE3790CE3CF2D00778032 /* iwl-commands.h */,
+				61CEE37A0CE3CF2D00778032 /* iwl-debug.h */,
+				61CEE37B0CE3CF2D00778032 /* iwl-eeprom.h */,
+				61CEE37C0CE3CF2D00778032 /* iwl-helpers.h */,
+				61CEE37D0CE3CF2D00778032 /* iwl-hw.h */,
+				61CEE37E0CE3CF2D00778032 /* iwl-io.h */,
+				61CEE37F0CE3CF2D00778032 /* iwl-priv.h */,
+				61CEE3800CE3CF2D00778032 /* iwl-spectrum.h */,
+				61CEE3810CE3CF2D00778032 /* iwlwifi.h */,
+				61CEE3820CE3CF2D00778032 /* Kconfig */,
+				61CEE3830CE3CF2D00778032 /* Makefile */,
+			);
+			path = origin;
+			sourceTree = "<group>";
+		};
+		61CEE3840CE3CF2D00778032 /* patches */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3850CE3CF2D00778032 /* .keep */,
+				61CEE3860CE3CF2D00778032 /* 01-queue_delayed_work.sh */,
+				61CEE3870CE3CF2D00778032 /* 02-cancel_delayed_work.sh */,
+				61CEE3880CE3CF2D00778032 /* 02-kcompat_delayed_work.patch */,
+				61CEE3890CE3CF2D00778032 /* 03-isr.patch */,
+				61CEE38A0CE3CF2D00778032 /* 04-rx_flag_radiotap.patch */,
+				61CEE38B0CE3CF2D00778032 /* 05-delayed_work_define.patch */,
+				61CEE38C0CE3CF2D00778032 /* d80211-v1.patch */,
+				61CEE38D0CE3CF2D00778032 /* wlan_80211.patch */,
+			);
+			path = patches;
+			sourceTree = "<group>";
+		};
+		61CEE38F0CE3CF2D00778032 /* scripts */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3900CE3CF2D00778032 /* check_kernel */,
+				61CEE3910CE3CF2D00778032 /* determine_compat */,
+				61CEE3920CE3CF2D00778032 /* generate_compatible */,
+				61CEE3930CE3CF2D00778032 /* make_snapshot */,
+				61CEE3940CE3CF2D00778032 /* patch_kernel */,
+			);
+			path = scripts;
+			sourceTree = "<group>";
+		};
+		61CEE3960CE3CF2D00778032 /* iwlwifi-1.1.21 */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3970CE3CF2D00778032 /* CHANGES */,
+				61CEE3980CE3CF2D00778032 /* dvals */,
+				61CEE3990CE3CF2D00778032 /* FILES */,
+				61CEE39A0CE3CF2D00778032 /* GIT_SHA1 */,
+				61CEE39B0CE3CF2D00778032 /* INSTALL */,
+				61CEE39C0CE3CF2D00778032 /* ISSUES */,
+				61CEE39D0CE3CF2D00778032 /* LICENSE */,
+				61CEE39E0CE3CF2D00778032 /* LICENSE.BSD */,
+				61CEE39F0CE3CF2D00778032 /* LICENSE.GPL */,
+				61CEE3A00CE3CF2D00778032 /* load */,
+				61CEE3A10CE3CF2D00778032 /* Makefile */,
+				61CEE3A20CE3CF2D00778032 /* origin */,
+				61CEE3BA0CE3CF2D00778032 /* patches */,
+				61CEE3C90CE3CF2D00778032 /* README.iwlwifi */,
+				61CEE3CA0CE3CF2D00778032 /* scripts */,
+				61CEE3D00CE3CF2D00778032 /* unload */,
+			);
+			name = "iwlwifi-1.1.21";
+			path = "../../../4965/iwlwifi-1.1.21";
+			sourceTree = SOURCE_ROOT;
+		};
+		61CEE3A20CE3CF2D00778032 /* origin */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3A30CE3CF2D00778032 /* iwl-3945-commands.h */,
+				61CEE3A40CE3CF2D00778032 /* iwl-3945-debug.h */,
+				61CEE3A50CE3CF2D00778032 /* iwl-3945-hw.h */,
+				61CEE3A60CE3CF2D00778032 /* iwl-3945-io.h */,
+				61CEE3A70CE3CF2D00778032 /* iwl-3945-rs.c */,
+				61CEE3A80CE3CF2D00778032 /* iwl-3945-rs.h */,
+				61CEE3A90CE3CF2D00778032 /* iwl-3945.c */,
+				61CEE3AA0CE3CF2D00778032 /* iwl-3945.h */,
+				61CEE3AB0CE3CF2D00778032 /* iwl-4965-commands.h */,
+				61CEE3AC0CE3CF2D00778032 /* iwl-4965-debug.h */,
+				61CEE3AD0CE3CF2D00778032 /* iwl-4965-hw.h */,
+				61CEE3AE0CE3CF2D00778032 /* iwl-4965-io.h */,
+				61CEE3AF0CE3CF2D00778032 /* iwl-4965-rs.c */,
+				61CEE3B00CE3CF2D00778032 /* iwl-4965-rs.h */,
+				61CEE3B10CE3CF2D00778032 /* iwl-4965.c */,
+				61CEE3B20CE3CF2D00778032 /* iwl-4965.h */,
+				61CEE3B30CE3CF2D00778032 /* iwl-helpers.h */,
+				61CEE3B40CE3CF2D00778032 /* iwl-prph.h */,
+				61CEE3B50CE3CF2D00778032 /* iwl-spectrum.h */,
+				61CEE3B60CE3CF2D00778032 /* iwl3945-base.c */,
+				61CEE3B70CE3CF2D00778032 /* iwl4965-base.c */,
+				61CEE3B80CE3CF2D00778032 /* Kconfig */,
+				61CEE3B90CE3CF2D00778032 /* Makefile */,
+			);
+			path = origin;
+			sourceTree = "<group>";
+		};
+		61CEE3BA0CE3CF2D00778032 /* patches */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3BB0CE3CF2D00778032 /* .keep */,
+				61CEE3BC0CE3CF2D00778032 /* 01-queue_delayed_work.sh */,
+				61CEE3BD0CE3CF2D00778032 /* 02-cancel_delayed_work.sh */,
+				61CEE3BE0CE3CF2D00778032 /* 02-kcompat_delayed_work.patch */,
+				61CEE3BF0CE3CF2D00778032 /* 03-isr.patch */,
+				61CEE3C00CE3CF2D00778032 /* 04-rx_flag_radiotap.patch */,
+				61CEE3C10CE3CF2D00778032 /* 05-delayed_work_define.patch */,
+				61CEE3C20CE3CF2D00778032 /* 06-csa.patch */,
+				61CEE3C30CE3CF2D00778032 /* 07-hex_dump.patch */,
+				61CEE3C40CE3CF2D00778032 /* 08-is_power_of_2.patch */,
+				61CEE3C50CE3CF2D00778032 /* 09-cancel_work_sync.patch */,
+				61CEE3C60CE3CF2D00778032 /* 10-preferred_rate_control.patch */,
+				61CEE3C70CE3CF2D00778032 /* i_private.sh */,
+				61CEE3C80CE3CF2D00778032 /* wlan_80211.patch */,
+			);
+			path = patches;
+			sourceTree = "<group>";
+		};
+		61CEE3CA0CE3CF2D00778032 /* scripts */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3CB0CE3CF2D00778032 /* check_kernel */,
+				61CEE3CC0CE3CF2D00778032 /* determine_compat */,
+				61CEE3CD0CE3CF2D00778032 /* generate_compatible */,
+				61CEE3CE0CE3CF2D00778032 /* make_snapshot */,
+				61CEE3CF0CE3CF2D00778032 /* patch_kernel */,
+			);
+			path = scripts;
+			sourceTree = "<group>";
+		};
+		61CEE3D10CE3CF2D00778032 /* mac80211-10.0.0 */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3D20CE3CF2D00778032 /* CHANGES */,
+				61CEE3D30CE3CF2D00778032 /* FILES */,
+				61CEE3D40CE3CF2D00778032 /* Makefile */,
+				61CEE3D50CE3CF2D00778032 /* modified */,
+				61CEE4160CE3CF2E00778032 /* origin */,
+				61CEE4570CE3CF2E00778032 /* ORIGIN_FILES */,
+				61CEE4580CE3CF2E00778032 /* patches */,
+				61CEE4780CE3CF2E00778032 /* pending */,
+				61CEE4990CE3CF2E00778032 /* README */,
+				61CEE49A0CE3CF2E00778032 /* scripts */,
+				61CEE4A40CE3CF2E00778032 /* stubs */,
+				61CEE4A60CE3CF2E00778032 /* TODO */,
+			);
+			name = "mac80211-10.0.0";
+			path = "../../../4965/mac80211-10.0.0";
+			sourceTree = SOURCE_ROOT;
+		};
+		61CEE3D50CE3CF2D00778032 /* modified */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3D60CE3CF2D00778032 /* GIT */,
+				61CEE3D70CE3CF2D00778032 /* include */,
+				61CEE3E30CE3CF2D00778032 /* net */,
+			);
+			path = modified;
+			sourceTree = "<group>";
+		};
+		61CEE3D70CE3CF2D00778032 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3D80CE3CF2D00778032 /* linux */,
+				61CEE3DC0CE3CF2D00778032 /* net */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		61CEE3D80CE3CF2D00778032 /* linux */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3D90CE3CF2D00778032 /* ieee80211.h */,
+				61CEE3DA0CE3CF2D00778032 /* nl80211.h */,
+				61CEE3DB0CE3CF2D00778032 /* wireless.h */,
+			);
+			path = linux;
+			sourceTree = "<group>";
+		};
+		61CEE3DC0CE3CF2D00778032 /* net */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3DD0CE3CF2D00778032 /* cfg80211.h */,
+				61CEE3DE0CE3CF2D00778032 /* ieee80211_radiotap.h */,
+				61CEE3DF0CE3CF2D00778032 /* iw_handler.h */,
+				61CEE3E00CE3CF2D00778032 /* mac80211.h */,
+				61CEE3E10CE3CF2D00778032 /* wext.h */,
+				61CEE3E20CE3CF2D00778032 /* wireless.h */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
+		61CEE3E30CE3CF2D00778032 /* net */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3E40CE3CF2D00778032 /* mac80211 */,
+				61CEE40D0CE3CF2E00778032 /* wireless */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
+		61CEE3E40CE3CF2D00778032 /* mac80211 */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE3E50CE3CF2D00778032 /* aes_ccm.c */,
+				61CEE3E60CE3CF2D00778032 /* aes_ccm.h */,
+				61CEE3E70CE3CF2D00778032 /* debugfs.c */,
+				61CEE3E80CE3CF2D00778032 /* debugfs.h */,
+				61CEE3E90CE3CF2D00778032 /* debugfs_key.c */,
+				61CEE3EA0CE3CF2D00778032 /* debugfs_key.h */,
+				61CEE3EB0CE3CF2D00778032 /* debugfs_netdev.c */,
+				61CEE3EC0CE3CF2D00778032 /* debugfs_netdev.h */,
+				61CEE3ED0CE3CF2D00778032 /* debugfs_sta.c */,
+				61CEE3EE0CE3CF2D00778032 /* debugfs_sta.h */,
+				61CEE3EF0CE3CF2D00778032 /* hostapd_ioctl.h */,
+				61CEE3F00CE3CF2D00778032 /* ieee80211.c */,
+				61CEE3F10CE3CF2D00778032 /* ieee80211_cfg.c */,
+				61CEE3F20CE3CF2D00778032 /* ieee80211_cfg.h */,
+				61CEE3F30CE3CF2D00778032 /* ieee80211_common.h */,
+				61CEE3F40CE3CF2E00778032 /* ieee80211_i.h */,
+				61CEE3F50CE3CF2E00778032 /* ieee80211_iface.c */,
+				61CEE3F60CE3CF2E00778032 /* ieee80211_ioctl.c */,
+				61CEE3F70CE3CF2E00778032 /* ieee80211_key.h */,
+				61CEE3F80CE3CF2E00778032 /* ieee80211_led.c */,
+				61CEE3F90CE3CF2E00778032 /* ieee80211_led.h */,
+				61CEE3FA0CE3CF2E00778032 /* ieee80211_rate.c */,
+				61CEE3FB0CE3CF2E00778032 /* ieee80211_rate.h */,
+				61CEE3FC0CE3CF2E00778032 /* ieee80211_sta.c */,
+				61CEE3FD0CE3CF2E00778032 /* Kconfig */,
+				61CEE3FE0CE3CF2E00778032 /* Makefile */,
+				61CEE3FF0CE3CF2E00778032 /* michael.c */,
+				61CEE4000CE3CF2E00778032 /* michael.h */,
+				61CEE4010CE3CF2E00778032 /* rc80211_simple.c */,
+				61CEE4020CE3CF2E00778032 /* regdomain.c */,
+				61CEE4030CE3CF2E00778032 /* sta_info.c */,
+				61CEE4040CE3CF2E00778032 /* sta_info.h */,
+				61CEE4050CE3CF2E00778032 /* tkip.c */,
+				61CEE4060CE3CF2E00778032 /* tkip.h */,
+				61CEE4070CE3CF2E00778032 /* wep.c */,
+				61CEE4080CE3CF2E00778032 /* wep.h */,
+				61CEE4090CE3CF2E00778032 /* wme.c */,
+				61CEE40A0CE3CF2E00778032 /* wme.h */,
+				61CEE40B0CE3CF2E00778032 /* wpa.c */,
+				61CEE40C0CE3CF2E00778032 /* wpa.h */,
+			);
+			path = mac80211;
+			sourceTree = "<group>";
+		};
+		61CEE40D0CE3CF2E00778032 /* wireless */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE40E0CE3CF2E00778032 /* core.c */,
+				61CEE40F0CE3CF2E00778032 /* core.h */,
+				61CEE4100CE3CF2E00778032 /* Kconfig */,
+				61CEE4110CE3CF2E00778032 /* Makefile */,
+				61CEE4120CE3CF2E00778032 /* radiotap.c */,
+				61CEE4130CE3CF2E00778032 /* sysfs.c */,
+				61CEE4140CE3CF2E00778032 /* sysfs.h */,
+				61CEE4150CE3CF2E00778032 /* wext.c */,
+			);
+			path = wireless;
+			sourceTree = "<group>";
+		};
+		61CEE4160CE3CF2E00778032 /* origin */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE4170CE3CF2E00778032 /* GIT */,
+				61CEE4180CE3CF2E00778032 /* include */,
+				61CEE4240CE3CF2E00778032 /* net */,
+			);
+			path = origin;
+			sourceTree = "<group>";
+		};
+		61CEE4180CE3CF2E00778032 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE4190CE3CF2E00778032 /* linux */,
+				61CEE41D0CE3CF2E00778032 /* net */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		61CEE4190CE3CF2E00778032 /* linux */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE41A0CE3CF2E00778032 /* ieee80211.h */,
+				61CEE41B0CE3CF2E00778032 /* nl80211.h */,
+				61CEE41C0CE3CF2E00778032 /* wireless.h */,
+			);
+			path = linux;
+			sourceTree = "<group>";
+		};
+		61CEE41D0CE3CF2E00778032 /* net */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE41E0CE3CF2E00778032 /* cfg80211.h */,
+				61CEE41F0CE3CF2E00778032 /* ieee80211_radiotap.h */,
+				61CEE4200CE3CF2E00778032 /* iw_handler.h */,
+				61CEE4210CE3CF2E00778032 /* mac80211.h */,
+				61CEE4220CE3CF2E00778032 /* wext.h */,
+				61CEE4230CE3CF2E00778032 /* wireless.h */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
+		61CEE4240CE3CF2E00778032 /* net */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE4250CE3CF2E00778032 /* mac80211 */,
+				61CEE44E0CE3CF2E00778032 /* wireless */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
+		61CEE4250CE3CF2E00778032 /* mac80211 */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE4260CE3CF2E00778032 /* aes_ccm.c */,
+				61CEE4270CE3CF2E00778032 /* aes_ccm.h */,
+				61CEE4280CE3CF2E00778032 /* debugfs.c */,
+				61CEE4290CE3CF2E00778032 /* debugfs.h */,
+				61CEE42A0CE3CF2E00778032 /* debugfs_key.c */,
+				61CEE42B0CE3CF2E00778032 /* debugfs_key.h */,
+				61CEE42C0CE3CF2E00778032 /* debugfs_netdev.c */,
+				61CEE42D0CE3CF2E00778032 /* debugfs_netdev.h */,
+				61CEE42E0CE3CF2E00778032 /* debugfs_sta.c */,
+				61CEE42F0CE3CF2E00778032 /* debugfs_sta.h */,
+				61CEE4300CE3CF2E00778032 /* hostapd_ioctl.h */,
+				61CEE4310CE3CF2E00778032 /* ieee80211.c */,
+				61CEE4320CE3CF2E00778032 /* ieee80211_cfg.c */,
+				61CEE4330CE3CF2E00778032 /* ieee80211_cfg.h */,
+				61CEE4340CE3CF2E00778032 /* ieee80211_common.h */,
+				61CEE4350CE3CF2E00778032 /* ieee80211_i.h */,
+				61CEE4360CE3CF2E00778032 /* ieee80211_iface.c */,
+				61CEE4370CE3CF2E00778032 /* ieee80211_ioctl.c */,
+				61CEE4380CE3CF2E00778032 /* ieee80211_key.h */,
+				61CEE4390CE3CF2E00778032 /* ieee80211_led.c */,
+				61CEE43A0CE3CF2E00778032 /* ieee80211_led.h */,
+				61CEE43B0CE3CF2E00778032 /* ieee80211_rate.c */,
+				61CEE43C0CE3CF2E00778032 /* ieee80211_rate.h */,
+				61CEE43D0CE3CF2E00778032 /* ieee80211_sta.c */,
+				61CEE43E0CE3CF2E00778032 /* Kconfig */,
+				61CEE43F0CE3CF2E00778032 /* Makefile */,
+				61CEE4400CE3CF2E00778032 /* michael.c */,
+				61CEE4410CE3CF2E00778032 /* michael.h */,
+				61CEE4420CE3CF2E00778032 /* rc80211_simple.c */,
+				61CEE4430CE3CF2E00778032 /* regdomain.c */,
+				61CEE4440CE3CF2E00778032 /* sta_info.c */,
+				61CEE4450CE3CF2E00778032 /* sta_info.h */,
+				61CEE4460CE3CF2E00778032 /* tkip.c */,
+				61CEE4470CE3CF2E00778032 /* tkip.h */,
+				61CEE4480CE3CF2E00778032 /* wep.c */,
+				61CEE4490CE3CF2E00778032 /* wep.h */,
+				61CEE44A0CE3CF2E00778032 /* wme.c */,
+				61CEE44B0CE3CF2E00778032 /* wme.h */,
+				61CEE44C0CE3CF2E00778032 /* wpa.c */,
+				61CEE44D0CE3CF2E00778032 /* wpa.h */,
+			);
+			path = mac80211;
+			sourceTree = "<group>";
+		};
+		61CEE44E0CE3CF2E00778032 /* wireless */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE44F0CE3CF2E00778032 /* core.c */,
+				61CEE4500CE3CF2E00778032 /* core.h */,
+				61CEE4510CE3CF2E00778032 /* Kconfig */,
+				61CEE4520CE3CF2E00778032 /* Makefile */,
+				61CEE4530CE3CF2E00778032 /* radiotap.c */,
+				61CEE4540CE3CF2E00778032 /* sysfs.c */,
+				61CEE4550CE3CF2E00778032 /* sysfs.h */,
+				61CEE4560CE3CF2E00778032 /* wext.c */,
+			);
+			path = wireless;
+			sourceTree = "<group>";
+		};
+		61CEE4580CE3CF2E00778032 /* patches */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE4590CE3CF2E00778032 /* block-cipher.patch */,
+				61CEE45A0CE3CF2E00778032 /* class_dev_to_dev-wireless-ieee80211_ptr.patch */,
+				61CEE45B0CE3CF2E00778032 /* class_dev_to_dev-wireless.patch */,
+				61CEE45C0CE3CF2E00778032 /* debugfs_rename.patch */,
+				61CEE45D0CE3CF2E00778032 /* delayed_work.patch */,
+				61CEE45E0CE3CF2E00778032 /* delayed_work.sh */,
+				61CEE45F0CE3CF2E00778032 /* dev_release.patch */,
+				61CEE4600CE3CF2E00778032 /* device_rename.patch */,
+				61CEE4610CE3CF2E00778032 /* div_round_up.patch */,
+				61CEE4620CE3CF2E00778032 /* fix-qos-sysfs-no-class_dev.patch */,
+				61CEE4630CE3CF2E00778032 /* ieee80211_ptr.patch */,
+				61CEE4640CE3CF2E00778032 /* ieee80211_ptr.sh */,
+				61CEE4650CE3CF2E00778032 /* ilog2.sh */,
+				61CEE4660CE3CF2E00778032 /* kcompat-delayed_work.h */,
+				61CEE4670CE3CF2E00778032 /* kcompat-math.h */,
+				61CEE4680CE3CF2E00778032 /* kcompat-skb_mac_header.h */,
+				61CEE4690CE3CF2E00778032 /* net_sch_fifo.patch */,
+				61CEE46A0CE3CF2E00778032 /* nl80211-remove-kconfig.patch */,
+				61CEE46B0CE3CF2E00778032 /* nl80211-remove.patch */,
+				61CEE46C0CE3CF2E00778032 /* nla_policy.patch */,
+				61CEE46D0CE3CF2E00778032 /* nla_put_flag.patch */,
+				61CEE46E0CE3CF2E00778032 /* nlmsg_new.patch */,
+				61CEE46F0CE3CF2E00778032 /* nlmsg_trim.patch */,
+				61CEE4700CE3CF2E00778032 /* post-genlmsg_put.patch */,
+				61CEE4710CE3CF2E00778032 /* post-nla_binary.patch */,
+				61CEE4720CE3CF2E00778032 /* post-nla_nul_string.patch */,
+				61CEE4730CE3CF2E00778032 /* qdisc-api.patch */,
+				61CEE4740CE3CF2E00778032 /* rtnl_notify.patch */,
+				61CEE4750CE3CF2E00778032 /* seq_open_const.patch */,
+				61CEE4760CE3CF2E00778032 /* skb_mac_header.patch */,
+				61CEE4770CE3CF2E00778032 /* tcf_destroy_chain.patch */,
+			);
+			path = patches;
+			sourceTree = "<group>";
+		};
+		61CEE4780CE3CF2E00778032 /* pending */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE4790CE3CF2E00778032 /* 0001-mac80211-Add-basic-IEEE-802.11n-support.patch */,
+				61CEE47A0CE3CF2E00778032 /* 0002-mac80211-add-IEEE802.11e-WMM-structures.patch */,
+				61CEE47B0CE3CF2E00778032 /* 0003-mac80211-IEEE802.11e-WMM-TS-management-and-DLS-supp.patch */,
+				61CEE47C0CE3CF2E00778032 /* 0004-mac80211-debugfs-support-for-TSM-and-DLS.patch */,
+				61CEE47D0CE3CF2E00778032 /* 0005-mac80211-IEEE802.11e-WMM-misc-fix-and-cleanup.patch */,
+				61CEE47E0CE3CF2E00778032 /* 0006-mac80211-add-WE-nick-power-and-txpower-capabilitie.patch */,
+				61CEE47F0CE3CF2E00778032 /* 0007-mac80211-Fix-user-specified-TXPOWER-from-being-over.patch */,
+				61CEE4800CE3CF2E00778032 /* 0008-mac80211-HT-IEEE_802.11n_TX_AMPDU-send-actframes.patch */,
+				61CEE4810CE3CF2E00778032 /* 0009-mac80211-HT-add-IEEE-802.11n-TX_AMPDU-API.patch */,
+				61CEE4820CE3CF2E00778032 /* 0010-mac80211-HT-add-TX-AMPDU-MLME-data.patch */,
+				61CEE4830CE3CF2E00778032 /* 0011-mac80211-HT-IEEE-802.11n-TX-AMPDU-MLME-implementa.patch */,
+				61CEE4840CE3CF2E00778032 /* 0012-mac80211-HT-IEEE-802.11n-debugfs-support.patch */,
+				61CEE4850CE3CF2E00778032 /* 0013-mac80211-HT-IEEE-802.11n-block-ack-support.patch */,
+				61CEE4860CE3CF2E00778032 /* 0014-mac80211-HT-IEEE-802.11n-block-ack-debugfs-suppor.patch */,
+				61CEE4870CE3CF2E00778032 /* 0015-mac80211-HT-add-IEEE-802.11n-qos-queues.patch */,
+				61CEE4880CE3CF2E00778032 /* 0016-mac80211-HT-IEEE-802.11n-RX-aggregation-BAR-supor.patch */,
+				61CEE4890CE3CF2E00778032 /* 0017-mac80211-HT-IEEE-802.11n-RX-aggregation-API-and-M.patch */,
+				61CEE48A0CE3CF2E00778032 /* 0018-mac80211-HT-add-addtional-type-parameter-for-ieee.patch */,
+				61CEE48B0CE3CF2E00778032 /* 0019-mac80211-HT-fix-ieee80211_send_addba_resp-interfa.patch */,
+				61CEE48C0CE3CF2E00778032 /* 0020-mac80211-HT-fix-master-mode-net-type.patch */,
+				61CEE48D0CE3CF2E00778032 /* 0021-mac80211-HT-IEEE-802.11n-RX-aggregation-MLME-supp.patch */,
+				61CEE48E0CE3CF2E00778032 /* 0022-mac80211-HT-IEEE-802.11n-RX-aggregation-debugfs-s.patch */,
+				61CEE48F0CE3CF2E00778032 /* 0023-mac80211-HT-AP-mode-block-ack-MLME-support.patch */,
+				61CEE4900CE3CF2E00778032 /* 0024-mac80211-HT-fix-wrong-param-used-for-ieee80211_ht.patch */,
+				61CEE4910CE3CF2E00778032 /* 0025-mac80211-HT-use-KERN_DEBUG-for-HT-debugging-messa.patch */,
+				61CEE4920CE3CF2E00778032 /* 0026-mac80211-rssi-averaging-filter.patch */,
+				61CEE4930CE3CF2E00778032 /* 0027-mac80211-add-802.11h-channel-switch-packet-handling.patch */,
+				61CEE4940CE3CF2E00778032 /* 0028-mac80211-fix-compile-error-if-CONFIG_NET_SCHED-unde.patch */,
+				61CEE4950CE3CF2E00778032 /* 0029-mac80211-add-rate-scaling-algorithm-selection-capab.patch */,
+				61CEE4960CE3CF2E00778032 /* 0030-mac80211-fix-monitor-mode.patch */,
+				61CEE4970CE3CF2E00778032 /* 0031-mac80211-fix-an-printk-warning-for-size_t.patch */,
+				61CEE4980CE3CF2E00778032 /* 0032-mac80211-fix-kernel-panic-during-shutdown-time.patch */,
+			);
+			path = pending;
+			sourceTree = "<group>";
+		};
+		61CEE49A0CE3CF2E00778032 /* scripts */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE49B0CE3CF2E00778032 /* determine_compat */,
+				61CEE49C0CE3CF2E00778032 /* generate_compatible */,
+				61CEE49D0CE3CF2E00778032 /* generate_modified */,
+				61CEE49E0CE3CF2E00778032 /* generate_origin */,
+				61CEE49F0CE3CF2E00778032 /* git-clean-unreachable */,
+				61CEE4A00CE3CF2E00778032 /* make_change_log */,
+				61CEE4A10CE3CF2E00778032 /* patch_kernel */,
+				61CEE4A20CE3CF2E00778032 /* patch_kernel_post */,
+				61CEE4A30CE3CF2E00778032 /* push-to-bughost */,
+			);
+			path = scripts;
+			sourceTree = "<group>";
+		};
+		61CEE4A40CE3CF2E00778032 /* stubs */ = {
+			isa = PBXGroup;
+			children = (
+				61CEE4A50CE3CF2E00778032 /* README */,
+			);
+			path = stubs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -530,8 +976,20 @@
 			files = (
 				61B0347E0B59837C00286B6C /* defines.h in Headers */,
 				61054AFE0C2EF71100D9DDF0 /* iwi4965.h in Headers */,
-				61054EB30C2EF80100D9DDF0 /* ipw4965.h in Headers */,
 				610553180C2EFDE800D9DDF0 /* ipw4965.ucode.h in Headers */,
+				61D2BAC00CE38C9B00C7FE2D /* iwl-4965-hw.h in Headers */,
+				61D2BAC20CE38C9B00C7FE2D /* iwl-4965-rs.h in Headers */,
+				61D2BAC40CE38C9B00C7FE2D /* iwl-4965.h in Headers */,
+				61D2BAC50CE38C9B00C7FE2D /* iwl-channel.h in Headers */,
+				61D2BAC60CE38C9B00C7FE2D /* iwl-commands.h in Headers */,
+				61D2BAC70CE38C9B00C7FE2D /* iwl-debug.h in Headers */,
+				61D2BAC80CE38C9B00C7FE2D /* iwl-eeprom.h in Headers */,
+				61D2BAC90CE38C9B00C7FE2D /* iwl-helpers.h in Headers */,
+				61D2BACA0CE38C9B00C7FE2D /* iwl-hw.h in Headers */,
+				61D2BACB0CE38C9B00C7FE2D /* iwl-io.h in Headers */,
+				61D2BACC0CE38C9B00C7FE2D /* iwl-priv.h in Headers */,
+				61D2BACD0CE38C9B00C7FE2D /* iwl-spectrum.h in Headers */,
+				61D2BACE0CE38C9B00C7FE2D /* iwlwifi.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -618,6 +1076,9 @@
 			files = (
 				61F149980BAEC94000A13F2E /* WiFiPower.cpp in Sources */,
 				61054AFD0C2EF71100D9DDF0 /* iwi4965.cpp in Sources */,
+				61D2BABF0CE38C9B00C7FE2D /* base.cpp in Sources */,
+				61D2BAC10CE38C9B00C7FE2D /* iwl-4965-rs.cpp in Sources */,
+				61D2BAC30CE38C9B00C7FE2D /* iwl-4965.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -642,7 +1103,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_MODEL_TUNING = "";
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INFOPLIST_FILE = Info.plist;
@@ -652,8 +1113,9 @@
 				MODULE_VERSION = 1.0.0d1;
 				OTHER_CPLUSPLUSFLAGS = "-w";
 				PRODUCT_NAME = iwi4965;
+				SHARED_PRECOMPS_DIR = "";
 				WRAPPER_EXTENSION = kext;
-				ZERO_LINK = YES;
+				ZERO_LINK = NO;
 			};
 			name = Debug;
 		};
@@ -662,6 +1124,7 @@
 			buildSettings = {
 				ARCHS = i386;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = "";
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -672,7 +1135,9 @@
 				MODULE_VERSION = 1.0.0d1;
 				OTHER_CPLUSPLUSFLAGS = "-w";
 				PRODUCT_NAME = iwi4965;
+				SHARED_PRECOMPS_DIR = "";
 				WRAPPER_EXTENSION = kext;
+				ZERO_LINK = NO;
 			};
 			name = Release;
 		};
@@ -682,7 +1147,6 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 			};
 			name = Debug;
 		};
@@ -692,7 +1156,6 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 			};
 			name = Release;
 		};
