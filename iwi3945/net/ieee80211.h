@@ -26,6 +26,30 @@
 #ifndef IEEE80211_H
 #define IEEE80211_H
 
+typedef signed char s8;
+typedef unsigned char u8; 
+typedef signed short s16;
+typedef unsigned short u16;
+typedef signed int s32;
+typedef unsigned int u32;
+typedef signed long long s64;
+typedef unsigned long long u64;
+typedef signed char __s8;
+typedef unsigned char __u8;
+typedef signed short __s16;
+typedef unsigned short __u16;
+typedef signed int __s32;
+typedef unsigned int __u32;
+typedef signed long long __s64;
+typedef unsigned long long __u64;
+#define __bitwise __attribute__((bitwise))
+typedef __u16 __bitwise __le16;
+typedef __u16 __bitwise __be16;
+typedef __u32 __bitwise __le32;
+typedef __u32 __bitwise __be32;
+typedef __u64 __bitwise __le64;
+typedef __u64 __bitwise __be64;
+
 #ifdef __KERNEL__
 #include <linux/netdevice.h>
 #include <linux/if_ether.h>	/* ETH_ALEN */
@@ -38,7 +62,7 @@
 #include "ieee80211_crypt.h"
 #include "ieee80211_radiotap.h"
 
-
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 /* miscellaneous IEEE 802.11 constants */
 #define IEEE80211_MAX_FRAG_THRESHOLD	2346
 #define IEEE80211_MAX_RTS_THRESHOLD	2347
@@ -58,14 +82,7 @@ typedef struct {
 	unsigned int break_lock;
 #endif
 } spinlock_t;
-typedef unsigned char __u8;
-typedef unsigned char __le8;
-typedef unsigned short __le16;
-typedef unsigned short __u16;
-typedef unsigned long __u32;
-typedef unsigned long __le32;
-typedef unsigned long long __u64;
-typedef unsigned long long __le64;
+
 #define IW_MAX_SPY		8
 #define IW_ESSID_MAX_SIZE	32
 #define ETH_ALEN	6
@@ -169,8 +186,8 @@ struct ieee80211_tx_control {
 #define IEEE80211_TXCTL_USE_RTS_CTS	(1<<2) /* use RTS-CTS before sending
 						* frame */
 #define IEEE80211_TXCTL_USE_CTS_PROTECT	(1<<3) /* use CTS protection for the
-						* frame (e.g., for combined
-						* 802.11g / 802.11b networks) */
+						//* frame (e.g., for combined
+						//* 802.11g / 802.11b networks) */
 #define IEEE80211_TXCTL_NO_ACK		(1<<4) /* tell the low level not to
 						* wait for an ack */
 #define IEEE80211_TXCTL_RATE_CTRL_PROBE	(1<<5)
@@ -1383,11 +1400,11 @@ struct ieee80211_local {
 			     * deliver multicast frames both back to wireless
 			     * media and to the local net stack */
 
-	//ieee80211_rx_handler 
+	// ieee80211_rx_handler 
 	void* rx_pre_handlers;
-	//ieee80211_rx_handler 
+	// ieee80211_rx_handler 
 	void* rx_handlers;
-	//ieee80211_tx_handler 
+	// ieee80211_tx_handler 
 	void* tx_handlers;
 
 	//rwlock_t 
@@ -2285,48 +2302,47 @@ static inline int ieee80211_is_cck_rate(u8 rate)
 extern const int ieee80211_api_version;
 
 /* ieee80211.c */
-extern void free_ieee80211(struct net_device *dev);
-extern struct net_device *alloc_ieee80211(int sizeof_priv);
+//extern void free_ieee80211(struct net_device *dev);
+//extern struct net_device *alloc_ieee80211(int sizeof_priv);
 
-extern int ieee80211_set_encryption(struct ieee80211_device *ieee);
+//extern int ieee80211_set_encryption(struct ieee80211_device *ieee);
 
 /* ieee80211_tx.c */
-extern int ieee80211_xmit(mbuf_t skb, struct net_device *dev);
-extern void ieee80211_txb_free(struct ieee80211_txb *);
-extern int ieee80211_tx_frame(struct ieee80211_device *ieee,
-			      struct ieee80211_hdr *frame, int hdr_len,
-			      int total_len, int encrypt_mpdu);
+//extern int ieee80211_xmit(mbuf_t skb, struct net_device *dev);
+//extern void ieee80211_txb_free(struct ieee80211_txb *);
+//extern int ieee80211_tx_frame(struct ieee80211_device *ieee,
+//			      struct ieee80211_hdr *frame, int hdr_len,
+//			      int total_len, int encrypt_mpdu);
 
 /* ieee80211_rx.c */
-extern void ieee80211_rx_any(struct ieee80211_device *ieee,
-		     mbuf_t skb, struct ieee80211_rx_stats *stats);
-extern int ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
-			struct ieee80211_rx_stats *rx_stats);
+//extern void ieee80211_rx_any(struct ieee80211_device *ieee,
+//		     mbuf_t skb, struct ieee80211_rx_stats *stats);
+//extern int ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
+//			struct ieee80211_rx_stats *rx_stats);
 /* make sure to set stats->len */
-extern void ieee80211_rx_mgt(struct ieee80211_device *ieee,
-			     struct ieee80211_hdr_4addr *header,
-			     struct ieee80211_rx_stats *stats);
-extern void ieee80211_network_reset(struct ieee80211_network *network);
+//extern void ieee80211_rx_mgt(struct ieee80211_device *ieee,
+//			     struct ieee80211_hdr_4addr *header,
+//			     struct ieee80211_rx_stats *stats);
+//extern void ieee80211_network_reset(struct ieee80211_network *network);
 
 /* ieee80211_geo.c */
-extern const struct ieee80211_geo *ieee80211_get_geo(struct ieee80211_device
-						     *ieee);
-extern int ieee80211_set_geo(struct ieee80211_device *ieee,
-			     const struct ieee80211_geo *geo);
+//extern const struct ieee80211_geo *ieee80211_get_geo(struct ieee80211_device
+//						     *ieee);
+//extern int ieee80211_set_geo(struct ieee80211_device *ieee,
+//			     const struct ieee80211_geo *geo);
 
-extern int ieee80211_is_valid_channel(struct ieee80211_device *ieee,
-				      u8 channel);
-extern int ieee80211_channel_to_index(struct ieee80211_device *ieee,
-				      u8 channel);
-extern u8 ieee80211_freq_to_channel(struct ieee80211_device *ieee, u32 freq);
-extern u8 ieee80211_get_channel_flags(struct ieee80211_device *ieee,
-				      u8 channel);
-extern const struct ieee80211_channel *ieee80211_get_channel(struct
-							     ieee80211_device
-							     *ieee, u8 channel);
+//extern int ieee80211_is_valid_channel(struct ieee80211_device *ieee,
+//				      u8 channel);
+//extern int ieee80211_channel_to_index(struct ieee80211_device *ieee, u8 channel);
+//extern u8 ieee80211_freq_to_channel(struct ieee80211_device *ieee, u32 freq);
+//extern u8 ieee80211_get_channel_flags(struct ieee80211_device *ieee,
+//				      u8 channel);
+//extern const struct ieee80211_channel *ieee80211_get_channel(struct
+//							     ieee80211_device
+//							     *ieee, u8 channel);
 
 /* ieee80211_wx.c */
-extern int ieee80211_wx_get_scan(struct ieee80211_device *ieee,
+/*extern int ieee80211_wx_get_scan(struct ieee80211_device *ieee,
 				 struct iw_request_info *info,
 				 union iwreq_data *wrqu, char *key);
 extern int ieee80211_wx_set_encode(struct ieee80211_device *ieee,
@@ -2349,7 +2365,7 @@ extern int ieee80211_wx_get_auth(struct net_device *dev,
 				 struct iw_request_info *info,
 				 union iwreq_data *wrqu,
 				 char *extra);
-
+*/
 static inline void ieee80211_increment_scans(struct ieee80211_device *ieee)
 {
 	ieee->scans++;
@@ -2551,8 +2567,8 @@ struct ieee80211_key_conf {
 #define IEEE80211_KEY_FORCE_SW_ENCRYPT (1<<0) /* to be cleared by low-level
 						 driver */
 #define IEEE80211_KEY_DEFAULT_TX_KEY   (1<<1) /* This key is the new default TX
-						 key (used only for broadcast
-						 keys). */
+						// key (used only for broadcast
+						// keys). */
 #define IEEE80211_KEY_DEFAULT_WEP_ONLY (1<<2) /* static WEP is the only
 						 configured security policy;
 						 this allows some low-level
@@ -3107,6 +3123,10 @@ struct ieee80211_sub_if_data {
 
 static inline void prefetch(const void *x) {;}
 
+#define list_for_each_safe(pos, n, head) \
+	for (pos = (head)->next, n = pos->next; pos != (head); \
+		pos = n, n = pos->next)
+		
 #define list_for_each_entry(pos, head, member)				\
 	for (pos = list_entry((head)->next, typeof(*pos), member);	\
 	     prefetch(pos->member.next), &pos->member != (head); 	\
@@ -3229,6 +3249,7 @@ static int ieee80211_hw_config(struct ieee80211_local *local)
 		mode = local->oper_hw_mode;
 	}
 
+	if (!chan || !mode) return 1;
 	local->hw.conf.channel = chan->chan;
 	local->hw.conf.channel_val = chan->val;
 	local->hw.conf.power_level =
@@ -3240,11 +3261,11 @@ static int ieee80211_hw_config(struct ieee80211_local *local)
 	local->hw.conf.chan = chan;
 	local->hw.conf.mode = mode;
 
-#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
-	printk(KERN_DEBUG "HW CONFIG: channel=%d freq=%d "
+//#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+	printk("HW CONFIG: channel=%d freq=%d "
 	       "phymode=%d\n", local->hw.conf.channel, local->hw.conf.freq,
 	       local->hw.conf.phymode);
-#endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
+//#endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
 
 	if (local->ops->config)
 		ret = local->ops->config(local_to_hw(local), &local->hw.conf);
@@ -3256,7 +3277,7 @@ static int __ieee80211_if_config(struct net_device *dev,
 				 struct ieee80211_tx_control *control)
 {
 	struct ieee80211_sub_if_data *sdata;
-	(void*)sdata = netdev_priv(dev);//IEEE80211_DEV_TO_SUB_IF(dev);
+	sdata = (struct ieee80211_sub_if_data*)netdev_priv(dev);// IEEE80211_DEV_TO_SUB_IF(dev);
 	struct ieee80211_local *local = (struct ieee80211_local*)(dev->ieee80211_ptr);//wdev_priv
 	struct ieee80211_if_conf conf;
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -3372,7 +3393,7 @@ struct ieee80211_tx_packet_data {
 };
 
 
-extern void ieee80211_sta_tx(struct net_device *dev, mbuf_t skb, int encrypt);
+extern void ieee80211_sta_tx(struct net_device *dev, mbuf_t skb, int encrypt);// in iwi3945.h
 
 static void ieee80211_send_nullfunc(struct ieee80211_local *local,
 				    struct ieee80211_sub_if_data *sdata,
@@ -3415,19 +3436,17 @@ static void ieee80211_scan_completed(struct ieee80211_hw *hw)
 	local->last_scan_completed = jiffies;
 	//wmb();
 	local->sta_scanning = 0;
-
 	if (ieee80211_hw_config(local))
-		printk(KERN_DEBUG "%s: failed to restore operational"
+		printk("%s: failed to restore operational"
 		       "channel after scan\n", dev->name);
 
 	if (!(local->hw.flags & IEEE80211_HW_NO_PROBE_FILTERING) &&
 	    ieee80211_if_config(dev))
-		printk(KERN_DEBUG "%s: failed to restore operational"
+		printk("%s: failed to restore operational"
 		       "BSSID after scan\n", dev->name);
 
 	//memset(&wrqu, 0, sizeof(wrqu));
 	//wireless_send_event(dev, SIOCGIWSCAN, &wrqu, NULL);
-
 	//read_lock(&local->sub_if_lock);
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
 
@@ -3445,15 +3464,167 @@ static void ieee80211_scan_completed(struct ieee80211_hw *hw)
 		//netif_wake_queue(sdata->dev);
 	}
 	//read_unlock(&local->sub_if_lock);
-
-	(void*)sdata = netdev_priv(dev);//IEEE80211_DEV_TO_SUB_IF
+	sdata = (struct ieee80211_sub_if_data*)netdev_priv(dev);// IEEE80211_DEV_TO_SUB_IF
 	if (sdata->type == IEEE80211_IF_TYPE_IBSS) {
 		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 		/*if (!ifsta->bssid_set ||
 		    (!ifsta->state == IEEE80211_IBSS_JOINED &&
 		    !ieee80211_sta_active_ibss(dev)))
-			ieee80211_sta_find_ibss(dev, ifsta);*/
+			//ieee80211_sta_find_ibss(dev, ifsta);*/
 	}
+}
+
+#define IW_QUAL_QUAL_UPDATED	0x01	/* Value was updated since last read */
+#define IW_QUAL_LEVEL_UPDATED	0x02
+#define IW_QUAL_NOISE_UPDATED	0x04
+#define IW_QUAL_ALL_UPDATED	0x07
+#define IW_QUAL_DBM		0x08	/* Level + Noise are dBm */
+#define IW_QUAL_QUAL_INVALID	0x10	/* Driver doesn't provide value */
+#define IW_QUAL_LEVEL_INVALID	0x20
+#define IW_QUAL_NOISE_INVALID	0x40
+#define IW_QUAL_RCPI		0x80	/* Level + Noise are 802.11k RCPI */
+#define IW_QUAL_ALL_INVALID	0x70
+
+struct ieee80211_tx_status_rtap_hdr {
+	struct ieee80211_radiotap_header hdr;
+	__le16 tx_flags;
+	u8 data_retries;
+} __attribute__ ((packed));
+#define CHAN_UTIL_RATE_LCM 95040
+#define IEEE80211_HW_DEFAULT_REG_DOMAIN_CONFIGURED (1<<11)
+static int rate_list_match(const int *rate_list, int rate)
+{
+	int i;
+
+	if (!rate_list)
+		return 0;
+
+	for (i = 0; rate_list[i] >= 0; i++)
+		if (rate_list[i] == rate)
+			return 1;
+
+	return 0;
+}
+static inline int ieee80211_is_erp_rate(int phymode, int rate)
+{
+	if (phymode == MODE_IEEE80211G) {
+		if (rate != 10 && rate != 20 &&
+		    rate != 55 && rate != 110)
+			return 1;
+	}
+	return 0;
+}
+
+static int ieee80211_regdom = 0x10; /* FCC */
+struct ieee80211_channel_range {
+	short start_freq;
+	short end_freq;
+	unsigned char power_level;
+	unsigned char antenna_max;
+};
+static const struct ieee80211_channel_range ieee80211_fcc_channels[] = {
+	{ 2412, 2462, 27, 6 } /* IEEE 802.11b/g, channels 1..11 */,
+	{ 5180, 5240, 17, 6 } /* IEEE 802.11a, channels 36..48 */,
+	{ 5260, 5320, 23, 6 } /* IEEE 802.11a, channels 52..64 */,
+	{ 5745, 5825, 30, 6 } /* IEEE 802.11a, channels 149..165, outdoor */,
+	{ 0 }
+};
+static const struct ieee80211_channel_range *channel_range = ieee80211_fcc_channels;
+static int ieee80211_japan_5ghz /* = 0 */;
+static void ieee80211_unmask_channel(int mode, struct ieee80211_channel *chan)
+{
+	int i;
+
+	chan->flag = 0;
+
+	if (ieee80211_regdom == 64 &&
+	    (mode == MODE_ATHEROS_TURBO || mode == MODE_ATHEROS_TURBOG)) {
+		/* Do not allow Turbo modes in Japan. */
+		return;
+	}
+
+	for (i = 0; channel_range[i].start_freq; i++) {
+		const struct ieee80211_channel_range *r = &channel_range[i];
+		if (r->start_freq <= chan->freq && r->end_freq >= chan->freq) {
+			if (ieee80211_regdom == 64 && !ieee80211_japan_5ghz &&
+			    chan->freq >= 5260 && chan->freq <= 5320) {
+				/*
+				 * Skip new channels in Japan since the
+				 * firmware was not marked having been upgraded
+				 * by the vendor.
+				 */
+				continue;
+			}
+
+			if (ieee80211_regdom == 0x10 &&
+			    (chan->freq == 5190 || chan->freq == 5210 ||
+			     chan->freq == 5230)) {
+				    /* Skip MKK channels when in FCC domain. */
+				    continue;
+			}
+
+			chan->flag |= IEEE80211_CHAN_W_SCAN |
+				IEEE80211_CHAN_W_ACTIVE_SCAN |
+				IEEE80211_CHAN_W_IBSS;
+			chan->power_level = r->power_level;
+			chan->antenna_max = r->antenna_max;
+
+			if (ieee80211_regdom == 64 &&
+			    (chan->freq == 5170 || chan->freq == 5190 ||
+			     chan->freq == 5210 || chan->freq == 5230)) {
+				/*
+				 * New regulatory rules in Japan have backwards
+				 * compatibility with old channels in 5.15-5.25
+				 * GHz band, but the station is not allowed to
+				 * use active scan on these old channels.
+				 */
+				chan->flag &= ~IEEE80211_CHAN_W_ACTIVE_SCAN;
+			}
+
+			if (ieee80211_regdom == 64 &&
+			    (chan->freq == 5260 || chan->freq == 5280 ||
+			     chan->freq == 5300 || chan->freq == 5320)) {
+				/*
+				 * IBSS is not allowed on 5.25-5.35 GHz band
+				 * due to radar detection requirements.
+				 */
+				chan->flag &= ~IEEE80211_CHAN_W_IBSS;
+			}
+
+			break;
+		}
+	}
+}
+enum ieee80211_link_state_t {
+	IEEE80211_LINK_STATE_XOFF = 0,
+	IEEE80211_LINK_STATE_PENDING,
+	IEEE80211_LINK_STATE_AGGREGATED,
+};
+static void ieee80211_start_queues(struct ieee80211_hw *hw)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	int i;
+
+	for (i = 0; i < local->hw.queues; i++)
+		//clear_bit(IEEE80211_LINK_STATE_XOFF, &local->state[i]);
+		local->state[i]&=~IEEE80211_LINK_STATE_XOFF;
+	//if (!ieee80211_qdisc_installed(local->mdev))
+	//	netif_start_queue(local->mdev);
+}
+static void ieee80211_stop_queue(struct ieee80211_hw *hw, int queue)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	//if (!ieee80211_qdisc_installed(local->mdev) && queue == 0)
+	//	netif_stop_queue(local->mdev);
+	local->state[queue]|=IEEE80211_LINK_STATE_XOFF;	
+	//set_bit(IEEE80211_LINK_STATE_XOFF, &local->state[queue]);
+}
+static void ieee80211_stop_queues(struct ieee80211_hw *hw)
+{
+	int i;
+
+	for (i = 0; i < hw->queues; i++)
+		ieee80211_stop_queue(hw, i);
 }
 
 #endif				/* IEEE80211_H */
