@@ -11,6 +11,9 @@
 		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
 		32D94FCA0562CBF700B6AF17 /* iwi2200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1A224C3FFF42367911CA2CB7 /* iwi2200.cpp */; settings = {ATTRIBUTES = (); }; };
 		4618D8B008D8FD43002CFAD7 /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 4618D8AF08D8FD43002CFAD7 /* defines.h */; };
+		610F4B770CE52140001C6E03 /* ieee80211.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D25D2D0B34458D00CAED01 /* ieee80211.h */; };
+		610F4B780CE52141001C6E03 /* ieee80211_crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D25D2E0B34458D00CAED01 /* ieee80211_crypt.h */; };
+		610F4B790CE52144001C6E03 /* ieee80211_radiotap.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D25D2F0B34458D00CAED01 /* ieee80211_radiotap.h */; };
 		61AE94370B9A261300186530 /* WiFiPower.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61AE94360B9A261300186530 /* WiFiPower.cpp */; };
 		61D25D300B34458D00CAED01 /* ipw2200.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D25D280B34458D00CAED01 /* ipw2200.h */; };
 		61D43C620CC27C560078DAD9 /* ieee80211_crypt_wep.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D43C610CC27C560078DAD9 /* ieee80211_crypt_wep.cpp */; };
@@ -85,7 +88,6 @@
 		61D0DA420CB52AC200294B89 /* sysfs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = sysfs.h; sourceTree = "<group>"; };
 		61D0DA430CB52AC200294B89 /* wext.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = wext.c; sourceTree = "<group>"; };
 		61D25D280B34458D00CAED01 /* ipw2200.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw2200.h; sourceTree = "<group>"; };
-		61D25D2C0B34458D00CAED01 /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
 		61D25D2D0B34458D00CAED01 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
 		61D25D2E0B34458D00CAED01 /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
 		61D25D2F0B34458D00CAED01 /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
@@ -295,7 +297,6 @@
 		61D25D2B0B34458D00CAED01 /* net */ = {
 			isa = PBXGroup;
 			children = (
-				61D25D2C0B34458D00CAED01 /* compat.h */,
 				61D25D2D0B34458D00CAED01 /* ieee80211.h */,
 				61D25D2E0B34458D00CAED01 /* ieee80211_crypt.h */,
 				61D25D2F0B34458D00CAED01 /* ieee80211_radiotap.h */,
@@ -339,6 +340,9 @@
 				61F316380CBAFCD100BB2174 /* bss.h in Headers */,
 				61F316390CBAFCD100BB2174 /* ibss.h in Headers */,
 				61F3163A0CBAFCD100BB2174 /* sniffer.h in Headers */,
+				610F4B770CE52140001C6E03 /* ieee80211.h in Headers */,
+				610F4B780CE52141001C6E03 /* ieee80211_crypt.h in Headers */,
+				610F4B790CE52144001C6E03 /* ieee80211_radiotap.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -446,19 +450,10 @@
 		4624EDE208C25CE500F266F6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COPY_PHASE_STRIP = NO;
+				COPY_PHASE_STRIP = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
 				DEAD_CODE_STRIPPING = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_2)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_3)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_4)",
-				);
-				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SYSTEM_LIBRARY_DIR)/Frameworks\"";
-				FRAMEWORK_SEARCH_PATHS_QUOTED_2 = "\"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks\"";
-				FRAMEWORK_SEARCH_PATHS_QUOTED_3 = "\"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks\"";
-				FRAMEWORK_SEARCH_PATHS_QUOTED_4 = "\"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks\"";
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
@@ -469,19 +464,15 @@
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				KERNEL_MODULE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_1 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_2 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_3 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_4 = "";
-				LIBRARY_STYLE = DYNAMIC;
 				LINK_WITH_STANDARD_LIBRARIES = YES;
 				MACH_O_TYPE = mh_execute;
-				MODULE_NAME = darwin.iwi2200;
+				MODULE_IOKIT = YES;
 				MODULE_VERSION = 1.0.0d1;
 				ONLY_LINK_ESSENTIAL_SYMBOLS = NO;
 				OTHER_CFLAGS = "";
-				OTHER_CPLUSPLUSFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = "-w";
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRELINK_LIBS = "";
@@ -499,9 +490,9 @@
 				COPY_PHASE_STRIP = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
 				DEAD_CODE_STRIPPING = NO;
-				FRAMEWORK_SEARCH_PATHS = "\"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks\"";
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_MODEL_TUNING = "";
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -509,18 +500,15 @@
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				KERNEL_MODULE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_1 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_2 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_3 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_4 = "";
-				LIBRARY_STYLE = DYNAMIC;
 				LINK_WITH_STANDARD_LIBRARIES = YES;
 				MACH_O_TYPE = mh_execute;
-				MODULE_NAME = darwin_iwi2200;
+				MODULE_IOKIT = YES;
 				MODULE_VERSION = 1.0.0d1;
 				ONLY_LINK_ESSENTIAL_SYMBOLS = NO;
-				OTHER_CPLUSPLUSFLAGS = "";
+				OTHER_CFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = "-w";
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRELINK_LIBS = "";
@@ -535,11 +523,12 @@
 		4624EDE408C25CE500F266F6 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COPY_PHASE_STRIP = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
 				DEAD_CODE_STRIPPING = NO;
-				FRAMEWORK_SEARCH_PATHS = "\"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks\"";
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_MODEL_TUNING = "";
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -547,18 +536,15 @@
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				KERNEL_MODULE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_1 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_2 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_3 = "";
-				LIBRARY_SEARCH_PATHS_QUOTED_4 = "";
-				LIBRARY_STYLE = DYNAMIC;
 				LINK_WITH_STANDARD_LIBRARIES = YES;
 				MACH_O_TYPE = mh_execute;
-				MODULE_NAME = darwin_iwi2200;
+				MODULE_IOKIT = YES;
 				MODULE_VERSION = 1.0.0d1;
 				ONLY_LINK_ESSENTIAL_SYMBOLS = NO;
-				OTHER_CPLUSPLUSFLAGS = "";
+				OTHER_CFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = "-w";
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRELINK_LIBS = "";
@@ -581,6 +567,7 @@
 				);
 				OTHER_LDFLAGS = "";
 				PREBINDING = YES;
+				SHARED_PRECOMPS_DIR = "";
 			};
 			name = Debug;
 		};
@@ -596,6 +583,7 @@
 				);
 				OTHER_LDFLAGS = "";
 				PREBINDING = YES;
+				SHARED_PRECOMPS_DIR = "";
 			};
 			name = Release;
 		};
@@ -607,6 +595,7 @@
 				OTHER_CFLAGS = "-DBSD_BUILD";
 				OTHER_LDFLAGS = "";
 				PREBINDING = YES;
+				SHARED_PRECOMPS_DIR = "";
 			};
 			name = Default;
 		};

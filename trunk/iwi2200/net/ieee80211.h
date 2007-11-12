@@ -26,6 +26,31 @@
 #ifndef IEEE80211_H
 #define IEEE80211_H
 
+typedef signed char s8;
+typedef unsigned char u8; 
+typedef signed short s16;
+typedef unsigned short u16;
+typedef signed int s32;
+typedef unsigned int u32;
+typedef signed long long s64;
+typedef unsigned long long u64;
+typedef signed char __s8;
+typedef unsigned char __u8;
+typedef signed short __s16;
+typedef unsigned short __u16;
+typedef signed int __s32;
+typedef unsigned int __u32;
+typedef signed long long __s64;
+typedef unsigned long long __u64;
+#define __bitwise __attribute__((bitwise))
+typedef __u16 __bitwise __le16;
+typedef __u16 __bitwise __be16;
+typedef __u32 __bitwise __le32;
+typedef __u32 __bitwise __be32;
+typedef __u64 __bitwise __le64;
+typedef __u64 __bitwise __be64;
+
+
 #ifdef __KERNEL__
 #include <linux/netdevice.h>
 #include <linux/if_ether.h>	/* ETH_ALEN */
@@ -48,11 +73,8 @@ typedef struct {
 	unsigned int break_lock;
 #endif
 } spinlock_t;
-typedef unsigned short __le16;
-typedef unsigned short __u16;
-typedef unsigned char __u8;
-typedef unsigned long long __le64;
-typedef unsigned int __u32;
+
+
 #define IW_MAX_SPY		8
 #define IW_ESSID_MAX_SIZE	32
 #define ETH_ALEN	6

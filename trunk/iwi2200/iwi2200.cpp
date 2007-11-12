@@ -730,7 +730,6 @@ bool darwin_iwi2200::start(IOService *provider)
 			break;
 		}
 		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
 		
 		//resetDevice((UInt16 *)memBase);
 		ipw_sw_reset(1);
@@ -802,8 +801,8 @@ bool darwin_iwi2200::start(IOService *provider)
 		queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),NULL,NULL,false);
 
 		//recycle tx
-		memset(&txb0,0, sizeof(struct ieee80211_txb) + (sizeof(u8 *)));
-		mbuf_getpacket(MBUF_DONTWAIT, &txb0.fragments[0]);
+		//memset(&txb0,0, sizeof(struct ieee80211_txb) + (sizeof(u8 *)));
+		//mbuf_getpacket(MBUF_DONTWAIT, &txb0.fragments[0]);
 	
 		//_mbufCursor = IOMbufLittleMemoryCursor::withSpecification(IPW_RX_BUF_SIZE, 1);
 		//for (int i=0;i<20;i++) memset(&nonets[i],0,sizeof(struct ieee80211_network));
@@ -826,8 +825,8 @@ void darwin_iwi2200::check_firstup()
 		return;
 	}
 	disable(fNetif);
-	//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-	//fTransmitQueue->start();
+	fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+	fTransmitQueue->start();
 	pl=1;
 	ipw_up();
 }
@@ -1099,6 +1098,11 @@ void darwin_iwi2200::ipw_queue_tx_free_tfd(
 		//		 le16_to_cpu(bd->u.data.chunk_len[i]),
 		//		 PCI_DMA_TODEVICE);
 		//IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],le16_to_cpu(bd->u.data.chunk_len[i]),kIODirectionNone)->release();
+		IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],
+			bd->u.data.chunk_len[i],kIODirectionInOut)->complete(kIODirectionInOut);
+		IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],
+			bd->u.data.chunk_len[i],kIODirectionInOut)->release();	
+		
 		bd->u.data.chunk_ptr[i]=NULL;
 		if (txq->txb[txq->q.last_used]!=NULL) {
 			ieee80211_txb_free(txq->txb[txq->q.last_used]);
@@ -1111,7 +1115,7 @@ exit:
 
 void darwin_iwi2200::ieee80211_txb_free(struct ieee80211_txb *txb)
 {
-	return;
+	//return;
 	int i;
 	if (txb==NULL)	return;
 	for (i = 0; i < txb->nr_frags; i++)
@@ -1141,9 +1145,10 @@ void darwin_iwi2200::ipw_queue_tx_free( struct clx2_tx_queue *txq, int count)
 
 	/* free buffers belonging to queue itself */
 	//pci_free_consistent(dev, sizeof(txq->bd[0]) * q->n_bd, txq->bd, q->dma_addr);
+	IOFreeContiguous(txq->bd,sizeof(txq->bd[0]) * q->n_bd);
 	//IOMemoryDescriptor::withPhysicalAddress(q->dma_addr,sizeof(txq->bd[0]) * q->n_bd,kIODirectionNone)->release();
-	q->memD->complete();
-	q->memD->release();
+	//q->memD->complete();
+	//q->memD->release();
 	q->dma_addr=NULL;
 	//kfree(txq->txb);
 	IOFree(txq->txb,sizeof(txq->txb[0]) * count);// todo: check size
@@ -1203,7 +1208,9 @@ int darwin_iwi2200::ipw_queue_tx_init(
 	}
 
 	//q->bd = pci_alloc_consistent(dev, sizeof(q->bd[0]) * count, &q->q.dma_addr);
-	q->q.memD=MemoryDmaAlloc(sizeof(q->bd[0]) * count, &q->q.dma_addr, &q->bd);
+	//q->q.memD=MemoryDmaAlloc(sizeof(q->bd[0]) * count, &q->q.dma_addr, &q->bd);
+	q->bd=(struct tfd_frame*)IOMallocContiguous(sizeof(q->bd[0]) * count,sizeof(struct tfd_frame*),&q->q.dma_addr);
+
 	if (!q->bd) {
 		IWI_DEBUG("pci_alloc_consistent(%zd) failed\n",
 			  sizeof(q->bd[0]) * count);
@@ -1212,10 +1219,9 @@ int darwin_iwi2200::ipw_queue_tx_init(
 		q->txb = NULL;
 		return -ENOMEM;
 	}
-
+	//q->q.memD->prepare();
 	ipw_queue_init( &q->q, count, read, write, base, size);
 	
-	q->q.memD->prepare();
 	
 	return 0;
 }
@@ -1293,13 +1299,14 @@ void darwin_iwi2200::ipw_rx_queue_replenish()
 		element = rxq->rx_used.next;
 		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
 		//rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
-		//rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
+		
 		//if (!_allocPacketForFragment(&rxb->skb,&rxb->fskb)) {
 		int n=1;
 		if (!rxb->skb)//recycle skb if not used by inputpacket
 		{
-		if (mbuf_getpacket(MBUF_DONTWAIT , &rxb->skb)!=0) {
-		//if (rxb->skb==0) {
+		rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
+		//if (mbuf_getpacket(MBUF_DONTWAIT , &rxb->skb)!=0) {
+		if (rxb->skb==0) {
 			IWI_ERR( "%s: Can not allocate SKB buffers.\n",
 			       priv->net_dev->name);
 			break;
@@ -1315,7 +1322,14 @@ void darwin_iwi2200::ipw_rx_queue_replenish()
 		//_mbufCursor->getPhysicalSegmentsWithCoalesce(rxb->skb, &vector, 1);
 		//if (OSSwapLittleToHostInt32(vector.location) & 3) IWI_WARN("trying to transmit unaligned packet!\n");
 	    //rxb->dma_addr = vector.location;
-		if (n) rxb->dma_addr = mbuf_data_to_physical(mbuf_data(rxb->skb));	
+		if (n) 
+		{
+			rxb->dma_addr =IOMemoryDescriptor::withAddress(mbuf_data(rxb->skb),
+			IPW_RX_BUF_SIZE,kIODirectionOutIn)->getPhysicalAddress();
+			IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,
+			IPW_RX_BUF_SIZE,kIODirectionOutIn)->prepare(kIODirectionOutIn);
+			//rxb->dma_addr = mbuf_data_to_physical(mbuf_data(rxb->skb));	
+		}
 		list_add_tail(&rxb->list, &rxq->rx_free);
 		rxq->free_count++;
 	}
@@ -1739,8 +1753,6 @@ IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
 		fTransmitQueue->stop();
 		fTransmitQueue->setCapacity(0);
 		fTransmitQueue->flush();
-		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
 		ifnet_set_flags(fifnet, 0 , IFF_RUNNING);
 					
 		return kIOReturnSuccess;
@@ -1780,15 +1792,13 @@ IOReturn darwin_iwi2200::enable( IONetworkInterface * netif )
 		//, IFF_UP | IFF_RUNNING );
 		if (priv->status & STATUS_ASSOCIATED) ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		//fNetif->inputEvent(kIONetworkEventTypeLinkUp,NULL);
-		//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
+		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
+		fTransmitQueue->start();
 		return kIOReturnSuccess;
 	}
 	else
 	{
 		IWI_DEBUG("ifconfig already up\n");
-		//fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
 		return kIOReturnExclusiveAccess;
 
 	}
@@ -2171,9 +2181,6 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(
 	    (qindex >= 0) &&
 	    (priv->status & STATUS_ASSOCIATED) && ((fNetif->getFlags() & IFF_RUNNING)!=0)){ //&& netif_running(priv->net_dev)){
 		IWI_DEBUG("queue is available\n");
-		
-		//fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-		//fTransmitQueue->start();
 	}
 #endif	
 	//netif_wake_queue(priv->net_dev);
@@ -2357,8 +2364,8 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 	if (inta & (IPW_INTA_BIT_TX_QUEUE_1 | IPW_INTA_BIT_TX_QUEUE_2 | IPW_INTA_BIT_TX_QUEUE_3
 	 | IPW_INTA_BIT_TX_QUEUE_4 |IPW_INTA_BIT_TX_CMD_QUEUE))
 	{
-		//fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-		//fTransmitQueue->start();
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		fTransmitQueue->start();
 	}
 	
 	return handled;
@@ -2995,11 +3002,13 @@ bool darwin_iwi2200::uploadFirmware(u8 * data, size_t len)
 	u8 *shared_virt;
 	IOBufferMemoryDescriptor *memD;
 
-	memD = MemoryDmaAlloc(len, &shared_phys, &shared_virt);
+	shared_virt=(u8*)IOMallocContiguous(len,sizeof(u8),&shared_phys);
+
+	/*memD = MemoryDmaAlloc(len, &shared_phys, &shared_virt);
 	if(!memD) 
 		return -ENOMEM;
 
-	memD->prepare();
+	memD->prepare();*/
 	memmove(shared_virt, data, len);
 
 	/* Start the Dma */
@@ -3039,10 +3048,10 @@ bool darwin_iwi2200::uploadFirmware(u8 * data, size_t len)
 		IWI_DEBUG("dmaWaitSync Failed\n");
 		goto out;
 	}
-	
+
  out:
-	memD->complete();
-	memD->release();
+	//memD->complete();
+	//memD->release();
 	return rc;
 		   
 }
@@ -3069,14 +3078,11 @@ darwin_iwi2200::MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt
 	dma_addr_t phys_address;
 	IOMemoryMap *memMap;
 	
-	/*memBuffer = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 
+	memBuffer = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 
 						kIODirectionOutIn | kIOMemoryPhysicallyContiguous | 
 						kIOMapInhibitCache | kIOMemoryAutoPrepare , buf_size, 
-						PAGE_SIZE);   */
-	memBuffer = IOBufferMemoryDescriptor::withOptions(
-						kIOMemoryTypeVirtual | kIOMapInhibitCache| 
-						kIOMemoryUnshared  , buf_size, 
-						PAGE_SIZE);
+						PAGE_SIZE);   
+
 	
 
 	memMap = memBuffer->map();
@@ -3128,10 +3134,6 @@ int darwin_iwi2200::ipw_queue_tx_hcmd( int hcmd, void *buf,
 	
 	if (ipw_queue_space(q) < (sync ? 1 : 2)) {
 		IWI_ERR("No space for Tx %d\n", fTransmitQueue->getState());
-		fTransmitQueue->stop();
-		fTransmitQueue->setCapacity(0);
-		fTransmitQueue->flush();
-		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
 		return -EBUSY;
 	}
 
@@ -4434,11 +4436,6 @@ bool darwin_iwi2200::ipw_handle_data_packet(
 		//priv->wstats.discard.misc++;
 		netStats->inputErrors++;
 		IWI_ERR("Dropping packet while interface is not up. %d\n", fTransmitQueue->getState());
-		fTransmitQueue->stop();
-		fTransmitQueue->setCapacity(0);
-		fTransmitQueue->flush();
-		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
 		return false;
 	}
 
@@ -4547,7 +4544,7 @@ int darwin_iwi2200::is_duplicate_packet(struct ieee80211_hdr_4addr *header)
 //#define	SEQ_LEQ(a,b)	((int)((a)-(b)) <= 0)
          if ( (*last_seq == seq)  && 
 	//if (    (int)(seq - *last_seq)   < 0   && (le16_to_cpu(header->frame_ctl) & IEEE80211_FCTL_RETRY)
-	     time_after(*last_time + IPW_PACKET_RETRY_TIME, jiffies)  ) {
+	     time_after(jiffies, *last_time + IPW_PACKET_RETRY_TIME)  ) {
 		if (*last_frag == frag)
 			goto drop;
 		if (*last_frag + 1 != frag)
@@ -4567,12 +4564,12 @@ int darwin_iwi2200::is_duplicate_packet(struct ieee80211_hdr_4addr *header)
 	 BUG_ON(!(le16_to_cpu(header->frame_ctl) & IEEE80211_FCTL_RETRY)); */
 	if (  !(le16_to_cpu(header->frame_ctl) & IEEE80211_FCTL_RETRY) ) {
 	    IWI_ERR("packet dropping and IEEE80211_FCTL_RETRY\n");
+		*last_seq = seq;
+		return 0;
 	}else{
 	    IWI_WARN("Dropped packet\n");
+		return 1;
 	}
-	//todo: release mbuf clusters
-	
-	return 1;
 }
 
 void darwin_iwi2200::ipw_rx()
@@ -4619,6 +4616,9 @@ void darwin_iwi2200::ipw_rx()
 		//mbuf_setlen(rxb->skb,IPW_RX_BUF_SIZE);
 		//mbuf_pkthdr_setlen(rxb->skb,IPW_RX_BUF_SIZE);
 		//pci_dma_sync_single_for_cpu(priv->pci_dev, rxb->dma_addr,IPW_RX_BUF_SIZE,PCI_DMA_FROMDEVICE);
+		IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,
+			IPW_RX_BUF_SIZE,kIODirectionOutIn)->complete(kIODirectionOutIn);
+			
 		pkt = (struct ipw_rx_packet *)mbuf_data(rxb->skb);
 		IWI_DEBUG_FULL("Packet: type=%02X seq=%02X bits=%02X size %d\n",
 			     pkt->header.message_type,
@@ -4779,13 +4779,14 @@ void darwin_iwi2200::ipw_rx()
 				
 		if (rxb->skb!= NULL)
 		{
-			if (doFlushQueue) {
-				//dev_kfree_skb_any(rxb->skb);
-				//if (!(mbuf_type(rxb->skb) == MBUF_TYPE_FREE) ) freePacket(rxb->skb);
-				//_freePacketForFragment(&rxb->skb,&rxb->fskb);
-				rxb->skb = NULL;
+			if (!doFlushQueue) {
+				//dev_kfree_skb_any(rxb->skb); 
+				if (!(mbuf_type(rxb->skb) == MBUF_TYPE_FREE) ) freePacket(rxb->skb);
+			}
+			IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,
+			IPW_RX_BUF_SIZE,kIODirectionOutIn)->release();
 				rxb->dma_addr=NULL;
-			}						
+				rxb->skb = NULL;							
 		}
 		
 		list_add_tail(&rxb->list, &priv->rxq->rx_used);
@@ -4796,10 +4797,8 @@ void darwin_iwi2200::ipw_rx()
 
 	// if called ipw_handle_data_packet and queued, flushInputQueue()
 	if(doFlushQueue){
-		int rf=fNetif->flushInputQueue();
-		IWI_DEBUG("flushing Input Queue %d\n",rf);
-		//fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-		//fTransmitQueue->start();
+		//int rf=fNetif->flushInputQueue();
+		//IWI_DEBUG("flushing Input Queue %d\n",rf);
 	}
 	
 	/* Backtrack one entry */
@@ -7335,6 +7334,15 @@ u8 darwin_iwi2200::ipw_find_station( u8 * bssid)
 	return IPW_INVALID_STATION;
 }
 
+IOReturn darwin_iwi2200::setMulticastMode(bool active) {
+    return kIOReturnSuccess;
+}
+
+IOReturn darwin_iwi2200::setMulticastList(IOEthernetAddress * addrs, UInt32 count) {
+
+    return kIOReturnSuccess;
+}
+
 struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_size,
 						 int headroom, int gfp_mask)
 {
@@ -7342,7 +7350,7 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 	struct ieee80211_txb *txb;
 	int i;
 	//txb = (struct ieee80211_txb *)kmalloc(sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags), NULL);//gfp_mask);
-	txb = &txb0;//(struct ieee80211_txb *)IOMalloc(sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags));//, NULL);//gfp_mask);
+	txb = (struct ieee80211_txb *)IOMalloc(sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags));//, NULL);//gfp_mask);
 	if (!txb)
 		return NULL;
 
@@ -7352,13 +7360,13 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 	txb->frag_size = txb_size;
 
 	for (i = 0; i < nr_frags; i++) { 
-		//txb->fragments[i] = allocatePacket(txb_size + headroom);
-		/*mbuf_getpacket(MBUF_DONTWAIT, &txb->fragments[i]);
+		txb->fragments[i] = allocatePacket(txb_size + headroom);
+		//mbuf_getpacket(MBUF_DONTWAIT, &txb->fragments[i]);
 		//__dev_alloc_skb(txb_size + headroom,						    gfp_mask);
 		if (unlikely(!txb->fragments[i])) {
 			i--;
 			break;
-		}*/
+		}
 		// default m_len is alocated size in mbuf
 		// must set 0 m_len , pkthdr.len . 
 		//mbuf_setlen(txb->fragments[i],0);
@@ -7369,7 +7377,7 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 		mbuf_setlen(txb->fragments[i], headroom);
 		mbuf_pkthdr_setlen(txb->fragments[i], headroom);
 	}
-	/*if (unlikely(i != nr_frags)) {
+	if (unlikely(i != nr_frags)) {
 		while (i >= 0)
 		{
 			i--;
@@ -7385,7 +7393,7 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 		IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags));
 		txb=NULL;
 		return NULL;
-	}*/
+	}
 	
 	return txb;
 }
@@ -7434,11 +7442,6 @@ int darwin_iwi2200::ipw_net_hard_start_xmit(struct ieee80211_txb *txb, int pri)
 		IWI_ERR("Tx attempt while not associated.\n");
 		//priv->ieee->stats.tx_carrier_errors++;
 		//netif_stop_queue(dev);
-		fTransmitQueue->stop();
-		fTransmitQueue->setCapacity(0);
-		fTransmitQueue->flush();
-		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
 		goto fail_unlock;
 	}
 	if (txb->payload_size==0) goto fail_unlock;
@@ -7509,11 +7512,6 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb)
 	if (/* ieee->is_queue_full  && */ ipw_net_is_queue_full(priority))
 	{
 		IWI_WARN( " tx queue is full %d\n", fTransmitQueue->getState());
-		fTransmitQueue->stop();
-		fTransmitQueue->setCapacity(0);
-		fTransmitQueue->flush();
-		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
 		netStats->outputErrors++;
 		return kIOReturnOutputDropped;//kIOReturnOutputStall;//NETDEV_TX_BUSY;
 	}
@@ -7608,8 +7606,8 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb)
 		int res = 0;
 		int len = bytes + hdr_len + crypt->ops->extra_msdu_prefix_len +
 		    crypt->ops->extra_msdu_postfix_len;
-		mbuf_t skb_new;// = allocatePacket(len);
-		mbuf_getpacket(MBUF_DONTWAIT, &skb_new);
+		mbuf_t skb_new = allocatePacket(len);
+		//mbuf_getpacket(MBUF_DONTWAIT, &skb_new);
 
 		if (unlikely(!skb_new))
 			goto failed;
@@ -8022,12 +8020,19 @@ rep:
 		//struct IOPhysicalSegment vector;
 		//_mbufCursor->getPhysicalSegmentsWithCoalesce(txb->fragments[i], &vector, 1);
 		//if (OSSwapLittleToHostInt32(vector.location) & 3) IWI_WARN("trying to send unaligned packet!\n");
-
+	tfd->u.data.chunk_ptr[i] =IOMemoryDescriptor::withAddress(mbuf_data(txb->fragments[i]),
+			mbuf_len(txb->fragments[i]),kIODirectionInOut)->getPhysicalAddress();
+			
+			tfd->u.data.chunk_len[i] =
+		    cpu_to_le16(mbuf_len(txb->fragments[i]));
+			
+			IOMemoryDescriptor::withPhysicalAddress(tfd->u.data.chunk_ptr[i],
+			tfd->u.data.chunk_len[i],kIODirectionInOut)->prepare(kIODirectionInOut);
 								
-			tfd->u.data.chunk_ptr[i] = //vector.location;
+			/*tfd->u.data.chunk_ptr[i] = //vector.location;
 				cpu_to_le32(mbuf_data_to_physical(mbuf_data(txb->fragments[i])));
 			
-			tfd->u.data.chunk_len[i] = cpu_to_le16(mbuf_len(txb->fragments[i]));
+			tfd->u.data.chunk_len[i] = cpu_to_le16(mbuf_len(txb->fragments[i]));*/
 			//cpu_to_le16(mbuf_pkthdr_len(txb->fragments[i]) );
 			//skb_push(txb->fragments[i],hdr_len);
 			IWI_DEBUG(" pkt_len %d mbuf_len %d \n",
@@ -8098,11 +8103,6 @@ if (i != txb->nr_frags) IWI_ERR("BUGS: nr_frags(%d) != i(%d)  \n", txb->nr_frags
 	if (ipw_queue_space(q) < q->high_mark){ 
 	//	netif_stop_queue(priv->net_dev);
 		IWI_ERR("no TransmitQueue space %d\n ",fTransmitQueue->getState());
-		fTransmitQueue->stop();
-		fTransmitQueue->setCapacity(0);
-		fTransmitQueue->flush();
-		fTransmitQueue->setCapacity(kTransmitQueueCapacity);
-		//fTransmitQueue->start();
 		return kIOReturnOutputDropped;//kIOReturnOutputStall;
 	}
 #endif	
@@ -8136,9 +8136,9 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 	}
 
 	/* allocate and Initialize New mbuf */
-	//nm = allocatePacket(mbuf_pkthdr_len(m));
-	//if (nm==0) return NULL;
-	if (mbuf_getpacket(MBUF_DONTWAIT, &nm)!=0) return NULL;
+	nm = allocatePacket(mbuf_pkthdr_len(m));
+	if (nm==0) return NULL;
+	//if (mbuf_getpacket(MBUF_DONTWAIT, &nm)!=0) return NULL;
 	mbuf_setlen(nm,0);
 	mbuf_pkthdr_setlen(nm,0);
 	if( mbuf_next(nm)) IWI_ERR("merged mbuf_next\n");
@@ -8231,7 +8231,7 @@ UInt32 darwin_iwi2200::outputPacket2(mbuf_t m, void * param)
 		goto finish;
 		//return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
-
+	if(mbuf_next(m)){
 		nm = mergePacket(m);
 		if (nm==NULL) 
 		{
@@ -8239,7 +8239,8 @@ UInt32 darwin_iwi2200::outputPacket2(mbuf_t m, void * param)
 			IWI_ERR("merger pkt failed\n");
 			goto finish;
 		}
-	m=nm;
+		m=nm;
+	}
 	if(mbuf_next(m)){
 		IWI_ERR("BUG: dont support chains mbuf\n");
 		//IWI_ERR("BUG: tx packet is not single mbuf mbuf_len(%d) mbuf_pkthdr_len(%d)\n",mbuf_len(m) , mbuf_pkthdr_len(m) );
@@ -8272,11 +8273,11 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	//UInt32 ret=0;
 	//outputPacket2(m,param);
 	//if (fTransmitQueue->getState()==0) fTransmitQueue->start();
-	IOInterruptState flags;
+	//IOInterruptState flags;
 	//flags = IOSimpleLockLockDisableInterrupt( spin);
 	fTransmitQueue->enqueue(m, 0);
-	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-	fTransmitQueue->start();
+	/*fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	fTransmitQueue->start();*/
 	//IOSimpleLockUnlockEnableInterrupt( spin, flags );
 	//queue_te(17,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::outputPacket2),m,NULL,true);
 
@@ -8397,13 +8398,13 @@ mbuf_t darwin_iwi2200::ieee80211_frag_cache_get(struct ieee80211_hdr_4addr *hdr)
 
 	if (frag == 0) {
 		/* Reserve enough space to fit maximum frame length */
-		if (mbuf_getpacket(MBUF_DONTWAIT , &skb)!=0) return NULL;
-		//skb = allocatePacket(ieee->dev->mtu +
-		//		    sizeof(struct ieee80211_hdr_4addr) +
-		//		    8 /* LLC */  +
-		//		    2 /* alignment */  +
-		//		    8 /* WEP */  + ETH_ALEN /* WDS */ );
-		//if (skb==0) return NULL;
+		//if (mbuf_getpacket(MBUF_DONTWAIT , &skb)!=0) return NULL;
+		skb = allocatePacket(ieee->dev->mtu +
+				    sizeof(struct ieee80211_hdr_4addr) +
+				    8 /* LLC */  +
+				    2 /* alignment */  +
+				    8 /* WEP */  + ETH_ALEN /* WDS */ );
+		if (skb==0) return NULL;
 		mbuf_setlen(skb,ieee->dev->mtu +
 				    sizeof(struct ieee80211_hdr_4addr) +
 				    8 /* LLC */  +
@@ -8817,7 +8818,7 @@ int darwin_iwi2200::ieee80211_rx(mbuf_t skb, struct ieee80211_rx_stats *rx_stats
 			valid=kChecksumTCP | kChecksumUDP;
 			result=kChecksumIP;
 			setChecksumResult( skb, kChecksumFamilyTCPIP, result,valid,0,0);*/
-			fNetif->inputPacket(skb,mbuf_len(skb),IONetworkInterface::kInputOptionQueuePacket);
+			fNetif->inputPacket(skb,mbuf_len(skb));//,IONetworkInterface::kInputOptionQueuePacket);
 			}else{
 			IWI_ERR("this packet dont have MBUF_PKTHDR\n");
 			goto rx_dropped;
@@ -8835,12 +8836,12 @@ int darwin_iwi2200::ieee80211_rx(mbuf_t skb, struct ieee80211_rx_stats *rx_stats
 			//mbuf_clear_vlan_tag(skb);
 			//mbuf_set_vlan_tag(skb,PF_UNSPEC);
 			//FIXME ????
-			struct ethhdr hh;
+			//struct ethhdr hh;
 			u8 et[ETH_ALEN];
 			mbuf_adj(skb2, h6);
-			memset(&hh,0,sizeof(hh));
+			//memset(&hh,0,sizeof(hh));
 			memset(et,0,sizeof(et));
-			mbuf_pkthdr_setheader(skb2,&hh);
+			//mbuf_pkthdr_setheader(skb2,&hh);
 			skb_push(skb2, ETH_ALEN);
 			mbuf_copyback(skb2, 0, ETH_ALEN, et, MBUF_DONTWAIT);
 			skb_push(skb2, ETH_ALEN);
@@ -8848,7 +8849,10 @@ int darwin_iwi2200::ieee80211_rx(mbuf_t skb, struct ieee80211_rx_stats *rx_stats
 			//bcopy(skb_push(skb2, ETH_ALEN), et, ETH_ALEN);
 			//bcopy(skb_push(skb2, ETH_ALEN), et, ETH_ALEN);
 			//mbuf_adj(skb2,-4);//remove fcs
-			fTransmitQueue->enqueue(skb2, 0);
+			//fTransmitQueue->enqueue(skb2, 0);
+			outputPacket(skb2,0);
+			fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+			fTransmitQueue->start();
 		}
 		
       rx_exit:

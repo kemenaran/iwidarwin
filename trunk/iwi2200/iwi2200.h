@@ -4,7 +4,7 @@
 #include "defines.h"
 
 #define CONFIG_IPW2200_QOS
-#define TX_QUEUE_CHECK
+//#define TX_QUEUE_CHECK
 
 
 //#define IWI_NOLOG
@@ -770,7 +770,7 @@ public:
 	virtual IOReturn	enable(IONetworkInterface * netif);
 	virtual IOReturn	disable(IONetworkInterface * netif);
 	static void			interruptOccurred(OSObject * owner, void * src, IOService *nub, int count);
-	virtual UInt32		handleInterrupt(void);
+	
 	virtual IOBufferMemoryDescriptor * MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt_add);
 	virtual bool configureInterface( IONetworkInterface * interface );
 	virtual bool		createWorkLoop( void );
@@ -788,6 +788,8 @@ public:
     virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
     virtual void setPowerStateOff(void);
     virtual void setPowerStateOn(void);
+	virtual IOReturn setMulticastMode(bool active);
+	virtual IOReturn setMulticastList(IOEthernetAddress * addrs, UInt32 count);
 	
 		//kext control functions:
 	
@@ -797,76 +799,9 @@ public:
 	friend  int 		disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo); //disconnect network selector app.
 	friend	int			configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len);
 
-	/*virtual SInt32	getSSID(IO80211Interface *interface,
-							struct apple80211_ssid_data *sd);
-	
-	virtual SInt32 getCHANNEL(IO80211Interface *interface,
-							  struct apple80211_channel_data *cd);
-	
-	virtual SInt32 getBSSID(IO80211Interface *interface,
-							struct apple80211_bssid_data *bd);
-	
-	virtual SInt32 getCARD_CAPABILITIES(IO80211Interface *interface,
-										struct apple80211_capability_data *cd);
-	
-	virtual SInt32 getSTATE(IO80211Interface *interface,
-							struct apple80211_state_data *sd);
-	
-	virtual SInt32 getRSSI(IO80211Interface *interface,
-						   struct apple80211_rssi_data *rd);
-	
-	virtual SInt32 getPOWER(IO80211Interface *interface,
-							struct apple80211_power_data *pd);
-	
-	virtual SInt32 getSCAN_RESULT(IO80211Interface *interface,
-								  struct apple80211_scan_result **scan_result);
-	
-	//virtual SInt32 getASSOCIATE_RESULT(IO80211Interface *interface,									   struct apple80211_assoc_result_data *ard);
-	
-	virtual SInt32 getRATE(IO80211Interface *interface,
-						   struct apple80211_rate_data *rd);
-	
-	virtual SInt32 getSTATUS_DEV(IO80211Interface *interface,
-								 struct apple80211_status_dev_data *dd);
-	
-	virtual SInt32 getRATE_SET(IO80211Interface	*interface,
-							   struct apple80211_rate_set_data *rd);
-							   
-	virtual SInt32	getASSOCIATION_STATUS( IO80211Interface * interface, struct apple80211_assoc_status_data * asd );
-
-	virtual SInt32 setSCAN_REQ(IO80211Interface *interface,
-							   struct apple80211_scan_data *sd);
-	
-	virtual SInt32 setASSOCIATE(IO80211Interface *interface,
-								struct apple80211_assoc_data *ad);
-	
-	virtual SInt32 setPOWER(IO80211Interface *interface,
-							struct apple80211_power_data *pd);
-	
-	virtual SInt32 setCIPHER_KEY(IO80211Interface *interface,
-								 struct apple80211_key *key);
-	
-	virtual SInt32 setAUTH_TYPE(IO80211Interface *interface,
-								struct apple80211_authtype_data *ad);
-	
-	virtual SInt32 setDISASSOCIATE(IO80211Interface	*interface);
-	
-	virtual SInt32 setSSID(IO80211Interface *interface,
-						   struct apple80211_ssid_data *sd);
-	
-	virtual SInt32 setAP_MODE(IO80211Interface *interface,
-							  struct apple80211_apmode_data *ad);
-
-	virtual bool attachInterfaceWithMacAddress( void * macAddr, 
-												UInt32 macLen, 
-												IONetworkInterface ** interface, 
-												bool doRegister ,
-												UInt32 timeout  );
-
-virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
-
 //protected:
-	 UInt32 outputPacket2(mbuf_t m, void * param);
+	 UInt32		handleInterrupt(void);
+	  UInt32 outputPacket2(mbuf_t m, void * param);
 	 bool		addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name = 0);			
 	 int			sendCommand(UInt8 type,void *data,UInt8 len,bool async);
 	 int			ipw_scan( int type);
@@ -1257,8 +1192,8 @@ static int is_network_beacon(struct ieee80211_network *src,
 	IOEthernetAddress			fEnetAddr;		// holds the mac address currently hardcoded
 	IOWorkLoop *				fWorkLoop;		// the workloop
    // IO80211Interface*			fNetif;			// ???
-	//IOEthernetInterface*			fNetif;
-	IONetworkInterface*			fNetif;
+	IOEthernetInterface*			fNetif;
+	//IONetworkInterface*			fNetif;
 	IOInterruptEventSource *	fInterruptSrc;	// ???
 	//IOTimerEventSource *		fWatchdogTimer;	// ???
 	IOBasicOutputQueue *				fTransmitQueue;	// ???
