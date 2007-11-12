@@ -31,14 +31,10 @@
 			<key>IOMatchCategory</key>
 			<string>iwi4965</string>
 			<key>IOPCIMatch</key>
-			<string>0x42298086</string>
+			<string>0x42298086 0x42308086</string>
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
-			<key>p_disable</key>
-			<integer>0</integer>
-			<key>p_led</key>
-			<integer>1</integer>
-			<key>p_mode</key>
+			<key>param_disable</key>
 			<integer>0</integer>
 		</dict>
 	</dict>
