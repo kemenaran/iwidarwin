@@ -1305,7 +1305,7 @@ void darwin_iwi2200::ipw_rx_queue_replenish()
 		if (!rxb->skb)//recycle skb if not used by inputpacket
 		{
 		rxb->skb=allocatePacket(IPW_RX_BUF_SIZE);
-		//if (mbuf_getpacket(MBUF_DONTWAIT , &rxb->skb)!=0) {
+		//mbuf_getpacket(MBUF_DONTWAIT , &rxb->skb);
 		if (rxb->skb==0) {
 			IWI_ERR( "%s: Can not allocate SKB buffers.\n",
 			       priv->net_dev->name);
@@ -4782,11 +4782,12 @@ void darwin_iwi2200::ipw_rx()
 			if (!doFlushQueue) {
 				//dev_kfree_skb_any(rxb->skb); 
 				if (!(mbuf_type(rxb->skb) == MBUF_TYPE_FREE) ) freePacket(rxb->skb);
+				
 			}
 			IOMemoryDescriptor::withPhysicalAddress(rxb->dma_addr,
 			IPW_RX_BUF_SIZE,kIODirectionOutIn)->release();
-				rxb->dma_addr=NULL;
-				rxb->skb = NULL;							
+			rxb->dma_addr=NULL;
+			rxb->skb = NULL;
 		}
 		
 		list_add_tail(&rxb->list, &priv->rxq->rx_used);
