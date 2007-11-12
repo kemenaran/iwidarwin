@@ -3,7 +3,7 @@
 
 #include "defines.h"
 
-#define CONFIG_IPW2200_QOS
+//#define CONFIG_IPW2200_QOS
 //#define TX_QUEUE_CHECK
 
 
