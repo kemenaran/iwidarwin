@@ -132,18 +132,18 @@ static u8 iwl_get_rate_index_by_rssi(s32 rssi, u8 mode)
 	switch (mode) {
 	case MODE_IEEE80211G:
 		tpt_table = iwl_tpt_table_g;
-		table_size = GLOBAL_ARRAY_SIZE(iwl_tpt_table_g);
+		table_size = /*GLOBAL_*/ARRAY_SIZE(iwl_tpt_table_g);
 		break;
 
 	case MODE_IEEE80211A:
 		tpt_table = iwl_tpt_table_a;
-		table_size = GLOBAL_ARRAY_SIZE(iwl_tpt_table_a);
+		table_size = /*GLOBAL_*/ARRAY_SIZE(iwl_tpt_table_a);
 		break;
 
 	default:
 	case MODE_IEEE80211B:
 		tpt_table = iwl_tpt_table_b;
-		table_size = GLOBAL_ARRAY_SIZE(iwl_tpt_table_b);
+		table_size = /*GLOBAL_*/ARRAY_SIZE(iwl_tpt_table_b);
 		break;
 	}
 
@@ -362,7 +362,8 @@ static void *rs_alloc_sta(void *priv, int gfp)
 
 	IWL_DEBUG_RATE("enter\n");
 
-	(void*)rs_priv = IOMalloc(sizeof(struct iwl_rate_scale_priv));
+	rs_priv = (struct iwl_rate_scale_priv*)IOMalloc(sizeof(struct iwl_rate_scale_priv));
+	memset(rs_priv,0,sizeof(*rs_priv));
 	if (!rs_priv) {
 		IWL_DEBUG_RATE("leave: ENOMEM\n");
 		return NULL;
@@ -663,7 +664,7 @@ static struct ieee80211_rate *rs_get_rate(void *priv_rate,
 	rate_mask = sta->supp_rates;
 	index = min(sta->txrate & 0xffff, IWL_RATE_COUNT - 1);
 
-	(void*)rs_priv = (void *)sta->rate_ctrl_priv;
+	rs_priv = (struct iwl_rate_scale_priv*)sta->rate_ctrl_priv;
 
 	if ((priv->iw_mode == IEEE80211_IF_TYPE_IBSS) &&
 	    !rs_priv->ibss_sta_added) {

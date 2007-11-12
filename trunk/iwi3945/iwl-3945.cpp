@@ -250,7 +250,7 @@ static void iwl3945_handle_data_packet(struct iwl_priv *priv, int is_data,
 	struct iwl_rx_frame_hdr *rx_hdr = IWL_RX_HDR(pkt);
 	struct iwl_rx_frame_end *rx_end = IWL_RX_END(pkt);
 	short len = le16_to_cpu(rx_hdr->len);
-
+	
 	/* We received data from the HW, so stop the watchdog */
 	if (unlikely((len + IWL_RX_FRAME_SIZE) > mbuf_trailingspace(rxb->skb))) {
 		IWL_DEBUG_DROP("Corruption detected!\n");
@@ -273,16 +273,21 @@ static void iwl3945_handle_data_packet(struct iwl_priv *priv, int is_data,
 		return;
 	}
 
+	//hack
+	//mbuf_setlen(rxb->skb, 0);
+	//mbuf_pkthdr_setlen(rxb->skb, 0);
+				
 	skb_reserve(rxb->skb, (u8 *)rx_hdr->payload - (u8 *)pkt);
 	/* Set the size of the skb to the size of the frame */
 	skb_put(rxb->skb, le16_to_cpu(rx_hdr->len));
-
+		
 	hdr = (struct ieee80211_hdr *)mbuf_data(rxb->skb);
 
 	if (param_hwcrypto)
 		iwl_set_decrypted_flag(priv, rxb->skb,
 				       le32_to_cpu(rx_end->status), stats);
 
+	IWI_WARNING("todo ieee80211_rx_irqsafe\n");
 	//ieee80211_rx_irqsafe(priv->hw, rxb->skb, stats);
 	rxb->skb = NULL;
 }
@@ -525,7 +530,7 @@ int iwl_hw_tx_queue_attach_buffer_to_tfd(struct iwl_priv *priv,
  */
 int iwl_hw_tx_queue_free_tfd(struct iwl_priv *priv, struct iwl_tx_queue *txq)
 {
-	struct iwl_tfd_frame *bd_tmp = (struct iwl_tfd_frame *)&txq->bd[0];
+	struct iwl_tfd_frame *bd_tmp = &txq->bd[0];
 	struct iwl_tfd_frame *bd = &bd_tmp[txq->q.last_used];
 	//struct pci_dev *dev = priv->pci_dev;
 	int i;
@@ -686,7 +691,7 @@ void iwl_hw_card_show_info(struct iwl_priv *priv)
 		       priv->eeprom.antenna_switch_type);
 }
 
-int darwin_iwi3945::iwl3945_nic_set_pwr_src(struct iwl_priv *priv, int pwr_max)
+static int iwl3945_nic_set_pwr_src(struct iwl_priv *priv, int pwr_max)
 {
 	int rc;
 	unsigned long flags;
@@ -702,7 +707,7 @@ int darwin_iwi3945::iwl3945_nic_set_pwr_src(struct iwl_priv *priv, int pwr_max)
 		u32 val;
 		//rc = pci_read_config_dword(priv->pci_dev, 0x0C8, &val);
 		rc=0;
-		val= fPCIDevice->configRead32(0x0c8);
+		val= clone->fPCIDevice->configRead32(0x0c8);
 		if (val & PCI_CFG_PMC_PME_FROM_D3COLD_SUPPORT) {
 			iwl_set_bits_mask_restricted_reg(
 				priv, ALM_APMG_PS_CTL,
@@ -852,7 +857,7 @@ static int iwl3945_txq_ctx_reset(struct iwl_priv *priv)
 	return rc;
 }
 
-int darwin_iwi3945::iwl_hw_nic_init(struct iwl_priv *priv)
+int iwl_hw_nic_init(struct iwl_priv *priv)
 {
 	u8 rev_id;
 	int rc;
@@ -889,7 +894,7 @@ int darwin_iwi3945::iwl_hw_nic_init(struct iwl_priv *priv)
 	spin_unlock_irqrestore(&priv->lock, flags);
 
 	/* Determine HW type */
-	rev_id= fPCIDevice->configRead8(kIOPCIConfigRevisionID);
+	rev_id= clone->fPCIDevice->configRead8(kIOPCIConfigRevisionID);
 	/*rc = pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &rev_id);
 	if (rc)
 		return rc;*/
@@ -1159,11 +1164,11 @@ static int reg_txpower_get_temperature(struct iwl_priv *priv)
 
 	/* driver's okay range is -260 to +25.
 	 *   human readable okay range is 0 to +285 */
-	IWL_DEBUG_INFO("Temperature: %d\n", temperature + IWL_TEMP_CONVERT);
+	IWL_DEBUG_POWER("Temperature: %d\n", temperature + IWL_TEMP_CONVERT);
 
 	/* handle insane temp reading */
 	if (reg_temp_out_of_range(temperature)) {
-		IWL_ERROR("Error bad temperature value  %d\n", temperature);
+		IWL_DEBUG_POWER("Error bad temperature value  %d\n", temperature);
 
 		/* if really really hot(?),
 		 *   substitute the 3rd band/group's temp measured at factory */
@@ -1469,6 +1474,7 @@ int iwl_hw_reg_send_txpower(struct iwl_priv *priv)
 	int rate_idx;
 	const struct iwl_channel_info *ch_info = NULL;
 	struct iwl_txpowertable_cmd txpower;
+	//memset(&txpower,0,sizeof(struct iwl_txpowertable_cmd));
 	// = {
 		txpower.channel = priv->active_rxon.channel;
 
@@ -2079,9 +2085,9 @@ int iwl_hw_tx_queue_init(struct iwl_priv *priv, struct iwl_tx_queue *txq)
 	unsigned long flags;
 	int txq_id = txq->q.id;
 
-	struct iwl_shared *shared_data = (struct iwl_shared*)priv->hw_setting.shared_virt;
+	struct iwl_shared *shared_data = priv->hw_setting.shared_virt;
 
-	shared_data->tx_base_ptr[txq_id] = (u32) txq->q.dma_addr;
+	shared_data->tx_base_ptr[txq_id] =  (u32)txq->q.dma_addr;
 
 	txq->q.element_size = sizeof(struct iwl_tfd_frame);
 
@@ -2112,8 +2118,7 @@ int iwl_hw_tx_queue_init(struct iwl_priv *priv, struct iwl_tx_queue *txq)
 
 int iwl_hw_get_rx_read(struct iwl_priv *priv)
 {
-	struct iwl_shared *shared_data =
-	    (struct iwl_shared *)priv->hw_setting.shared_virt;
+	struct iwl_shared *shared_data = priv->hw_setting.shared_virt;
 
 	return shared_data->rx_read_ptr[0];
 }
@@ -2125,14 +2130,14 @@ int iwl3945_init_hw_rate_table(struct iwl_priv *priv)
 {
 	int rc, i;
 	struct iwl_rate_scaling_cmd rate_cmd;// = {
+	//memset(&rate_cmd,0,sizeof(struct iwl_rate_scaling_cmd));
 		rate_cmd.reserved[0] = 0;//{0, 0, 0};
 		rate_cmd.reserved[1] = 0;
 		rate_cmd.reserved[2] = 0;
-		rate_cmd.reserved[3] = 0;
 //	};
 	struct iwl_rate_scaling_info *table = rate_cmd.table;
 
-	for (i = 0; i < GLOBAL_ARRAY_SIZE(iwl_rates); i++) {
+	for (i = 0; i < /*GLOBAL_*/ARRAY_SIZE(iwl_rates); i++) {
 		table[i].rate_n_flags = iwl_rates[i].plcp;
 		table[i].try_cnt = priv->retry_rate;
 		table[i].next_rate_index = iwl_get_prev_ieee_rate(i);
@@ -2184,15 +2189,14 @@ int iwl3945_init_hw_rate_table(struct iwl_priv *priv)
 
 int iwl_hw_set_hw_setting(struct iwl_priv *priv)
 {
-	memset((void *)&priv->hw_setting, 0,
-	       sizeof(struct iwl_driver_hw_info));
+	memset((void *)&priv->hw_setting, 0, sizeof(struct iwl_driver_hw_info));
 
 	/*priv->hw_setting.shared_virt =
 	    pci_alloc_consistent(priv->pci_dev,
 				 sizeof(struct iwl_shared),
 				 &priv->hw_setting.shared_phys);*/
-	MemoryDmaAlloc(sizeof(struct iwl_shared), &priv->hw_setting.shared_phys, &priv->hw_setting.shared_virt);
-
+	//MemoryDmaAlloc(sizeof(struct iwl_shared), &priv->hw_setting.shared_phys, &priv->hw_setting.shared_virt);
+	priv->hw_setting.shared_virt=(struct iwl_shared*)IOMallocContiguous(sizeof(struct iwl_shared), sizeof(struct iwl_shared*), &priv->hw_setting.shared_phys);
 	if (!priv->hw_setting.shared_virt) {
 		IWL_ERROR("failed to allocate pci memory\n");
 		mutex_unlock(&priv->mutex);
@@ -2265,6 +2269,49 @@ void iwl_hw_cancel_deferred_work(struct iwl_priv *priv)
 {
 	//cancel_delayed_work(&priv->thermal_periodic);
 	clone->queue_td(11,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::iwl3945_bg_reg_txpower_periodic));
+}
+
+void iwl4965_add_station(struct iwl_priv *priv, const u8 * addr, int is_ap)
+{
+	int i, r;
+	struct iwl_link_quality_cmd link_cmd;// = {
+	memset(&link_cmd,0,sizeof(struct iwl_link_quality_cmd));
+		link_cmd.reserved1 = 0;
+	//};
+	struct iwl_rate *table = link_cmd.rate_scale_table;
+
+	/* Set up the rate scaling to start at 54M and fallback
+	 * all the way to 1M in IEEE order and then spin on IEEE */
+	i = 0;
+	if (is_ap)
+		r = IWL_RATE_54M_INDEX;
+	else if ((priv->phymode == MODE_IEEE80211A) ||
+		 (priv->phymode == MODE_ATHEROS_TURBO))
+		r = IWL_RATE_6M_INDEX;
+	else
+		r = IWL_RATE_1M_INDEX;
+
+	while (i < LINK_QUAL_MAX_RETRY_NUM) {
+		if (r >= IWL_FIRST_CCK_RATE && r <= IWL_LAST_CCK_RATE) {
+			table[i].rate_n_flags |= RATE_MCS_CCK_MSK;
+		}
+		table[i].s.rate = iwl_rates[r].plcp;
+		table[i].rate_n_flags |= RATE_MCS_ANT_B_MSK;
+		table[i].rate_n_flags &= ~RATE_MCS_ANT_A_MSK;
+		r = iwl_get_prev_ieee_rate(r);
+		i++;
+	}
+
+	link_cmd.general_params.single_stream_ant_msk = 2;
+	link_cmd.general_params.dual_stream_ant_msk = 3;
+	link_cmd.agg_params.agg_dis_start_th = 3;
+	link_cmd.agg_params.agg_time_limit = 4000;
+
+	/* Update the rate scaling for control frame Tx to AP */
+	link_cmd.sta_id = is_ap ? IWL_AP_ID : IWL_BROADCAST_ID;
+
+	iwl_send_cmd_pdu(priv, REPLY_TX_LINK_QUALITY_CMD, sizeof(link_cmd),
+			 &link_cmd);
 }
 
 /*struct pci_device_id iwl_hw_card_ids[] = {

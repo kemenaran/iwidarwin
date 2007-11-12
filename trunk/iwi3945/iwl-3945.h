@@ -28,6 +28,43 @@
 #define __iwl_3945_h__
 #include "defines.h"
 
+#define RATE_MCS_CCK_MSK 0x200
+
+#define  LINK_QUAL_FLAGS_SET_STA_TLC_RTS_MSK	(1<<0)
+
+#define  LINK_QUAL_AC_NUM AC_NUM
+#define  LINK_QUAL_MAX_RETRY_NUM 16
+
+#define  LINK_QUAL_ANT_A_MSK (1<<0)
+#define  LINK_QUAL_ANT_B_MSK (1<<1)
+#define  LINK_QUAL_ANT_MSK   (LINK_QUAL_ANT_A_MSK|LINK_QUAL_ANT_B_MSK)
+
+struct iwl_link_qual_general_params {
+	u8 flags;
+	u8 mimo_delimiter;
+	u8 single_stream_ant_msk;
+	u8 dual_stream_ant_msk;
+	u8 start_rate_index[LINK_QUAL_AC_NUM];
+} __attribute__ ((packed));
+
+struct iwl_link_qual_agg_params {
+	__le16 agg_time_limit;
+	u8 agg_dis_start_th;
+	u8 agg_frame_cnt_limit;
+	__le32 reserved;
+} __attribute__ ((packed));
+
+struct iwl_link_quality_cmd {
+	u8 sta_id;
+	u8 reserved1;
+	__le16 control;
+	struct iwl_link_qual_general_params general_params;
+	struct iwl_link_qual_agg_params agg_params;
+	struct iwl_rate rate_scale_table[LINK_QUAL_MAX_RETRY_NUM];
+	__le32 reserved2;
+} __attribute__ ((packed));
+
+
 #if IWL != 3945
 /*
  * In non IWL == 3945 builds, these must build to nothing in order to allow
@@ -52,5 +89,7 @@ extern void iwl3945_reg_txpower_periodic(struct iwl_priv *priv);
 extern void iwl3945_bg_reg_txpower_periodic(void* *work);
 extern int iwl3945_txpower_set_from_eeprom(struct iwl_priv *priv);
 #endif				/* IWL == 3945 */
+
+extern void iwl4965_add_station(struct iwl_priv *priv, const u8 * addr, int is_ap);
 
 #endif

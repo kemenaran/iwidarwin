@@ -652,28 +652,36 @@ struct iwl_add_sta_resp {
  * for every DTIM.
  */
 #define IWL_POWER_TABLE_SIZE 5
+#define IWL_POWER_VEC_SIZE 5
 
-enum {
-	IWL_POWER_DRIVER_ALLOW_SLEEP_MSK = (1<<0),
-	IWL_POWER_SLEEP_OVER_DTIM_MSK = (1<<2),
-	IWL_POWER_PCI_PM_MSK = (1<<3),
-};
+#if IWL == 3945
+
+#define IWL_POWER_DRIVER_ALLOW_SLEEP_MSK	cpu_to_le32(1<<0)
+#define IWL_POWER_SLEEP_OVER_DTIM_MSK		cpu_to_le32(1<<2)
+#define IWL_POWER_PCI_PM_MSK			cpu_to_le32(1<<3)
+struct iwl_powertable_cmd {
+	__le32 flags;
+	__le32 rx_data_timeout;
+	__le32 tx_data_timeout;
+	__le32 sleep_interval[IWL_POWER_VEC_SIZE];
+} __attribute__((packed));
+
+#elif IWL == 4965
+
+#define IWL_POWER_DRIVER_ALLOW_SLEEP_MSK	__constant_cpu_to_le16(1<<0)
+#define IWL_POWER_SLEEP_OVER_DTIM_MSK		__constant_cpu_to_le16(1<<2)
+#define IWL_POWER_PCI_PM_MSK			__constant_cpu_to_le16(1<<3)
 
 struct iwl_powertable_cmd {
-#if IWL == 3945
-	__le32 flags;
-#elif IWL == 4965
 	__le16 flags;
 	u8 keep_alive_seconds;
 	u8 debug_flags;
-#endif
 	__le32 rx_data_timeout;
 	__le32 tx_data_timeout;
-	__le32 sleep_interval[IWL_POWER_TABLE_SIZE];
-#if IWL == 4965
+	__le32 sleep_interval[IWL_POWER_VEC_SIZE];
 	__le32 keep_alive_beacons;
-#endif
 } __attribute__ ((packed));
+#endif
 
 
 struct iwl_rate_scaling_info {

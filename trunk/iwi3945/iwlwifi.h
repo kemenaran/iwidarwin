@@ -156,7 +156,7 @@ struct iwl_tx_info {
  */
 struct iwl_tx_queue {
 	struct iwl_queue q;
-	u8 *bd;
+	struct iwl_tfd_frame *bd;
 	struct iwl_cmd *cmd;
 	dma_addr_t dma_addr_cmd;
 	struct iwl_tx_info *txb;
@@ -328,7 +328,7 @@ struct iwl_host_cmd {
  * NOTE:  rx_free and rx_used are used as a FIFO for iwl_rx_mem_buffers
  */
 struct iwl_rx_queue {
-	void *bd;
+	__le32 *bd;
 	dma_addr_t dma_addr;
 	struct iwl_rx_mem_buffer pool[RX_QUEUE_SIZE + RX_FREE_BUFFERS];
 	struct iwl_rx_mem_buffer *queue[RX_QUEUE_SIZE];
@@ -492,7 +492,7 @@ struct iwl_driver_hw_info {
 	u16 max_rxq_size;
 	u16 max_rxq_log;
 	u32 cck_flag;
-	void *shared_virt;
+	struct iwl_shared *shared_virt;
 	dma_addr_t shared_phys;
 };
 
@@ -578,8 +578,7 @@ extern void iwl_rx_replenish(void *data, u8 do_lock);
 extern void iwl_tx_queue_free(struct iwl_priv *priv, struct iwl_tx_queue *txq);
 extern int iwl_send_cmd_pdu(struct iwl_priv *priv, u8 id, u16 len,
 			    const void *data);
-extern int __must_check iwl_send_cmd(struct iwl_priv *priv,
-				     struct iwl_host_cmd *cmd);
+//extern int iwl_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd);
 extern int iwl_fill_beacon_frame(struct iwl_priv *priv,
 				 struct ieee80211_hdr *hdr, const u8 * dest,
 				 int left);
@@ -605,6 +604,11 @@ static inline int iwl_is_associated(struct iwl_priv *priv)
 		1 : 0;
 }
 extern void iwl_down(struct iwl_priv *priv);
+extern int iwl_up(struct iwl_priv *priv);
+extern void iwl_isr(struct iwl_priv *priv);
+extern void iwl_resume(struct iwl_priv *priv);
+extern void iwl_cancel_deferred_work(struct iwl_priv *priv);
+
 
 /******************************************************************************
  *

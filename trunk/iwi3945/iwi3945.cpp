@@ -1,7 +1,6 @@
 #include "defines.h"
 
 
-
 // Define my superclass
 #define super IOEthernetController
 //IO80211Controller
@@ -17,8 +16,10 @@ bool darwin_iwi3945::init(OSDictionary *dict)
 
 /* module parameters */
 param_disable_hw_scan = 0;
+//need to define param_debug better
 param_debug =  0xffffffff;
-param_debug &= ~(IWL_DL_IO | IWL_DL_ISR);
+param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
+param_debug |=IWL_DL_INFO;
 param_disable = 0;      /* def: enable radio */
 param_antenna = 0;      /* def: 0 = both antennas (use diversity) */
 param_hwcrypto = 0;     /* def: using software encryption */
@@ -29,6 +30,42 @@ param_disable=OSDynamicCast(OSNumber,dict->getObject("param_disable"))->unsigned
  IOLog("debug_level %x sw_disable %d\n",param_debug, param_disable);
 
  return super::init(dict);
+}
+
+void darwin_iwi3945::stop(IOService *provider)
+{
+	IOLog("%s stop\n", getName());	
+	super::stop(provider);
+}
+
+void darwin_iwi3945::free(void)
+{
+
+	IOLog("TODO: Free\n");
+	return;
+}
+
+void darwin_iwi3945::getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const 
+{
+    constraints->alignStart  = kIOPacketBufferAlign4;	// even word aligned.
+    constraints->alignLength = kIOPacketBufferAlign4;	// no restriction.
+}
+
+IOOptionBits darwin_iwi3945::getState( void ) const
+{
+	IOOptionBits r=super::getState();
+	IOLog("getState = %x\n",r);
+	return r;
+}
+
+IOReturn darwin_iwi3945::message( UInt32 type, IOService * provider,
+                              void * argument)
+{
+	IOLog("message type %8x argument %8x\n",type,argument);
+	IOReturn r=super::message(type,provider,argument);
+	IOLog("message return %8x\n",r);
+	return r;
+
 }
 
 const struct ieee80211_hw_mode *iwl_get_hw_mode(struct iwl_priv *priv, int mode)
@@ -66,7 +103,7 @@ const struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,const struct 
 */
 
 	local=(struct ieee80211_local*)IOMalloc(priv_size);
-
+	memset(local,0,priv_size);
 	local->hw.priv = 
 	(char *)local +
 			((sizeof(struct ieee80211_local) +
@@ -87,8 +124,9 @@ const struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,const struct 
 	sdata->wdev.wiphy = wiphy;
 */
 
-	(void*)mdev=IOMalloc(sizeof(struct ieee80211_sub_if_data));
-	(void*)sdata = netdev_priv(mdev);
+	mdev=(struct net_device*)IOMalloc(sizeof(struct ieee80211_sub_if_data));
+	memset(mdev,0,sizeof(struct ieee80211_sub_if_data));
+	sdata = (struct ieee80211_sub_if_data*)netdev_priv(mdev);
 	mdev->ieee80211_ptr=local;
 	local->mdev=mdev;
 	local->hw.queues = 1; /* default */
@@ -192,10 +230,14 @@ bool darwin_iwi3945::start(IOService *provider)
 				IOLog("%s Power thingi failed\n", getName());
 				break;
        		}
-
-		fPCIDevice->setBusMasterEnable(true);
-		fPCIDevice->setMemoryEnable(true);
-		//fPCIDevice->setIOEnable(true);
+		
+		UInt16 reg16;
+		reg16 = fPCIDevice->configRead16(kIOPCIConfigCommand);
+		reg16 |= (kIOPCICommandBusMaster      |
+				  kIOPCICommandMemorySpace    |
+				  kIOPCICommandMemWrInvalidate);
+		reg16 &= ~kIOPCICommandIOSpace;  // disable I/O space
+		fPCIDevice->configWrite16(kIOPCIConfigCommand,reg16);
 		
 		irqNumber = fPCIDevice->configRead8(kIOPCIConfigInterruptLine);
 		vendorID = fPCIDevice->configRead16(kIOPCIConfigVendorID);
@@ -252,18 +294,20 @@ bool darwin_iwi3945::start(IOService *provider)
 			break;
 		}
 		fTransmitQueue->setCapacity(1024);
-
+		//priv=NULL;
 		iwl_pci_probe();
+		if (!priv) break;
 		iwl_hw_nic_init(priv);
-		iwl_hw_nic_stop_master(priv);
+		//iwl_hw_nic_stop_master(priv);
+		iwl_hw_nic_reset(priv);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
 			break;
 		}
-		
-		setProperty(kIOMinPacketSize,42);
+		setProperty(kIOMinPacketSize,12);
 		setProperty(kIOMaxPacketSize, IWL_RX_BUF_SIZE);
+		//setProperty(kIOFeatures, kIONetworkFeatureNoBSDWait|kIONetworkFeatureSoftwareVlan);
 	
 		fNetif->registerOutputHandler(this,getOutputHandler());
 		
@@ -315,6 +359,9 @@ void darwin_iwi3945::check_firstup(struct iwl_priv *priv)
 		return;
 	}
 	disable(fNetif);
+	fTransmitQueue->setCapacity(1024);
+	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	fTransmitQueue->start();
 	iwl_bg_up(priv);
 	//base threads can't be called from here!!
 	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::iwl_bg_up),priv,NULL,true);
@@ -412,9 +459,8 @@ IOReturn darwin_iwi3945::disable( IONetworkInterface * netif )
 		ifnet_set_flags(fifnet, 0 , IFF_RUNNING );
 		
 		
-		//fTransmitQueue->setCapacity(0);
+		fTransmitQueue->setCapacity(0);
 		fTransmitQueue->flush();
-		fTransmitQueue->start();
 				
 		//if ((priv->status & STATUS_AUTH)) enable(fNetif);
 		
@@ -440,6 +486,7 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface * netif )
 		struct ieee80211_local* loc=hw_to_local(priv->hw);
 		memcpy(&loc->mdev->name,ii,sizeof(ii));
 		loc->mdev->ifindex=fNetif->getUnitNumber();
+		priv->interface_id=fNetif->getUnitNumber();
 	}
 	if (firstifup==0)
 	{
@@ -460,6 +507,7 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface * netif )
 		if (priv->status & STATUS_AUTH) ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		//fNetif->inputEvent(kIONetworkEventTypeLinkUp,NULL);
 		fTransmitQueue->setCapacity(1024);
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
 		return kIOReturnSuccess;
 	}
@@ -507,7 +555,7 @@ mbuf_t darwin_iwi3945::mergePacket(mbuf_t m)
 	}
 	/* merging is not completed. */
 	IWI_LOG("mergePacket is failed: data copy dont work collectly\n");
-	//IWI_WARN("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
+	//IWI_LOG("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
 	//				mbuf_len(m),mbuf_pkthdr_len(m),
 	//				mbuf_len(nm),mbuf_pkthdr_len(nm) );
 	if (m!=NULL)
@@ -599,12 +647,10 @@ finish:
 	return ret;	
 }
 
-void darwin_iwi3945::interruptOccurred(OSObject * owner, 
-	//IOInterruptEventSource * src, int /*count*/) 
-	void		*src,  IOService *nub, int source)
+void darwin_iwi3945::interruptOccurred(OSObject * owner, IOService *nub, int source)
 {
-	darwin_iwi3945 *self = OSDynamicCast(darwin_iwi3945, owner); //(darwin_iwi3945 *)owner;
-	self->iwl_irq_tasklet(self->priv);
+	darwin_iwi3945 *self = (darwin_iwi3945 *)owner;
+	iwl_isr(self->priv);
 }
 
 IOReturn darwin_iwi3945::getHardwareAddress( IOEthernetAddress * addr )
@@ -757,70 +803,28 @@ int disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo)
 
 int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len)
 {
-	/*
-	//int i=*((int*)data);
-	if (opt==4)// mode
+	if (opt==1)
 	{
-		int m=*((int*)data);
-		m=m-1;
-		IWI_LOG("setting mode to %d\n",m);
-		if (clone->priv->config & CFG_NO_LED) clone->led=0; else clone->led=1;
-		clone->associate=0;
-		clone->mode=m;
-		clone->ipw_sw_reset(0);
-		clone->queue_te(12,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_down),clone->priv,NULL,true);
-	}
-	if (opt==3)// led
-	{
-
-	}
-	if (opt==2) //associate network.
-	{
-
-	}
-	if (opt==1) //HACK: start/stop the nic
-	{
-		u32 rfkill,r1, rfkill2=0;
-		//clone->ipw_grab_restricted_access(clone->priv);
-		rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
-		//clone->_ipw_release_restricted_access(clone->priv);
-		if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
-		IOLog("RFKILL base status: 0x%x rfkill2 0x%x\n", rfkill, rfkill2);
-
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
-			clone->priv->config &= ~CFG_ASSOCIATE;
+			//clone->priv->config &= ~CFG_ASSOCIATE;
 			IOLog("Trying to turn card on...\n");	
-			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_rf_kill),clone->priv,NULL,true);
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_AUTH);
-			//clone->ipw_grab_restricted_access(clone->priv);
-			rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
-			//clone->_ipw_release_restricted_access(clone->priv);
-			rfkill2=0;
-			if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
-			IWI_LOG("radio on rfkill 0x%x rfkill2 0x%x\n", rfkill, rfkill2);
+			iwl_up(clone->priv);
 		}
 		else
 		{
 			IOLog("Trying to turn card off...\n");
-			//clone->ipw_grab_restricted_access(clone->priv);
-			rfkill = clone->_ipw_read_restricted_reg(clone->priv, ALM_APMG_RFKILL);
-			//clone->_ipw_release_restricted_access(clone->priv);
-			rfkill2=0;
-			//if (!(clone->ipw_read32(CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)) rfkill2 = 1;
-			IWI_LOG("radio off rfkill 0x%x rfkill2 0x%x\n", rfkill, rfkill2);
-			clone->setLinkStatus(kIONetworkLinkValid);
-			//clone->queue_te(12,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_down),clone->priv,NULL,true);
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status |= STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_AUTH);
-			//clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi3945::ipw_rf_kill),clone->priv,NULL,true);
+			iwl_down(clone->priv);
 		}	
 	}
 
-	return(0);*/
+	return(0);
 }
 
 int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len)
@@ -868,7 +872,7 @@ int ieee80211_rate_control_register(struct rate_control_ops *ops)
 {
 	struct rate_control_alg *alg;
 
-	(void*)alg = IOMalloc(sizeof(*alg));
+	alg = (struct rate_control_alg*)IOMalloc(sizeof(*alg));
 	if (alg == NULL) {
 		return -ENOMEM;
 	}
@@ -916,3 +920,222 @@ void ieee80211_sta_tx(struct net_device *dev, mbuf_t skb, int encrypt)
 	//dev_queue_xmit(skb);
 	clone->outputPacket(skb,0);
 }
+
+int ieee80211_register_hw(struct ieee80211_hw *hw)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	const char *name;
+	int result;
+
+	/*result = wiphy_register(local->hw.wiphy);
+	if (result < 0)
+		return result;
+
+	name = wiphy_dev(local->hw.wiphy)->driver->name;
+	local->hw.workqueue = create_singlethread_workqueue(name);
+	if (!local->hw.workqueue) {
+		result = -ENOMEM;
+		goto fail_workqueue;
+	}*/
+
+	/*
+	 * The hardware needs headroom for sending the frame,
+	 * and we need some headroom for passing the frame to monitor
+	 * interfaces, but never both at the same time.
+	 */
+	local->tx_headroom = max(sizeof(unsigned int) , max(local->hw.extra_tx_headroom,
+				   sizeof(struct ieee80211_tx_status_rtap_hdr)));
+
+	//debugfs_hw_add(local);
+
+	local->hw.conf.beacon_int = 1000;
+
+	local->wstats_flags |= local->hw.max_rssi ?
+			       IW_QUAL_LEVEL_UPDATED : IW_QUAL_LEVEL_INVALID;
+	local->wstats_flags |= local->hw.max_signal ?
+			       IW_QUAL_QUAL_UPDATED : IW_QUAL_QUAL_INVALID;
+	local->wstats_flags |= local->hw.max_noise ?
+			       IW_QUAL_NOISE_UPDATED : IW_QUAL_NOISE_INVALID;
+	if (local->hw.max_rssi < 0 || local->hw.max_noise < 0)
+		local->wstats_flags |= IW_QUAL_DBM;
+
+	local->user_txpow = IEEE80211_MAX_TXPOWER;
+	/*result = sta_info_start(local);
+	if (result < 0)
+		goto fail_sta_info;
+
+	rtnl_lock();
+	result = dev_alloc_name(local->mdev, local->mdev->name);
+	if (result < 0)
+		goto fail_dev;
+
+	memcpy(local->mdev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN);
+	SET_NETDEV_DEV(local->mdev, wiphy_dev(local->hw.wiphy));
+
+	result = register_netdevice(local->mdev);
+	if (result < 0)
+		goto fail_dev;
+
+	ieee80211_debugfs_add_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));
+
+	result = ieee80211_init_rate_ctrl_alg(local, hw->preferred_rate_control);
+	if (result < 0) {
+		printk(KERN_DEBUG "%s: Failed to initialize %s rate control "
+			"algorithm\n", local->mdev->name,
+			hw->preferred_rate_control ?
+			hw->preferred_rate_control : "default");
+		goto fail_rate;
+	}*/
+
+/*	result = ieee80211_wep_init(local);
+
+	if (result < 0) {
+		printk(KERN_DEBUG "%s: Failed to initialize wep\n",
+		       local->mdev->name);
+		goto fail_wep;
+	}
+
+	ieee80211_install_qdisc(local->mdev);
+*/
+	/* add one default STA interface */
+	/*result = ieee80211_if_add(local->mdev, "wlan%d", NULL,
+				  IEEE80211_IF_TYPE_STA);
+	if (result)
+		printk("%s: Failed to add default virtual iface\n",
+		       local->mdev->name);*/
+
+	(int)local->reg_state = 1;// IEEE80211_DEV_REGISTERED;
+//	rtnl_unlock();
+
+//	ieee80211_led_init(local);
+
+	return 0;
+
+fail_wep:
+	//rate_control_deinitialize(local);
+fail_rate:
+	// ieee80211_debugfs_remove_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));
+	//unregister_netdevice(local->mdev);
+fail_dev:
+	//rtnl_unlock();
+	//sta_info_stop(local);
+fail_sta_info:
+	//debugfs_hw_del(local);
+	//destroy_workqueue(local->hw.workqueue);
+fail_workqueue:
+	//wiphy_unregister(local->hw.wiphy);
+	return result;
+}
+
+void ieee80211_prepare_rates(struct ieee80211_local *local,
+			     struct ieee80211_hw_mode *mode)
+{
+	int i;
+
+	for (i = 0; i < mode->num_rates; i++) {
+		struct ieee80211_rate *rate = &mode->rates[i];
+
+		rate->flags &= ~(IEEE80211_RATE_SUPPORTED |
+				 IEEE80211_RATE_BASIC);
+
+		if (local->supp_rates[mode->mode]) {
+			if (!rate_list_match(local->supp_rates[mode->mode],
+					     rate->rate))
+				continue;
+		}
+
+		rate->flags |= IEEE80211_RATE_SUPPORTED;
+
+		/* Use configured basic rate set if it is available. If not,
+		 * use defaults that are sane for most cases. */
+		if (local->basic_rates[mode->mode]) {
+			if (rate_list_match(local->basic_rates[mode->mode],
+					    rate->rate))
+				rate->flags |= IEEE80211_RATE_BASIC;
+		} else switch (mode->mode) {
+		case MODE_IEEE80211A:
+			if (rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_IEEE80211B:
+			if (rate->rate == 10 || rate->rate == 20)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_ATHEROS_TURBO:
+			if (rate->rate == 120 || rate->rate == 240 ||
+			    rate->rate == 480)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_IEEE80211G:
+			if (rate->rate == 10 || rate->rate == 20 ||
+			    rate->rate == 55 || rate->rate == 110)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		}
+
+		/* Set ERP and MANDATORY flags based on phymode */
+		switch (mode->mode) {
+		case MODE_IEEE80211A:
+			if (rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			break;
+		case MODE_IEEE80211B:
+			if (rate->rate == 10)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			break;
+		case MODE_ATHEROS_TURBO:
+			break;
+		case MODE_IEEE80211G:
+			if (rate->rate == 10 || rate->rate == 20 ||
+			    rate->rate == 55 || rate->rate == 110 ||
+			    rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			break;
+		}
+		if (ieee80211_is_erp_rate(mode->mode, rate->rate))
+			rate->flags |= IEEE80211_RATE_ERP;
+	}
+}
+
+int ieee80211_register_hwmode(struct ieee80211_hw *hw,
+			      struct ieee80211_hw_mode *mode)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	struct ieee80211_rate *rate;
+	int i;
+
+	INIT_LIST_HEAD(&mode->list);
+	list_add_tail(&mode->list, &local->modes_list);
+
+	local->hw_modes |= (1 << mode->mode);
+	for (i = 0; i < mode->num_rates; i++) {
+		rate = &(mode->rates[i]);
+		rate->rate_inv = CHAN_UTIL_RATE_LCM / rate->rate;
+	}
+	ieee80211_prepare_rates(local, mode);
+
+	if (!local->oper_hw_mode) {
+		/* Default to this mode */
+		local->hw.conf.phymode = mode->mode;
+		local->oper_hw_mode = local->scan_hw_mode = mode;
+		local->oper_channel = local->scan_channel = &mode->channels[0];
+		local->hw.conf.mode = local->oper_hw_mode;
+		local->hw.conf.chan = local->oper_channel;
+	}
+
+	if (!(hw->flags & IEEE80211_HW_DEFAULT_REG_DOMAIN_CONFIGURED))
+		ieee80211_set_default_regdomain(mode);
+
+	return 0;
+}
+
+void ieee80211_set_default_regdomain(struct ieee80211_hw_mode *mode)
+{
+	int c;
+	for (c = 0; c < mode->num_channels; c++)
+		ieee80211_unmask_channel(mode->mode, &mode->channels[c]);
+}
+

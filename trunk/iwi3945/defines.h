@@ -62,12 +62,9 @@ extern "C" {
 
 typedef IOPhysicalAddress dma_addr_t;
 
-typedef signed char 	   s8;
-typedef signed short 	   s16;
-typedef signed long 	   s32;
-typedef signed long long   s64;
 #define KERN_ERR
 #define KERN_WARNING
+#undef KERN_INFO
 #define KERN_INFO
 #define __builtin_expect(x, expected_value) (x)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
@@ -80,12 +77,12 @@ typedef signed long long   s64;
 #define init_timer(...)
 #define del_timer_sync(...)
 #define time_after(a,b)	((long)(b) - (long)(a) < 0)
-//#define queue_work(...)
-//#define cancel_delayed_work(...)
+#define queue_work(...)
+#define cancel_delayed_work(...)
 #define INIT_DELAYED_WORK(...)
 #define mutex_unlock(...);
 #define mutex_lock(...)
-//#define queue_delayed_work(...)
+#define queue_delayed_work(...)
 #define wake_up_interruptible(...)
 #define tasklet_init(...)
 #define INIT_WORK(...)
@@ -98,11 +95,5 @@ typedef void irqreturn_t;
 #define pci_unmap_single(...)
 #define pci_dma_sync_single_for_cpu(...)
 #define KERN_CRIT
-
-
-
-
-
-
 
 

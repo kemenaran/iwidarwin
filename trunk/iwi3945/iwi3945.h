@@ -114,7 +114,7 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #undef LIST_HEAD
 #define LIST_HEAD(name) \
 	struct list_head name = LIST_HEAD_INIT(name)
-
+#undef INIT_LIST_HEAD
 #define INIT_LIST_HEAD(ptr) do { \
 	(ptr)->next = (ptr); (ptr)->prev = (ptr); \
 } while (0)
@@ -126,14 +126,14 @@ void ieee80211_rate_control_unregister(struct rate_control_ops *ops);
 
 const struct ieee80211_hw_mode *iwl_get_hw_mode(struct iwl_priv *priv, int mode);
 const struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len, const struct ieee80211_ops *ops);
-IOBufferMemoryDescriptor * MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt_add);
 void ieee80211_sta_tx(struct net_device *dev, mbuf_t skb, int encrypt);
-
-
-
-
-
-
+int ieee80211_register_hw(struct ieee80211_hw *hw);
+void ieee80211_set_default_regdomain(struct ieee80211_hw_mode *mode);
+int ieee80211_register_hwmode(struct ieee80211_hw *hw,
+			      struct ieee80211_hw_mode *mode);
+void ieee80211_prepare_rates(struct ieee80211_local *local,
+			     struct ieee80211_hw_mode *mode);
+IOBufferMemoryDescriptor * MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt_add);
 
 class darwin_iwi3945 : public IOEthernetController //IO80211Controller
 {
@@ -151,7 +151,7 @@ public:
 	virtual IOReturn	getHardwareAddress(IOEthernetAddress *addr);
 	virtual IOReturn	enable(IONetworkInterface * netif);
 	virtual IOReturn	disable(IONetworkInterface * netif);
-	static void			interruptOccurred(OSObject * owner, void * src, IOService *nub, int count);
+	static void			interruptOccurred(OSObject * owner, IOService *nub, int source);
 	virtual bool		createWorkLoop( void );
 	virtual IOWorkLoop * getWorkLoop( void ) const;
 	virtual IOOutputQueue * createOutputQueue( void );
@@ -177,13 +177,8 @@ public:
 	void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start);
 	void queue_td(int num , thread_call_func_t func);
 	void check_firstup(struct iwl_priv *priv);
+
 	int iwl_pci_probe();
-	int iwl_hw_nic_init(struct iwl_priv *priv);
-	int iwl_power_init_handle(struct iwl_priv *priv);
-	int iwl3945_nic_set_pwr_src(struct iwl_priv *priv, int pwr_max);
-	int iwl_up(struct iwl_priv *priv);
-	void iwl_resume(struct iwl_priv *priv);
-	void iwl_irq_tasklet(struct iwl_priv *priv);
 	void iwl_bg_up(struct iwl_priv *priv);
 	void iwl_bg_restart(struct iwl_priv *priv);
 	void iwl_bg_rx_replenish(struct iwl_priv *priv);
@@ -196,8 +191,7 @@ public:
 	void iwl_bg_alive_start(struct iwl_priv *priv);
 	void iwl_bg_scan_check(struct iwl_priv *priv);
 	void iwl3945_bg_reg_txpower_periodic(struct iwl_priv *priv);
-
-
+	void iwl_irq_tasklet(struct iwl_priv *priv);
 
 	
 	// statistics
@@ -228,7 +222,7 @@ public:
 
 	
 	struct iwl_priv *priv;
-	
+	thread_call_t tlink[20];
 	ifnet_t fifnet;
 	IOService *             _pmPolicyMaker;
 	UInt32                  _pmPowerState;
@@ -241,7 +235,7 @@ public:
 	
 };
 	
-static darwin_iwi3945 *clone;
-static thread_call_t tlink[20];
+extern darwin_iwi3945 *clone;
+
 #endif
 

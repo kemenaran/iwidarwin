@@ -178,7 +178,7 @@ IOReturn darwin_iwi3945::setPowerState(unsigned long powerStateOrdinal, IOServic
             break;
 
         case kWiFiControllerPowerStateOn:
-			IWI_DEBUG("power state off\n");
+			IWI_DEBUG("power state on\n");
             // The driver is being told to turn on the device.  It does so
             // and then restores any state or context which it has previously
             // saved.
