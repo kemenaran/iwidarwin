@@ -744,38 +744,27 @@ typedef unsigned char UInt8;
 # define __builtin_expect(x, expected_value) (x)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
 
-#define STATUS_HCMD_ACTIVE      (1<<0)	/**< host command in progress */
-
-#define STATUS_INT_ENABLED      (1<<1)
-#define STATUS_RF_KILL_HW       (1<<2)
-#define STATUS_RF_KILL_SW       (1<<3)
+#define STATUS_POWERED          (1<<0)
+#define STATUS_CMD_ACTIVE       (1<<1)  /**< host command in progress */
+#define STATUS_RUNNING          (1<<2)  /* Card initialized, but not enabled */
+#define STATUS_ENABLED          (1<<3)  /* Card enabled -- can scan,Tx,Rx */
+#define STATUS_STOPPING         (1<<4)  /* Card is in shutdown phase */
+#define STATUS_INITIALIZED      (1<<5)  /* Card is ready for external calls */
+#define STATUS_ASSOCIATING      (1<<9)  /* Associated, but no BSSID yet */
+#define STATUS_ASSOCIATED       (1<<10) /* Associated and BSSID valid */
+#define STATUS_INT_ENABLED      (1<<11)
+#define STATUS_RF_KILL_HW       (1<<12)
+#define STATUS_RF_KILL_SW       (1<<13)
 #define STATUS_RF_KILL_MASK     (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)
+#define STATUS_EXIT_PENDING     (1<<14)
 
-#define STATUS_INIT             (1<<5)
-#define STATUS_AUTH             (1<<6)
-#define STATUS_ASSOCIATED       (1<<7)
-#define STATUS_STATE_MASK       (STATUS_INIT | STATUS_AUTH | STATUS_ASSOCIATED)
-
-#define STATUS_ASSOCIATING      (1<<8)
-#define STATUS_DISASSOCIATING   (1<<9)
-#define STATUS_ROAMING          (1<<10)
-#define STATUS_EXIT_PENDING     (1<<11)
-#define STATUS_DISASSOC_PENDING (1<<12)
-#define STATUS_STATE_PENDING    (1<<13)
-
-#define STATUS_SCAN_PENDING     (1<<20)
-#define STATUS_SCANNING         (1<<21)
-#define STATUS_SCAN_ABORTING    (1<<22)
-#define STATUS_SCAN_FORCED      (1<<23)
-
-#define STATUS_LED_LINK_ON      (1<<24)
-#define STATUS_LED_ACT_ON       (1<<25)
-
-#define STATUS_INDIRECT_BYTE    (1<<28)	/* sysfs entry configured for access */
-#define STATUS_INDIRECT_DWORD   (1<<29)	/* sysfs entry configured for access */
-#define STATUS_DIRECT_DWORD     (1<<30)	/* sysfs entry configured for access */
-
-#define STATUS_SECURITY_UPDATED (1<<31)	/* Security sync needed */
+#define STATUS_SCAN_PENDING     (1<<23)
+#define STATUS_SCANNING         (1<<24)
+#define STATUS_SCAN_ABORTING    (1<<25)
+#define STATUS_SCAN_COMPLETE    (1<<26)
+#define STATUS_WX_EVENT_PENDING (1<<27)
+#define STATUS_RESET_PENDING    (1<<29)
+#define STATUS_SECURITY_UPDATED (1<<30) /* Security sync needed */
 
 #define CFG_STATIC_CHANNEL      (1<<0)	/* Restrict assoc. to single channel */
 #define CFG_STATIC_ESSID        (1<<1)	/* Restrict assoc. to single SSID */

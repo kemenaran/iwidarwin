@@ -734,6 +734,15 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 	ieee=&ieee2;
 	ieee->dev = net_dev;
 
+//        // if getHarwareAddress is called, put macaddress priv->mac_addr
+//        for (i=0;i<6;i++){
+//                if(fEnetAddr.bytes[i] == 0      ) continue;
+//                memcpy(priv->mac_addr, &fEnetAddr.bytes, ETH_ALEN);
+//                memcpy(priv->net_dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+//                memcpy(priv->ieee->dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
+//                break;
+//        }
+
 	(void*)ieee->networks = kmalloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network), GFP_KERNEL);
 	memset(ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 	INIT_LIST_HEAD(&ieee->network_free_list);
@@ -1028,6 +1037,7 @@ int darwin_iwi2100::ipw2100_hw_stop_adapter(struct ipw2100_priv *priv)
 	write_register(priv->net_dev, IPW_REG_RESET_REG,
 		       IPW_AUX_HOST_RESET_REG_SW_RESET);
 
+	IOLog( "Adapter Stopped.\n");
 	priv->status &= ~(STATUS_RUNNING | STATUS_STOPPING);
 
 	return 0;
@@ -1735,9 +1745,9 @@ IOOptionBits darwin_iwi2100::getState( void ) const
 bool darwin_iwi2100::start(IOService *provider)
 {
 	UInt16	reg;
-//linking the kext control clone to the driver:
+	//linking the kext control clone to the driver:
 		clone=this;
-		firstifup=0;
+	firstifup=0;
 	do {
 				
 		if ( super::start(provider) == 0) {
@@ -2063,7 +2073,7 @@ int darwin_iwi2100::ipw2100_reset_nic(struct ipw2100_priv *priv)
 	rc = ipw2100_init_nic();
 
 	/* Clear the 'host command active' bit... */
-	priv->status &= ~STATUS_HCMD_ACTIVE;
+	priv->status &= ~STATUS_CMD_ACTIVE;
 	//wake_up_interruptible(&priv->wait_command_queue);
 	priv->status &= ~(STATUS_SCANNING | STATUS_SCAN_ABORTING);
 	//wake_up_interruptible(&priv->wait_state);
@@ -3120,10 +3130,12 @@ int darwin_iwi2100::ipw2100_read_mac_address(struct ipw2100_priv *priv)
 		IOLog("MAC address read failed\n");
 		return -EIO;
 	}
-	IOLog("card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
+	IOLog("ipw2100_read_mac_address: card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
 		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-	/*memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
+//	memcpy(fEnetAddr.bytes, mac, ETH_ALEN);
+
+/*	memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
 	memcpy(priv->mac_addr, mac, ETH_ALEN);
 	memcpy(priv->ieee->dev->dev_addr, mac, ETH_ALEN);*/
 	return 0;
@@ -3536,7 +3548,7 @@ int darwin_iwi2100::ipw2100_adapter_setup(struct ipw2100_priv *priv)
 	}
 #endif				
 
-	/*err = ipw2100_read_mac_address(priv);
+/*	err = ipw2100_read_mac_address(priv);
 	if (err)
 		return -EIO;
 
@@ -3640,7 +3652,12 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	u32 lock;
 	u32 ord_len = sizeof(lock);
 
-
+	/* Quite if manually disabled. */
+	if (priv->status & STATUS_RF_KILL_SW) {
+		IOLog("%s: Radio is disabled by Manual Disable "
+			       "switch\n", priv->net_dev->name);
+		return 0;
+	}
 
 	/* If the interrupt is enabled, turn it off... */
 	ipw2100_disable_interrupts(priv);
@@ -3697,6 +3714,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 
 	priv->status &= ~STATUS_SCANNING;
 
+//eddi: vediamo se adesso funziona
 	if (rf_kill_active(priv)) {
 		IOLog( "%s: Radio is disabled by RF switch.\n",
 		       priv->net_dev->name);
@@ -3713,14 +3731,6 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 	/* Turn on the interrupt so that commands can be processed */
 	ipw2100_enable_interrupts(priv);
 
-	/* Quite if manually disabled. */
-	if (priv->status & STATUS_RF_KILL_SW) {
-		IOLog("%s: Radio is disabled by Manual Disable "
-			       "switch\n", priv->net_dev->name);
-		return 0;
-	}
-	
-if (!deferred) {
 	/* Send all of the commands that must be sent prior to
 	 * HOST_COMPLETE */
 	if (ipw2100_adapter_setup(priv)) {
@@ -3730,7 +3740,7 @@ if (!deferred) {
 		goto exit;
 	}
 
-	
+	if (!deferred) {
 		/* Enable the adapter - sends HOST_COMPLETE */
 		if (ipw2100_enable_adapter(priv)) {
 			IOLog( ": "
@@ -3789,10 +3799,10 @@ IOReturn darwin_iwi2100::enable( IONetworkInterface * netif )
 	}
 }
 
-inline int darwin_iwi2100::ipw2100_is_init(struct ipw2100_priv *priv)
-{
-	return (priv->status & STATUS_INIT) ? 1 : 0;
-}
+//inline int darwin_iwi2100::ipw2100_is_init(struct ipw2100_priv *priv)
+//{
+//	return (priv->status & STATUS_INITIALIZED) ? 1 : 0;
+//}
 
 u32 darwin_iwi2100::ipw2100_register_toggle(u32 reg)
 {
@@ -3876,43 +3886,42 @@ int darwin_iwi2100::ipw2100_disassociate(struct ipw2100_priv *data)
 	return 1;
 }
 
-void darwin_iwi2100::ipw2100_deinit(struct ipw2100_priv *priv)
-{
-	int i;
-
-	if (priv->status & STATUS_SCANNING) {
-		IOLog("Aborting scan during shutdown.\n");
-		ipw2100_abort_scan(priv);
-	}
-
-	if (priv->status & STATUS_ASSOCIATED) {
-		IOLog("Disassociating during shutdown.\n");
-		ipw2100_disassociate(priv);
-	}
-
-	ipw2100_led_shutdown(priv);
-
-	/* Wait up to 1s for status to change to not scanning and not
-	 * associated (disassociation can take a while for a ful 802.11
-	 * exchange */
-	for (i = 1000; i && (priv->status &
-			     (STATUS_DISASSOCIATING |
-			      STATUS_ASSOCIATED | STATUS_SCANNING)); i--)
-		udelay(10);
-
-	if (priv->status & (STATUS_DISASSOCIATING |
-			    STATUS_ASSOCIATED | STATUS_SCANNING))
-		IOLog("Still associated or scanning...\n");
-	else
-		IOLog("Took %dms to de-init\n", 1000 - i);
-
-	/* Attempt to disable the card */
-	u32 phy_off = cpu_to_le32(0);
-	sendCommand(IPW_CMD_CARD_DISABLE, &phy_off,sizeof(phy_off), 1);
-
-	priv->status &= ~STATUS_INIT;
-}
-
+//void darwin_iwi2100::ipw2100_deinit(struct ipw2100_priv *priv)
+//{
+//	int i;
+//
+//	if (priv->status & STATUS_SCANNING) {
+//		IOLog("Aborting scan during shutdown.\n");
+//		ipw2100_abort_scan(priv);
+//	}
+//
+//	if (priv->status & STATUS_ASSOCIATED) {
+//		IOLog("Disassociating during shutdown.\n");
+//		ipw2100_disassociate(priv);
+//	}
+//
+//	ipw2100_led_shutdown(priv);
+//
+//	/* Wait up to 1s for status to change to not scanning and not
+//	 * associated (disassociation can take a while for a ful 802.11
+//	 * exchange */
+//	for (i = 1000; i && (priv->status &
+//			     (STATUS_DISASSOCIATING |
+//			      STATUS_ASSOCIATED | STATUS_SCANNING)); i--)
+//		udelay(10);
+//
+//	if (priv->status & (STATUS_DISASSOCIATING |
+//			    STATUS_ASSOCIATED | STATUS_SCANNING))
+//		IOLog("Still associated or scanning...\n");
+//	else
+//		IOLog("Took %dms to de-init\n", 1000 - i);
+//
+//	/* Attempt to disable the card */
+//	u32 phy_off = cpu_to_le32(0);
+//	sendCommand(IPW_CMD_CARD_DISABLE, &phy_off,sizeof(phy_off), 1);
+//
+//	priv->status &= ~STATUS_INITIALIZED;
+//}
 
 inline void darwin_iwi2100::ipw2100_disable_interrupts(struct ipw2100_priv *priv)
 {
@@ -3924,25 +3933,75 @@ inline void darwin_iwi2100::ipw2100_disable_interrupts(struct ipw2100_priv *priv
 
 void darwin_iwi2100::ipw2100_down(struct ipw2100_priv *priv)
 {
-	int exit_pending = priv->status & STATUS_EXIT_PENDING;
+//inizio (eddi) - This function was taken erronealy from ipw2200
+//        int associated = priv->status & STATUS_ASSOCIATED;
 
-	priv->status |= STATUS_EXIT_PENDING;
+        /* Kill the RF switch timer */
+        if (!priv->stop_rf_kill) {
+                priv->stop_rf_kill = 1;
+                //cancel_delayed_work(&priv->rf_kill);
+		queue_td(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_rf_kill));
+        }
 
-	if (ipw2100_is_init(priv))
-		ipw2100_deinit(priv);
+        /* Kill the firmare hang check timer */
+        if (!priv->stop_hang_check) {
+                priv->stop_hang_check = 1;
+                //cancel_delayed_work(&priv->hang_check);
+		queue_td(7,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_hang_check));
+        }
 
-	/* Wipe out the EXIT_PENDING status bit if we are not actually
-	 * exiting the module */
-	if (!exit_pending)
-		priv->status &= ~STATUS_EXIT_PENDING;
+        /* Kill any pending resets */
+        if (priv->status & STATUS_RESET_PENDING)
+                //cancel_delayed_work(&priv->reset_work);
+		 queue_td(8,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_reset_adapter));
 
-	/* tell the device to stop sending interrupts */
-	ipw2100_disable_interrupts(priv);
+        /* Make sure the interrupt is on so that FW commands will be 
+         * processed correctly */
+//        spin_lock_irqsave(&priv->low_lock, flags);
+        ipw2100_enable_interrupts(priv);
+//        spin_unlock_irqrestore(&priv->low_lock, flags);
 
-	/* Clear all bits but the RF Kill */
-	priv->status &= STATUS_RF_KILL_MASK | STATUS_EXIT_PENDING;
-	//fNetif->setLinkState(kIO80211NetworkLinkDown);
-	//netif_stop_queue(priv->net_dev);
+        if (ipw2100_hw_stop_adapter(priv))
+//                printk(KERN_ERR DRV_NAME ": %s: Error stopping adapter.\n",
+//                       priv->net_dev->name);
+		IOLog("%s: Error stopping adapter.\n",
+                       priv->net_dev->name);
+
+        /* Do not disable the interrupt until _after_ we disable 
+         * the adaptor.  Otherwise the CARD_DISABLE command will never 
+         * be ack'd by the firmware */
+//        spin_lock_irqsave(&priv->low_lock, flags);
+        ipw2100_disable_interrupts(priv);
+//        spin_unlock_irqrestore(&priv->low_lock, flags);
+
+//        /* We have to signal any supplicant if we are disassociating */
+//        if (associated)
+//                wireless_send_event(priv->net_dev, SIOCGIWAP, &wrqu, NULL);
+
+        priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+//        netif_carrier_off(priv->net_dev);
+//        netif_stop_queue(priv->net_dev);
+//fine
+
+//	int exit_pending = priv->status & STATUS_EXIT_PENDING;
+//
+//	priv->status |= STATUS_EXIT_PENDING;
+//
+//	if (ipw2100_is_init(priv))
+//		ipw2100_deinit(priv);
+//
+//	/* Wipe out the EXIT_PENDING status bit if we are not actually
+//	 * exiting the module */
+//	if (!exit_pending)
+//		priv->status &= ~STATUS_EXIT_PENDING;
+//
+//	/* tell the device to stop sending interrupts */
+//	ipw2100_disable_interrupts(priv);
+//
+//	/* Clear all bits but the RF Kill */
+//	priv->status &= STATUS_RF_KILL_MASK | STATUS_EXIT_PENDING;
+//	//fNetif->setLinkState(kIO80211NetworkLinkDown);
+//	//netif_stop_queue(priv->net_dev);
 
 	ipw2100_stop_nic();
 
@@ -4160,7 +4219,7 @@ void darwin_iwi2100::isr_indicate_associated(struct ipw2100_priv *priv, u32 stat
 	priv->connect_start = jiffies;//get_seconds();
 
 	//queue_delayed_work(priv->workqueue, &priv->wx_event_work, HZ / 10);
-	queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),priv,NULL,true);
+	//queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),priv,NULL,true);
 }
 
 /*struct ipw2100_status_indicator {
@@ -4228,6 +4287,7 @@ void darwin_iwi2100::isr_status_change(struct ipw2100_priv *priv, int status)
 			
 		case IPW_STATE_SCANNING:
 			isr_indicate_scanning(priv,status);
+		break;
 			
 		default:
 			IOLog("unknown status received: %04x\n", status);
@@ -4311,7 +4371,7 @@ void darwin_iwi2100::isr_indicate_association_lost(struct ipw2100_priv *priv, u3
 
 	//if (priv->status & STATUS_SECURITY_UPDATED)
 	//	queue_delayed_work(priv->workqueue, &priv->security_work, 0);
-	queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),priv,NULL,true);
+	//queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),priv,NULL,true);
 	//queue_delayed_work(priv->workqueue, &priv->wx_event_work, 0);
 }
 
@@ -6402,13 +6462,29 @@ UInt16 darwin_iwi2100::readPromWord(UInt16 *base, UInt8 addr)
 #endif
 }
 
+//   486: IOReturn WiFiController::setHardwareAddress(const void * addr, UInt32 addrBytes) {
+//   487:     IOReturn ret;
+//   488:     if (addrBytes != kIOEthernetAddressSize) return kIOReturnBadArgument;
+//   489:     
+//   490:     ret = setHardwareAddressHardware((UInt8*)addr);
+//   491:     if (ret == kIOReturnSuccess) {
+//   492:         bcopy(addr, &_myAddress, addrBytes);
+//   493:     }
+//   494:     return ret;
+//   495: }
 
 IOReturn darwin_iwi2100::getHardwareAddress( IOEthernetAddress * addr )
 {
+//	bcopy(&_fEnetAddr, addrs, sizeof(*addrs));
+//	return kIOReturnSuccess;
+//	return kIOReturnNotReady;
+
+
 	UInt16 val;
 	if (fEnetAddr.bytes[0]==0 && fEnetAddr.bytes[1]==0 && fEnetAddr.bytes[2]==0
 	&& fEnetAddr.bytes[3]==0 && fEnetAddr.bytes[4]==0 && fEnetAddr.bytes[5]==0)
 	{
+
 		if (priv)
 		{
 			u32 length = ETH_ALEN;
@@ -6416,6 +6492,7 @@ IOReturn darwin_iwi2100::getHardwareAddress( IOEthernetAddress * addr )
 
 			int err;
 
+			ipw2100_up(priv,1);
 			err = ipw2100_get_ordinal(priv, IPW_ORD_STAT_ADAPTER_MAC, mac, &length);
 			if (err) {
 				IOLog("MAC address read failed\n");
@@ -6944,7 +7021,7 @@ int darwin_iwi2100::sendCommand(UInt8 type,void *data,UInt8 len,bool async)
 
 	
 	struct iwi_cmd_desc *desc;
-	priv->status |= STATUS_HCMD_ACTIVE;
+	priv->status |= STATUS_CMD_ACTIVE;
 	
 	desc = &this->cmdq.desc[cmdq.cur];
 	desc->hdr.type = IWI_HDR_TYPE_COMMAND;
@@ -6963,7 +7040,7 @@ int darwin_iwi2100::sendCommand(UInt8 type,void *data,UInt8 len,bool async)
 	
 	int r=0;
 	if (async) 
-	while (priv->status & STATUS_HCMD_ACTIVE) 
+	while (priv->status & STATUS_CMD_ACTIVE) 
 	{
 		r++;
 		IODelay(HZ);
@@ -7126,7 +7203,7 @@ int darwin_iwi2100::ipw2100_scan(struct ipw2100_priv *priv, int type)
 	struct ipw2100_scan_request_ext scan;
 	int err = 0, scan_type;
 	IOLog("scanning...\n");
-	if (!(priv->status & STATUS_INIT) ||
+	if (!(priv->status & STATUS_INITIALIZED) ||
 	    (priv->status & STATUS_EXIT_PENDING))
 		return 0;
 
@@ -8472,13 +8549,6 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	}
 	if (opt==2) //associate network.
 	{
-		//todo: check other priv status
-		clone->priv->status |= STATUS_RF_KILL_HW;
-		clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-		clone->setLinkStatus(kIONetworkLinkValid);
-		//if ((clone->fNetif->getFlags() & IFF_RUNNING)) clone->ipw_link_down(clone->priv); else clone->ipw_led_link_off(clone->priv);
-		clone->schedule_reset(clone->priv);
-		clone->priv->status &= ~STATUS_RF_KILL_HW;
 		struct ieee80211_network *network = NULL;	
 		struct ipw_network_match match = {NULL};
 		struct ipw_supported_rates *rates;
@@ -8502,15 +8572,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		int rep=0;
 		while (!(clone->priv->status & STATUS_ASSOCIATED)) 
 		{
-			//clone->ipw_adapter_restart(clone->priv);
-			clone->schedule_reset(clone->priv);
-			IODelay(5000*1000);
 			clone->ipw2100_associate_network(clone->priv, network, rates, 0);
-			IODelay(5000*1000);
+			IODelay(2000*1000);
 			rep++;
-			if (rep==5) break;
+			if (rep==10) break;
 		}
-		if (rep == 5)
+		if (rep == 10)
 		{
 			IWI_LOG("failed when associating to this network\n");
 			return 1;
@@ -8522,27 +8589,28 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
 			clone->priv->config &= ~CFG_ASSOCIATE;
-			int q=0;
+			/*int q=0;
 			if (clone->rf_kill_active(clone->priv)) 
 			{	
 				clone->read_register(clone->priv->net_dev, IPW_REG_GPIO, &reg);
 				reg = reg &~ IPW_BIT_GPIO_RF_KILL;
 				clone->write_register(clone->priv->net_dev, IPW_REG_GPIO, reg);			
-			} else q=1;
+			} else q=1;*/
 			clone->priv->status &= ~STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
-			if (q==1) clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2100::ipw2100_rf_kill),clone->priv,2000,true);
+			//if (q==1) 
+			clone->queue_te(3,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi2100::ipw2100_rf_kill),clone->priv,2000,true);
 			IWI_LOG("radio on IPW_REG_GPIO = 0x%x\n",reg);
 		}
 		else
 		{
-			if (!(clone->rf_kill_active(clone->priv))) 
+			/*if (!(clone->rf_kill_active(clone->priv))) 
 			{
 				clone->read_register(clone->priv->net_dev, IPW_REG_GPIO, &reg);
 				reg = reg | IPW_BIT_GPIO_RF_KILL;
 				clone->write_register(clone->priv->net_dev, IPW_REG_GPIO, reg);
-			}
+			}*/
 			clone->priv->status |= STATUS_RF_KILL_HW;
 			clone->priv->status &= ~STATUS_RF_KILL_SW;
 			clone->priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
