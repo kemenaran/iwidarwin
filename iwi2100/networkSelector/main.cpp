@@ -109,8 +109,8 @@ int main (int argc, char * const argv[]) {
 		result = getsockopt( fd, SYSPROTO_CONTROL, 1, priv.ieee, &sp);
 		priv.ieee->dev = &net_dev;
 		sp=sizeof(*priv.ieee->dev);
-		//result = getsockopt( fd, SYSPROTO_CONTROL, 5, priv.ieee->dev, &sp);
-		/*priv.ieee->networks = (struct ieee80211_network*)malloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
+		result = getsockopt( fd, SYSPROTO_CONTROL, 5, priv.ieee->dev, &sp);
+		priv.ieee->networks = (struct ieee80211_network*)malloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 		memset(priv.ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 		INIT_LIST_HEAD(&priv.ieee->network_free_list);
 		INIT_LIST_HEAD(&priv.ieee->network_list);
@@ -132,19 +132,20 @@ int main (int argc, char * const argv[]) {
 		{
 			priv.ieee->networks[c+1]=priv.ieee->networks[c];
 			goto rep;
-		}*/
+		}
 		if (priv.status & STATUS_ASSOCIATED)
 		{
-			/*priv.assoc_network=&nets;
-			sp=sizeof(*priv.assoc_network);
-			result = getsockopt( fd, SYSPROTO_CONTROL, 3, priv.assoc_network, &sp);*/
+			//priv.assoc_network=&nets;
+			//sp=sizeof(*priv.assoc_network);
+			//result = getsockopt( fd, SYSPROTO_CONTROL, 3, priv.assoc_network, &sp);
+			printf("I'm associated with a network... I can't tell you what network yet...\n");
 		}
 		//Adapter EN0 (00:13:ce:b7:9c:00) [mode: 0 led: off]
 		//Associated: 'linksys (00:06:25:10:18:11) ch: 11'
 		cout<<"\nWellcome to the insanelyMac SpacePort 0.1\n";
-		//printf("Adapter %s (%02x:%02x:%02x:%02x:%02x:%02x) [mode: %d led: %s]\n", priv.ieee->dev->name,
-		//MAC_ARG(priv.mac_addr), priv.ieee->iw_mode, priv.config & CFG_NO_LED ? "off" :	"on");
-		/*if ((priv.status & STATUS_ASSOCIATED))
+		printf("Adapter %s (%02x:%02x:%02x:%02x:%02x:%02x) [mode: %d led: %s]\n", priv.ieee->dev->name,
+		MAC_ARG(priv.mac_addr), priv.ieee->iw_mode, priv.config & CFG_NO_LED ? "off" :	"on");
+		if ((priv.status & STATUS_ASSOCIATED))
 		{
 			printf("'%s (%02x:%02x:%02x:%02x:%02x:%02x) ch: %d' ",
 						escape_essid((const char*)priv.essid, priv.essid_len),
@@ -163,7 +164,7 @@ int main (int argc, char * const argv[]) {
 				}
 			}
 			
-		}*/
+		}
 		cout<<"\n1) Turn card ";
 		if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)) cout<<"on"; else cout<<"off"; 
 		cout<<"\n2) Network List \n3) Switch led \n4) Change mode"<<"\n5) Close Program \n0) Refresh";
