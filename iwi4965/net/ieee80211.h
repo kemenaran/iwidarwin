@@ -1303,9 +1303,9 @@ enum {
 };
 struct ieee80211_tx_stored_packet {
 	struct ieee80211_tx_control control;
-	struct sk_buff *skb;
+	mbuf_t skb;
 	int num_extra_frag;
-	struct sk_buff **extra_frag;
+	mbuf_t extra_frag;
 	int last_frag_rateidx;
 	int last_frag_hwrate;
 	struct ieee80211_rate *last_frag_rate;
@@ -1346,9 +1346,9 @@ struct ieee80211_local {
 	//struct tasklet_struct 
 	void* tasklet;
 	//struct sk_buff_head 
-	struct list_head skb_queue;
+	mbuf_t skb_queue;
 	//struct sk_buff_head 
-	struct list_head skb_queue_unreliable;
+	mbuf_t skb_queue_unreliable;
 
 	/* Station data structures */
 	//spinlock_t 
@@ -3404,7 +3404,7 @@ static void ieee80211_send_nullfunc(struct ieee80211_local *local,
 	u16 fc;
 
 	//skb = dev_alloc_skb(local->hw.extra_tx_headroom + 24);
-	if (mbuf_getpacket(MBUF_WAITOK , &skb)!=0) {
+	if (mbuf_getpacket(MBUF_DONTWAIT, &skb)!=0) {
 		printk(KERN_DEBUG "%s: failed to allocate buffer for nullfunc "
 		       "frame\n", sdata->dev->name);
 		return;
@@ -3626,5 +3626,125 @@ static void ieee80211_stop_queues(struct ieee80211_hw *hw)
 	for (i = 0; i < hw->queues; i++)
 		ieee80211_stop_queue(hw, i);
 }
+
+#undef MSEC_PER_SEC		
+#undef USEC_PER_SEC		
+#undef NSEC_PER_SEC		
+#undef NSEC_PER_USEC		
+
+#define MSEC_PER_SEC		1000L
+#define USEC_PER_SEC		1000000L
+#define NSEC_PER_SEC		1000000000L
+#define NSEC_PER_USEC		1000L
+	
+static inline unsigned int
+__div(unsigned long long n, unsigned int base)
+{
+	return n / base;
+}
+#undef jiffies
+#define jiffies		\
+({		\
+	uint64_t m,f;		\
+	clock_get_uptime(&m);		\
+	absolutetime_to_nanoseconds(m,&f);		\
+	((f * HZ) / 1000000000);		\
+})
+
+static inline unsigned int jiffies_to_msecs(const unsigned long j)
+{
+#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
+	return (MSEC_PER_SEC / HZ) * j;
+#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
+	return (j + (HZ / MSEC_PER_SEC) - 1)/(HZ / MSEC_PER_SEC);
+#else
+	return (j * MSEC_PER_SEC) / HZ;
+#endif
+}
+
+static inline unsigned long msecs_to_jiffies(const unsigned int m)
+{
+         //if (m > jiffies_to_msecs(MAX_JIFFY_OFFSET)) return MAX_JIFFY_OFFSET;
+#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
+         return (m + (MSEC_PER_SEC / HZ) - 1) / (MSEC_PER_SEC / HZ);
+#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
+         return m * (HZ / MSEC_PER_SEC);
+#else
+         return (m * HZ + MSEC_PER_SEC - 1) / MSEC_PER_SEC;
+#endif
+}
+
+#define time_after(a,b)	((long)(b) - (long)(a) < 0)
+
+#define LIST_HEAD_INIT(name) { &(name), &(name) }
+
+#undef LIST_HEAD
+#define LIST_HEAD(name) \
+	struct list_head name = LIST_HEAD_INIT(name)
+#undef INIT_LIST_HEAD
+#define INIT_LIST_HEAD(ptr) do { \
+	(ptr)->next = (ptr); (ptr)->prev = (ptr); \
+} while (0)
+
+static LIST_HEAD(rate_ctrl_algs);
+
+static int ieee80211_rate_control_register(struct rate_control_ops *ops)
+{
+	struct rate_control_alg *alg;
+
+	alg = (struct rate_control_alg*)IOMalloc(sizeof(*alg));
+	if (alg == NULL) {
+		return -ENOMEM;
+	}
+	memset(alg, 0, sizeof(*alg));
+	alg->ops = ops;
+
+	//mutex_lock(&rate_ctrl_mutex);
+	list_add_tail(&alg->list, &rate_ctrl_algs);
+	//mutex_unlock(&rate_ctrl_mutex);
+
+	return 0;
+}
+static void ieee80211_rate_control_unregister(struct rate_control_ops *ops)
+{
+	struct rate_control_alg *alg;
+
+	//mutex_lock(&rate_ctrl_mutex);
+	list_for_each_entry(alg, &rate_ctrl_algs, list) {
+		if (alg->ops == ops) {
+			list_del(&alg->list);
+			break;
+		}
+	}
+	//mutex_unlock(&rate_ctrl_mutex);
+	IOFree(alg, sizeof(struct rate_control_alg));
+}
+#define BIT(x) (1 << (x))
+/* Stations flags (struct sta_info::flags) */
+#define WLAN_STA_AUTH BIT(0)
+#define WLAN_STA_ASSOC BIT(1)
+#define WLAN_STA_PS BIT(2)
+#define WLAN_STA_TIM BIT(3) /* TIM bit is on for PS stations */
+#define WLAN_STA_PERM BIT(4) /* permanent; do not remove entry on expiration */
+#define WLAN_STA_AUTHORIZED BIT(5) /* If 802.1X is used, this flag is
+				    * controlling whether STA is authorized to
+				    * send and receive non-IEEE 802.1X frames
+				    */
+#define WLAN_STA_SHORT_PREAMBLE BIT(7)
+#define WLAN_STA_WME BIT(9)
+#define WLAN_STA_HT  BIT(10)
+#define WLAN_STA_WDS BIT(27)
+
+#define STA_TID_NUM 16
+#define ADDBA_RESP_INTERVAL HZ
+
+/* For IEEE80211_RADIOTAP_RX_FLAGS */
+#define IEEE80211_RADIOTAP_F_RX_BADFCS	0x0001	/* frame failed crc check */
+
+/* For IEEE80211_RADIOTAP_TX_FLAGS */
+#define IEEE80211_RADIOTAP_F_TX_FAIL	0x0001	/* failed due to excessive
+						 * retries */
+#define IEEE80211_RADIOTAP_F_TX_CTS	0x0002	/* used cts 'protection' */
+#define IEEE80211_RADIOTAP_F_TX_RTS	0x0004	/* used rts/cts handshake */
 
 #endif				/* IEEE80211_H */

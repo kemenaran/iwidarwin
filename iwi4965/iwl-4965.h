@@ -71,6 +71,8 @@ static inline void iwl4965_rf_kill_ct_config(struct iwl_priv *priv) {}
 /*
  * Forward declare iwl-4965.c functions for base.c
  */
+//extern int iwl3945_init_hw_rate_table(struct iwl_priv *priv);
+ 
 extern int iwl4965_tx_queue_update_wr_ptr(struct iwl_priv *priv,
 					  struct iwl_tx_queue *txq,
 					  u16 byte_cnt);

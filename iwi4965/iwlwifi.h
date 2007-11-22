@@ -512,9 +512,8 @@ struct iwl_driver_hw_info {
 #define HT_SHORT_GI_20MHZ_ONLY          (1 << 0)
 #define HT_SHORT_GI_40MHZ_ONLY          (1 << 1)
 
+#include "iwl-4965.h"
 #include "iwl-3945.h"
-//#include "iwl-4965.h"
-
 #include "iwl-priv.h"
 
 /* Requires full declaration of iwl_priv before including */
@@ -536,6 +535,8 @@ struct iwl_driver_hw_info {
  * for use by iwl-*.c
  *
  *****************************************************************************/
+ extern void ieee80211_tx_status(struct ieee80211_hw *hw, mbuf_t skb,
+			 struct ieee80211_tx_status *status);
 struct iwl_addsta_cmd;
 extern int iwl_send_add_station(struct iwl_priv *priv,
 				struct iwl_addsta_cmd *sta, u8 flags);
