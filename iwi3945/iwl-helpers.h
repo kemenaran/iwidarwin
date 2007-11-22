@@ -30,7 +30,6 @@
 #ifndef __iwl_helpers_h__
 #define __iwl_helpers_h__
 #include "defines.h"
-
 /*
  * The structures defined by the hardware/uCode interface
  * have bit-wise operations.  For each bit-field there is

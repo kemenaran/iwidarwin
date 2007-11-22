@@ -27,7 +27,6 @@
 #ifndef __iwl_priv_h__
 #define __iwl_priv_h__
 #include "defines.h"
-
 //#include <linux/workqueue.h>
 
 #ifdef CONFIG_IWLWIFI_SPECTRUM_MEASUREMENT

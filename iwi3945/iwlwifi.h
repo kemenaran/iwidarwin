@@ -34,10 +34,10 @@
 //#include <linux/pci.h> /* for struct pci_device_id */
 //#include <net/ieee80211_radiotap.h>
 
-struct iwl_priv;
+//struct iwl_priv;
 
 /* Hardware specific file defines the PCI IDs table for that hardware module */
-extern struct pci_device_id iwl_hw_card_ids[];
+//extern struct pci_device_id iwl_hw_card_ids[];
 
 #if IWL == 3945
 #define DRV_NAME	"iwl3945"
@@ -68,6 +68,7 @@ extern int param_disable;
 extern int param_antenna;
 extern int param_hwcrypto;
 extern int param_qos_enable;
+extern u32 param_timer;
 
 enum iwl_antenna {
 	IWL_ANTENNA_DIVERSITY,
@@ -244,8 +245,8 @@ enum {
 	CMD_NO_LOCK = (1 << 4),
 };
 
-struct iwl_cmd;
-struct iwl_priv;
+//struct iwl_cmd;
+//struct iwl_priv;
 
 #define CMD_VAR_MAGIC 0xA987
 
@@ -536,6 +537,8 @@ struct iwl_driver_hw_info {
  * for use by iwl-*.c
  *
  *****************************************************************************/
+ extern void ieee80211_tx_status(struct ieee80211_hw *hw, mbuf_t skb,
+			 struct ieee80211_tx_status *status);
 struct iwl_addsta_cmd;
 extern int iwl_send_add_station(struct iwl_priv *priv,
 				struct iwl_addsta_cmd *sta, u8 flags);

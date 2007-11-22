@@ -36,6 +36,8 @@
 			<string>IOPCIDevice</string>
 			<key>param_disable</key>
 			<integer>0</integer>
+			<key>param_timer</key>
+			<integer>1000</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>

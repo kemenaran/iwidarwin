@@ -45,6 +45,7 @@
 #include "iwl-helpers.h"
 #include "iwl-3945.h"
 #include "iwl-3945-rs.h"
+#include "iwi3945.h"
 
 /*
  * Parameter order:
