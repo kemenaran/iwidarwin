@@ -63,6 +63,7 @@
 #include "defines.h"
 #include "iwlwifi.h"
 #include "iwl-helpers.h"
+#include "iwi4965.h"
 
 /******************************************************************************
  *
@@ -205,7 +206,7 @@ static int iwl_tx_queue_alloc(struct iwl_priv *priv,
 	if (id != IWL_CMD_QUEUE_NUM) {
 		txq->txb = (struct iwl_tx_info*)IOMalloc(sizeof(txq->txb[0]) *
 				   TFD_QUEUE_SIZE_MAX);
-		//memset(txq->txb,0,sizeof(txq->txb[0]) *  TFD_QUEUE_SIZE_MAX);
+		memset(txq->txb,0,sizeof(txq->txb[0]) *  TFD_QUEUE_SIZE_MAX);
 		if (!txq->txb) {
 			IWL_ERROR("kmalloc for auxilary BD "
 				  "structures failed\n");
@@ -1287,6 +1288,8 @@ static int iwl_commit_rxon(struct iwl_priv *priv)
 	return 0;
 }
 
+
+
 static int iwl_send_bt_config(struct iwl_priv *priv)
 {
 	struct iwl_bt_cmd bt_cmd;
@@ -2017,7 +2020,7 @@ int iwl_power_init_handle(struct iwl_priv *priv)
 	memcpy(&pow_data->pwr_range_1[0], &range_1[0], size);
 
 	rc = 0;
-	pci_pm= clone->fPCIDevice->configRead32(PCI_LINK_CTRL);
+	pci_pm= clone->fPCIDevice->configRead16(PCI_LINK_CTRL);
 	//pci_read_config_word(priv->pci_dev, PCI_LINK_CTRL, &pci_pm);
 	if (rc != 0)
 		return 0;
@@ -3338,6 +3341,225 @@ static int iwl_get_measurement(struct iwl_priv *priv,
 }
 #endif
 
+void ieee80211_tx_status(struct ieee80211_hw *hw, mbuf_t skb,
+			 struct ieee80211_tx_status *status)
+{
+	if (!skb) return;
+	mbuf_t skb2;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) mbuf_data(skb);
+	struct ieee80211_local *local = hw_to_local(hw);
+	u16 frag, type;
+	u32 msg_type;
+	struct ieee80211_tx_status_rtap_hdr *rthdr;
+	struct ieee80211_sub_if_data *sdata;
+	int monitors;
+
+	if (!status) {
+		printk(
+		       "%s: ieee80211_tx_status called with NULL status\n",
+		       local->mdev->name);
+		//dev_kfree_skb(skb);
+		if (skb)
+		if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) mbuf_freem(skb);
+		skb=NULL;
+		return;
+	}
+
+	if (status->excessive_retries) {
+		struct sta_info *sta;
+		sta = sta_info_get(local, hdr->addr1);
+		if (sta) {
+			if (sta->flags & WLAN_STA_PS) {
+
+				status->excessive_retries = 0;
+				status->flags |= IEEE80211_TX_STATUS_TX_FILTERED;
+			}
+			sta_info_put(sta);
+		}
+	}
+
+	if (status->flags & IEEE80211_TX_STATUS_TX_FILTERED) {
+		struct sta_info *sta;
+		sta = sta_info_get(local, hdr->addr1);
+		if (sta) {
+			sta->tx_filtered_count++;
+
+
+			sta->clear_dst_mask = 1;
+
+			if (sta->flags & WLAN_STA_PS
+			// &&
+			  //  skb_queue_len(&sta->tx_filtered) <
+			    //STA_MAX_TX_BUFFER
+				) {
+				IOLog("todo ieee80211_remove_tx_extra\n");
+				//ieee80211_remove_tx_extra(local, sta->key,
+				//			  skb,
+				//			  &status->control);
+				//skb_queue_tail(&sta->tx_filtered, skb);
+			} else if (!(sta->flags & WLAN_STA_PS) &&
+				   !(status->control.flags & IEEE80211_TXCTL_REQUEUE)) {
+				// Software retry the packet once 
+				status->control.flags |= IEEE80211_TXCTL_REQUEUE;
+				IOLog("todo ieee80211_remove_tx_extra\n");
+				//ieee80211_remove_tx_extra(local, sta->key,
+				//			  skb,
+				//			  &status->control);
+				//dev_queue_xmit(skb);
+				clone->outputPacket(skb,0);
+			} else {
+				//if (net_ratelimit()) {
+					printk( "%s: dropped TX "
+					       "filtered frame queue_len=%d "
+					       "PS=%d @%lu\n",
+					       local->mdev->name,0,
+					    //   skb_queue_len(
+						  //     &sta->tx_filtered),
+					       !!(sta->flags & WLAN_STA_PS),
+					       jiffies);
+				//}
+				//dev_kfree_skb(skb);
+				if (skb)
+				if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) mbuf_freem(skb);
+				skb=NULL;
+			}
+			sta_info_put(sta);
+			return;
+		}
+	} else {
+		IOLog("todo rate_control_tx_status\n");
+		//rate_control_tx_status(local, local->mdev, skb, status);
+	}
+
+	//ieee80211_led_tx(local, 0);
+	IOLog("todo ieee80211_led_tx\n");
+
+
+	frag = le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_FRAG;
+	type = le16_to_cpu(hdr->frame_control) & IEEE80211_FCTL_FTYPE;
+
+	if (status->flags & IEEE80211_TX_STATUS_ACK) {
+		if (frag == 0) {
+			local->dot11TransmittedFrameCount++;
+			if (is_multicast_ether_addr(hdr->addr1))
+				local->dot11MulticastTransmittedFrameCount++;
+			if (status->retry_count > 0)
+				local->dot11RetryCount++;
+			if (status->retry_count > 1)
+				local->dot11MultipleRetryCount++;
+		}
+
+		if (!is_multicast_ether_addr(hdr->addr1) ||
+		    type == IEEE80211_FTYPE_DATA ||
+		    type == IEEE80211_FTYPE_MGMT)
+			local->dot11TransmittedFragmentCount++;
+	} else {
+		if (frag == 0)
+			local->dot11FailedCount++;
+	}
+
+	msg_type = (status->flags & IEEE80211_TX_STATUS_ACK) ? 1:2;
+	//	ieee80211_msg_tx_callback_ack : ieee80211_msg_tx_callback_fail;
+
+	// this was a transmitted frame, but now we want to reuse it 
+	//skb_orphan(skb);
+
+	if ((status->control.flags & IEEE80211_TXCTL_REQ_TX_STATUS)
+	// &&	    local->apdev
+	) {
+		if (local->monitors) {
+			//skb2 = skb_clone(skb, GFP_ATOMIC);
+			mbuf_dup(skb, MBUF_WAITOK , &skb2);
+		} else {
+			skb2 = skb;
+			skb = NULL;
+		}
+
+		if (skb2)
+			// Send frame to hostapd 
+			IOLog("todo ieee80211_rx_mgmt\n");
+			//ieee80211_rx_mgmt(local, skb2, NULL, msg_type);
+
+		if (!skb)
+			return;
+	}
+
+	if (!local->monitors) {
+		//dev_kfree_skb(skb);
+		if (skb)
+		if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) mbuf_freem(skb);
+		skb=NULL;
+		return;
+	}
+
+	// send frame to monitor interfaces now 
+
+	if (mbuf_trailingspace(skb) < sizeof(*rthdr)) {
+		printk(KERN_ERR "ieee80211_tx_status: headroom too small\n");
+		//dev_kfree_skb(skb);
+		if (skb)
+		if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) mbuf_freem(skb);
+		skb=NULL;
+		return;
+	}
+
+	rthdr = (struct ieee80211_tx_status_rtap_hdr*)
+				skb_push(skb, sizeof(*rthdr));
+
+	memset(rthdr, 0, sizeof(*rthdr));
+	rthdr->hdr.it_len = cpu_to_le16(sizeof(*rthdr));
+	rthdr->hdr.it_present =
+		cpu_to_le32((1 << IEEE80211_RADIOTAP_TX_FLAGS) |
+			    (1 << IEEE80211_RADIOTAP_DATA_RETRIES));
+
+	if (!(status->flags & IEEE80211_TX_STATUS_ACK) &&
+	    !is_multicast_ether_addr(hdr->addr1))
+		rthdr->tx_flags |= cpu_to_le16(IEEE80211_RADIOTAP_F_TX_FAIL);
+
+	if ((status->control.flags & IEEE80211_TXCTL_USE_RTS_CTS) &&
+	    (status->control.flags & IEEE80211_TXCTL_USE_CTS_PROTECT))
+		rthdr->tx_flags |= cpu_to_le16(IEEE80211_RADIOTAP_F_TX_CTS);
+	else if (status->control.flags & IEEE80211_TXCTL_USE_RTS_CTS)
+		rthdr->tx_flags |= cpu_to_le16(IEEE80211_RADIOTAP_F_TX_RTS);
+
+	rthdr->data_retries = status->retry_count;
+
+	//read_lock(&local->sub_if_lock);
+	monitors = local->monitors;
+	list_for_each_entry(sdata, &local->sub_if_list, list) {
+		// Using the monitors counter is possibly racy, but
+		if (!monitors || !skb)
+			goto out;
+
+		if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
+			//if (!netif_running(sdata->dev))
+			if((clone->fNetif->getFlags() & IFF_RUNNING)!=0)
+				continue;
+			monitors--;
+			if (monitors)
+				//skb2 = skb_clone(skb, GFP_KERNEL);
+				mbuf_dup(skb, MBUF_WAITOK , &skb2);
+			else
+				skb2 = NULL;
+			//skb->dev = sdata->dev;
+			// XXX: is this sufficient for BPF? 
+			//skb_set_mac_header(skb, 0);
+			//skb->ip_summed = CHECKSUM_UNNECESSARY;
+			//skb->pkt_type = PACKET_OTHERHOST;
+			//skb->protocol = htons(ETH_P_802_2);
+			//memset(skb->cb, 0, sizeof(skb->cb));
+			//netif_rx(skb);
+			clone->fNetif->inputPacket(skb,mbuf_len(skb));
+			skb = skb2;
+		}
+	}
+ out:
+	//read_unlock(&local->sub_if_lock);
+	if (skb)
+	if (!(mbuf_type(skb) == MBUF_TYPE_FREE) ) mbuf_freem(skb);
+	skb=NULL;
+}
+
 static void iwl_txstatus_to_ieee(struct iwl_priv *priv,
 				 struct iwl_tx_info *tx_sta)
 {
@@ -3346,11 +3568,11 @@ static void iwl_txstatus_to_ieee(struct iwl_priv *priv,
 	tx_sta->status.excessive_retries = 0;
 	tx_sta->status.queue_length = 0;
 	tx_sta->status.queue_number = 0;
-IWL_ERROR("todo ieee80211_tx_status_irqsafe\n");
+IWL_ERROR("ieee80211_tx_status\n");
 //	if (in_interrupt())
 //		//ieee80211_tx_status_irqsafe(priv->hw, tx_sta->skb[0], &(tx_sta->status));
 //	else
-//		ieee80211_tx_status(priv->hw, tx_sta->skb[0], &(tx_sta->status));
+		ieee80211_tx_status(priv->hw, tx_sta->skb[0], &(tx_sta->status));
 
 	tx_sta->skb[0] = NULL;
 }
@@ -4106,7 +4328,8 @@ void iwl_rx_replenish(void *data, u8 do_lock)
 		rxb = list_entry(element, struct iwl_rx_mem_buffer, list);
 		//rxb->skb =
 		  //  alloc_skb(IWL_RX_BUF_SIZE, __GFP_NOWARN | GFP_ATOMIC);
-		if (mbuf_getpacket(MBUF_WAITOK , &rxb->skb)!=0) {
+		  rxb->skb=clone->allocatePacket(IWL_RX_BUF_SIZE);
+		if (!rxb->skb) {
 		//	if (net_ratelimit())
 				printk(KERN_CRIT DRV_NAME
 				       ": Can not allocate SKB buffers\n");
@@ -4172,7 +4395,7 @@ int iwl_rx_queue_alloc(struct iwl_priv *priv)
 	INIT_LIST_HEAD(&rxq->rx_used);
 	//rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr);
 	//MemoryDmaAlloc(4 * RX_QUEUE_SIZE, &rxq->dma_addr, &rxq->bd);
-	rxq->bd=(__le32*)IOMallocContiguous(4 * RX_QUEUE_SIZE, sizeof(__le32*), &rxq->dma_addr);
+	rxq->bd=(__le32*)IOMallocContiguous(4 * RX_QUEUE_SIZE, sizeof(__le32), &rxq->dma_addr);
 	if (!rxq->bd)
 		return -ENOMEM;
 	/* Fill the rx_used queue with _all_ of the Rx buffers */
@@ -4337,11 +4560,13 @@ static void iwl_rx_handle(struct iwl_priv *priv)
 			IWL_ERROR( "null mbuf Queue not allocated!\n");
 			break;
 		}
-
+		mbuf_t tb;
 		if( mbuf_next(rxb->skb)) 
 		{
-			IWL_ERROR("rx mbuf_next\n");
-			break;
+			IWL_ERROR("rx mbuf_next - merging\n");
+			tb=clone->mergePacket(rxb->skb);
+			rxb->skb=tb;
+			//break;
 		}
 		
 		if((mbuf_flags(rxb->skb) & MBUF_PKTHDR)==0)
@@ -4375,7 +4600,7 @@ static void iwl_rx_handle(struct iwl_priv *priv)
 				get_cmd_string(pkt->hdr.cmd));
 		} else {
 			/* No handling needed */
-			if (!strcmp( get_cmd_string(pkt->hdr.cmd),"UNKNOWN")) reclaim=0;
+			//if (!strcmp( get_cmd_string(pkt->hdr.cmd),"UNKNOWN")) reclaim=0;
 			IWL_DEBUG_HC("UNHANDLED - #0x%02x %s reclaim? %d\n",
 				     pkt->hdr.cmd,
 				     get_cmd_string(pkt->hdr.cmd),reclaim);
@@ -4823,6 +5048,8 @@ void darwin_iwi4965::iwl_irq_tasklet(struct iwl_priv *priv)
 		return;
 	}
 
+	inta &= ~(1<<26 | 1<<0);
+	
 	if (inta & BIT_INT_RF_KILL) {
 		int hw_rf_kill = 0;
 		if (!(iwl_read32(priv, CSR_GP_CNTRL) &
@@ -6094,21 +6321,21 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 				 priv->ucode_code.len,
 				 &(priv->ucode_code.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_code.len, &(priv->ucode_code.p_addr), &(priv->ucode_code.v_addr));
-	priv->ucode_code.v_addr=IOMallocContiguous( priv->ucode_code.len, sizeof(u32*), &priv->ucode_code.p_addr);
+	priv->ucode_code.v_addr=IOMallocContiguous( priv->ucode_code.len, sizeof(u8), &priv->ucode_code.p_addr);
 	priv->ucode_data.len = data_size;
 	/*priv->ucode_data.v_addr =
 	    pci_alloc_consistent(priv->pci_dev,
 				 priv->ucode_data.len,
 				 &(priv->ucode_data.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_data.len, &(priv->ucode_data.p_addr), &(priv->ucode_data.v_addr));
-	priv->ucode_data.v_addr=IOMallocContiguous(priv->ucode_data.len, sizeof(u32*), &priv->ucode_data.p_addr);
+	priv->ucode_data.v_addr=IOMallocContiguous(priv->ucode_data.len, sizeof(u8), &priv->ucode_data.p_addr);
 	priv->ucode_data_backup.len = data_size;
 	/*priv->ucode_data_backup.v_addr =
 	    pci_alloc_consistent(priv->pci_dev,
 				 priv->ucode_data_backup.len,
 				 &(priv->ucode_data_backup.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_data_backup.len, &(priv->ucode_data_backup.p_addr), &(priv->ucode_data_backup.v_addr));
-	priv->ucode_data_backup.v_addr=IOMallocContiguous(priv->ucode_data_backup.len, sizeof(u32*), &priv->ucode_data_backup.p_addr);
+	priv->ucode_data_backup.v_addr=IOMallocContiguous(priv->ucode_data_backup.len, sizeof(u8), &priv->ucode_data_backup.p_addr);
 	/* Initialization instructions and data */
 	priv->ucode_init.len = init_size;
 	/*priv->ucode_init.v_addr =
@@ -6116,14 +6343,14 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 				 priv->ucode_init.len,
 				 &(priv->ucode_init.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_init.len, &(priv->ucode_init.p_addr), &(priv->ucode_init.v_addr));
-	priv->ucode_init.v_addr=IOMallocContiguous(priv->ucode_init.len, sizeof(u32*), &priv->ucode_init.p_addr);
+	priv->ucode_init.v_addr=IOMallocContiguous(priv->ucode_init.len, sizeof(u8), &priv->ucode_init.p_addr);
 	priv->ucode_init_data.len = init_data_size;
 	/*priv->ucode_init_data.v_addr =
 	    pci_alloc_consistent(priv->pci_dev,
 				 priv->ucode_init_data.len,
 				 &(priv->ucode_init_data.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_init_data.len, &(priv->ucode_init_data.p_addr), &(priv->ucode_init_data.v_addr));
-	priv->ucode_init_data.v_addr=IOMallocContiguous(priv->ucode_init_data.len, sizeof(u32*), &priv->ucode_init_data.p_addr);
+	priv->ucode_init_data.v_addr=IOMallocContiguous(priv->ucode_init_data.len, sizeof(u8), &priv->ucode_init_data.p_addr);
 	/* Bootstrap (instructions only, no data) */
 	priv->ucode_boot.len = boot_size;
 	/*priv->ucode_boot.v_addr =
@@ -6131,7 +6358,7 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 				 priv->ucode_boot.len,
 				 &(priv->ucode_boot.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_boot.len, &(priv->ucode_boot.p_addr), &(priv->ucode_boot.v_addr));
-	priv->ucode_boot.v_addr=IOMallocContiguous(priv->ucode_boot.len, sizeof(u32*), &priv->ucode_boot.p_addr);
+	priv->ucode_boot.v_addr=IOMallocContiguous(priv->ucode_boot.len, sizeof(u8), &priv->ucode_boot.p_addr);
 	if (!priv->ucode_code.v_addr || !priv->ucode_data.v_addr ||
 	    !priv->ucode_init.v_addr || !priv->ucode_init_data.v_addr ||
 	    !priv->ucode_boot.v_addr || !priv->ucode_data_backup.v_addr)
@@ -6412,8 +6639,8 @@ static void iwl_alive_start(struct iwl_priv *priv)
 
 	priv->active_rate = priv->rates_mask;
 	priv->active_rate_basic = priv->rates_mask & IWL_BASIC_RATES_MASK;
-	//iwl_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode));
-	priv->status &= ~STATUS_POWER_PMI;//hack iwl_send_power_mode
+	iwl_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode));
+	//priv->status &= ~STATUS_POWER_PMI;//hack iwl_send_power_mode
 	
         if (iwl_is_associated(priv)) {
 		struct iwl_rxon_cmd *active_rxon =
@@ -8773,7 +9000,7 @@ int darwin_iwi4965::iwl_pci_probe()
 	//SET_IEEE80211_DEV(hw, &pdev->dev);
 	IWL_DEBUG_INFO("*** LOAD DRIVER ***\n");
 	priv = (struct iwl_priv*)hw->priv;
-	memset(priv,0,sizeof(*priv));
+	//memset(priv,0,sizeof(*priv));
 
 	priv->hw = hw;
 
@@ -8820,8 +9047,8 @@ int darwin_iwi4965::iwl_pci_probe()
 
 	iwl_clear_stations_table(priv);
 
-	//memset(&(priv->txq[0]), 0, sizeof(struct iwl_tx_queue) * IWL_MAX_NUM_QUEUES);
-	//memset(&priv->card_alive, 0, sizeof(struct iwl_alive_resp));
+	memset(&(priv->txq[0]), 0, sizeof(struct iwl_tx_queue) * IWL_MAX_NUM_QUEUES);
+	memset(&priv->card_alive, 0, sizeof(struct iwl_alive_resp));
 	priv->data_retry_limit = -1;
 	priv->ieee_channels = NULL;
 	priv->ieee_rates = NULL;
@@ -8946,8 +9173,8 @@ int darwin_iwi4965::iwl_pci_probe()
 
 	mutex_unlock(&priv->mutex);
 
-	//IWL_DEBUG_INFO("Queing UP work.\n");
-
+	IWL_DEBUG_INFO("Queing UP work.\n");
+	iwl_bg_up(priv);
 	//queue_work(priv->workqueue, &priv->up);
 	//clone->queue_te(0,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi4965::iwl_bg_up),priv,NULL,true);
 	return 0;

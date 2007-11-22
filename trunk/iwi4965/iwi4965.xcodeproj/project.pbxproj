@@ -12,6 +12,7 @@
 		61054AFE0C2EF71100D9DDF0 /* iwi4965.h in Headers */ = {isa = PBXBuildFile; fileRef = 61054AFC0C2EF71100D9DDF0 /* iwi4965.h */; };
 		610553180C2EFDE800D9DDF0 /* ipw4965.ucode.h in Headers */ = {isa = PBXBuildFile; fileRef = 610553170C2EFDE800D9DDF0 /* ipw4965.ucode.h */; };
 		61B0347E0B59837C00286B6C /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B0347B0B59837C00286B6C /* defines.h */; };
+		61CCBA410CEC9E96003E0C2E /* iwl-3945.h in Headers */ = {isa = PBXBuildFile; fileRef = 61CCBA3D0CEC9E96003E0C2E /* iwl-3945.h */; };
 		61D2BABF0CE38C9B00C7FE2D /* base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D2BAAF0CE38C9B00C7FE2D /* base.cpp */; };
 		61D2BAC00CE38C9B00C7FE2D /* iwl-4965-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D2BAB00CE38C9B00C7FE2D /* iwl-4965-hw.h */; };
 		61D2BAC10CE38C9B00C7FE2D /* iwl-4965-rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D2BAB10CE38C9B00C7FE2D /* iwl-4965-rs.cpp */; };
@@ -42,6 +43,7 @@
 		61B06DFF0B589546000DD1AE /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
 		61B06E000B589546000DD1AE /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
 		61B06E010B589546000DD1AE /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
+		61CCBA3D0CEC9E96003E0C2E /* iwl-3945.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945.h"; sourceTree = "<group>"; };
 		61CEE3610CE3CF2D00778032 /* CHANGES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = CHANGES; sourceTree = "<group>"; };
 		61CEE3620CE3CF2D00778032 /* dvals */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.script.sh; path = dvals; sourceTree = "<group>"; };
 		61CEE3630CE3CF2D00778032 /* FILES */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = FILES; sourceTree = "<group>"; };
@@ -408,6 +410,7 @@
 			isa = PBXGroup;
 			children = (
 				61D2BAAF0CE38C9B00C7FE2D /* base.cpp */,
+				61CCBA3D0CEC9E96003E0C2E /* iwl-3945.h */,
 				61D2BAB00CE38C9B00C7FE2D /* iwl-4965-hw.h */,
 				61D2BAB10CE38C9B00C7FE2D /* iwl-4965-rs.cpp */,
 				61D2BAB20CE38C9B00C7FE2D /* iwl-4965-rs.h */,
@@ -990,6 +993,7 @@
 				61D2BACC0CE38C9B00C7FE2D /* iwl-priv.h in Headers */,
 				61D2BACD0CE38C9B00C7FE2D /* iwl-spectrum.h in Headers */,
 				61D2BACE0CE38C9B00C7FE2D /* iwlwifi.h in Headers */,
+				61CCBA410CEC9E96003E0C2E /* iwl-3945.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

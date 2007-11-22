@@ -44,7 +44,7 @@
 #include "iwl-helpers.h"
 #include "iwl-4965.h"
 #include "iwl-4965-rs.h"
-
+#include "iwi4965.h"
 
 #define IWL_DECLARE_RATE_INFO(r, s, ip, in, rp, rn, pp, np)    \
 	{ IWL_RATE_##r##M_PLCP,      \
@@ -297,7 +297,7 @@ static int iwl4965_kw_alloc(struct iwl_priv *priv)
 	struct iwl_kw *kw = &priv->kw;
 	kw->size = IWL4965_KW_SIZE;	/* TBW need set somewhere else */
 	//kw->v_addr = pci_alloc_consistent(dev, kw->size, &kw->dma_addr);
-		kw->v_addr=(void*)IOMallocContiguous(kw->size, sizeof(u8*), &kw->dma_addr);
+		kw->v_addr=(void*)IOMallocContiguous(kw->size, sizeof(u8), &kw->dma_addr);
 
 	if (!kw->v_addr)
 		return -ENOMEM;
@@ -358,6 +358,7 @@ static void iwl4965_kw_free(struct iwl_priv *priv)
 	struct iwl_kw *kw = &priv->kw;
 	if (kw->v_addr) {
 		pci_free_consistent(dev, kw->size, kw->v_addr, kw->dma_addr);
+		kw->dma_addr=NULL;
 		memset(kw, 0, sizeof(*kw));
 	}
 
@@ -489,11 +490,11 @@ int iwl_hw_nic_init(struct iwl_priv *priv)
 	spin_lock_irqsave(&priv->lock, flags);
 
 	if ((rev_id & 0x80) == 0x80 && (rev_id & 0x7f) < 8) {
-		val= clone->fPCIDevice->configRead32(0xe8);
+		val= clone->fPCIDevice->configRead16(0xe8);
 		//pci_read_config_dword(priv->pci_dev, 0xe8, &val);
 		/* Enable No Snoop field */
 		//pci_write_config_dword(priv->pci_dev, 0xe8, val & ~(1 << 11));
-		clone->fPCIDevice->configWrite32(0xe8, val & ~(1 << 11));
+		clone->fPCIDevice->configWrite16(0xe8, val & ~(1 << 11));
 	}
 
 	spin_unlock_irqrestore(&priv->lock, flags);
@@ -509,11 +510,11 @@ int iwl_hw_nic_init(struct iwl_priv *priv)
 	}
 
 	//pci_read_config_byte(priv->pci_dev, PCI_LINK_CTRL, &val_link);
-	val_link= clone->fPCIDevice->configRead32(PCI_LINK_CTRL);
+	val_link= clone->fPCIDevice->configRead16(PCI_LINK_CTRL);
 	/* disable L1 entry -- workaround for pre-B1 */
 	
 	//pci_write_config_byte(priv->pci_dev, PCI_LINK_CTRL, val_link & ~0x02);
-	clone->fPCIDevice->configWrite32(PCI_LINK_CTRL, val_link & ~0x02);
+	clone->fPCIDevice->configWrite16(PCI_LINK_CTRL, val_link & ~0x02);
 	spin_lock_irqsave(&priv->lock, flags);
 
 	/* set CSR_HW_CONFIG_REG for uCode use */
@@ -3949,6 +3950,8 @@ void iwl_hw_cancel_deferred_work(struct iwl_priv *priv)
 	//del_timer_sync(&priv->statistics_periodic);
 
 	cancel_delayed_work(&priv->init_alive_start);
+	clone->queue_td(8,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi4965::iwl_bg_init_alive_start));
+
 }
 
 /*struct pci_device_id iwl_hw_card_ids[] = {
@@ -3958,3 +3961,6 @@ void iwl_hw_cancel_deferred_work(struct iwl_priv *priv)
 };*/
 
 //MODULE_DEVICE_TABLE(pci, iwl_hw_card_ids);
+
+
+
