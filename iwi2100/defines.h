@@ -45,6 +45,11 @@ extern "C" {
 #include <sys/malloc.h>
 #include <sys/queue.h>
 #include <sys/kern_control.h>
+#include <libkern/libkern.h>
+#include <netinet/ip6.h>
+#include <sys/random.h>
+#include <sys/mbuf.h>
+#include <libkern/OSMalloc.h>
 }
 
 #include "iwi2100.h"
@@ -56,9 +61,7 @@ extern "C" {
 #define le32_to_cpu(x)	OSSwapLittleToHostInt32(x)
 #define cpu_to_le16(x)	OSSwapLittleToHostInt16(x)
 #define cpu_to_le32(x)	OSSwapLittleToHostInt32(x)
-typedef unsigned long long u64;
-typedef signed short	s16;
-typedef signed int	s32;
+
 
 
 #pragma mark -

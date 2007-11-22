@@ -90,14 +90,14 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 216238673;
-			PBXWorkspaceStateSaveDate = 216238673;
+			PBXPerProjectTemplateStateSaveDate = 216828857;
+			PBXWorkspaceStateSaveDate = 216828857;
 		};
 		perUserProjectItems = {
+			6115DB8A0CEC8BCC00F54375 /* PBXTextBookmark */ = 6115DB8A0CEC8BCC00F54375 /* PBXTextBookmark */;
 			6131B3AB0BB20C00001B2298 /* PBXTextBookmark */ = 6131B3AB0BB20C00001B2298 /* PBXTextBookmark */;
 			6131B3AD0BB20C00001B2298 /* PBXTextBookmark */ = 6131B3AD0BB20C00001B2298 /* PBXTextBookmark */;
 			6150CF360BB2045A00B0A7E8 /* PBXTextBookmark */ = 6150CF360BB2045A00B0A7E8 /* PBXTextBookmark */;
-			61A349C30CA0B900005A7DD4 /* PBXTextBookmark */ = 61A349C30CA0B900005A7DD4 /* PBXTextBookmark */;
 			61B112430BB4288700DD9EA9 /* PBXTextBookmark */ = 61B112430BB4288700DD9EA9 /* PBXTextBookmark */;
 			61B112450BB4288700DD9EA9 /* PBXTextBookmark */ = 61B112450BB4288700DD9EA9 /* PBXTextBookmark */;
 			61B1124A0BB4288700DD9EA9 /* PBXTextBookmark */ = 61B1124A0BB4288700DD9EA9 /* PBXTextBookmark */;
@@ -120,8 +120,18 @@
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {775, 3570}}";
 			sepNavSelRange = "{6469, 0}";
-			sepNavVisRect = "{{0, 2504}, {775, 394}}";
+			sepNavVisRect = "{{0, 3079}, {775, 394}}";
 		};
+	};
+	6115DB8A0CEC8BCC00F54375 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 08FB7796FE84155DC02AAC07 /* main.cpp */;
+		name = "main.cpp: 198";
+		rLen = 0;
+		rLoc = 6469;
+		rType = 0;
+		vrLen = 895;
+		vrLoc = 7207;
 	};
 	6131B3AB0BB20C00001B2298 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -212,16 +222,6 @@
 			61ACD5060BC6D15F007A6F04 /* main.cpp:110 */,
 			61D4B8350BE7758900AFA520 /* main.cpp:82 */,
 		);
-	};
-	61A349C30CA0B900005A7DD4 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 08FB7796FE84155DC02AAC07 /* main.cpp */;
-		name = "main.cpp: 200";
-		rLen = 0;
-		rLoc = 6469;
-		rType = 0;
-		vrLen = 897;
-		vrLoc = 5897;
 	};
 	61A68C5F0BC085BC004CEB18 /* main.cpp:120 */ = {
 		isa = PBXFileBreakpoint;

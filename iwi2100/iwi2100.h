@@ -12,8 +12,8 @@
 #define TX_QUEUE_CHECK
 //#define IW_RX_REPLACING
 //#define IWI_NOLOG
-//#define IWI_DEBUG_NORMAL
-#define IWI_DEBUG_FULL_MODE
+#define IWI_DEBUG_NORMAL
+//#define IWI_DEBUG_FULL_MODE
 #define IWI_WARNERR
 
 #if defined(IWI_NOLOG)
@@ -82,9 +82,10 @@ __div(unsigned long long n, unsigned int base)
 #undef jiffies
 #define jiffies		\
 ({		\
-	uint64_t m;		\
+	uint64_t m,f;		\
 	clock_get_uptime(&m);		\
-	__div(m , 10000000)*5;		\
+	absolutetime_to_nanoseconds(m,&f);		\
+	((f * HZ) / 1000000000);		\
 })
 
 inline unsigned int jiffies_to_msecs(const unsigned long j)
@@ -123,12 +124,19 @@ inline void *skb_put(mbuf_t skb, unsigned int len)
 	skb->len  += len;
 	return tmp;*/
 	void *data = (UInt8*)mbuf_data(skb) + mbuf_len(skb);
-	//mbuf_prepend(&skb,len,1); /* no prepend work */
+	
 	IWI_DUMP_MBUF(1,skb,len);  
+	
 	if(mbuf_trailingspace(skb) > len ){
+	//mbuf_prepend(&skb,len,MBUF_DONTWAIT); /* no prepend work */
 		mbuf_setlen(skb,mbuf_len(skb)+len);
 		if(mbuf_flags(skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(skb,mbuf_pkthdr_len(skb)+len); 
+	}
+	else
+	{
+		IWI_ERR("skb_put failed\n");
+		data = (UInt8*)mbuf_data(skb);
 	}
 	IWI_DUMP_MBUF(2,skb,len);  
 	return data;
@@ -144,7 +152,7 @@ inline void *skb_push(mbuf_t skb, unsigned int len)
 	/* void *data=(UInt8*)mbuf_data(skb)-len;
 	mbuf_setdata(skb,data,mbuf_len(skb)+len); */
 	IWI_DUMP_MBUF(1,skb,len); 
-	mbuf_prepend(&skb,len,0);
+	mbuf_prepend(&skb,len,MBUF_DONTWAIT);
 	IWI_DUMP_MBUF(2,skb,len);
 	return  (UInt8 *)mbuf_data(skb);
 }
@@ -161,7 +169,7 @@ inline void *skb_pull(mbuf_t skb, unsigned int len)
 	return data;
 }
 
-#define kTransmitQueueCapacity 1024
+#define kTransmitQueueCapacity 1000
 
 struct symbol_alive_response {
 	u8 cmd_id;
