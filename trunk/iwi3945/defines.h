@@ -56,7 +56,7 @@ extern "C" {
 
 #include "net/ieee80211.h"
 #include "net/ieee80211_radiotap.h"
-#include "iwi3945.h"
+
 
 
 

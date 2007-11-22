@@ -1,4 +1,4 @@
-#include "defines.h"
+#include "iwi3945.h"
 
 
 // Define my superclass
@@ -18,7 +18,7 @@ bool darwin_iwi3945::init(OSDictionary *dict)
 param_disable_hw_scan = 0;
 //need to define param_debug better
 param_debug =  0xffffffff;
-param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
+param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP);
 param_debug |=IWL_DL_INFO;
 param_disable = 0;      /* def: enable radio */
 param_antenna = 0;      /* def: 0 = both antennas (use diversity) */
@@ -26,7 +26,7 @@ param_hwcrypto = 0;     /* def: using software encryption */
 param_qos_enable = 0;
  
 param_disable=OSDynamicCast(OSNumber,dict->getObject("param_disable"))->unsigned32BitValue();
-
+param_timer=OSDynamicCast(OSNumber,dict->getObject("param_timer"))->unsigned32BitValue();
  IOLog("debug_level %x sw_disable %d\n",param_debug, param_disable);
 
  return super::init(dict);
@@ -104,8 +104,8 @@ const struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,const struct 
 
 	local=(struct ieee80211_local*)IOMalloc(priv_size);
 	memset(local,0,priv_size);
-	local->hw.priv = 
-	(char *)local +
+	local->hw.priv =
+	(char*)local +
 			((sizeof(struct ieee80211_local) +
 			   NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST);
 
@@ -189,8 +189,8 @@ const struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,const struct 
 	skb_queue_head_init(&local->skb_queue);
 	skb_queue_head_init(&local->skb_queue_unreliable);
 */
-	INIT_LIST_HEAD(&local->skb_queue);
-	INIT_LIST_HEAD(&local->skb_queue_unreliable);
+	//INIT_LIST_HEAD(&local->skb_queue);
+	//INIT_LIST_HEAD(&local->skb_queue_unreliable);
 	
 	return local_to_hw(local);
 }
@@ -224,12 +224,12 @@ bool darwin_iwi3945::start(IOService *provider)
         	// Without this, the PCIDevice may be in state 0, and the
         	// PCI config space may be invalid if the machine has been
        		// sleeping.
-		if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
+		/*if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
 			(IOPowerConnection *) getParentEntry(gIOPowerPlane),
 			IOPMLowestState ) != IOPMNoErr) {
 				IOLog("%s Power thingi failed\n", getName());
 				break;
-       		}
+       		}*/
 		
 		UInt16 reg16;
 		reg16 = fPCIDevice->configRead16(kIOPCIConfigCommand);
@@ -297,9 +297,8 @@ bool darwin_iwi3945::start(IOService *provider)
 		//priv=NULL;
 		iwl_pci_probe();
 		if (!priv) break;
-		iwl_hw_nic_init(priv);
-		//iwl_hw_nic_stop_master(priv);
-		iwl_hw_nic_reset(priv);
+		//iwl_hw_nic_init(priv);
+		//iwl_hw_nic_reset(priv);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -341,7 +340,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		errno_t error = ctl_register(&ep_ctl, &kctlref);
 		
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,NULL,false);
-		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),priv,1000,true);
+		//queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),priv,1000,true);
 
 		return true;			// end start successfully
 	} while (false);
@@ -533,9 +532,9 @@ mbuf_t darwin_iwi3945::mergePacket(mbuf_t m)
 	}
 
 	/* allocate and Initialize New mbuf */
-	//nm = allocatePacket(mbuf_pkthdr_len(m));
-	//if (nm==0) return NULL;
-	if (mbuf_getpacket(MBUF_WAITOK, &nm)!=0) return NULL;
+	nm = allocatePacket(mbuf_pkthdr_len(m));
+	if (nm==0) return NULL;
+	//if (mbuf_getpacket(MBUF_WAITOK, &nm)!=0) return NULL;
 	mbuf_setlen(nm,0);
 	mbuf_pkthdr_setlen(nm,0);
 	if( mbuf_next(nm)) IWI_ERR("merged mbuf_next\n");
@@ -865,39 +864,6 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags)
 {
 return 0;
-}
-
-
-int ieee80211_rate_control_register(struct rate_control_ops *ops)
-{
-	struct rate_control_alg *alg;
-
-	alg = (struct rate_control_alg*)IOMalloc(sizeof(*alg));
-	if (alg == NULL) {
-		return -ENOMEM;
-	}
-	memset(alg, 0, sizeof(*alg));
-	alg->ops = ops;
-
-	//mutex_lock(&rate_ctrl_mutex);
-	list_add_tail(&alg->list, &rate_ctrl_algs);
-	//mutex_unlock(&rate_ctrl_mutex);
-
-	return 0;
-}
-void ieee80211_rate_control_unregister(struct rate_control_ops *ops)
-{
-	struct rate_control_alg *alg;
-
-	//mutex_lock(&rate_ctrl_mutex);
-	list_for_each_entry(alg, &rate_ctrl_algs, list) {
-		if (alg->ops == ops) {
-			list_del(&alg->list);
-			break;
-		}
-	}
-	//mutex_unlock(&rate_ctrl_mutex);
-	IOFree(alg, sizeof(struct rate_control_alg));
 }
 
 void ieee80211_sta_tx(struct net_device *dev, mbuf_t skb, int encrypt)
