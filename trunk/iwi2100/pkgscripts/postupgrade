@@ -1,0 +1,4 @@
+#!/bin/sh
+/usr/bin/osascript -e 'tell application "System Events" to make new login item with properties { path: "/Applications/nsGUI.app", hidden:false } at end'
+chown -R root:wheel /System/Library/Extensions/iwi2100.kext
+exit 0
