@@ -18,7 +18,7 @@ bool darwin_iwi4965::init(OSDictionary *dict)
 param_disable_hw_scan = 0;
 //need to define param_debug better
 param_debug =  0xffffffff;
-param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP);
+param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP|IWL_DL_POWER);
 param_debug |=IWL_DL_INFO;
 param_disable = 0;      /* def: enable radio */
 param_antenna = 0;      /* def: 0 = both antennas (use diversity) */
@@ -224,12 +224,12 @@ bool darwin_iwi4965::start(IOService *provider)
         	// Without this, the PCIDevice may be in state 0, and the
         	// PCI config space may be invalid if the machine has been
        		// sleeping.
-		/*if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
+		if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
 			(IOPowerConnection *) getParentEntry(gIOPowerPlane),
 			IOPMLowestState ) != IOPMNoErr) {
 				IOLog("%s Power thingi failed\n", getName());
 				break;
-       		}*/
+       		}
 		
 		UInt16 reg16;
 		reg16 = fPCIDevice->configRead16(kIOPCIConfigCommand);

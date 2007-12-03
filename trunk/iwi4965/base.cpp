@@ -5037,9 +5037,9 @@ void darwin_iwi4965::iwl_irq_tasklet(struct iwl_priv *priv)
 		IWL_ERROR("Microcode HW error detected.  Restarting.\n");
 
 		/* Tell the device to stop sending interrupts */
-		iwl_disable_interrupts(priv);
+		//iwl_disable_interrupts(priv);
 
-		iwl_irq_handle_error(priv);
+		//iwl_irq_handle_error(priv);
 
 		handled |= BIT_INT_ERR;
 
@@ -5079,8 +5079,8 @@ void darwin_iwi4965::iwl_irq_tasklet(struct iwl_priv *priv)
 	if (inta & BIT_INT_SWERROR) {
 		IWL_ERROR("Microcode SW error detected.  Restarting 0x%X.\n",
 			  inta);
-		iwl_irq_handle_error(priv);
-		handled |= BIT_INT_SWERROR;
+		//iwl_irq_handle_error(priv);
+		//handled |= BIT_INT_SWERROR;
 	}
 
 	if (inta & BIT_INT_WAKEUP) {
@@ -6639,7 +6639,7 @@ static void iwl_alive_start(struct iwl_priv *priv)
 
 	priv->active_rate = priv->rates_mask;
 	priv->active_rate_basic = priv->rates_mask & IWL_BASIC_RATES_MASK;
-	iwl_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode));
+	//iwl_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode));
 	//priv->status &= ~STATUS_POWER_PMI;//hack iwl_send_power_mode
 	
         if (iwl_is_associated(priv)) {
