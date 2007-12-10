@@ -775,9 +775,9 @@ int iwl_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
 		{
 			rc++;
 			IODelay(HOST_COMPLETE_TIMEOUT);
-			if (rc==1000) break;
+			if (rc==HOST_COMPLETE_TIMEOUT) break;
 		}
-		if (rc==1000) priv->status &= ~STATUS_HCMD_ACTIVE;//hack
+		//if (rc==1000) priv->status &= ~STATUS_HCMD_ACTIVE;//hack
 		
 		if (cmd_needs_lock(cmd))
 			spin_lock_irqsave(&priv->lock, flags);
@@ -4395,7 +4395,7 @@ int iwl_rx_queue_alloc(struct iwl_priv *priv)
 	INIT_LIST_HEAD(&rxq->rx_used);
 	//rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr);
 	//MemoryDmaAlloc(4 * RX_QUEUE_SIZE, &rxq->dma_addr, &rxq->bd);
-	rxq->bd=(__le32*)IOMallocContiguous(4 * RX_QUEUE_SIZE, sizeof(__le32), &rxq->dma_addr);
+	rxq->bd=(__le32*)IOMallocContiguous(4 * RX_QUEUE_SIZE, sizeof(__le32*), &rxq->dma_addr);
 	if (!rxq->bd)
 		return -ENOMEM;
 	/* Fill the rx_used queue with _all_ of the Rx buffers */
@@ -4600,7 +4600,9 @@ static void iwl_rx_handle(struct iwl_priv *priv)
 				get_cmd_string(pkt->hdr.cmd));
 		} else {
 			/* No handling needed */
-			//if (!strcmp( get_cmd_string(pkt->hdr.cmd),"UNKNOWN")) reclaim=0;
+			//if (!strcmp( get_cmd_string(pkt->hdr.cmd),"UNKNOWN")) 
+			reclaim=0;
+			if (pkt->hdr.cmd==POWER_TABLE_CMD) reclaim=1;
 			IWL_DEBUG_HC("UNHANDLED - #0x%02x %s reclaim? %d\n",
 				     pkt->hdr.cmd,
 				     get_cmd_string(pkt->hdr.cmd),reclaim);
@@ -5037,9 +5039,9 @@ void darwin_iwi4965::iwl_irq_tasklet(struct iwl_priv *priv)
 		IWL_ERROR("Microcode HW error detected.  Restarting.\n");
 
 		/* Tell the device to stop sending interrupts */
-		//iwl_disable_interrupts(priv);
+		iwl_disable_interrupts(priv);
 
-		//iwl_irq_handle_error(priv);
+		iwl_irq_handle_error(priv);
 
 		handled |= BIT_INT_ERR;
 
@@ -5079,8 +5081,8 @@ void darwin_iwi4965::iwl_irq_tasklet(struct iwl_priv *priv)
 	if (inta & BIT_INT_SWERROR) {
 		IWL_ERROR("Microcode SW error detected.  Restarting 0x%X.\n",
 			  inta);
-		//iwl_irq_handle_error(priv);
-		//handled |= BIT_INT_SWERROR;
+		iwl_irq_handle_error(priv);
+		handled |= BIT_INT_SWERROR;
 	}
 
 	if (inta & BIT_INT_WAKEUP) {
@@ -6321,21 +6323,21 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 				 priv->ucode_code.len,
 				 &(priv->ucode_code.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_code.len, &(priv->ucode_code.p_addr), &(priv->ucode_code.v_addr));
-	priv->ucode_code.v_addr=IOMallocContiguous( priv->ucode_code.len, sizeof(u8), &priv->ucode_code.p_addr);
+	priv->ucode_code.v_addr=IOMallocContiguous( priv->ucode_code.len, sizeof(__le32), &priv->ucode_code.p_addr);
 	priv->ucode_data.len = data_size;
 	/*priv->ucode_data.v_addr =
 	    pci_alloc_consistent(priv->pci_dev,
 				 priv->ucode_data.len,
 				 &(priv->ucode_data.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_data.len, &(priv->ucode_data.p_addr), &(priv->ucode_data.v_addr));
-	priv->ucode_data.v_addr=IOMallocContiguous(priv->ucode_data.len, sizeof(u8), &priv->ucode_data.p_addr);
+	priv->ucode_data.v_addr=IOMallocContiguous(priv->ucode_data.len, sizeof(__le32), &priv->ucode_data.p_addr);
 	priv->ucode_data_backup.len = data_size;
 	/*priv->ucode_data_backup.v_addr =
 	    pci_alloc_consistent(priv->pci_dev,
 				 priv->ucode_data_backup.len,
 				 &(priv->ucode_data_backup.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_data_backup.len, &(priv->ucode_data_backup.p_addr), &(priv->ucode_data_backup.v_addr));
-	priv->ucode_data_backup.v_addr=IOMallocContiguous(priv->ucode_data_backup.len, sizeof(u8), &priv->ucode_data_backup.p_addr);
+	priv->ucode_data_backup.v_addr=IOMallocContiguous(priv->ucode_data_backup.len, sizeof(__le32), &priv->ucode_data_backup.p_addr);
 	/* Initialization instructions and data */
 	priv->ucode_init.len = init_size;
 	/*priv->ucode_init.v_addr =
@@ -6343,14 +6345,14 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 				 priv->ucode_init.len,
 				 &(priv->ucode_init.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_init.len, &(priv->ucode_init.p_addr), &(priv->ucode_init.v_addr));
-	priv->ucode_init.v_addr=IOMallocContiguous(priv->ucode_init.len, sizeof(u8), &priv->ucode_init.p_addr);
+	priv->ucode_init.v_addr=IOMallocContiguous(priv->ucode_init.len, sizeof(__le32), &priv->ucode_init.p_addr);
 	priv->ucode_init_data.len = init_data_size;
 	/*priv->ucode_init_data.v_addr =
 	    pci_alloc_consistent(priv->pci_dev,
 				 priv->ucode_init_data.len,
 				 &(priv->ucode_init_data.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_init_data.len, &(priv->ucode_init_data.p_addr), &(priv->ucode_init_data.v_addr));
-	priv->ucode_init_data.v_addr=IOMallocContiguous(priv->ucode_init_data.len, sizeof(u8), &priv->ucode_init_data.p_addr);
+	priv->ucode_init_data.v_addr=IOMallocContiguous(priv->ucode_init_data.len, sizeof(__le32), &priv->ucode_init_data.p_addr);
 	/* Bootstrap (instructions only, no data) */
 	priv->ucode_boot.len = boot_size;
 	/*priv->ucode_boot.v_addr =
@@ -6358,7 +6360,7 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 				 priv->ucode_boot.len,
 				 &(priv->ucode_boot.p_addr));*/
 	//MemoryDmaAlloc(priv->ucode_boot.len, &(priv->ucode_boot.p_addr), &(priv->ucode_boot.v_addr));
-	priv->ucode_boot.v_addr=IOMallocContiguous(priv->ucode_boot.len, sizeof(u8), &priv->ucode_boot.p_addr);
+	priv->ucode_boot.v_addr=IOMallocContiguous(priv->ucode_boot.len, sizeof(__le32), &priv->ucode_boot.p_addr);
 	if (!priv->ucode_code.v_addr || !priv->ucode_data.v_addr ||
 	    !priv->ucode_init.v_addr || !priv->ucode_init_data.v_addr ||
 	    !priv->ucode_boot.v_addr || !priv->ucode_data_backup.v_addr)
@@ -9174,7 +9176,7 @@ int darwin_iwi4965::iwl_pci_probe()
 	mutex_unlock(&priv->mutex);
 
 	IWL_DEBUG_INFO("Queing UP work.\n");
-	iwl_bg_up(priv);
+	//iwl_bg_up(priv);
 	//queue_work(priv->workqueue, &priv->up);
 	//clone->queue_te(0,OSMemberFunctionCast(thread_call_func_t,clone,&darwin_iwi4965::iwl_bg_up),priv,NULL,true);
 	return 0;

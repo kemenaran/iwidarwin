@@ -297,8 +297,8 @@ bool darwin_iwi4965::start(IOService *provider)
 		//priv=NULL;
 		iwl_pci_probe();
 		if (!priv) break;
-		//iwl_hw_nic_init(priv);
-		//iwl_hw_nic_reset(priv);
+		iwl_hw_nic_init(priv);
+		iwl_hw_nic_reset(priv);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -340,7 +340,7 @@ bool darwin_iwi4965::start(IOService *provider)
 		errno_t error = ctl_register(&ep_ctl, &kctlref);
 		
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::check_firstup),NULL,NULL,false);
-		//queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::check_firstup),priv,1000,true);
+		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::check_firstup),priv,1000,true);
 
 		return true;			// end start successfully
 	} while (false);
@@ -358,9 +358,9 @@ void darwin_iwi4965::check_firstup(struct iwl_priv *priv)
 		return;
 	}
 	disable(fNetif);
-	fTransmitQueue->setCapacity(1024);
-	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-	fTransmitQueue->start();
+	//fTransmitQueue->setCapacity(1024);
+	//fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	//fTransmitQueue->start();
 	iwl_bg_up(priv);
 	//base threads can't be called from here!!
 	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::iwl_bg_up),priv,NULL,true);
