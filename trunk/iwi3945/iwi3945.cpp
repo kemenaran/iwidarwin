@@ -26,7 +26,6 @@ param_hwcrypto = 0;     /* def: using software encryption */
 param_qos_enable = 0;
  
 param_disable=OSDynamicCast(OSNumber,dict->getObject("param_disable"))->unsigned32BitValue();
-param_timer=OSDynamicCast(OSNumber,dict->getObject("param_timer"))->unsigned32BitValue();
  IOLog("debug_level %x sw_disable %d\n",param_debug, param_disable);
 
  return super::init(dict);
@@ -297,8 +296,8 @@ bool darwin_iwi3945::start(IOService *provider)
 		//priv=NULL;
 		iwl_pci_probe();
 		if (!priv) break;
-		//iwl_hw_nic_init(priv);
-		//iwl_hw_nic_reset(priv);
+		iwl_hw_nic_init(priv);
+		iwl_hw_nic_reset(priv);
 		
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
@@ -358,9 +357,9 @@ void darwin_iwi3945::check_firstup(struct iwl_priv *priv)
 		return;
 	}
 	disable(fNetif);
-	fTransmitQueue->setCapacity(1024);
-	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-	fTransmitQueue->start();
+	//fTransmitQueue->setCapacity(1024);
+	//fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	//fTransmitQueue->start();
 	iwl_bg_up(priv);
 	//base threads can't be called from here!!
 	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::iwl_bg_up),priv,NULL,true);
