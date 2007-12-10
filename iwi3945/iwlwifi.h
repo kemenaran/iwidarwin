@@ -68,7 +68,7 @@ extern int param_disable;
 extern int param_antenna;
 extern int param_hwcrypto;
 extern int param_qos_enable;
-extern u32 param_timer;
+
 
 enum iwl_antenna {
 	IWL_ANTENNA_DIVERSITY,
