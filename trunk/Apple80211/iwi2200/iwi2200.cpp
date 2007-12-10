@@ -788,6 +788,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		
 		if (!spin) return false;
 		if (!mutex) return false;*/
+		setInterferenceRobustness(true);
 		spin=IOSimpleLockAlloc();
 		//IW_SCAN_TYPE_ACTIVE
 		queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_scan),NULL,NULL,false);
@@ -1032,7 +1033,7 @@ void darwin_iwi2200::ipw_rx_queue_reset(struct ipw_priv *priv, struct ipw_rx_que
 			//dev_kfree_skb(rxq->pool[i].skb);
 			//rxq->pool[i].dma_addr=NULL;
 			//mbuf_freem_list(rxq->pool[i].skb);
-			freePacket(rxq->pool[i].skb);
+			if (!(rxq->pool[i].skb) == MBUF_TYPE_FREE) freePacket(rxq->pool[i].skb);
 			rxq->pool[i].skb = NULL;
 			rxq->pool[i].dma_addr=NULL;
 		}
@@ -1093,8 +1094,8 @@ void darwin_iwi2200::ieee80211_txb_free(struct ieee80211_txb *txb)
 	for (i = 0; i < txb->nr_frags; i++)
 		if (txb->fragments[i]) 
 		{
-			mbuf_freem_list(txb->fragments[i]);
-			freePacket(txb->fragments[i]);
+			//mbuf_freem_list(txb->fragments[i]);
+			if (!(txb->fragments[i]) == MBUF_TYPE_FREE)freePacket(txb->fragments[i]);
 			txb->fragments[i]=NULL;
 			
 		}
@@ -4824,9 +4825,8 @@ int darwin_iwi2200::is_duplicate_packet(struct ipw_priv *priv,
 		return 0;
 	}
 //#define	SEQ_LEQ(a,b)	((int)((a)-(b)) <= 0)
-//         if ( (*last_seq == seq)  && 
-	if (    (int)(seq - *last_seq)   < 0   && (le16_to_cpu(header->frame_ctl) & IEEE80211_FCTL_RETRY)
-	    /* time_after(*last_time + IPW_PACKET_RETRY_TIME, jiffies) */ ) {
+         if ( (*last_seq == seq)  && 
+	     time_after(jiffies, *last_time + 5*IPW_PACKET_RETRY_TIME ) ) {
 		if (*last_frag == frag)
 			goto drop;
 		if (*last_frag + 1 != frag)
@@ -4846,6 +4846,8 @@ int darwin_iwi2200::is_duplicate_packet(struct ipw_priv *priv,
 	 BUG_ON(!(le16_to_cpu(header->frame_ctl) & IEEE80211_FCTL_RETRY)); */
 	if (  !(le16_to_cpu(header->frame_ctl) & IEEE80211_FCTL_RETRY) ) {
 	    IWI_ERR("packet dropping and IEEE80211_FCTL_RETRY\n");
+		*last_seq = seq;
+		return 0;
 	}else{
 	    IWI_WARNING("Dropped packet\n");
 	}
@@ -5022,7 +5024,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		 * fail to Rx correctly */
 		if (rxb->skb != NULL) {
 			//dev_kfree_skb_any(rxb->skb);
-			freePacket(rxb->skb);
+			if (!(rxb->skb) == MBUF_TYPE_FREE) freePacket(rxb->skb);
 			rxb->skb = NULL;
 			//pci_unmap_single(priv->pci_dev, rxb->dma_addr, IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
 			rxb->dma_addr=NULL;
@@ -5037,7 +5039,7 @@ void darwin_iwi2200::ipw_rx(struct ipw_priv *priv)
 		IWI_DEBUG("flushing Input Queue\n");
 		fNetif->flushInputQueue();
 	}
-	releaseFreePackets();
+	//releaseFreePackets();
 	/* Backtrack one entry */
 	priv->rxq->processed = (i ? i : RX_QUEUE_SIZE) - 1;
 
@@ -5311,83 +5313,92 @@ SInt32
 darwin_iwi2200::getSSID(IO80211Interface *interface,
 						struct apple80211_ssid_data *sd)
 {
-	IWI_DEBUG("getSSID %s l:%d\n",escape_essid((const char*)sd->ssid_bytes, sd->ssid_len));
-	return 0;
+	//size_t t=strtouni((u_int16_t *)sd->ssid_bytes, (const char *)priv->essid, (size_t)priv->essid_len,UTF_NO_NULL_TERM); 
+	sd->ssid_len=priv->essid_len;
+	memcpy(sd->ssid_bytes, priv->essid,priv->essid_len);
+	IWI_LOG("getSSID %s\n",escape_essid((const char*)priv->essid, priv->essid_len));
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::getCHANNEL(IO80211Interface *interface,
 						  struct apple80211_channel_data *cd)
 {
-	IWI_DEBUG("getCHANNEL c:%d f:%d\n",cd->channel.channel,cd->channel.flags);
-	return 0;
+	cd->channel.flags=0;
+	cd->channel.channel=priv->assoc_request.channel;
+	IWI_LOG("getCHANNEL c:%d f:%d\n",cd->channel.channel,cd->channel.flags);
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::getBSSID(IO80211Interface *interface,
 						struct apple80211_bssid_data *bd)
 {
-	IWI_DEBUG("getBSSID %02x:%02x:%02x:%02x:%02x:%02x\n",MAC_ARG(bd->bssid.octet));
-	return 0;
+	memcpy(bd->bssid.octet, priv->bssid, ETH_ALEN);
+	IWI_LOG("getBSSID %02x:%02x:%02x:%02x:%02x:%02x\n",MAC_ARG(bd->bssid.octet));
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::getCARD_CAPABILITIES(IO80211Interface *interface,
 									  struct apple80211_capability_data *cd)
 {
-	IWI_DEBUG("getCARD_CAPABILITIES %d\n",sizeof(cd->capabilities));
-	publishProperties();
-	return 0;
+	IWI_LOG("getCARD_CAPABILITIES\n");
+	UInt32 cp=0;
+	cp|=APPLE80211_CAP_WEP;//			= 1,	// CAPABILITY: WEP available
+	cp|=APPLE80211_CAP_TKIP;//			= 2,	// CAPABILITY: TKIP available
+	cp|=APPLE80211_CAP_AES;	//		= 3,	// CAPABILITY: AES OCB avail
+	cp|=APPLE80211_CAP_AES_CCM;//		= 4,	// CAPABILITY: AES CCM avail
+	cp|=APPLE80211_CAP_CKIP;	//		= 5,	// CAPABILITY: CKIP available
+	cp|=APPLE80211_CAP_IBSS;	//		= 6,	// CAPABILITY: IBSS available
+	cp|=APPLE80211_CAP_PMGT;	//		= 7,	// CAPABILITY: Power mgmt
+	cp|=APPLE80211_CAP_HOSTAP;	//	= 8,	// CAPABILITY: HOSTAP avail
+	cp|=APPLE80211_CAP_TXPMGT;	//	= 9,	// CAPABILITY: tx power mgmt
+	cp|=APPLE80211_CAP_SHSLOT;	//	= 10,	// CAPABILITY: short slottime
+	cp|=APPLE80211_CAP_SHPREAMBLE;//	= 11,	// CAPABILITY: short preamble
+	cp|=APPLE80211_CAP_MONITOR;		//= 12,	// CAPABILITY: monitor mode
+	cp|=APPLE80211_CAP_TKIPMIC;//		= 13,	// CAPABILITY: TKIP MIC avail
+	cp|=APPLE80211_CAP_WPA1;	//		= 14,	// CAPABILITY: WPA1 avail
+	cp|=APPLE80211_CAP_WPA2;	//		= 15,	// CAPABILITY: WPA2 avail
+	cp|=APPLE80211_CAP_WPA;		//	= 16,	// CAPABILITY: WPA1+WPA2 avail
+	cp|=APPLE80211_CAP_BURST;	//	= 17,	// CAPABILITY: frame bursting
+	cp|=APPLE80211_CAP_WME;		//	= 18,	// CAPABILITY: WME avail
+
+	memcpy(&cd->capabilities, &cp, sizeof(cp));
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::getSTATE(IO80211Interface *interface,
 						  struct apple80211_state_data *sd)
 {
-	IWI_DEBUG("getSTATE %d\n",sd->state);
-	return 0;
+	IWI_LOG("getSTATE %d\n",sd->state);
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::getRSSI(IO80211Interface *interface,
 					   struct apple80211_rssi_data *rd)
 {
-	IWI_DEBUG("getRSSI \n");
-	return 0;
+	IWI_LOG("getRSSI \n");
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::getPOWER(IO80211Interface *interface,
 						struct apple80211_power_data *pd)
 {
-	//IOPMprot *p=pm_vars;
-	//memset(&(pd->power_state),0,sizeof(pd->power_state));
+	IWI_LOG("getPOWER %d, %d %d %d %d\n",pd->num_radios, pd->power_state[0],pd->power_state[1],pd->power_state[2],pd->power_state[3]);
 
-	/*pd->num_radios=p->myCurrentState;//theNumberOfPowerStates;
-	for (int c=0;c < p->theNumberOfPowerStates;c++)
-	{
-		IOPMPowerState *pstate=&p->thePowerStates[c];
-		IOPMPowerFlags f=pstate->capabilityFlags;
-		if (c < APPLE80211_MAX_RADIO) 
-		{
-			pd->power_state[c]=f;
-		}
-	
-	IOPMPowerFlags pf=p->myCurrentState;
-	IWI_DEBUG("powerf 0x%4x\n",pf);
-	//memcpy(&pd->power_state,(void*)pf,sizeof(IOPMPowerFlags));
-	IWI_DEBUG("powerf 0x%4x\n",pd->power_state);
-	interface->setPowerState(pf,this);*/
-	IWI_DEBUG("getPOWER %d, %d %d %d %d\n",pd->num_radios, pd->power_state[0],pd->power_state[1],pd->power_state[2],pd->power_state[3]);
-	return 0;
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::getSCAN_RESULT(IO80211Interface *interface,
 							  struct apple80211_scan_result **scan_result)
 {
-	IWI_DEBUG("getSCAN_RESULT \n");
-	return 0;
+	IWI_LOG("getSCAN_RESULT \n");
+	return kIOReturnSuccess;
 }
 
 /*SInt32
@@ -5402,8 +5413,10 @@ SInt32
 darwin_iwi2200::getRATE(IO80211Interface *interface,
 					   struct apple80211_rate_data *rd)
 {
-	IWI_DEBUG("getRATE %d\n",rd->rate);
-	return 0;
+	rd->num_radios=(u_int32_t)priv->rates.num_rates;
+	memcpy(rd->rate,priv->rates.supported_rates,sizeof(priv->rates.supported_rates));
+	IWI_LOG("getRATE %d\n",rd->rate);
+	return kIOReturnSuccess;
 }
 
 SInt32
@@ -5420,7 +5433,7 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 	
 	sprintf(i,"%s%d" ,interface->getNamePrefix(), interface->getUnitNumber());
 	
-	IWI_DEBUG("getSTATUS_DEV %s\n",dd->dev_name);
+	IWI_LOG("getSTATUS_DEV %s\n",dd->dev_name);
 	
 	ifnet_find_by_name(i,&fifnet);
 		
@@ -5430,95 +5443,138 @@ darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
 
 	super::enable(fNetif);
 	interface->setPoweredOnByUser(true);
-	ipw_up(priv);
+	//interface->setEnabledBySystem(true);
+	//ipw_up(priv);
 
-	return 0;
+	return -1;
 }
 
 SInt32
 darwin_iwi2200::getRATE_SET(IO80211Interface	*interface,
 						   struct apple80211_rate_set_data *rd)
 {
-	IWI_DEBUG("getRATE_SET %d r0:%d f0:%d\n",rd->num_rates, rd->rates[0].rate,rd->rates[0].flags);
-	return 0;
+	rd->num_rates=(u_int32_t)priv->rates.num_rates;
+	for (u_int32_t i=0;i<rd->num_rates;i++)
+	{
+		rd->rates[i].flags=0;
+		rd->rates[i].rate=priv->rates.supported_rates[i];
+		//memcpy(&rd->rates[i].rate,&priv->rates.supported_rates[i],sizeof(&priv->rates.supported_rates[i]));
+	}
+	//memcpy(rd->rates,priv->rates.supported_rates,sizeof(priv->rates.supported_rates));
+	IWI_LOG("getRATE_SET %d r:%d\n",rd->num_rates, rd->rates);
+	return kIOReturnSuccess;
 }
 
 SInt32	darwin_iwi2200::getASSOCIATION_STATUS( IO80211Interface * interface, struct apple80211_assoc_status_data * asd )
 {
-	IWI_DEBUG("getASSOCIATION_STATUS %d\n",asd->status);
-	return 0;
+	IWI_LOG("getASSOCIATION_STATUS %d\n",asd->status);
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::setSCAN_REQ(IO80211Interface *interface,
 						   struct apple80211_scan_data *sd)
 {
-	IWI_DEBUG("setSCAN_REQ \n");
-	return 0;
+	IWI_LOG("setSCAN_REQ \n");
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::setASSOCIATE(IO80211Interface *interface,
 							struct apple80211_assoc_data *ad)
 {
-	IWI_DEBUG("setASSOCIATE \n");
-	return 0;
+	IWI_LOG("setASSOCIATE \n");
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::setPOWER(IO80211Interface *interface,
 						struct apple80211_power_data *pd)
 {
-	IWI_DEBUG("setPOWER %d, %d %d %d %d\n",pd->num_radios, pd->power_state[0],pd->power_state[1],pd->power_state[2],pd->power_state[3]);
-	if (pd->power_state[pd->num_radios]==1)
+	IWI_LOG("setPOWER %d, %d %d %d %d\n",pd->num_radios, pd->power_state[0],pd->power_state[1],pd->power_state[2],pd->power_state[3]);
+	//if (pd->power_state[pd->num_radios]==1)
+	if (power_state)
 	{
-		IWI_DEBUG("power on\n");
+		IWI_LOG("power on\n");
+		power_state=0;
+		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rf_kill),priv,NULL,true);
+		if (rf_kill_active(priv)) 
+			{	
+				if (BITC(ipw_read32(0x30),0) & 0x1) ipw_write32(0x30, 0x0);
+				else
+				{
+					UInt32 r1=0;
+					priv->status &= ~STATUS_SCANNING;
+					while (!((priv->status & STATUS_SCANNING)))
+					{
+						if (!(BITC(ipw_read32(0x30),0) & 0x1)) ipw_write32(0x30, 0x1);
+						IODelay(2000*1000);
+						r1++;
+						if (r1==5) return -1;
+					}
+				}
+			}
+		priv->status &= ~STATUS_RF_KILL_HW;
+		priv->status &= ~STATUS_RF_KILL_SW;
+		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
 	}
 	else
 	{
-		IWI_DEBUG("power off ignored\n");
-		return -1;
+		IWI_LOG("power off\n");
+		power_state=1;
+		if (!(rf_kill_active(priv))) 
+			{
+				if (BITC(ipw_read32(0x30),0) & 0x1) ipw_write32(0x30, 0x0);
+				else
+				ipw_write32(0x30, 0x1);
+			}
+		priv->status |= STATUS_RF_KILL_HW;
+		priv->status &= ~STATUS_RF_KILL_SW;
+		priv->status &= ~(STATUS_ASSOCIATED | STATUS_ASSOCIATING);
+		fNetif->setLinkState(kIO80211NetworkLinkDown);
+		if ((ifnet_flags(fifnet) & IFF_RUNNING)) ipw_link_down(priv); else ipw_led_link_off(priv);
+		queue_te(3,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_rf_kill),priv,NULL,true);
 	}
-	return 0;
+	return -1;
 }
 
 SInt32
 darwin_iwi2200::setCIPHER_KEY(IO80211Interface *interface,
 							 struct apple80211_key *key)
 {
-	IWI_DEBUG("setCIPHER_KEY \n");
-	return 0;
+	IWI_LOG("setCIPHER_KEY \n");
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::setAUTH_TYPE(IO80211Interface *interface,
 							struct apple80211_authtype_data *ad)
 {
-	IWI_DEBUG("setAUTH_TYPE \n");
-	return 0;
+	IWI_LOG("setAUTH_TYPE \n");
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::setDISASSOCIATE(IO80211Interface	*interface)
 {
-	IWI_DEBUG("setDISASSOCIATE \n");
-	return 0;
+	IWI_LOG("setDISASSOCIATE \n");
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::setSSID(IO80211Interface *interface,
 					   struct apple80211_ssid_data *sd)
 {
-	IWI_DEBUG("setSSID \n");
-	return 0;
+	IWI_LOG("setSSID \n");
+	return kIOReturnSuccess;
 }
 
 SInt32
 darwin_iwi2200::setAP_MODE(IO80211Interface *interface,
 						  struct apple80211_apmode_data *ad)
 {
-	IWI_DEBUG("setAP_MODE \n");
-	return 0;
+	IWI_LOG("setAP_MODE \n");
+	return kIOReturnSuccess;
 }
 
 bool darwin_iwi2200::attachInterfaceWithMacAddress( void * macAddr, 
@@ -7644,7 +7700,7 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 		{
 			i--;
 			if (txb->fragments[i]!=NULL){
-				freePacket(txb->fragments[i]);
+				if (!(txb->fragments[i]) == MBUF_TYPE_FREE) freePacket(txb->fragments[i]);
 				 txb->fragments[i]=NULL;
 			}
 			//txb->fragments[i--]=NULL;
@@ -7888,12 +7944,14 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 			IWI_DEBUG("msdu encryption failed\n");
 			//dev_kfree_skb_any(skb_new);
 			//mbuf_freem_list(skb);
-			if (skb_new!=NULL) freePacket(skb_new);
+			if (skb_new!=NULL) 
+			if (!(skb_new) == MBUF_TYPE_FREE) freePacket(skb_new);
 			skb_new=NULL;
 			goto failed;
 		}
 		//dev_kfree_skb_any(skb);
-		 if (skb!=NULL) freePacket(skb);
+		 if (skb!=NULL) 
+		 if (!(skb) == MBUF_TYPE_FREE) freePacket(skb);
 		skb=NULL;
 		
 		skb = skb_new;
@@ -8073,7 +8131,7 @@ int darwin_iwi2200::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	//skb=NULL;
 	if (skb!=NULL) 
 	{
-	     freePacket(skb);
+	     if (!(skb) == MBUF_TYPE_FREE) freePacket(skb);
                skb=NULL;
 	}
 	if (txb) {
@@ -8332,7 +8390,7 @@ frg:
 			//dev_kfree_skb_any(txb->fragments[i]);
 			 if (txb->fragments[i]!=NULL)
 			 {
-				 freePacket(txb->fragments[i]);
+				 if (!(txb->fragments[i]) == MBUF_TYPE_FREE) freePacket(txb->fragments[i]);
 				 txb->fragments[i]=NULL;
 			 }
 			
@@ -8414,7 +8472,8 @@ mbuf_t darwin_iwi2200::mergePacket(mbuf_t m)
 	IWI_WARNING("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
 					mbuf_len(m),mbuf_pkthdr_len(m),
 					mbuf_len(nm),mbuf_pkthdr_len(nm) );
-	freePacket(nm);
+	if (nm)
+	if (!(nm) == MBUF_TYPE_FREE) freePacket(nm);
 
 copy_packet: 
 		return copyPacket(m, 0); 
@@ -8446,7 +8505,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	if (offset) { 
 		IWI_DEBUG("required copyPacket\n");
 		nm = copyPacket(m, 0);
-		freePacket(m);
+		if (!(m) == MBUF_TYPE_FREE) freePacket(m);
 	}	
 		else    nm=m;
 #else
@@ -8509,10 +8568,7 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 finish:	
 	
 	/* free finished packet */
-	freePacket(nm);
-	if (ret !=  kIOReturnOutputStall) { /* original packet should not free on kIOReturnOutputStall */
-		freePacket(m);
-	}
+
 	
 	return ret;	
 }
@@ -8551,7 +8607,7 @@ struct ieee80211_frag_entry *darwin_iwi2200::ieee80211_frag_cache_find(struct
 					     "seq=%u last_frag=%u\n",
 					     entry->seq, entry->last_frag);
 			//dev_kfree_skb_any(entry->skb);
-			freePacket(entry->skb);
+			if (!(entry->skb) == MBUF_TYPE_FREE) freePacket(entry->skb);
 			entry->skb = NULL;
 		}
 
@@ -8594,7 +8650,7 @@ mbuf_t darwin_iwi2200::ieee80211_frag_cache_get(struct ieee80211_device *ieee,
 
 		if (entry->skb != NULL)
 		{
-			freePacket(entry->skb);
+			if (!(entry->skb) == MBUF_TYPE_FREE) freePacket(entry->skb);
 			entry->skb = NULL;
 		}
 		entry->first_frag_time = jiffies;
@@ -8942,7 +8998,7 @@ int darwin_iwi2200::ieee80211_rx(struct ieee80211_device *ieee, mbuf_t skb,
 		}
 		//dev_kfree_skb_any(skb);
 		if (skb != NULL) {
-			freePacket(skb);
+			if (!(skb) == MBUF_TYPE_FREE) freePacket(skb);
 		}
 		skb = NULL;
 
@@ -10462,21 +10518,7 @@ int darwin_iwi2200::ipw_handle_beacon(struct net_device *dev,
 
 	return 0;
 }
-void darwin_iwi2200::freePacket(mbuf_t m, IOOptionBits options)
-{
-	mbuf_t m_next;
-	if( m != NULL){
-		m_next = mbuf_next(m);
-		if (mbuf_len(m) != 0 && mbuf_type(m) != MBUF_TYPE_FREE )
-			super::freePacket(m,options);
-		// checking chains
-		if(  m_next != NULL &&
-		     mbuf_len(m_next) != 0  &&  
-		     mbuf_type(m_next) != MBUF_TYPE_FREE ){
-			IWI_WARNING("mbuf is freed. but chains is not freed \n");
-		}
-	}
-}
+
 void darwin_iwi2200::update_network(struct ieee80211_network *dst,
 				  struct ieee80211_network *src)
 {
