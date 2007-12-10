@@ -24,7 +24,7 @@
 #include "defines.h"
 #include "iwieth.h"
 
-#define CONFIG_IPW2200_QOS
+//#define CONFIG_IPW2200_QOS
 // #define TX_QUEUE_CHECK
 
 
@@ -418,12 +418,13 @@ __div(unsigned long long n, unsigned int base)
 {
 	return n / base;
 }
-//FIXME
+#undef jiffies
 #define jiffies		\
 ({		\
-	uint64_t m;		\
+	uint64_t m,f;		\
 	clock_get_uptime(&m);		\
-	__div(m , 10000000)*5;		\
+	absolutetime_to_nanoseconds(m,&f);		\
+	((f * HZ) / 1000000000);		\
 })
 
 inline unsigned int jiffies_to_msecs(const unsigned long j)
@@ -1198,13 +1199,16 @@ virtual int ieee80211_copy_snap(u8 * data, u16 h_proto);
 	virtual struct ieee80211_txb *ieee80211_alloc_txb(int nr_frags, int txb_size,
 						 int headroom, int gfp_mask);
 	virtual int ipw_is_qos_active(struct net_device *dev, mbuf_t skb);
-	virtual void freePacket(mbuf_t  m,  IOOptionBits options = 0); 
+
 	/* skb's wrapper */
 	virtual mbuf_t alloc_skb(unsigned int size, UInt32 priority);
 	
 
 
+size_t strtouni(u_int16_t *dst, const char *src, size_t inlen, int flags)
+{
 
+}
 
 
 inline void *kzalloc(size_t size, unsigned flags)
@@ -1332,7 +1336,7 @@ inline UInt8 MEM_READ_1(UInt16 *base, UInt32 addr)
 	UInt32 countb;
 	int test_lock;
 	int showip;
-
+	int power_state;
 	
 };
 
