@@ -297,7 +297,7 @@ static int iwl4965_kw_alloc(struct iwl_priv *priv)
 	struct iwl_kw *kw = &priv->kw;
 	kw->size = IWL4965_KW_SIZE;	/* TBW need set somewhere else */
 	//kw->v_addr = pci_alloc_consistent(dev, kw->size, &kw->dma_addr);
-		kw->v_addr=(void*)IOMallocContiguous(kw->size, sizeof(u8), &kw->dma_addr);
+		kw->v_addr=(void*)IOMallocContiguous(kw->size, sizeof(__le32*), &kw->dma_addr);
 
 	if (!kw->v_addr)
 		return -ENOMEM;
