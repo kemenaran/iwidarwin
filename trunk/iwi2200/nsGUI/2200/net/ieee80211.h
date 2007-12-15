@@ -1227,6 +1227,7 @@ struct ieee80211_quiet {
 } __attribute__ ((packed));
 
 struct ieee80211_network {
+	u32 security;//from bescon
 	/* These entries are used to identify a unique network */
 	u8 bssid[ETH_ALEN];
 	u8 channel;

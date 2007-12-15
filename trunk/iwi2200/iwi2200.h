@@ -158,7 +158,7 @@ inline void *skb_put(mbuf_t skb, unsigned int len)
 	IWI_DUMP_MBUF(1,skb,len);  
 	
 	if(mbuf_trailingspace(skb) > len ){
-	//mbuf_prepend(&skb,len,MBUF_DONTWAIT); /* no prepend work */
+	//mbuf_prepend(&skb,len,MBUF_WAITOK); /* no prepend work */
 		mbuf_setlen(skb,mbuf_len(skb)+len);
 		if(mbuf_flags(skb) & MBUF_PKTHDR)
 			mbuf_pkthdr_setlen(skb,mbuf_pkthdr_len(skb)+len); 
@@ -182,7 +182,7 @@ inline void *skb_push(mbuf_t skb, unsigned int len)
 	/* void *data=(UInt8*)mbuf_data(skb)-len;
 	mbuf_setdata(skb,data,mbuf_len(skb)+len); */
 	IWI_DUMP_MBUF(1,skb,len); 
-	mbuf_prepend(&skb,len,MBUF_DONTWAIT);
+	mbuf_prepend(&skb,len,MBUF_WAITOK);
 	IWI_DUMP_MBUF(2,skb,len);
 	return  (UInt8 *)mbuf_data(skb);
 }
@@ -759,8 +759,18 @@ struct ieee80211_crypto_alg {
 class darwin_iwi2200 : public IOEthernetController//IO80211Controller
 {
 	OSDeclareDefaultStructors(darwin_iwi2200)
-
 public:
+
+	virtual IOReturn setWakeOnMagicPacket( bool active );
+	virtual IOReturn getPacketFilters(const OSSymbol * group,
+                                      UInt32 *         filters) const;
+	  virtual IOReturn enablePacketFilter(const OSSymbol * group,
+                                        UInt32           aFilter,
+                                        UInt32           enabledFilters,
+                                        IOOptionBits     options);
+	virtual UInt32 getFeatures() const;
+	virtual IOReturn getMaxPacketSize(UInt32 * maxSize) const;
+	virtual IOReturn getMinPacketSize(UInt32 * minSize) const;
 	virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
 	virtual bool		init(OSDictionary *dictionary = 0);
 	virtual void		free(void);
@@ -997,9 +1007,9 @@ public:
 	 int ipw_send_cmd_simple( u8 command);
 	 int ipw_send_cmd_pdu( u8 command, u8 len,
 			    void *data);
-     void ieee80211_rx_mgt(struct ieee80211_hdr_4addr *header, struct ieee80211_rx_stats *stats);
+     void ieee80211_rx_mgt(struct ieee80211_hdr_4addr *header, struct ieee80211_rx_stats *stats, int caplen);
 	 void ieee80211_process_probe_response(struct ieee80211_probe_response *beacon,
-        struct ieee80211_rx_stats *stats); // copy from isr_process_probe_response in ipw-0.2
+        struct ieee80211_rx_stats *stats, int caplen); // copy from isr_process_probe_response in ipw-0.2
 	 int ieee80211_network_init(
 	                 struct ieee80211_probe_response *beacon,
 					 struct ieee80211_network *network,
@@ -1034,17 +1044,7 @@ public:
 	 void ipw_handle_mgmt_packet(
 				   struct ipw_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_stats *stats);			  
-	 void ieee80211_network_reset(struct ieee80211_network *network)
-		{
-			if (!network)
-			return;
-
-			if (network->ibss_dfs) {
-			IOFree(network->ibss_dfs,sizeof(*network->ibss_dfs));
-			//kfree(network->ibss_dfs);
-			network->ibss_dfs = NULL;
-			}
-		}			  
+	 void ieee80211_network_reset(struct ieee80211_network *network);		  
 	 u8 ipw_add_station( u8 * bssid);
 	 void ipw_write_direct( u32 addr, void *buf,
 			     int num);
@@ -1063,9 +1063,9 @@ public:
 	 int ipw_qos_association_resp(
 				    struct ieee80211_network *network);
 	 int ipw_handle_beacon(struct ieee80211_beacon *resp,
-			     struct ieee80211_network *network);
+			     struct ieee80211_network *network, int caplen);
 	 int ipw_handle_probe_response(struct ieee80211_probe_response *resp,
-				     struct ieee80211_network *network);
+				     struct ieee80211_network *network, int caplen);
 	 int ipw_qos_handle_probe_response(
 					 int active_network,
 					 struct ieee80211_network *network);
@@ -1175,7 +1175,7 @@ static int is_network_beacon(struct ieee80211_network *src,
 	//int ieee80211_register_crypto_ops(struct ieee80211_crypto_ops *ops);
 	//int ieee80211_unregister_crypto_ops(struct ieee80211_crypto_ops *ops);
 	struct ieee80211_crypto_ops *ieee80211_get_crypto_ops(const char *name);
-	ieee80211_crypt_data* init_wep(u8 key[WEP_KEY_LEN + 1]);
+	ieee80211_crypt_data* init_wep(void *key, int len, int idx);
 	int ieee80211_rx_frame_decrypt(struct ieee80211_device *ieee, mbuf_t skb,
 			   struct ieee80211_crypt_data *crypt);
 	int ieee80211_encrypt_fragment(struct ieee80211_device *ieee,
@@ -1183,7 +1183,7 @@ static int is_network_beacon(struct ieee80211_network *src,
 	int ieee80211_rx_frame_decrypt_msdu(struct ieee80211_device *ieee,
 				mbuf_t skb, int keyidx,
 				struct ieee80211_crypt_data *crypt);
-									 					 
+	void free_wep(ieee80211_crypt_data *tmp);
 	//end of ieee80211_crypt functions.				 			 
 				   																			 					 		   								 				 
 #define CB_NUMBER_OF_ELEMENTS_SMALL 64
@@ -1192,8 +1192,8 @@ static int is_network_beacon(struct ieee80211_network *src,
 	IOEthernetAddress			fEnetAddr;		// holds the mac address currently hardcoded
 	IOWorkLoop *				fWorkLoop;		// the workloop
    // IO80211Interface*			fNetif;			// ???
-	IOEthernetInterface*			fNetif;
-	//IONetworkInterface*			fNetif;
+	//IOEthernetInterface*			fNetif;
+	IONetworkInterface*			fNetif;
 	IOInterruptEventSource *	fInterruptSrc;	// ???
 	//IOTimerEventSource *		fWatchdogTimer;	// ???
 	IOBasicOutputQueue *				fTransmitQueue;	// ???
@@ -1297,13 +1297,14 @@ static int is_network_beacon(struct ieee80211_network *src,
 	IOMbufLittleMemoryCursor *_mbufCursor;
 	int firstifup;
 	struct ieee80211_txb txb0;
-	//crypto data:
-	//struct ieee80211_crypto_alg* alg;	
-	
+	const char *fakemac;
+	UInt8                          pmPCICapPtr;	
+	bool                          magicPacketEnabled, magicPacketSupported,rxpkt,txpkt;
+
+	 
 };
 
-//static 	struct ieee80211_crypt_data* cryptData;
-
+static OSMallocTag  gOSMallocTag;
 
 
 #endif

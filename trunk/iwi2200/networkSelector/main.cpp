@@ -22,6 +22,12 @@
 //in your area. (i hope)
 
 #include "2200/defines.h" 
+
+#define	STD_OPN		0x0001
+#define	STD_WEP		0x0002
+#define	STD_WPA		0x0004
+#define	STD_WPA2	0x0008
+
 #define container_of(ptr, type, member)					\
 ({									\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);		\
@@ -242,11 +248,15 @@ int main (int argc, char * const argv[]) {
 							}
 							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY)!=0)
 							{
-								u8 key[13 + 1];
+								if (priv.ieee->networks[ii].security & STD_WEP)
+								{
+								char *key;
 								printf("enter password for the network\n");
 								cin>>key;
 								if (key!=NULL)
 								setsockopt(fd,SYSPROTO_CONTROL,6,key ,strlen((const char*)key));
+								else break;
+								}
 								else break;
 							}
 							printf("connecting to '%s (%02x:%02x:%02x:%02x:%02x:%02x)'...\n",

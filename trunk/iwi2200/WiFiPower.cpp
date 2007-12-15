@@ -229,6 +229,12 @@ void darwin_iwi2200::setPowerStateOff() {
    // _cardGone = true;
     //getReadyForSleep();
     
+	 if ( pmPCICapPtr )
+    {
+        fPCIDevice->configWrite16( kPCIPMCSR,
+                               magicPacketEnabled ? 0x8103 : 0x8003 );
+    }
+	
     _pmPowerState = kWiFiControllerPowerStateOff;
 
     // Since the driver returned a non-acknowledgement when called at
@@ -247,16 +253,25 @@ void darwin_iwi2200::setPowerStateOff() {
 //---------------------------------------------------------------------------
 
 void darwin_iwi2200::setPowerStateOn() {
-    _pmPowerState = kWiFiControllerPowerStateOn;
+    
 
-    IOSleep(2);
+   // IOSleep(2);
    // _cardGone = false;
    // wakeUp();
     
+	 if ( pmPCICapPtr )
+    {
+         fPCIDevice->saveDeviceState();
+        fPCIDevice->configWrite16( kPCIPMCSR, 0x8000 );
+        IOSleep(10);  // wait for internal reset completion
+        fPCIDevice->restoreDeviceState();
+    }
     // Since the driver returned a non-acknowledgement when called at
     // setPowerState(), it sends an ACK to the policy-maker here to
     // indicate that our power state transition is complete.
 
+	_pmPowerState = kWiFiControllerPowerStateOn;
+	
     _pmPolicyMaker->acknowledgeSetPowerState();
 
     // With power restored, all clients will be notified that the driver

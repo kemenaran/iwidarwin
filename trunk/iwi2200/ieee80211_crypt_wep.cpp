@@ -27,7 +27,7 @@ int m_append(mbuf_t m0, int len, u8* cp)
 	}
 	while (remainder > 0)
 	{
-		mbuf_get(MBUF_DONTWAIT, mbuf_type(m),&n);
+		mbuf_get(MBUF_WAITOK, mbuf_type(m),&n);
 		if (!n) break;
 		mbuf_setlen(n,min(mbuf_len(m),remainder));
 		bcopy(cp, ((u8*) mbuf_data(m)), mbuf_len(n));
@@ -120,8 +120,8 @@ static int prism2_wep_encrypt(mbuf_t skb, int hdr_len, void *priv)
 	u_int off, keylen;
 	
 	
-	//mbuf_pullup(&m,hdr_len); there's no mbuf_next
-	
+	//mbuf_pullup(&m,hdr_len);
+				   
 	u8 *data = (u8*) mbuf_data(m);
 	/*copy public key*/
 	bcopy(data+hdr_len, rc4key, 3);
@@ -191,7 +191,7 @@ static int prism2_wep_encrypt(mbuf_t skb, int hdr_len, void *priv)
 		S_SWAP(i,j);
 		icv[k] ^= S[(S[i] + S[j]) & 0xff];
 	}
-	IWI_DEBUG("calling m_append\n");
+	//IWI_DEBUG("calling m_append\n");
 	bcopy(icv, skb_put(m,4),4);
 	return 1;
 	//return m_append(m, 4, icv);
@@ -200,12 +200,12 @@ static int prism2_wep_encrypt(mbuf_t skb, int hdr_len, void *priv)
 
 
 
-#define S_SWAP(a,b) do { uint8_t t = S[a]; S[a] = S[b]; S[b] = t; } while(0)
+
 
 static int prism2_wep_decrypt(mbuf_t skb, int hdr_len, void* priv)
 {
 	if (!priv) return -1;
-
+	#define S_SWAP(a,b) do { uint8_t t = S[a]; S[a] = S[b]; S[b] = t; } while(0)
 	struct prism2_wep_data *wep = (prism2_wep_data*) priv;
 	mbuf_t m = skb;
 	uint8_t rc4key[19];
@@ -218,12 +218,12 @@ static int prism2_wep_decrypt(mbuf_t skb, int hdr_len, void* priv)
 	
 	rc4key[0]=0;
 	
-	//mbuf_pullup(&m,hdr_len); there's no mbuf_next
-
+	//mbuf_pullup(&m,hdr_len);
+	
 	/*copy public part of key.*/
 	bcopy((uint8_t*) mbuf_data(m) + hdr_len, rc4key, 3);
 	/*copy private part of key.*/
-	memcpy(wep->key, rc4key+3,wep->key_len);
+	bcopy(wep->key, rc4key+3,wep->key_len);
 	
 	IWI_DEBUG("public + private key: %s\n",rc4key);
 	
@@ -319,13 +319,13 @@ static int wep_decrypt(mbuf_t skb, int hdr_len, void* priv)
 	
 	mbuf_t m = skb;
 	
-	prism2_wep_decrypt(m,hdr_len,priv);
+	if (prism2_wep_decrypt(m,hdr_len,priv)!=1) return 0;
 	
-#define ovbcopy(f, t, l) bcopy((f), (t), (l))
-	ovbcopy(mbuf_data(m),((uint8_t*) mbuf_data(m)) + 4,hdr_len);
+//#define ovbcopy(f, t, l) bcopy((f), (t), (l))
+	bcopy(mbuf_data(m),((uint8_t*) mbuf_data(m)) + 4,hdr_len);
 	mbuf_adj(skb,4);
 	mbuf_adj(skb,-4);
-	mbuf_setflags(skb,mbuf_flags(m) | MBUF_PKTHDR);
+	//mbuf_setflags(skb,mbuf_flags(m) | MBUF_PKTHDR);
 	
 	return 1;
 	
@@ -336,33 +336,18 @@ static int wep_encrypt(mbuf_t skb, int hdr_len, void* priv)
 	uint32_t iv;
 	uint8_t *ivp;
 	int hdrlen;
-	
-	
+
 	hdrlen = hdr_len;
 	struct prism2_wep_data *wep = (prism2_wep_data *)priv;
 
-	
-	/*
-		
-		XXX
-		IV must not duplicate during the lifetime of the key
-		but no mechanism to renew keys is defined in IEEE 802.11
-		for WEP. And the IV my be duplicated at other stations
-		because the session key itself is shared. so we use a
-		psuedo random IV for now, though it is not the right way.
-		
-		rather than use a strictly random IV we select a random one
-		to start and then increment the value for each frame.
-		this is an explicit tradeoff between overhead and security.
-		given the basic insecurtiy of WEP, this seems worthwhile.
-		
-		
-	*/
-	/*
-		Skip 'bad' IVs from Fluhrer/Mantin/Shamir:
-		(B,255,N) with 3<=B<16 & 0<=N<=255
-	*/
-	
+
+	mbuf_prepend(&skb,4,MBUF_WAITOK);
+	if (!skb) return 0;
+	ivp = (uint8_t*)mbuf_data(skb);
+	bcopy(ivp + 4, ivp, hdrlen);
+	ivp += hdrlen;
+
+
 	iv = wep->iv;
 	if ((iv & 0xff00) == 0xff00)
 	{
@@ -374,9 +359,18 @@ static int wep_encrypt(mbuf_t skb, int hdr_len, void* priv)
 	}
 	wep->iv = iv + 1;
 	
+#if defined(__BIG_ENDIAN__)
+	// apple ppc hardware
 	ivp[0] = iv >> 0;
 	ivp[1] = iv >> 8;
 	ivp[2] = iv >> 16;
+#else
+	// intel hardware
+	ivp[2] = iv >> 0;
+	ivp[1] = iv >> 8;
+	ivp[0] = iv >> 16;
+#endif
+		
 	ivp[3] = wep->key_idx;
 	
 	/* call software encrypt
@@ -386,8 +380,8 @@ static int wep_encrypt(mbuf_t skb, int hdr_len, void* priv)
 		maybe other devs can set the hardware encryption.
 	*/
 	IWI_DEBUG("calling encrypt\n");
-	prism2_wep_encrypt(skb,hdr_len,wep);
-	return 1;
+	return prism2_wep_encrypt(skb,hdr_len,wep);
+	//return 1;
 
 	
 	
@@ -477,7 +471,7 @@ static void prism2_wep_deinit(void *priv)
 		//if (_priv->rx_tfm);
 	//		crypto_free_blkcipher(_priv->rx_tfm);
 	}
-	IOFree(_priv, sizeof(*_priv));
+	OSFree(_priv, sizeof(*_priv),gOSMallocTag);
 }
 
 /* Add WEP IV/key info to a frame that has at least 4 bytes of headroom */
@@ -542,18 +536,40 @@ static struct ieee80211_crypto_ops ieee80211_crypt_wep = {
 	NULL,
 	4,
 	4};
-	
-ieee80211_crypt_data* darwin_iwi2200::init_wep(u8 key[WEP_KEY_LEN + 1])
+
+void darwin_iwi2200::free_wep(ieee80211_crypt_data *tmp)
 {
-	ieee80211_crypt_data* tmp = (ieee80211_crypt_data*) IOMalloc(sizeof(ieee80211_crypt_data));
+	if (tmp)
+	{
+		 tmp->ops=NULL;
+		 IOFree(tmp->priv,sizeof(prism2_wep_data));
+		 tmp->priv=NULL;
+		 IOFree(tmp,sizeof(ieee80211_crypt_data));
+		 tmp=NULL;
+	}
+}
+	
+ieee80211_crypt_data* darwin_iwi2200::init_wep(void *key, int len, int idx)
+{
+	ieee80211_crypt_data* tmp = (ieee80211_crypt_data*) IOMalloc(sizeof(ieee80211_crypt_data)+sizeof(struct prism2_wep_data));
 	tmp->ops=&ieee80211_crypt_wep;
-//	tmp->ops->init(2);
-	tmp->priv=(prism2_wep_data*) IOMalloc(sizeof(prism2_wep_data));
-	read_random(&((prism2_wep_data*)tmp->priv)->iv,4);
-	//IWI_LOG("wep password %s size %d\n",key,strlen((const char*)key));
-	bcopy(key,((prism2_wep_data*)(tmp->priv))->key,strlen((const char*)key));
-	((prism2_wep_data*)(tmp->priv))->key_len=strlen((const char*)key);
-		((prism2_wep_data*)(tmp->priv))->key_idx=0;
+	tmp->priv=tmp->ops->init(idx);
+	prism2_wep_set_key(key,  len, NULL, tmp->priv);
+
+	/*int i=0;
+	IWI_LOG("key password [");
+	while( i< ((prism2_wep_data*)(tmp->priv))->key_len)
+	{
+		IOLog("%x",((prism2_wep_data*)(tmp->priv))->key[i++]);
+		if (i<((prism2_wep_data*)(tmp->priv))->key_len) IOLog(":");
+	}
+	IOLog("] ");
+	i=0;
+	while( i< ((prism2_wep_data*)(tmp->priv))->key_len)
+	{
+		IOLog("%c",((prism2_wep_data*)(tmp->priv))->key[i++]);
+	}
+	IOLog(" size %d\n",((prism2_wep_data*)(tmp->priv))->key_len);*/
 	return tmp;
 }
 
