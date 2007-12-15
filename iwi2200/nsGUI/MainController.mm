@@ -29,6 +29,11 @@ static int networkMenuCount = 0;
 	//set all textboxs to null to avoid errors when sending to iwi2200
 	[passwordName setStringValue:@""];
 	[networkName setStringValue:@""];
+	[[[dataOutlet tableColumnWithIdentifier:@"Signal"] dataCell] setLevelIndicatorStyle:NSContinuousCapacityLevelIndicatorStyle];
+	[[[dataOutlet tableColumnWithIdentifier:@"Signal"] dataCell] setMaxValue:250];
+	[[[dataOutlet tableColumnWithIdentifier:@"Signal"] dataCell] setWarningValue:190];
+	[[[dataOutlet tableColumnWithIdentifier:@"Signal"] dataCell] setCriticalValue:179];
+	
 }
 
 - (id) init
@@ -179,9 +184,25 @@ static int networkMenuCount = 0;
 							NSString *sSSID = [NSString stringWithFormat:@"%s",escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len)];
 							NSString *sMAC = [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid)];
 							NSString *sch = [NSString stringWithFormat:@"%d",priv.ieee->networks[ii].channel];
-							NSImage *sig; // = [NSImage new];
+							//NSImage *sig; // = [NSImage new];
 							NSString *ssig = [NSString stringWithFormat:@"%d",priv.ieee->networks[ii].stats.signal];
 							NSImage *prot;// = [NSImage new];
+							NSString *ntype=@"";
+							NSLevelIndicatorCell *sig=[NSLevelIndicatorCell new];
+							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
+							{
+							if (priv.ieee->networks[ii].security & STD_WEP) ntype=@"WEP";
+							if (priv.ieee->networks[ii].security & STD_WPA) ntype=@"WPA";
+							if (priv.ieee->networks[ii].security & STD_WPA2) ntype=@"WPA2";
+							
+							if (priv.ieee->networks[ii].security & AUTH_PSK) ntype=[ntype stringByAppendingString:@"_s"];
+							if (priv.ieee->networks[ii].security & AUTH_MGT) ntype=[ntype stringByAppendingString:@"_m"];
+							
+							if (priv.ieee->networks[ii].security & ENC_TKIP) ntype=[ntype stringByAppendingString:@".t"];
+							if (priv.ieee->networks[ii].security & ENC_WRAP) ntype=[ntype stringByAppendingString:@".w"];
+							if (priv.ieee->networks[ii].security & ENC_CCMP) ntype=[ntype stringByAppendingString:@".c"];
+							}
+
 							prot = [[NSImage alloc] init];
 							
 							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
@@ -207,13 +228,16 @@ static int networkMenuCount = 0;
 								
 							NSString* imageName;
 							
-							int signal = priv.ieee->networks[ii].stats.signal;
-							if (signal < 50 ) imageName = [[NSBundle mainBundle] pathForResource:@"sig1s" ofType:@"tif"];
-							if (signal >=50 && signal <100) imageName = [[NSBundle mainBundle] pathForResource:@"sig2s" ofType:@"tif"];
-							if (signal >=100 && signal <180) imageName = [[NSBundle mainBundle] pathForResource:@"sig3s" ofType:@"tif"];
-							if (signal>=180) imageName = [[NSBundle mainBundle] pathForResource:@"sig4s" ofType:@"tif"];
 							
-							sig = [[NSImage alloc] initWithContentsOfFile:imageName];
+
+							int signal = priv.ieee->networks[ii].stats.signal;
+							if (signal < 170 ) imageName = [[NSBundle mainBundle] pathForResource:@"sig1s" ofType:@"tif"];
+							if (signal >=170 && signal <180) imageName = [[NSBundle mainBundle] pathForResource:@"sig2s" ofType:@"tif"];
+							if (signal >=180 && signal <190) imageName = [[NSBundle mainBundle] pathForResource:@"sig3s" ofType:@"tif"];
+							if (signal>=190) imageName = [[NSBundle mainBundle] pathForResource:@"sig4s" ofType:@"tif"];
+							[sig setIntValue:signal];
+
+							//sig = [[NSImage alloc] initWithContentsOfFile:imageName];
 							
 							//cout<<prot;
 
@@ -221,8 +245,11 @@ static int networkMenuCount = 0;
 							NSMutableArray *data = [NSMutableArray new];
 							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];
 							[data addObject:sig];[data addObject:ssig];[data addObject:prot];
+							[data addObject:ntype];
+							
 							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",
-							@"Signal", @"Value",@"Info",nil];
+							@"Signal", @"Value",@"Info",@"Type",nil];
+							
 							
 							NSMutableDictionary *temp = [[NSMutableDictionary alloc] initWithObjects: data forKeys: keys];
 							
@@ -233,7 +260,7 @@ static int networkMenuCount = 0;
 							
 							[menuItem setTag:ii];
 							[menuItem setTarget:self];
-							[menuItem setImage:sig];
+							[menuItem setImage:[[NSImage alloc] initWithContentsOfFile:imageName]];
 							
 							[networksMenu addItem:menuItem];
 							
@@ -319,6 +346,7 @@ static int networkMenuCount = 0;
 		ii=vi;
 		if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY)!=0)
 		{
+			if (priv.ieee->networks[ii].security & STD_WEP)
 			[self createPasswordSelected:sender];
 			return;
 		}
@@ -329,9 +357,13 @@ static int networkMenuCount = 0;
 		int r=setsockopt(fd,SYSPROTO_CONTROL,2,&priv.ieee->networks[ii], sizeof(priv.ieee->networks[ii]));
 		[ProgressAnim stopAnimation:self];
 		[ProgressAnim setHidden:true];
-		if (r==1)
-		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
 		wait_conect=NO;
+		if (r==1)
+		{
+		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
+		[self preAction];
+		}
+		
 		
 
 		
@@ -353,6 +385,13 @@ static int networkMenuCount = 0;
 			vi++;
 			if (vi==sel0) break;
 		}
+		if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY)!=0)
+		{
+			
+			if (priv.ieee->networks[ii].security & STD_WEP)
+			[self openMainWindow:sender];
+			return;
+		}
 		[textOutlet setStringValue:[NSString stringWithCString:"connecting to network..."]];
 		[ProgressAnim setHidden:false];
 		[ProgressAnim startAnimation:self];
@@ -360,9 +399,12 @@ static int networkMenuCount = 0;
 		int r=setsockopt(fd,SYSPROTO_CONTROL,2,&priv.ieee->networks[ii], sizeof(priv.ieee->networks[ii]));
 		[ProgressAnim stopAnimation:self];
 		[ProgressAnim setHidden:true];
-		if (r==1)
-		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
 		wait_conect=NO;
+		if (r==1)
+		{
+		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
+		[self preAction];
+		}
 	}
 	[self CancelConnect:nil];
 }
@@ -535,11 +577,11 @@ static int networkMenuCount = 0;
 			
 			NSString *imageName;
 			
-			if (signal < 50 ) imageName = [[NSBundle mainBundle] pathForResource:@"sig1s" ofType:@"tif"];
-			if (signal >=50 && signal <100) imageName = [[NSBundle mainBundle] pathForResource:@"sig2s" ofType:@"tif"];
-			if (signal >=100 && signal <180) imageName = [[NSBundle mainBundle] pathForResource:@"sig3s" ofType:@"tif"];
-			if (signal>=180) imageName = [[NSBundle mainBundle] pathForResource:@"sig4s" ofType:@"tif"];
-			
+			if (signal < 170 ) imageName = [[NSBundle mainBundle] pathForResource:@"sig1s" ofType:@"tif"];
+			if (signal >=170 && signal <180) imageName = [[NSBundle mainBundle] pathForResource:@"sig2s" ofType:@"tif"];
+			if (signal >=180 && signal <190) imageName = [[NSBundle mainBundle] pathForResource:@"sig3s" ofType:@"tif"];
+			if (signal>=190) imageName = [[NSBundle mainBundle] pathForResource:@"sig4s" ofType:@"tif"];
+								
 			statusImage = [[NSImage alloc] initWithContentsOfFile:imageName];
 			[statusItem setImage:statusImage];
 			[statusItem setAlternateImage:statusImage];
@@ -674,8 +716,12 @@ static int networkMenuCount = 0;
 
 	[cr_passwordDialog orderOut:nil];
     [NSApp endSheet:cr_passwordDialog];
+	if ([sender tag]) 
+	{
+		[passwordName setStringValue:@""];
+		return;
+	}
 	if ([[passwordName stringValue] isEqualToString:@""]) return;
-	if ([[passwordName stringValue] length]>14) return;
 	setsockopt(fd,SYSPROTO_CONTROL,6,[[passwordName stringValue] cString] ,[[passwordName stringValue] length]);
 	[passwordName setStringValue:@""];
 		[textOutlet setStringValue:[NSString stringWithCString:"connecting to network..."]];
@@ -703,9 +749,13 @@ static int networkMenuCount = 0;
 		int r=setsockopt(fd,SYSPROTO_CONTROL,2,&priv.ieee->networks[ii], sizeof(priv.ieee->networks[ii]));
 		[ProgressAnim stopAnimation:self];
 		[ProgressAnim setHidden:true];
-		if (r==1)
-		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
 		wait_conect=NO;
+		if (r==1)
+		{
+		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
+		[self preAction];
+		}
+		
 }
 - (IBAction)createPasswordSelected:(id)sender
 {
