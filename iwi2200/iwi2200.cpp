@@ -5473,7 +5473,7 @@ int darwin_iwi2200::ipw_best_network(
 				"capability mismatch.\n",
 				escape_essid((const char*)network->ssid, network->ssid_len),
 				MAC_ARG(network->bssid));
-		return 0;
+		//return 0;
 	}
 
 	/* If we do not have an ESSID for this AP, we can not associate with
@@ -8512,7 +8512,7 @@ int darwin_iwi2200::ieee80211_rx(mbuf_t skb, struct ieee80211_rx_stats *rx_stats
 		bcopy(hdr->addr2, src, ETH_ALEN);
 		break;
 	case IEEE80211_FCTL_FROMDS | IEEE80211_FCTL_TODS:
-		if (mbuf_pkthdr_len(skb) < IEEE80211_4ADDR_LEN)
+		if (mbuf_len(skb) < IEEE80211_4ADDR_LEN)
 			goto rx_dropped;
 		bcopy(hdr->addr3, dst, ETH_ALEN);
 		bcopy(hdr->addr4, src, ETH_ALEN);
@@ -8573,7 +8573,7 @@ if (netStats->inputPackets<100)
 
 	}
 	ifnet_free_multicast_list(address);
-}			
+}		
 	
 
 	/* Nullfunc frames may have PS-bit set, so they must be passed to
