@@ -776,7 +776,7 @@ int iwl_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
 			IODelay(HOST_COMPLETE_TIMEOUT);
 			if (rc==HOST_COMPLETE_TIMEOUT) break;
 		}
-		//if (rc==1000) priv->status &= ~STATUS_HCMD_ACTIVE;//hack
+		if (rc==HOST_COMPLETE_TIMEOUT) priv->status &= ~STATUS_HCMD_ACTIVE;//hack
 		
 		if (cmd_needs_lock(cmd))
 			spin_lock_irqsave(&priv->lock, flags);
