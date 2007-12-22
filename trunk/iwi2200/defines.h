@@ -50,6 +50,7 @@ extern "C" {
 #include <sys/random.h>
 #include <sys/mbuf.h>
 #include <libkern/OSMalloc.h>
+#include <netinet/ip.h>
 
 }
 
@@ -1035,3 +1036,15 @@ typedef unsigned char UInt8;
 #define	AUTH_MGT	0x0800
 
 #define kPCIPMCSR                   (pmPCICapPtr + 4)
+
+#define WME_AC_BE	0
+#define WME_AC_BK	1
+#define WME_AC_VI	2
+#define WME_AC_VO	3
+	
+#define TID_TO_WME_AC(_tid) (      \
+         ((_tid) == 0 || (_tid) == 3) ? WME_AC_BE : \
+         ((_tid) < 3) ? WME_AC_BK : \
+         ((_tid) < 6) ? WME_AC_VI : \
+         WME_AC_VO)
+
