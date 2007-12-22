@@ -471,7 +471,7 @@ static void prism2_wep_deinit(void *priv)
 		//if (_priv->rx_tfm);
 	//		crypto_free_blkcipher(_priv->rx_tfm);
 	}
-	OSFree(_priv, sizeof(*_priv),gOSMallocTag);
+	IOFree(_priv, sizeof(*_priv));
 }
 
 /* Add WEP IV/key info to a frame that has at least 4 bytes of headroom */

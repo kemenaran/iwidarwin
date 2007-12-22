@@ -165,8 +165,14 @@ inline void *skb_put(mbuf_t skb, unsigned int len)
 	}
 	else
 	{
-		IWI_ERR("skb_put failed\n");
-		data = (UInt8*)mbuf_data(skb);
+		IWI_WARN("skb_put failed - fixing\n");
+		mbuf_t nm;
+		mbuf_getpacket(MBUF_WAITOK, &nm);
+		mbuf_setlen(nm,mbuf_len(skb)+len);
+		mbuf_pkthdr_setlen(nm,mbuf_len(skb)+len);
+		bcopy(mbuf_data(skb),mbuf_data(nm),mbuf_len(skb));
+		skb=nm;
+		data = (UInt8*)mbuf_data(skb) + mbuf_len(skb)-len;
 	}
 	IWI_DUMP_MBUF(2,skb,len);  
 	return data;
