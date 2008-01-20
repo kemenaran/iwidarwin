@@ -371,16 +371,15 @@ void darwin_iwi2200::ieee80211_network_reset(struct ieee80211_network *network)
 bool darwin_iwi2200::init(OSDictionary *dict)
 {
 
-	gOSMallocTag = OSMalloc_Tagalloc("insanelymac.iwidarwin.control", OSMT_DEFAULT);//  OSMT_PAGEABLE
+	//gOSMallocTag = OSMalloc_Tagalloc("insanelymac.iwidarwin.control", OSMT_DEFAULT);//  OSMT_PAGEABLE
 
 	/* Initialize module parameter values here */
 #ifdef CONFIG_IPW2200_QOS	
 	qos_enable = 1;
-	qos_burst_enable = 1;
 #else
 	qos_enable = 0;
- 	qos_burst_enable = 0;
 #endif
+	qos_burst_enable = 0;
 	qos_no_ack_mask = 0;
 	burst_duration_CCK = 0;
 	burst_duration_OFDM = 0;
@@ -895,8 +894,9 @@ void darwin_iwi2200::check_firstup()
 		bcopy(addr, priv->net_dev->dev_addr, ETH_ALEN);
 		bcopy(addr, priv->ieee->dev->dev_addr,  ETH_ALEN);
 	}
-	pl=1;
-	ipw_up();
+	//pl=1;
+	//ipw_up();
+	queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),NULL,NULL,true);
 }
 
 IOReturn darwin_iwi2200::selectMedium(const IONetworkMedium * medium)
@@ -1169,8 +1169,8 @@ void darwin_iwi2200::ipw_queue_tx_free_tfd(
 		//IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],le16_to_cpu(bd->u.data.chunk_len[i]),kIODirectionNone)->release();
 		//IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],
 		//	bd->u.data.chunk_len[i],kIODirectionInOut)->complete(kIODirectionInOut);
-		IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],
-			bd->u.data.chunk_len[i],kIODirectionInOut)->release();	
+		//IOMemoryDescriptor::withPhysicalAddress(bd->u.data.chunk_ptr[i],
+		//	bd->u.data.chunk_len[i],kIODirectionInOut)->release();	
 		
 		bd->u.data.chunk_ptr[i]=NULL;
 		if (txq->txb[txq->q.last_used]!=NULL) {
@@ -1193,7 +1193,7 @@ void darwin_iwi2200::ieee80211_txb_free(struct ieee80211_txb *txb)
 			if (!(mbuf_type(txb->fragments[i]) == MBUF_TYPE_FREE)) freePacket(txb->fragments[i]);
 			txb->fragments[i]=NULL;
 		}
-	IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8*) * txb->nr_frags));//,gOSMallocTag);
+	IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8) * txb->nr_frags));//,gOSMallocTag);
 	//kfree(txb);
 	txb=NULL;
 }
@@ -2243,7 +2243,9 @@ int darwin_iwi2200::ipw_queue_tx_reclaim(
 	
 	
       done:
-	  	  
+	 
+	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		   	  
 #ifdef TX_QUEUE_CHECK	  
 	if ((ipw_queue_space(q) > q->low_mark) &&
 	    (qindex >= 0) &&
@@ -2322,6 +2324,8 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 		/*if ((fNetif->getFlags() & IFF_RUNNING)!=0) 
 		queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),NULL,NULL,true); 
 		else queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_led_link_off),NULL,NULL,true);*/
+		priv->config |= CFG_ASSOCIATE;
+		if (priv->assoc_network!=NULL) priv->assoc_network->exclude=2;
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),NULL,NULL,true);
 		handled |= IPW_INTA_BIT_FW_CARD_DISABLE_PHY_OFF_DONE;		
 	}
@@ -2338,6 +2342,8 @@ UInt32 darwin_iwi2200::handleInterrupt(void)
 		/*if ((fNetif->getFlags() & IFF_RUNNING)!=0) 
 		queue_te(16,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_link_down),NULL,NULL,true); 
 		else queue_te(11,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_led_link_off),NULL,NULL,true);*/
+		priv->config |= CFG_ASSOCIATE;
+		if (priv->assoc_network!=NULL) priv->assoc_network->exclude=2;
 		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),NULL,NULL,true);
 		handled |= IPW_INTA_BIT_FATAL_ERROR;
 	}
@@ -5442,6 +5448,8 @@ int darwin_iwi2200::ipw_best_network(
 	struct ipw_supported_rates rates;
 	IWI_DEBUG("ipw_best_network\n");
 	
+	if (network==NULL) return 0;
+	
 	/* dump information */
 	IWI_DEBUG("iw_mode[%d] capability[%d] flag[%d] scan_age[%d]\n",priv->ieee->iw_mode,
 	  network->capability,network->flags,priv->ieee->scan_age);
@@ -5697,8 +5705,28 @@ int darwin_iwi2200::ipw_associate()
 	}
 	if ((priv->config & CFG_ASSOCIATE))
 	{
-		list_for_each_entry(network, &priv->ieee->network_list, list) 
-			ipw_best_network( &match, network, 0);
+		if (priv->assoc_network!=NULL)
+		{
+			if (priv->assoc_network->exclude==2)//try to associate to last used network
+			{
+				ipw_best_network( &match, priv->assoc_network, 0);
+				if (match.network==NULL)
+				{
+					list_for_each_entry(network, &priv->ieee->network_list, list) 
+				ipw_best_network( &match, network, 0);
+				}
+			}
+			else
+			{
+				list_for_each_entry(network, &priv->ieee->network_list, list) 
+					ipw_best_network( &match, network, 0);
+			}
+		}
+		else
+		{
+			list_for_each_entry(network, &priv->ieee->network_list, list) 
+				ipw_best_network( &match, network, 0);
+		}
 	}
 	network = match.network;
 	rates = &match.rates;
@@ -6388,10 +6416,10 @@ void darwin_iwi2200::ipw_gather_stats()
 		return;
 	}
 
-	if (priv->ieee->iw_mode == IW_MODE_INFRA && priv->assoc_network)
+	/*if (priv->ieee->iw_mode == IW_MODE_INFRA && priv->assoc_network)
 	if (priv->assoc_network->exclude==1)
 	{
-		/*int i,p=-1,ok=0;
+		int i,p=-1,ok=0;
 		for (i=0;i<20;i++) 
 		{
 			if (nonets[i].bssid)
@@ -6403,8 +6431,8 @@ void darwin_iwi2200::ipw_gather_stats()
 		fNetif->setLinkState(kIO80211NetworkLinkDown);
 		setLinkStatus(kIONetworkLinkValid);
 		queue_te(12,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_disassociate),NULL,NULL,true);
-		return;*/
-	}
+		return;
+	}*/
 	/* Update the statistics */
 	ipw_get_ordinal( IPW_ORD_STAT_MISSED_BEACONS,
 			&priv->missed_beacons, &len);
@@ -6456,8 +6484,17 @@ void darwin_iwi2200::ipw_gather_stats()
 
 	priv->last_rate = ipw_get_current_rate();
 	setLinkStatus(kIONetworkLinkValid | (priv->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_AUTO],priv->last_rate);
-
-
+	
+	if (netStats->inputPackets>0)
+	if (priv->last_rate==0 || netStats->outputPackets<=1)//driver fails to get a ip address
+	{
+		priv->config |= CFG_ASSOCIATE;
+		queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),NULL,NULL,true);
+		return;
+	}
+	
+	if (priv->assoc_network->exclude==2) priv->assoc_network->exclude=0;//driver get ip after fw error
+	
 	if (rxpkt==false && txpkt==true)
 	{
 		
@@ -7254,7 +7291,7 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 	struct ieee80211_txb *txb;
 	int i;
 	//txb = (struct ieee80211_txb *)kmalloc(sizeof(struct ieee80211_txb) + (sizeof(u8 *) * nr_frags), NULL);//gfp_mask);
-	txb = (struct ieee80211_txb *)IOMalloc(sizeof(struct ieee80211_txb) + (sizeof(u8*) * nr_frags));//,gOSMallocTag);//, NULL);//gfp_mask);
+	txb = (struct ieee80211_txb *)IOMalloc(sizeof(struct ieee80211_txb) + (sizeof(u8) * nr_frags));//,gOSMallocTag);//, NULL);//gfp_mask);
 	if (!txb)
 		return NULL;
 
@@ -7294,7 +7331,7 @@ struct ieee80211_txb *darwin_iwi2200::ieee80211_alloc_txb(int nr_frags, int txb_
 		//	dev_kfree_skb_any(txb->fragments[i--]);
 		}
 		//kfree(txb);
-		IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8*) * nr_frags));//,gOSMallocTag);
+		IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8) * nr_frags));//,gOSMallocTag);
 		txb=NULL;
 		return NULL;
 	}
@@ -8232,13 +8269,13 @@ UInt32 darwin_iwi2200::outputPacket(mbuf_t m, void * param)
 	if (!(fTransmitQueue->getState() & 0x1))
 	{
 		//ipw_send_cmd_simple( IPW_CMD_TX_FLUSH);
-		return kIOReturnOutputStall; 
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		fTransmitQueue->start();
+		return kIOReturnOutputSuccess;//kIOReturnOutputStall; 
 	}
 	
 
 	fTransmitQueue->enqueue(m, 0);
-	
-	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 	
 	return kIOReturnOutputSuccess;
 }
