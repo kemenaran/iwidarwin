@@ -1,0 +1,392 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		400A318B0C01E537007BE2A8 /* sig0s.tif in Resources */ = {isa = PBXBuildFile; fileRef = 400A318A0C01E537007BE2A8 /* sig0s.tif */; };
+		400A318D0C01E541007BE2A8 /* sig1s.tif in Resources */ = {isa = PBXBuildFile; fileRef = 400A318C0C01E541007BE2A8 /* sig1s.tif */; };
+		400A318F0C01E544007BE2A8 /* sig2s.tif in Resources */ = {isa = PBXBuildFile; fileRef = 400A318E0C01E544007BE2A8 /* sig2s.tif */; };
+		400A31910C01E54A007BE2A8 /* sig3s.tif in Resources */ = {isa = PBXBuildFile; fileRef = 400A31900C01E54A007BE2A8 /* sig3s.tif */; };
+		400A31930C01E54D007BE2A8 /* sig4s.tif in Resources */ = {isa = PBXBuildFile; fileRef = 400A31920C01E54D007BE2A8 /* sig4s.tif */; };
+		400B93D80BFE7DF8005504F4 /* Connected.png in Resources */ = {isa = PBXBuildFile; fileRef = 400B93D70BFE7DF8005504F4 /* Connected.png */; };
+		40138DF80BBBE165007E4177 /* enc.tif in Resources */ = {isa = PBXBuildFile; fileRef = 40138DF70BBBE165007E4177 /* enc.tif */; };
+		402F07C00BF934E600038DCA /* icons.icns in Resources */ = {isa = PBXBuildFile; fileRef = 402F07BF0BF934E600038DCA /* icons.icns */; };
+		406E55DC0BECD5B800AB0131 /* MainController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 406E55DB0BECD5B800AB0131 /* MainController.mm */; };
+		611AA9590C0C974200A4B5DA /* NetworkSelector icon 64x64.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA94D0C0C974200A4B5DA /* NetworkSelector icon 64x64.png */; };
+		611AA95A0C0C974200A4B5DA /* NetworkSelector icon 128X128.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA94E0C0C974200A4B5DA /* NetworkSelector icon 128X128.png */; };
+		611AA95B0C0C974200A4B5DA /* sig0.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA94F0C0C974200A4B5DA /* sig0.png */; };
+		611AA95C0C0C974200A4B5DA /* sig1.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9500C0C974200A4B5DA /* sig1.png */; };
+		611AA95D0C0C974200A4B5DA /* sig2.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9510C0C974200A4B5DA /* sig2.png */; };
+		611AA95E0C0C974200A4B5DA /* sig3.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9520C0C974200A4B5DA /* sig3.png */; };
+		611AA95F0C0C974200A4B5DA /* Signal Meter 0.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9530C0C974200A4B5DA /* Signal Meter 0.png */; };
+		611AA9600C0C974200A4B5DA /* Signal Meter 1.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9540C0C974200A4B5DA /* Signal Meter 1.png */; };
+		611AA9610C0C974200A4B5DA /* Signal Meter 2.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9550C0C974200A4B5DA /* Signal Meter 2.png */; };
+		611AA9620C0C974200A4B5DA /* Signal Meter 3.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9560C0C974200A4B5DA /* Signal Meter 3.png */; };
+		611AA9630C0C974200A4B5DA /* Splash Screen BMP.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9570C0C974200A4B5DA /* Splash Screen BMP.jpg */; };
+		611AA9640C0C974200A4B5DA /* statusIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = 611AA9580C0C974200A4B5DA /* statusIcon.png */; };
+		617AD49D0C32C75D00B05E8E /* enc-ibss.tif in Resources */ = {isa = PBXBuildFile; fileRef = 617AD49B0C32C75D00B05E8E /* enc-ibss.tif */; };
+		617AD49E0C32C75D00B05E8E /* ibss.tif in Resources */ = {isa = PBXBuildFile; fileRef = 617AD49C0C32C75D00B05E8E /* ibss.tif */; };
+		8D11072A0486CEB800E47090 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 29B97318FDCFA39411CA2CEA /* MainMenu.nib */; };
+		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		8D11072D0486CEB800E47090 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.mm */; settings = {ATTRIBUTES = (); }; };
+		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		13E42FB307B3F0F600E4EEF1 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = /System/Library/Frameworks/CoreData.framework; sourceTree = "<absolute>"; };
+		29B97316FDCFA39411CA2CEA /* main.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		29B97319FDCFA39411CA2CEA /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/MainMenu.nib; sourceTree = "<group>"; };
+		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
+		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		32CA4F630368D1EE00C91783 /* nsGUI_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nsGUI_Prefix.pch; sourceTree = "<group>"; };
+		400A318A0C01E537007BE2A8 /* sig0s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig0s.tif; path = GFX/sig0s.tif; sourceTree = "<group>"; };
+		400A318C0C01E541007BE2A8 /* sig1s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig1s.tif; path = GFX/sig1s.tif; sourceTree = "<group>"; };
+		400A318E0C01E544007BE2A8 /* sig2s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig2s.tif; path = GFX/sig2s.tif; sourceTree = "<group>"; };
+		400A31900C01E54A007BE2A8 /* sig3s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig3s.tif; path = GFX/sig3s.tif; sourceTree = "<group>"; };
+		400A31920C01E54D007BE2A8 /* sig4s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig4s.tif; path = GFX/sig4s.tif; sourceTree = "<group>"; };
+		400B93D70BFE7DF8005504F4 /* Connected.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Connected.png; path = GFX/Connected.png; sourceTree = "<group>"; };
+		400D54FD0BBD50ED00653AE4 /* nsGUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nsGUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		40138DF70BBBE165007E4177 /* enc.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = enc.tif; path = GFX/enc.tif; sourceTree = "<group>"; };
+		402F07BF0BF934E600038DCA /* icons.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icons.icns; sourceTree = "<group>"; };
+		406E55DA0BECD5B800AB0131 /* MainController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = MainController.h; sourceTree = "<group>"; };
+		406E55DB0BECD5B800AB0131 /* MainController.mm */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.objcpp; path = MainController.mm; sourceTree = "<group>"; };
+		6103AC190CA4707000A47FC4 /* defines.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
+		6103AC1A0CA4707000A47FC4 /* ipw2200.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw2200.h; sourceTree = "<group>"; };
+		6103AC1C0CA4707000A47FC4 /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
+		6103AC1D0CA4707000A47FC4 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		6103AC1E0CA4707000A47FC4 /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
+		6103AC1F0CA4707000A47FC4 /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
+		611AA94D0C0C974200A4B5DA /* NetworkSelector icon 64x64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "NetworkSelector icon 64x64.png"; path = "GFX/NetworkSelector icon 64x64.png"; sourceTree = "<group>"; };
+		611AA94E0C0C974200A4B5DA /* NetworkSelector icon 128X128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "NetworkSelector icon 128X128.png"; path = "GFX/NetworkSelector icon 128X128.png"; sourceTree = "<group>"; };
+		611AA94F0C0C974200A4B5DA /* sig0.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = sig0.png; path = GFX/sig0.png; sourceTree = "<group>"; };
+		611AA9500C0C974200A4B5DA /* sig1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = sig1.png; path = GFX/sig1.png; sourceTree = "<group>"; };
+		611AA9510C0C974200A4B5DA /* sig2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = sig2.png; path = GFX/sig2.png; sourceTree = "<group>"; };
+		611AA9520C0C974200A4B5DA /* sig3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = sig3.png; path = GFX/sig3.png; sourceTree = "<group>"; };
+		611AA9530C0C974200A4B5DA /* Signal Meter 0.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Signal Meter 0.png"; path = "GFX/Signal Meter 0.png"; sourceTree = "<group>"; };
+		611AA9540C0C974200A4B5DA /* Signal Meter 1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Signal Meter 1.png"; path = "GFX/Signal Meter 1.png"; sourceTree = "<group>"; };
+		611AA9550C0C974200A4B5DA /* Signal Meter 2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Signal Meter 2.png"; path = "GFX/Signal Meter 2.png"; sourceTree = "<group>"; };
+		611AA9560C0C974200A4B5DA /* Signal Meter 3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Signal Meter 3.png"; path = "GFX/Signal Meter 3.png"; sourceTree = "<group>"; };
+		611AA9570C0C974200A4B5DA /* Splash Screen BMP.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = "Splash Screen BMP.jpg"; path = "GFX/Splash Screen BMP.jpg"; sourceTree = "<group>"; };
+		611AA9580C0C974200A4B5DA /* statusIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = statusIcon.png; path = GFX/statusIcon.png; sourceTree = "<group>"; };
+		617AD49B0C32C75D00B05E8E /* enc-ibss.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = "enc-ibss.tif"; path = "GFX/enc-ibss.tif"; sourceTree = "<group>"; };
+		617AD49C0C32C75D00B05E8E /* ibss.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = ibss.tif; path = GFX/ibss.tif; sourceTree = "<group>"; };
+		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D11072E0486CEB800E47090 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+			);
+			name = "Linked Frameworks";
+			sourceTree = "<group>";
+		};
+		1058C7A2FEA54F0111CA2CBB /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
+				13E42FB307B3F0F600E4EEF1 /* CoreData.framework */,
+				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				400D54FD0BBD50ED00653AE4 /* nsGUI.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* nsGUI */ = {
+			isa = PBXGroup;
+			children = (
+				6103AC180CA4707000A47FC4 /* 2200 */,
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+			);
+			name = nsGUI;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				32CA4F630368D1EE00C91783 /* nsGUI_Prefix.pch */,
+				29B97316FDCFA39411CA2CEA /* main.mm */,
+				406E55DA0BECD5B800AB0131 /* MainController.h */,
+				406E55DB0BECD5B800AB0131 /* MainController.mm */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				617AD49B0C32C75D00B05E8E /* enc-ibss.tif */,
+				617AD49C0C32C75D00B05E8E /* ibss.tif */,
+				611AA94D0C0C974200A4B5DA /* NetworkSelector icon 64x64.png */,
+				611AA94E0C0C974200A4B5DA /* NetworkSelector icon 128X128.png */,
+				611AA94F0C0C974200A4B5DA /* sig0.png */,
+				611AA9500C0C974200A4B5DA /* sig1.png */,
+				611AA9510C0C974200A4B5DA /* sig2.png */,
+				611AA9520C0C974200A4B5DA /* sig3.png */,
+				611AA9530C0C974200A4B5DA /* Signal Meter 0.png */,
+				611AA9540C0C974200A4B5DA /* Signal Meter 1.png */,
+				611AA9550C0C974200A4B5DA /* Signal Meter 2.png */,
+				611AA9560C0C974200A4B5DA /* Signal Meter 3.png */,
+				611AA9570C0C974200A4B5DA /* Splash Screen BMP.jpg */,
+				611AA9580C0C974200A4B5DA /* statusIcon.png */,
+				8D1107310486CEB800E47090 /* Info.plist */,
+				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
+				29B97318FDCFA39411CA2CEA /* MainMenu.nib */,
+				402F07BF0BF934E600038DCA /* icons.icns */,
+				400B93D70BFE7DF8005504F4 /* Connected.png */,
+				400A318A0C01E537007BE2A8 /* sig0s.tif */,
+				400A318C0C01E541007BE2A8 /* sig1s.tif */,
+				400A318E0C01E544007BE2A8 /* sig2s.tif */,
+				400A31900C01E54A007BE2A8 /* sig3s.tif */,
+				400A31920C01E54D007BE2A8 /* sig4s.tif */,
+				40138DF70BBBE165007E4177 /* enc.tif */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
+				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		6103AC180CA4707000A47FC4 /* 2200 */ = {
+			isa = PBXGroup;
+			children = (
+				6103AC190CA4707000A47FC4 /* defines.h */,
+				6103AC1A0CA4707000A47FC4 /* ipw2200.h */,
+				6103AC1B0CA4707000A47FC4 /* net */,
+			);
+			path = 2200;
+			sourceTree = "<group>";
+		};
+		6103AC1B0CA4707000A47FC4 /* net */ = {
+			isa = PBXGroup;
+			children = (
+				6103AC1C0CA4707000A47FC4 /* compat.h */,
+				6103AC1D0CA4707000A47FC4 /* ieee80211.h */,
+				6103AC1E0CA4707000A47FC4 /* ieee80211_crypt.h */,
+				6103AC1F0CA4707000A47FC4 /* ieee80211_radiotap.h */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8D1107260486CEB800E47090 /* nsGUI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "nsGUI" */;
+			buildPhases = (
+				8D1107290486CEB800E47090 /* Resources */,
+				8D11072C0486CEB800E47090 /* Sources */,
+				8D11072E0486CEB800E47090 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = nsGUI;
+			productInstallPath = "$(HOME)/Applications";
+			productName = nsGUI;
+			productReference = 400D54FD0BBD50ED00653AE4 /* nsGUI.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "nsGUI" */;
+			hasScannedForEncodings = 1;
+			mainGroup = 29B97314FDCFA39411CA2CEA /* nsGUI */;
+			projectDirPath = "";
+			targets = (
+				8D1107260486CEB800E47090 /* nsGUI */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D1107290486CEB800E47090 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072A0486CEB800E47090 /* MainMenu.nib in Resources */,
+				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
+				402F07C00BF934E600038DCA /* icons.icns in Resources */,
+				400B93D80BFE7DF8005504F4 /* Connected.png in Resources */,
+				400A318B0C01E537007BE2A8 /* sig0s.tif in Resources */,
+				400A318D0C01E541007BE2A8 /* sig1s.tif in Resources */,
+				400A318F0C01E544007BE2A8 /* sig2s.tif in Resources */,
+				400A31910C01E54A007BE2A8 /* sig3s.tif in Resources */,
+				400A31930C01E54D007BE2A8 /* sig4s.tif in Resources */,
+				611AA9590C0C974200A4B5DA /* NetworkSelector icon 64x64.png in Resources */,
+				611AA95A0C0C974200A4B5DA /* NetworkSelector icon 128X128.png in Resources */,
+				611AA95B0C0C974200A4B5DA /* sig0.png in Resources */,
+				611AA95C0C0C974200A4B5DA /* sig1.png in Resources */,
+				611AA95D0C0C974200A4B5DA /* sig2.png in Resources */,
+				611AA95E0C0C974200A4B5DA /* sig3.png in Resources */,
+				611AA95F0C0C974200A4B5DA /* Signal Meter 0.png in Resources */,
+				611AA9600C0C974200A4B5DA /* Signal Meter 1.png in Resources */,
+				611AA9610C0C974200A4B5DA /* Signal Meter 2.png in Resources */,
+				611AA9620C0C974200A4B5DA /* Signal Meter 3.png in Resources */,
+				611AA9630C0C974200A4B5DA /* Splash Screen BMP.jpg in Resources */,
+				611AA9640C0C974200A4B5DA /* statusIcon.png in Resources */,
+				40138DF80BBBE165007E4177 /* enc.tif in Resources */,
+				617AD49D0C32C75D00B05E8E /* enc-ibss.tif in Resources */,
+				617AD49E0C32C75D00B05E8E /* ibss.tif in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D11072C0486CEB800E47090 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072D0486CEB800E47090 /* main.mm in Sources */,
+				406E55DC0BECD5B800AB0131 /* MainController.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		089C165CFE840E0CC02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				089C165DFE840E0CC02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		29B97318FDCFA39411CA2CEA /* MainMenu.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				29B97319FDCFA39411CA2CEA /* English */,
+			);
+			name = MainMenu.nib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		C01FCF4B08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = i386;
+				COPY_PHASE_STRIP = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = nsGUI;
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = NO;
+			};
+			name = Debug;
+		};
+		C01FCF4C08A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = i386;
+				COPY_PHASE_STRIP = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = nsGUI;
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		C01FCF4F08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+			};
+			name = Debug;
+		};
+		C01FCF5008A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "nsGUI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4B08A954540054247B /* Debug */,
+				C01FCF4C08A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "nsGUI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4F08A954540054247B /* Debug */,
+				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}
