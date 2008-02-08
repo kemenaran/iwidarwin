@@ -1,0 +1,4 @@
+#!/bin/sh
+rm -rf /System/Library/Extensions/iwi3945.kext
+rm -f /System/Library/Extensions.kextcache
+rm -f /System/Library/Extensions.mkext
