@@ -410,9 +410,11 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 4624EDE508C25CE500F266F6 /* Build configuration list for PBXProject "iwi2200" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 089C166AFE841209C02AAC07 /* iwi2200 */;
 			projectDirPath = "";
+			projectRoot = "";
 			targets = (
 				32D94FC30562CBF700B6AF17 /* iwi2200 */,
 			);

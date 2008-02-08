@@ -696,7 +696,7 @@ bool darwin_iwi2200::start(IOService *provider)
 				break;
        		}
 
-		UInt16 reg16;
+		/*UInt16 reg16;
 
 		reg16 = fPCIDevice->configRead16(kIOPCIConfigCommand);
 
@@ -705,28 +705,11 @@ bool darwin_iwi2200::start(IOService *provider)
 				  kIOPCICommandMemWrInvalidate);
 
 		reg16 &= ~kIOPCICommandIOSpace;  // disable I/O space
-		fPCIDevice->configWrite16(kIOPCIConfigCommand,reg16);
+		fPCIDevice->configWrite16(kIOPCIConfigCommand,reg16);*/
 
 		//fPCIDevice->enablePCIPowerManagement(kPCIPMCSPowerStateD0);//disable
-		
-		fPCIDevice->findPCICapability( kIOPCIPowerManagementCapability, &pmPCICapPtr );
-		if ( pmPCICapPtr  )
-		{
-        UInt16 pciPMCReg = fPCIDevice->configRead32( pmPCICapPtr ) >> 16;
-
-        // Only devices that support PME# assertion from D3-cold are
-        // considered valid for supporting Magic Packet wakeup.
-
-        if ( pciPMCReg & kPCIPMCPMESupportFromD3Cold )
-        {
-            magicPacketSupported = true;
-        }
-        
-        // Clear PME# and set power state to D0.
-
-        fPCIDevice->configWrite16( kPCIPMCSR, 0x8000 );
-        IOSleep( 10 );
-		}
+		fPCIDevice->setBusMasterEnable(true);
+		fPCIDevice->setMemoryEnable(true);
 		
 		irqNumber = fPCIDevice->configRead8(kIOPCIConfigInterruptLine);
 		vendorID = fPCIDevice->configRead16(kIOPCIConfigVendorID);
@@ -735,16 +718,17 @@ bool darwin_iwi2200::start(IOService *provider)
 
   		map = fPCIDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0, kIOMapInhibitCache);
   		if (map == 0) {
-			IWI_ERR("%s map is zero\n", getName());
+			IOLog("%s map is zero\n", getName());
 			break;
 		}
+		
 		ioBase = map->getPhysicalAddress();
 		memBase = (UInt16 *)map->getVirtualAddress();
-		memDes = map->getMemoryDescriptor();
-		mem = fPCIDevice->getDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
+		//memDes = map->getMemoryDescriptor();
+		//mem = fPCIDevice->getDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
 		
-		memDes->initWithPhysicalAddress(ioBase, map->getLength(), kIODirectionOutIn);
-		
+		//memDes->initWithPhysicalAddress(ioBase, map->getLength(), kIODirectionOutIn);
+					 
 		/* We disable the RETRY_TIMEOUT register (0x41) to keep
 		 * PCI Tx retries from interfering with C3 CPU state */
 		reg = fPCIDevice->configRead16(0x40);
@@ -752,9 +736,9 @@ bool darwin_iwi2200::start(IOService *provider)
 			fPCIDevice->configWrite16(0x40, reg & 0xffff00ff);
 			
 
-		IWI_DEBUG("%s iomemory length: 0x%x @ 0x%x\n", getName(), map->getLength(), ioBase);
-		IWI_DEBUG("%s virt: 0x%x physical: 0x%x\n", getName(), memBase, ioBase);
-		IWI_DEBUG("%s IRQ: %d, Vendor ID: %04x, Product ID: %04x\n", getName(), irqNumber, vendorID, deviceID);
+		printf("%s iomemory length: 0x%x @ 0x%x\n", getName(), map->getLength(), ioBase);
+		printf("%s virt: 0x%x physical: 0x%x\n", getName(), memBase, ioBase);
+		printf("%s IRQ: %d, Vendor ID: %04x, Product ID: %04x\n", getName(), irqNumber, vendorID, deviceID);
 		
 		fWorkLoop = (IOWorkLoop *) getWorkLoop();
 		if (!fWorkLoop) {
