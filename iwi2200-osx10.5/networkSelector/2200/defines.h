@@ -1,4 +1,5 @@
-
+typedef unsigned char	u_char;
+#include <libkern/OSByteOrder.h>
 #include <IOKit/IOTypes.h>
 #include "net/ieee80211.h"
 #include "net/ieee80211_crypt.h"
@@ -16,6 +17,7 @@ typedef unsigned int	u32;
 typedef unsigned long long u64;
 typedef signed short s16;
 typedef signed int s32;
+
 
 #pragma mark -
 #pragma mark еее Misc Macros еее

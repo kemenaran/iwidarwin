@@ -26,6 +26,7 @@
 #ifndef IEEE80211_H
 #define IEEE80211_H
 
+
 #include "../defines.h"
 #define min(a,b) ((a) < (b) ? (a) : (b))
 struct timer_list {
