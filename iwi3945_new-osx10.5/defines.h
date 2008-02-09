@@ -67,35 +67,10 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 
 
 
-/*
-#include <IOKit/assert.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IODeviceMemory.h>
-#include <IOKit/IOInterruptEventSource.h>
-#include <IOKit/IOBufferMemoryDescriptor.h>
-#include <IOKit/pci/IOPCIDevice.h>
-//#include <IOKit/network/IONetworkController.h>
-//#include <IOKit/network/IONetworkInterface.h>
-#include <IOKit/network/IOEthernetController.h>
-#include <IOKit/network/IOEthernetInterface.h>
-#include <IOKit/network/IOGatedOutputQueue.h>
-#include <IOKit/network/IOMbufMemoryCursor.h>
-#include <libkern/OSByteOrder.h>
-#include <IOKit/pccard/IOPCCard.h>
-#include <IOKit/apple80211/IO80211Controller.h>
-#include <IOKit/apple80211/IO80211Interface.h>
-#include <IOKit/network/IOPacketQueue.h>
-#include <IOKit/network/IONetworkMedium.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IODeviceMemory.h>
-#include <IOKit/assert.h>
-#include <IOKit/IODataQueue.h>
-*/
-
-
-//#include <i386/locks.h>
+#include <i386/locks.h>
 #include <IOKit/pccard/k_compat.h>
 #include <IOKit/IOLocks.h>
+#include <libkern/OSAtomic.h>
 
 
 //includes for fifnet functions
@@ -158,6 +133,12 @@ typedef IOPhysicalAddress dma_addr_t;
 
 
 #define __must_check
+
+
+typedef struct {
+	OSSpinLock lock;
+} spinlock_t;
+
 
 struct p_dev {
     void *kobj; // Device of type IOPCIDevice.
@@ -227,6 +208,7 @@ typedef enum {
 
 #include <sys/param.h>
 #include <sys/mbuf.h>
+
 
 struct sta_local;
 struct ieee80211_tx_control;

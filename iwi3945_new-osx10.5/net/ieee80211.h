@@ -118,6 +118,7 @@ struct	iw_discarded
 	__u32		retries;	/* Tx : Max MAC retries num reached */
 	__u32		misc;		/* Others cases */
 };
+
 struct	iw_statistics
 {
 	__u16		status;		/* Status
