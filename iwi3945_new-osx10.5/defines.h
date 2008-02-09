@@ -26,10 +26,10 @@ typedef __u64 __bitwise __le64;
 typedef __u64 __bitwise __be64;
 
 enum {
-	MODE_IEEE80211A = 0 /* IEEE 802.11a */,
-	MODE_IEEE80211B = 1 /* IEEE 802.11b only */,
+//	MODE_IEEE80211A = 0 /* IEEE 802.11a */,
+//	MODE_IEEE80211B = 1 /* IEEE 802.11b only */,
 	MODE_ATHEROS_TURBO = 2 /* Atheros Turbo mode (2x.11a at 5 GHz) */,
-	MODE_IEEE80211G = 3 /* IEEE 802.11g (and 802.11b compatibility) */,
+//	MODE_IEEE80211G = 3 /* IEEE 802.11g (and 802.11b compatibility) */,
 	MODE_ATHEROS_TURBOG = 4 /* Atheros Turbo mode (2x.11g at 2.4 GHz) */,
 };
 
@@ -108,6 +108,7 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 #include <IOKit/pccard/k_compat.h>
 #include <IOKit/IOLocks.h>
 #include <libkern/OSAtomic.h>
+//#include "compatibility.h"
 typedef uint32_t OSSpinLock;
 //}
 
@@ -149,6 +150,24 @@ typedef IOPhysicalAddress dma_addr_t;
 
 
 #define __must_check
+
+struct ieee80211_hdr {
+	__le16 frame_control;
+	__le16 duration_id;
+	__u8 addr1[6];
+	__u8 addr2[6];
+	__u8 addr3[6];
+	__le16 seq_ctrl;
+	__u8 addr4[6];
+} __attribute__ ((packed));
+
+enum ieee80211_phymode {
+  MODE_IEEE80211A,
+  MODE_IEEE80211B,
+  MODE_IEEE80211G,
+  NUM_IEEE80211_MODES
+}; 
+
 
 
 typedef struct{
@@ -238,7 +257,7 @@ typedef void (*work_func_t)(struct work_struct *work);
 struct list_head{
 	struct list_head *next;
 	struct list_head *prev;
-	}
+};
 	
 
 struct work_struct {
@@ -264,57 +283,58 @@ struct workqueue_struct {
 };
 
 
-
 struct ieee80211_tx_control {
-    int tx_rate; /* Transmit rate, given as the hw specific value for the
-     * rate (from struct ieee80211_rate) */
-    int rts_cts_rate; /* Transmit rate for RTS/CTS frame, given as the hw
-     * specific value for the rate (from
-     * struct ieee80211_rate) */
-    
-#define IEEE80211_TXCTL_REQ_TX_STATUS   (1<<0)/* request TX status callback for
-* this frame */
-#define IEEE80211_TXCTL_DO_NOT_ENCRYPT  (1<<1) /* send this frame without
-* encryption; e.g., for EAPOL
-* frames */
-#define IEEE80211_TXCTL_USE_RTS_CTS (1<<2) /* use RTS-CTS before sending
-* frame */
-#define IEEE80211_TXCTL_USE_CTS_PROTECT (1<<3) /* use CTS protection for the
-* frame (e.g., for combined
-* 802.11g / 802.11b networks) */
-#define IEEE80211_TXCTL_NO_ACK      (1<<4) /* tell the low level not to
-* wait for an ack */
-#define IEEE80211_TXCTL_RATE_CTRL_PROBE (1<<5)
-#define IEEE80211_TXCTL_CLEAR_DST_MASK  (1<<6)
-#define IEEE80211_TXCTL_REQUEUE     (1<<7)
-#define IEEE80211_TXCTL_FIRST_FRAGMENT  (1<<8) /* this is a first fragment of
-* the frame */
+	int tx_rate; /* Transmit rate, given as the hw specific value for the
+		      * rate (from struct ieee80211_rate) */
+	int rts_cts_rate; /* Transmit rate for RTS/CTS frame, given as the hw
+			   * specific value for the rate (from
+			   * struct ieee80211_rate) */
+
+#define IEEE80211_TXCTL_REQ_TX_STATUS	(1<<0)/* request TX status callback for
+						* this frame */
+#define IEEE80211_TXCTL_DO_NOT_ENCRYPT	(1<<1) /* send this frame without
+						* encryption; e.g., for EAPOL
+						* frames */
+#define IEEE80211_TXCTL_USE_RTS_CTS	(1<<2) /* use RTS-CTS before sending
+						* frame */
+#define IEEE80211_TXCTL_USE_CTS_PROTECT	(1<<3) /* use CTS protection for the
+						//* frame (e.g., for combined
+						//* 802.11g / 802.11b networks) */
+#define IEEE80211_TXCTL_NO_ACK		(1<<4) /* tell the low level not to
+						* wait for an ack */
+#define IEEE80211_TXCTL_RATE_CTRL_PROBE	(1<<5)
+#define IEEE80211_TXCTL_CLEAR_DST_MASK	(1<<6)
+#define IEEE80211_TXCTL_REQUEUE		(1<<7)
+#define IEEE80211_TXCTL_FIRST_FRAGMENT	(1<<8) /* this is a first fragment of
+						* the frame */
 #define IEEE80211_TXCTL_TKIP_NEW_PHASE1_KEY (1<<9)
-    u32 flags;                 /* tx control flags defined
-     * above */
-    u8 retry_limit;     /* 1 = only first attempt, 2 = one retry, .. */
-    u8 power_level;     /* per-packet transmit power level, in dBm */
-    u8 antenna_sel_tx;  /* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
-    s8 key_idx;     /* -1 = do not encrypt, >= 0 keyidx from
-     * hw->set_key() */
-    u8 icv_len;     /* length of the ICV/MIC field in octets */
-    u8 iv_len;      /* length of the IV field in octets */
-    u8 tkip_key[16];    /* generated phase2/phase1 key for hw TKIP */
-    u8 queue;       /* hardware queue to use for this frame;
-     * 0 = highest, hw->queues-1 = lowest */
-    u8 sw_retry_attempt;    /* number of times hw has tried to
-     * transmit frame (not incl. hw retries) */
-    
-    int rateidx;        /* internal 80211.o rateidx */
-    int rts_rateidx;    /* internal 80211.o rateidx for RTS/CTS */
-    int alt_retry_rate; /* retry rate for the last retries, given as the
-     * hw specific value for the rate (from
-     * struct ieee80211_rate). To be used to limit
-     * packet dropping when probing higher rates, if hw
-     * supports multiple retry rates. -1 = not used */
-    int type;   /* internal */
-    int ifindex;    /* internal */
+	u32 flags;			       /* tx control flags defined
+						* above */
+	u8 retry_limit;		/* 1 = only first attempt, 2 = one retry, .. */
+	u8 power_level;		/* per-packet transmit power level, in dBm */
+	u8 antenna_sel_tx; 	/* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
+	s8 key_idx;		/* -1 = do not encrypt, >= 0 keyidx from
+				 * hw->set_key() */
+	u8 icv_len;		/* length of the ICV/MIC field in octets */
+	u8 iv_len;		/* length of the IV field in octets */
+	u8 tkip_key[16];	/* generated phase2/phase1 key for hw TKIP */
+	u8 queue;		/* hardware queue to use for this frame;
+				 * 0 = highest, hw->queues-1 = lowest */
+	u8 sw_retry_attempt;	/* number of times hw has tried to
+				 * transmit frame (not incl. hw retries) */
+
+	struct ieee80211_rate *rate;		/* internal 80211.o rate */
+	struct ieee80211_rate *rts_rate;	/* internal 80211.o rate
+						 * for RTS/CTS */
+	int alt_retry_rate; /* retry rate for the last retries, given as the
+			     * hw specific value for the rate (from
+			     * struct ieee80211_rate). To be used to limit
+			     * packet dropping when probing higher rates, if hw
+			     * supports multiple retry rates. -1 = not used */
+	int type;	/* internal */
+	int ifindex;	/* internal */
 };
+
 
 struct ieee80211_tx_status {
     /* copied ieee80211_tx_control structure */
@@ -344,7 +364,14 @@ struct ieee80211_tx_stored_packet {
 };
 
 
-
+struct ieee80211_hw_mode {
+  struct list_head list;
+  struct ieee80211_channel * channels;
+  struct ieee80211_rate * rates;
+  enum ieee80211_phymode mode;
+  int num_channels;
+  int num_rates;
+};
 
 
 struct ieee80211_passive_scan {
@@ -373,12 +400,6 @@ struct ieee80211_passive_scan {
     
 	unsigned int num_scans;
 };
-enum ieee80211_phymode {
-  MODE_IEEE80211A,
-  MODE_IEEE80211B,
-  MODE_IEEE80211G,
-  NUM_IEEE80211_MODES
-}; 
 
 struct ieee80211_conf {
   int channel;
@@ -426,7 +447,7 @@ struct ieee80211_local {
 	struct net_device *apdev; /* wlan#ap - management frames (hostapd) */
 	int open_count;
 	int monitors;
-	struct iw_statistics wstats;
+	//struct iw_statistics wstats;
 	u8 wstats_flags;
     
 	enum {

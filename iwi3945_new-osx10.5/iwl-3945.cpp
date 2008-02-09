@@ -24,27 +24,11 @@
  *
  *****************************************************************************/
 
-/*#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/version.h>
-#include <linux/init.h>
-#include <linux/pci.h>
-#include <linux/dma-mapping.h>
-#include <linux/delay.h>
-#include <linux/skbuff.h>
-#include <linux/netdevice.h>
-#include <linux/wireless.h>
-#include <linux/firmware.h>
-#include <net/mac80211.h>
-
-#include <linux/etherdevice.h>
-#include <linux/delay.h>*/
-
 #include "iwlwifi.h"
 #include "iwl-helpers.h"
 #include "iwl-3945.h"
 #include "iwl-3945-rs.h"
-#include "defines.h"
+#include "compatibility.h"
 
 #define IWL_DECLARE_RATE_INFO(r, ip, in, rp, rn, pp, np)    \
 	[IWL_RATE_##r##M_INDEX] = { IWL_RATE_##r##M_PLCP,   \

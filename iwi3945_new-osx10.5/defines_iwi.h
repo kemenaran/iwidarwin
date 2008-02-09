@@ -70,30 +70,4 @@ typedef IOPhysicalAddress dma_addr_t;
 #define unlikely(x)	__builtin_expect(!!(x), 0)
 #define likely(x) __builtin_expect(!!(x), 1)
 
-#define __must_check
-#define spin_lock_irqsave(...)
-#define spin_unlock_irqrestore(...)
-#define spin_lock_init(...)
-#define init_timer(...)
-#define del_timer_sync(...)
-#define time_after(a,b)	((long)(b) - (long)(a) < 0)
-#define queue_work(...)
-#define cancel_delayed_work(...)
-#define INIT_DELAYED_WORK(...)
-#define mutex_unlock(...);
-#define mutex_lock(...)
-#define queue_delayed_work(...)
-#define wake_up_interruptible(...)
-#define tasklet_init(...)
-#define INIT_WORK(...)
-#define flush_workqueue(...)
-#define pci_free_consistent(...)
-//typedef void irqreturn_t;
-#define tasklet_schedule(...)
-#define spin_unlock(...)
-#define spin_lock(...)
-#define pci_unmap_single(...)
-#define pci_dma_sync_single_for_cpu(...)
-#define KERN_CRIT
-
 

@@ -45,9 +45,10 @@
 
 #include <net/ieee80211_radiotap.h>
 #include <net/mac80211.h>
+#include "compatibility.h"
 
 //#include <asm/div64.h>
-
+#include "compatibility.h"
 #include "iwl-3945.h"
 #include "iwl-helpers.h"
 #include <sys/param.h>

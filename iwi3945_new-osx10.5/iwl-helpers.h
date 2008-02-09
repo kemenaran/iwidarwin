@@ -1,4 +1,3 @@
-#include "defines.h"
 /******************************************************************************
  *
  * Copyright(c) 2003 - 2007 Intel Corporation. All rights reserved.
