@@ -31,11 +31,12 @@
 					PBXFileDataSource_Target_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 224248301;
-			PBXWorkspaceStateSaveDate = 224248301;
+			PBXPerProjectTemplateStateSaveDate = 224249273;
+			PBXWorkspaceStateSaveDate = 224249273;
 		};
 		perUserProjectItems = {
-			C0B425600D5DBE44006883C5 /* PBXBookmark */ = C0B425600D5DBE44006883C5 /* PBXBookmark */;
+			C01642D70D5DC9180026CC28 /* PBXBookmark */ = C01642D70D5DC9180026CC28 /* PBXBookmark */;
+			C01642EE0D5DC9FB0026CC28 /* PBXTextBookmark */ = C01642EE0D5DC9FB0026CC28 /* PBXTextBookmark */;
 		};
 		sourceControlManager = C0B269960D57948600326F7D /* Source Control */;
 		userBuildSettings = {
@@ -46,10 +47,10 @@
 	};
 	61B0347C0B59837C00286B6C /* iwi3945.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1061, 16254}}";
-			sepNavSelRange = "{27064, 44}";
-			sepNavVisRange = "{27861, 548}";
-			sepNavWindowFrame = "{{237, 0}, {1026, 649}}";
+			sepNavIntBoundsRect = "{{0, 0}, {967, 15932}}";
+			sepNavSelRange = "{30523, 0}";
+			sepNavVisRange = "{30401, 942}";
+			sepNavWindowFrame = "{{194, 127}, {1026, 649}}";
 		};
 	};
 	61B0347D0B59837C00286B6C /* iwi3945.h */ = {
@@ -86,9 +87,9 @@
 	};
 	61D492B90CCA4B8F00BA5243 /* iwl-3945.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1061, 31024}}";
-			sepNavSelRange = "{3057, 3}";
-			sepNavVisRange = "{2521, 1132}";
+			sepNavIntBoundsRect = "{{0, 0}, {967, 31052}}";
+			sepNavSelRange = "{2254, 21}";
+			sepNavVisRange = "{1866, 1385}";
 			sepNavWindowFrame = "{{204, 101}, {1026, 649}}";
 		};
 	};
@@ -150,17 +151,17 @@
 	};
 	61D492C10CCA4B8F00BA5243 /* iwl-io.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1061, 6426}}";
-			sepNavSelRange = "{4929, 58}";
+			sepNavIntBoundsRect = "{{0, 0}, {1061, 6496}}";
+			sepNavSelRange = "{5097, 43}";
 			sepNavVisRange = "{4583, 772}";
 			sepNavWindowFrame = "{{509, 129}, {1026, 649}}";
 		};
 	};
 	61D492C20CCA4B8F00BA5243 /* iwl-priv.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {967, 4130}}";
-			sepNavSelRange = "{1294, 0}";
-			sepNavVisRange = "{229, 1167}";
+			sepNavIntBoundsRect = "{{0, 0}, {1061, 4256}}";
+			sepNavSelRange = "{6514, 29}";
+			sepNavVisRange = "{6214, 632}";
 			sepNavWindowFrame = "{{289, 116}, {1026, 649}}";
 		};
 	};
@@ -179,6 +180,20 @@
 			sepNavVisRange = "{0, 1460}";
 			sepNavWindowFrame = "{{182, 54}, {1026, 649}}";
 		};
+	};
+	C01642D70D5DC9180026CC28 /* PBXBookmark */ = {
+		isa = PBXBookmark;
+		fRef = 61D492B90CCA4B8F00BA5243 /* iwl-3945.cpp */;
+	};
+	C01642EE0D5DC9FB0026CC28 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 61D492B90CCA4B8F00BA5243 /* iwl-3945.cpp */;
+		name = "iwl-3945.cpp: 68";
+		rLen = 21;
+		rLoc = 2254;
+		rType = 0;
+		vrLen = 789;
+		vrLoc = 1866;
 	};
 	C0B269960D57948600326F7D /* Source Control */ = {
 		isa = PBXSourceControlManager;
@@ -210,7 +225,7 @@
 	C0B277BB0D5D03E70091A7D1 /* compatibility.h */ = {
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {1061, 2296}}";
-			sepNavSelRange = "{297, 66}";
+			sepNavSelRange = "{363, 50}";
 			sepNavVisRange = "{231, 821}";
 			sepNavWindowFrame = "{{577, 51}, {1053, 727}}";
 		};
@@ -233,21 +248,10 @@
 	};
 	C0B277CE0D5D06F50091A7D1 /* defines.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1061, 21280}}";
-			sepNavSelRange = "{12055, 58}";
-			sepNavVisRange = "{11798, 843}";
-			sepNavWindowFrame = "{{699, 38}, {1053, 727}}";
+			sepNavIntBoundsRect = "{{0, 0}, {994, 20608}}";
+			sepNavSelRange = "{44, 0}";
+			sepNavVisRange = "{0, 1341}";
+			sepNavWindowFrame = "{{27, 51}, {1053, 727}}";
 		};
-	};
-	C0B425460D5DBB4D006883C5 /* ieee80211.h */ = {
-		isa = PBXFileReference;
-		lastKnownFileType = sourcecode.c.h;
-		name = ieee80211.h;
-		path = "/Users/netwarrior/Desktop/iwidarwin/iwi3945_new-osx10.5/net/ieee80211.h";
-		sourceTree = "<absolute>";
-	};
-	C0B425600D5DBE44006883C5 /* PBXBookmark */ = {
-		isa = PBXBookmark;
-		fRef = C0B425460D5DBB4D006883C5 /* ieee80211.h */;
 	};
 }
