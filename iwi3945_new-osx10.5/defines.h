@@ -25,6 +25,18 @@ typedef __u32 __bitwise __be32;
 typedef __u64 __bitwise __le64;
 typedef __u64 __bitwise __be64;
 
+enum {
+	MODE_IEEE80211A = 0 /* IEEE 802.11a */,
+	MODE_IEEE80211B = 1 /* IEEE 802.11b only */,
+	MODE_ATHEROS_TURBO = 2 /* Atheros Turbo mode (2x.11a at 5 GHz) */,
+	MODE_IEEE80211G = 3 /* IEEE 802.11g (and 802.11b compatibility) */,
+	MODE_ATHEROS_TURBOG = 4 /* Atheros Turbo mode (2x.11g at 2.4 GHz) */,
+};
+
+#define IW_MAX_SPY		8
+#define IW_ESSID_MAX_SIZE	32
+#define ETH_ALEN	6
+
 #define NUM_RX_DATA_QUEUES 17
 #define NUM_TX_DATA_QUEUES 6
 #define MAX_STA_COUNT 2007
@@ -45,7 +57,9 @@ typedef __u64 __bitwise __be64;
 #define IEEE80211_HW_NO_PROBE_FILTERING 0
 #define DMA_32BIT_MASK 0
 #define S_IRUSR 0
-
+//from iee80211.h
+#define IEEE80211_STYPE_QOS_DATA        0x0080
+#define IEEE80211_FTYPE_DATA		0x0008
 
 #define __builtin_expect(x, expected_value) (x)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -67,10 +81,7 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 
 
 
-#include <i386/locks.h>
-#include <IOKit/pccard/k_compat.h>
-#include <IOKit/IOLocks.h>
-#include <libkern/OSAtomic.h>
+
 
 
 //includes for fifnet functions
@@ -93,6 +104,11 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 #include <sys/sockio.h>
 #include <sys/malloc.h>
 #include <sys/queue.h>
+#include <i386/locks.h>
+#include <IOKit/pccard/k_compat.h>
+#include <IOKit/IOLocks.h>
+#include <libkern/OSAtomic.h>
+typedef uint32_t OSSpinLock;
 //}
 
 
@@ -135,9 +151,9 @@ typedef IOPhysicalAddress dma_addr_t;
 #define __must_check
 
 
-typedef struct {
+typedef struct{
 	OSSpinLock lock;
-} spinlock_t;
+}spinlock_t;
 
 
 struct p_dev {
@@ -228,8 +244,7 @@ struct list_head{
 struct work_struct {
     long data;
 #define WORK_STRUCT_PENDING 0       /* T if work item pending execution */
-#define WORK_STRUCT_NOAUTOREL 1     /* F if work item automatically released on 
-exec */
+#define WORK_STRUCT_NOAUTOREL 1     /* F if work item automatically released on exec */
 #define WORK_STRUCT_FLAG_MASK (3UL)
 #define WORK_STRUCT_WQ_DATA_MASK (~WORK_STRUCT_FLAG_MASK)
     struct list_head entry;

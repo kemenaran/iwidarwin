@@ -88,7 +88,7 @@ typedef IOPhysicalAddress dma_addr_t;
 #define INIT_WORK(...)
 #define flush_workqueue(...)
 #define pci_free_consistent(...)
-typedef void irqreturn_t;
+//typedef void irqreturn_t;
 #define tasklet_schedule(...)
 #define spin_unlock(...)
 #define spin_lock(...)

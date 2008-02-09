@@ -16,7 +16,6 @@
 #include <IOKit/pci/IOPCIDevice.h>
 
 #include "defines.h"
-#include "compatibility.h"
 
 
 // Note: This, in itself, makes this very much non-reentrant.  It's used
@@ -191,6 +190,9 @@ struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
     return NULL;
 }
 
+int ieee80211_get_hdrlen (u16 fc){
+	return 1;
+}
 
 #pragma mark -
 #pragma mark Kernel PCI fiddler adapters
