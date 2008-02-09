@@ -10,9 +10,9 @@
 #ifndef __COMPATIBILITY_H__
 #define __COMPATIBILITY_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 
     extern void spin_lock_irqsave(spinlock_t *a, int b);
@@ -39,30 +39,20 @@ extern "C" {
     
     extern int ieee80211_rate_control_register(struct rate_control_ops *ops);
     extern void ieee80211_rate_control_unregister(struct rate_control_ops *ops);
-    extern void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb,
-                              struct ieee80211_rx_status *status);
+    extern void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb,struct ieee80211_rx_status *status);
     extern int ieee80211_get_morefrag(struct ieee80211_hdr *hdr);
     extern void ieee80211_stop_queue(struct ieee80211_hw *hw, int queue);
-    extern void ieee80211_tx_status(struct ieee80211_hw *hw,
-                             struct sk_buff *skb,
-                             struct ieee80211_tx_status *status);
-    extern void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw,
-                                     struct sk_buff *skb,
-                                     struct ieee80211_tx_status *status);
+    extern void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb,  struct ieee80211_tx_status *status);
+    extern void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct ieee80211_tx_status *status);
     extern void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue);
-    extern struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
-                                         int if_id,
-                                         struct ieee80211_tx_control *control);
+    extern struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,int if_id,struct ieee80211_tx_control *control);
+    
+    extern int ieee80211_get_hdrlen (u16 fc);
     
     
-    
-    
-    extern void pci_free_consistent(struct pci_dev *hwdev, size_t size,
-                                    void *vaddr, dma_addr_t dma_handle);
-    extern void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
-                         dma_addr_t *dma_handle);
-    extern void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,
-                            size_t size, int direction);
+    extern void pci_free_consistent(struct pci_dev *hwdev, size_t size, void *vaddr, dma_addr_t dma_handle);
+    extern void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,dma_addr_t *dma_handle);
+    extern void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,size_t size, int direction);
     extern int pci_read_config_byte(struct pci_dev *dev, int where, u8 *val);
     extern int pci_read_config_word(struct pci_dev *dev, int where, u16 *val);
     extern int pci_read_config_dword(struct pci_dev *dev, int where, u32 *val);
@@ -75,10 +65,8 @@ extern "C" {
     extern void *skb_put(struct sk_buff *skb, unsigned int len);
     extern void dev_kfree_skb_any(struct sk_buff *skb);
     extern void dev_kfree_skb(struct sk_buff *skb);
-    extern struct sk_buff *__alloc_skb(unsigned int size,
-                                       gfp_t priority, int fclone, int node);
-    static inline struct sk_buff *alloc_skb(unsigned int size,
-                                            gfp_t priority)
+    extern struct sk_buff *__alloc_skb(unsigned int size,gfp_t priority, int fclone, int node);
+    static inline struct sk_buff *alloc_skb(unsigned int size, gfp_t priority)
     {
         return __alloc_skb(size, priority, 0, -1);
     }
@@ -144,9 +132,9 @@ extern "C" {
 	/*
 	//Types
 	*/
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 
 
