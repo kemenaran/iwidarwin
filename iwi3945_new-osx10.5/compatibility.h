@@ -29,8 +29,8 @@ extern "C" {
     extern void *dev_get_drvdata(void *p);
 
 //iwl-helpers.h
-	bool isascii(char c);
-	bool isprint(char c);
+	extern bool isascii(char c);
+	extern bool isprint(char c);
     
     extern struct sta_info * sta_info_get(struct ieee80211_local *local, u8 *addr);
     extern void sta_info_put(struct sta_info *sta);
