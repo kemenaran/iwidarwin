@@ -2,6 +2,30 @@
 #define __DEFINES_H__
 
 
+typedef signed char s8;
+typedef unsigned char u8; 
+typedef signed short s16;
+typedef unsigned short u16;
+typedef signed int s32;
+typedef unsigned int u32;
+typedef signed long long s64;
+typedef unsigned long long u64;
+typedef signed char __s8;
+typedef unsigned char __u8;
+typedef signed short __s16;
+typedef unsigned short __u16;
+typedef signed int __s32;
+typedef unsigned int __u32;
+typedef signed long long __s64;
+typedef unsigned long long __u64;
+#define __bitwise __attribute__((bitwise))
+typedef __u16 __bitwise __le16;
+typedef __u16 __bitwise __be16;
+typedef __u32 __bitwise __le32;
+typedef __u32 __bitwise __be32;
+typedef __u64 __bitwise __le64;
+typedef __u64 __bitwise __be64;
+
 #define NUM_RX_DATA_QUEUES 17
 #define NUM_TX_DATA_QUEUES 6
 #define MAX_STA_COUNT 2007
@@ -180,7 +204,6 @@ typedef enum {
 } set_key_cmd;
 
 
-struct ieee80211_hw;
 
 #define KERN_WARNING "warning "
 #define KERN_ERR "error "
@@ -200,8 +223,8 @@ struct ieee80211_hw;
 
 #include "iwi3945.h"
 #include "net/compat.h"
-#include "net/ieee80211.h"
-#include "net/ieee80211_radiotap.h"
+//#include "net/ieee80211.h"
+//#include "net/ieee80211_radiotap.h"
 
 #include <sys/param.h>
 #include <sys/mbuf.h>
@@ -212,17 +235,14 @@ struct ieee80211_tx_stored_packet;
 
 
 
-
-
-
-
-
-
-
 struct work_struct;
 typedef void (*work_func_t)(struct work_struct *work);
 
-
+struct list_head{
+	struct list_head *next;
+	struct list_head *prev;
+	}
+	
 
 struct work_struct {
     long data;
@@ -357,8 +377,43 @@ struct ieee80211_passive_scan {
     
 	unsigned int num_scans;
 };
+enum ieee80211_phymode {
+  MODE_IEEE80211A,
+  MODE_IEEE80211B,
+  MODE_IEEE80211G,
+  NUM_IEEE80211_MODES
+}; 
 
+struct ieee80211_conf {
+  int channel;
+  int freq;
+  int channel_val;
+  enum ieee80211_phymode phymode;
+  struct ieee80211_channel * chan;
+  struct ieee80211_hw_mode * mode;
+  unsigned int regulatory_domain;
+  int radio_enabled;
+  int beacon_int;
+  u32 flags;
+  u8 power_level;
+  u8 antenna_max;
+  u8 antenna_sel_tx;
+  u8 antenna_sel_rx;
+}; 
 
+struct ieee80211_hw {
+  struct ieee80211_conf conf;
+  struct wiphy * wiphy;
+  struct workqueue_struct * workqueue;
+  void * priv;
+  u32 flags;
+  unsigned int extra_tx_headroom;
+  int channel_change_time;
+  u8 queues;
+  s8 max_rssi;
+  s8 max_signal;
+  s8 max_noise;
+};  
 
 struct ieee80211_local {
 	/* embed the driver visible part.

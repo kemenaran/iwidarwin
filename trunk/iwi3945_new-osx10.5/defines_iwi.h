@@ -54,7 +54,7 @@ extern "C" {
 #define IWL 3945
 #define CONFIG_IWLWIFI_DEBUG
 
-#include "net/ieee80211.h"
+//#include "net/ieee80211.h"
 #include "net/ieee80211_radiotap.h"
 
 
