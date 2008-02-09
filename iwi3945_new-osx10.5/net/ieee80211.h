@@ -1,3 +1,4 @@
+#include "../defines.h"
 /*
  * Merged with mainline ieee80211.h in Aug 2004.  Original ieee802_11
  * remains copyright by the original authors
@@ -171,74 +172,9 @@ struct hlist_node {
 };
 #define HW_KEY_IDX_INVALID -1
 
-struct ieee80211_tx_control {
-	int tx_rate; /* Transmit rate, given as the hw specific value for the
-		      * rate (from struct ieee80211_rate) */
-	int rts_cts_rate; /* Transmit rate for RTS/CTS frame, given as the hw
-			   * specific value for the rate (from
-			   * struct ieee80211_rate) */
+//struct ieee80211_tx_control {};
 
-#define IEEE80211_TXCTL_REQ_TX_STATUS	(1<<0)/* request TX status callback for
-						* this frame */
-#define IEEE80211_TXCTL_DO_NOT_ENCRYPT	(1<<1) /* send this frame without
-						* encryption; e.g., for EAPOL
-						* frames */
-#define IEEE80211_TXCTL_USE_RTS_CTS	(1<<2) /* use RTS-CTS before sending
-						* frame */
-#define IEEE80211_TXCTL_USE_CTS_PROTECT	(1<<3) /* use CTS protection for the
-						//* frame (e.g., for combined
-						//* 802.11g / 802.11b networks) */
-#define IEEE80211_TXCTL_NO_ACK		(1<<4) /* tell the low level not to
-						* wait for an ack */
-#define IEEE80211_TXCTL_RATE_CTRL_PROBE	(1<<5)
-#define IEEE80211_TXCTL_CLEAR_DST_MASK	(1<<6)
-#define IEEE80211_TXCTL_REQUEUE		(1<<7)
-#define IEEE80211_TXCTL_FIRST_FRAGMENT	(1<<8) /* this is a first fragment of
-						* the frame */
-#define IEEE80211_TXCTL_TKIP_NEW_PHASE1_KEY (1<<9)
-	u32 flags;			       /* tx control flags defined
-						* above */
-	u8 retry_limit;		/* 1 = only first attempt, 2 = one retry, .. */
-	u8 power_level;		/* per-packet transmit power level, in dBm */
-	u8 antenna_sel_tx; 	/* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
-	s8 key_idx;		/* -1 = do not encrypt, >= 0 keyidx from
-				 * hw->set_key() */
-	u8 icv_len;		/* length of the ICV/MIC field in octets */
-	u8 iv_len;		/* length of the IV field in octets */
-	u8 tkip_key[16];	/* generated phase2/phase1 key for hw TKIP */
-	u8 queue;		/* hardware queue to use for this frame;
-				 * 0 = highest, hw->queues-1 = lowest */
-	u8 sw_retry_attempt;	/* number of times hw has tried to
-				 * transmit frame (not incl. hw retries) */
-
-	struct ieee80211_rate *rate;		/* internal 80211.o rate */
-	struct ieee80211_rate *rts_rate;	/* internal 80211.o rate
-						 * for RTS/CTS */
-	int alt_retry_rate; /* retry rate for the last retries, given as the
-			     * hw specific value for the rate (from
-			     * struct ieee80211_rate). To be used to limit
-			     * packet dropping when probing higher rates, if hw
-			     * supports multiple retry rates. -1 = not used */
-	int type;	/* internal */
-	int ifindex;	/* internal */
-};
-
-struct ieee80211_tx_status {
-	/* copied ieee80211_tx_control structure */
-	struct ieee80211_tx_control control;
-
-#define IEEE80211_TX_STATUS_TX_FILTERED	(1<<0)
-#define IEEE80211_TX_STATUS_ACK		(1<<1) /* whether the TX frame was ACKed */
-	u32 flags;		/* tx staus flags defined above */
-
-	int ack_signal; /* measured signal strength of the ACK frame */
-	int excessive_retries;
-	int retry_count;
-
-	int queue_length;      /* information about TX queue */
-	int queue_number;
-	
-};
+//struct ieee80211_tx_status {};
 struct net_device
 {
 	void* ieee80211_ptr;
@@ -1061,55 +997,6 @@ enum ieee80211_if_types {
 	IEEE80211_IF_TYPE_VLAN = 0x00080211,
 };
 
-struct ieee80211_conf {
-	int channel;			/* IEEE 802.11 channel number */
-	int freq;			/* MHz */
-	int channel_val;		/* hw specific value for the channel */
-
-	int phymode;			/* MODE_IEEE80211A, .. */
-	struct ieee80211_channel *chan;
-	struct ieee80211_hw_mode *mode;
-	unsigned int regulatory_domain;
-	int radio_enabled;
-
-	int beacon_int;
-
-#define IEEE80211_CONF_SHORT_SLOT_TIME	(1<<0) /* use IEEE 802.11g Short Slot
-						* Time */
-#define IEEE80211_CONF_SSID_HIDDEN	(1<<1) /* do not broadcast the ssid */
-#define IEEE80211_CONF_RADIOTAP		(1<<2) /* use radiotap if supported
-						  check this bit at RX time */
-#define IEEE80211_CONF_CHANNEL_SWITCH	(1<<3)
-	u32 flags;			/* configuration flags defined above */
-
-	u8 power_level;			/* transmit power limit for current
-					 * regulatory domain; in dBm */
-	u8 antenna_max;			/* maximum antenna gain */
-	short tx_power_reduction; /* in 0.1 dBm */
-
-	u8 power_management_enable;     /* flag to enable/disable*/
-					/*power management*/
-	/* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
-	u8 antenna_sel_tx;
-	u8 antenna_sel_rx;
-
-	int antenna_def;
-	int antenna_mode;
-
-	/* Following five fields are used for IEEE 802.11H */
-	unsigned int radar_detect;
-	unsigned int spect_mgmt;
-	/* All following fields are currently unused. */
-	unsigned int quiet_duration; /* duration of quiet period */
-	unsigned int quiet_offset; /* how far into the beacon is the quiet
-				    * period */
-	unsigned int quiet_period;
-	u8 radar_firpwr_threshold;
-	u8 radar_rssi_threshold;
-	u8 pulse_height_threshold;
-	u8 pulse_rssi_threshold;
-	u8 pulse_inband_threshold;
-};
 
 struct ieee80211_rate {
 	int rate; /* rate in 100 kbps */
@@ -1182,109 +1069,15 @@ enum ieee80211_eid {
 #define IEEE80211_RATE_MODULATION(f) \
 (f & (IEEE80211_RATE_CCK | IEEE80211_RATE_OFDM))
 
-struct ieee80211_hw {
-	/* points to the cfg80211 wiphy for this piece. Note
-	 * that you must fill in the perm_addr and dev fields
-	 * of this structure, use the macros provided below. */
-	//struct wiphy *wiphy;
-
-	/* assigned by mac80211, don't write */
-	struct ieee80211_conf conf;
-
-	/* Pointer to the private area that was
-	 * allocated with this struct for you. */
-	void *priv;
-
-	/* The rest is information about your hardware */
-
-	/* TODO: frame_type 802.11/802.3, sw_encryption requirements */
-
-	/* Some wireless LAN chipsets generate beacons in the hardware/firmware
-	 * and others rely on host generated beacons. This option is used to
-	 * configure the upper layer IEEE 802.11 module to generate beacons.
-	 * The low-level driver can use ieee80211_beacon_get() to fetch the
-	 * next beacon frame. */
-#define IEEE80211_HW_HOST_GEN_BEACON (1<<0)
-
-	/* The device needs to be supplied with a beacon template only. */
-#define IEEE80211_HW_HOST_GEN_BEACON_TEMPLATE (1<<1)
-
-	/* Some devices handle decryption internally and do not
-	 * indicate whether the frame was encrypted (unencrypted frames
-	 * will be dropped by the hardware, unless specifically allowed
-	 * through) */
-#define IEEE80211_HW_DEVICE_HIDES_WEP (1<<2)
-
-	/* Whether RX frames passed to ieee80211_rx() include FCS in the end */
-#define IEEE80211_HW_RX_INCLUDES_FCS (1<<3)
-
-	/* Some wireless LAN chipsets buffer broadcast/multicast frames for
-	 * power saving stations in the hardware/firmware and others rely on
-	 * the host system for such buffering. This option is used to
-	 * configure the IEEE 802.11 upper layer to buffer broadcast/multicast
-	 * frames when there are power saving stations so that low-level driver
-	 * can fetch them with ieee80211_get_buffered_bc(). */
-#define IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING (1<<4)
-
-#define IEEE80211_HW_WEP_INCLUDE_IV (1<<5)
-
-	/* will data nullfunc frames get proper TX status callback */
-#define IEEE80211_HW_DATA_NULLFUNC_ACK (1<<6)
-
-	/* Force software encryption for TKIP packets if WMM is enabled. */
-#define IEEE80211_HW_NO_TKIP_WMM_HWACCEL (1<<7)
-
-	/* Some devices handle Michael MIC internally and do not include MIC in
-	 * the received packets passed up. device_strips_mic must be set
-	 * for such devices. The 'encryption' frame control bit is expected to
-	 * be still set in the IEEE 802.11 header with this option unlike with
-	 * the device_hides_wep configuration option.
-	 */
-#define IEEE80211_HW_DEVICE_STRIPS_MIC (1<<8)
-
-	/* Device is capable of performing full monitor mode even during
-	 * normal operation. */
-#define IEEE80211_HW_MONITOR_DURING_OPER (1<<9)
-
-	/* please fill this gap when adding new flags */
-
-	/* calculate Michael MIC for an MSDU when doing hwcrypto */
-#define IEEE80211_HW_TKIP_INCLUDE_MMIC (1<<12)
-	/* Do TKIP phase1 key mixing in stack to support cards only do
-	 * phase2 key mixing when doing hwcrypto */
-#define IEEE80211_HW_TKIP_REQ_PHASE1_KEY (1<<13)
-	/* Do TKIP phase1 and phase2 key mixing in stack and send the generated
-	 * per-packet RC4 key with each TX frame when doing hwcrypto */
-#define IEEE80211_HW_TKIP_REQ_PHASE2_KEY (1<<14)
-
-	u32 flags;			/* hardware flags defined above */
-
-	/* Set to the size of a needed device specific skb headroom for TX skbs. */
-	unsigned int extra_tx_headroom;
-
-	/* This is the time in us to change channels
-	 */
-	int channel_change_time;
-	/* Maximum values for various statistics.
-	 * Leave at 0 to indicate no support. Use negative numbers for dBm. */
-	s8 max_rssi;
-	s8 max_signal;
-	s8 max_noise;
-
-	/* Number of available hardware TX queues for data packets.
-	 * WMM requires at least four queues. */
-	int queues;
-};
-
 #define STA_HASH_SIZE 256
 #define STA_HASH(sta) (sta[5])
 
-/struct rate_control_ref {
+/*struct rate_control_ref {
 	struct rate_control_ops *ops;
 	void* priv;
 	void* kref;
 };*/
-enum {
+/*enum {
 	IEEE80211_TX_QUEUE_DATA0,
 	IEEE80211_TX_QUEUE_DATA1,
 	IEEE80211_TX_QUEUE_DATA2,
@@ -1292,15 +1085,17 @@ enum {
 	IEEE80211_TX_QUEUE_DATA4,
 	IEEE80211_TX_QUEUE_SVP,
 
-	NUM_TX_DATA_QUEUES,
+	NUM_TX_DATA_QUEUES,*/
 
 /* due to stupidity in the sub-ioctl userspace interface, the items in
  * this struct need to have fixed values. As soon as it is removed, we can
  * fix these entries. */
-	IEEE80211_TX_QUEUE_AFTER_BEACON = 6,
+/*	IEEE80211_TX_QUEUE_AFTER_BEACON = 6,
 	IEEE80211_TX_QUEUE_BEACON = 7,
-	NUM_TX_DATA_QUEUES_11N = 16 /* adding more data queues for 802.11n */
-};
+	NUM_TX_DATA_QUEUES_11N = 16 
+};*/
+
+/*
 struct ieee80211_tx_stored_packet {
 	struct ieee80211_tx_control control;
 	mbuf_t skb;
@@ -1310,276 +1105,10 @@ struct ieee80211_tx_stored_packet {
 	int last_frag_hwrate;
 	struct ieee80211_rate *last_frag_rate;
 	unsigned int last_frag_rate_ctrl_probe:1;
-};
+};*/
 #define IEEE80211_MAX_SSID_LEN		32
 
-struct ieee80211_local {
-	/* embed the driver visible part.
-	 * don't cast (use the static inlines below), but we keep
-	 * it first anyway so they become a no-op */
-	struct ieee80211_hw hw;
 
-	const struct ieee80211_ops *ops;
-
-	/* List of registered struct ieee80211_hw_mode */
-	struct list_head modes_list;
-
-	struct net_device *mdev; /* wmaster# - "master" 802.11 device */
-	struct net_device *apdev; /* wlan#ap - management frames (hostapd) */
-	int open_count;
-	int monitors;
-	struct iw_statistics wstats;
-	u8 wstats_flags;
-	int tx_headroom; /* required headroom for hardware/radiotap */
-
-	enum {
-		IEEE80211_DEV_UNINITIALIZED = 0,
-		IEEE80211_DEV_REGISTERED,
-		IEEE80211_DEV_UNREGISTERED,
-	} reg_state;
-
-	/* Tasklet and skb queue to process calls from IRQ mode. All frames
-	 * added to skb_queue will be processed, but frames in
-	 * skb_queue_unreliable may be dropped if the total length of these
-	 * queues increases over the limit. */
-#define IEEE80211_IRQSAFE_QUEUE_LIMIT 128
-	//struct tasklet_struct 
-	void* tasklet;
-	//struct sk_buff_head 
-	mbuf_t skb_queue;
-	//struct sk_buff_head 
-	mbuf_t skb_queue_unreliable;
-
-	/* Station data structures */
-	//spinlock_t 
-	void* sta_lock; /* mutex for STA data structures */
-	int num_sta; /* number of stations in sta_list */
-	struct list_head sta_list;
-	struct list_head deleted_sta_list;
-	struct sta_info *sta_hash[STA_HASH_SIZE];
-	//struct timer_list 
-	void* sta_cleanup;
-
-	unsigned long state[NUM_TX_DATA_QUEUES_11N];
-	struct ieee80211_tx_stored_packet pending_packet[NUM_TX_DATA_QUEUES_11N];
-	//struct tasklet_struct 
-	void* tx_pending_tasklet;
-
-	int mc_count;	/* total count of multicast entries in all interfaces */
-	int iff_allmultis, iff_promiscs;
-			/* number of interfaces with corresponding IFF_ flags */
-
-	struct rate_control_ref *rate_ctrl;
-
-	int next_mode; /* MODE_IEEE80211*
-			* The mode preference for next channel change. This is
-			* used to select .11g vs. .11b channels (or 4.9 GHz vs.
-			* .11a) when the channel number is not unique. */
-
-	/* Supported and basic rate filters for different modes. These are
-	 * pointers to -1 terminated lists and rates in 100 kbps units. */
-	int *supp_rates[NUM_IEEE80211_MODES];
-	int *basic_rates[NUM_IEEE80211_MODES];
-
-	int rts_threshold;
-	int fragmentation_threshold;
-	int short_retry_limit; /* dot11ShortRetryLimit */
-	int long_retry_limit; /* dot11LongRetryLimit */
-	int short_preamble; /* use short preamble with IEEE 802.11b */
-
-	//struct crypto_blkcipher 
-	void* wep_tx_tfm;
-	//struct crypto_blkcipher 
-	void* wep_rx_tfm;
-	u32 wep_iv;
-	int key_tx_rx_threshold; /* number of times any key can be used in TX
-				  * or RX before generating a rekey
-				  * notification; 0 = notification disabled. */
-
-	int bridge_packets; /* bridge packets between associated stations and
-			     * deliver multicast frames both back to wireless
-			     * media and to the local net stack */
-
-	// ieee80211_rx_handler 
-	void* rx_pre_handlers;
-	// ieee80211_rx_handler 
-	void* rx_handlers;
-	// ieee80211_tx_handler 
-	void* tx_handlers;
-
-	//rwlock_t 
-	void* sub_if_lock; /* Protects sub_if_list. Cannot be taken under
-			       * sta_bss_lock or sta_lock. */
-	struct list_head sub_if_list;
-	int sta_scanning;
-	int scan_channel_idx;
-	enum { SCAN_SET_CHANNEL, SCAN_SEND_PROBE } scan_state;
-	unsigned long last_scan_completed;
-	//struct delayed_work 
-	void* scan_work;
-	struct net_device *scan_dev;
-	struct ieee80211_channel *oper_channel, *scan_channel;
-	struct ieee80211_hw_mode *oper_hw_mode, *scan_hw_mode;
-	u8 scan_ssid[IEEE80211_MAX_SSID_LEN];
-	size_t scan_ssid_len;
-#define IEEE80211_MAX_TXPOWER 50
-	u8 user_txpow;
-	struct list_head sta_bss_list;
-	struct ieee80211_sta_bss *sta_bss_hash[STA_HASH_SIZE];
-	spinlock_t sta_bss_lock;
-#define IEEE80211_SCAN_MATCH_SSID BIT(0)
-#define IEEE80211_SCAN_WPA_ONLY BIT(1)
-#define IEEE80211_SCAN_EXTRA_INFO BIT(2)
-	int scan_flags;
-
-	/* SNMP counters */
-	/* dot11CountersTable */
-	u32 dot11TransmittedFragmentCount;
-	u32 dot11MulticastTransmittedFrameCount;
-	u32 dot11FailedCount;
-	u32 dot11RetryCount;
-	u32 dot11MultipleRetryCount;
-	u32 dot11FrameDuplicateCount;
-	u32 dot11ReceivedFragmentCount;
-	u32 dot11MulticastReceivedFrameCount;
-	u32 dot11TransmittedFrameCount;
-	u32 dot11WEPUndecryptableCount;
-
-#ifdef CONFIG_MAC80211_LEDS
-	int tx_led_counter, rx_led_counter;
-	struct led_trigger *tx_led, *rx_led;
-	char tx_led_name[32], rx_led_name[32];
-#endif
-
-	u32 channel_use;
-	u32 channel_use_raw;
-	u32 stat_time;
-	//struct timer_list 
-	void* stat_timer;
-
-#ifdef CONFIG_MAC80211_DEBUGFS
-	struct work_struct sta_debugfs_add;
-#endif
-
-	enum {
-		STA_ANTENNA_SEL_AUTO = 0,
-		STA_ANTENNA_SEL_SW_CTRL = 1,
-		STA_ANTENNA_SEL_SW_CTRL_DEBUG = 2
-	} sta_antenna_sel;
-
-#ifdef CONFIG_MAC80211_DEBUG_COUNTERS
-	/* TX/RX handler statistics */
-	unsigned int tx_handlers_drop;
-	unsigned int tx_handlers_queued;
-	unsigned int tx_handlers_drop_unencrypted;
-	unsigned int tx_handlers_drop_fragment;
-	unsigned int tx_handlers_drop_wep;
-	unsigned int tx_handlers_drop_not_assoc;
-	unsigned int tx_handlers_drop_unauth_port;
-	unsigned int rx_handlers_drop;
-	unsigned int rx_handlers_queued;
-	unsigned int rx_handlers_drop_nullfunc;
-	unsigned int rx_handlers_drop_defrag;
-	unsigned int rx_handlers_drop_short;
-	unsigned int rx_handlers_drop_passive_scan;
-	unsigned int tx_expand_skb_head;
-	unsigned int tx_expand_skb_head_cloned;
-	unsigned int rx_expand_skb_head;
-	unsigned int rx_expand_skb_head2;
-	unsigned int rx_handlers_fragments;
-	unsigned int tx_status_drop;
-	unsigned int wme_rx_queue[NUM_RX_DATA_QUEUES];
-	unsigned int wme_tx_queue[NUM_RX_DATA_QUEUES];
-#define I802_DEBUG_INC(c) (c)++
-#else /* CONFIG_MAC80211_DEBUG_COUNTERS */
-#define I802_DEBUG_INC(c) do { } while (0)
-#endif /* CONFIG_MAC80211_DEBUG_COUNTERS */
-
-
-	int default_wep_only; /* only default WEP keys are used with this
-			       * interface; this is used to decide when hwaccel
-			       * can be used with default keys */
-	int total_ps_buffered; /* total number of all buffered unicast and
-				* multicast packets for power saving stations
-				*/
-	int allow_broadcast_always; /* whether to allow TX of broadcast frames
-				     * even when there are no associated STAs
-				     */
-
-	int wifi_wme_noack_test;
-	unsigned int wmm_acm; /* bit field of ACM bits (BIT(802.1D tag)) */
-
-	unsigned int enabled_modes; /* bitfield of allowed modes;
-				      * (1 << MODE_*) */
-	unsigned int hw_modes; /* bitfield of supported hardware modes;
-				* (1 << MODE_*) */
-
-	int user_space_mlme;
-
-#ifdef CONFIG_MAC80211_DEBUGFS
-	struct local_debugfsdentries {
-		struct dentry *channel;
-		struct dentry *frequency;
-		struct dentry *radar_detect;
-		struct dentry *antenna_sel_tx;
-		struct dentry *antenna_sel_rx;
-		struct dentry *bridge_packets;
-		struct dentry *key_tx_rx_threshold;
-		struct dentry *rts_threshold;
-		struct dentry *fragmentation_threshold;
-		struct dentry *short_retry_limit;
-		struct dentry *long_retry_limit;
-		struct dentry *total_ps_buffered;
-		struct dentry *mode;
-		struct dentry *wep_iv;
-		struct dentry *tx_power_reduction;
-		struct dentry *modes;
-		struct dentry *statistics;
-		struct local_debugfsdentries_statsdentries {
-			struct dentry *transmitted_fragment_count;
-			struct dentry *multicast_transmitted_frame_count;
-			struct dentry *failed_count;
-			struct dentry *retry_count;
-			struct dentry *multiple_retry_count;
-			struct dentry *frame_duplicate_count;
-			struct dentry *received_fragment_count;
-			struct dentry *multicast_received_frame_count;
-			struct dentry *transmitted_frame_count;
-			struct dentry *wep_undecryptable_count;
-			struct dentry *num_scans;
-#ifdef CONFIG_MAC80211_DEBUG_COUNTERS
-			struct dentry *tx_handlers_drop;
-			struct dentry *tx_handlers_queued;
-			struct dentry *tx_handlers_drop_unencrypted;
-			struct dentry *tx_handlers_drop_fragment;
-			struct dentry *tx_handlers_drop_wep;
-			struct dentry *tx_handlers_drop_not_assoc;
-			struct dentry *tx_handlers_drop_unauth_port;
-			struct dentry *rx_handlers_drop;
-			struct dentry *rx_handlers_queued;
-			struct dentry *rx_handlers_drop_nullfunc;
-			struct dentry *rx_handlers_drop_defrag;
-			struct dentry *rx_handlers_drop_short;
-			struct dentry *rx_handlers_drop_passive_scan;
-			struct dentry *tx_expand_skb_head;
-			struct dentry *tx_expand_skb_head_cloned;
-			struct dentry *rx_expand_skb_head;
-			struct dentry *rx_expand_skb_head2;
-			struct dentry *rx_handlers_fragments;
-			struct dentry *tx_status_drop;
-			struct dentry *wme_tx_queue;
-			struct dentry *wme_rx_queue;
-#endif
-			struct dentry *dot11ACKFailureCount;
-			struct dentry *dot11RTSFailureCount;
-			struct dentry *dot11FCSErrorCount;
-			struct dentry *dot11RTSSuccessCount;
-		} stats;
-		struct dentry *stations;
-		struct dentry *keys;
-	} debugfs;
-#endif
-};
 
 struct ieee80211_channel {
 	short chan; /* channel number (IEEE 802.11) */
@@ -2377,107 +1906,7 @@ static inline int ieee80211_get_scans(struct ieee80211_device *ieee)
 }
 
 #define NUM_RX_DATA_QUEUES 17
-struct sta_info {
-	void* kref;
-	struct list_head list;
-	struct sta_info *hnext; /* next entry in hash table list */
 
-	struct ieee80211_local *local;
-
-	u8 addr[ETH_ALEN];
-	u16 aid; /* STA's unique AID (1..2007), 0 = not yet assigned */
-	u32 flags; /* WLAN_STA_ */
-
-	//struct sk_buff_head 
-	struct list_head ps_tx_buf; /* buffer of TX frames for station in
-					* power saving state */
-	int pspoll; /* whether STA has send a PS Poll frame */
-	//struct sk_buff_head 
-	struct list_head tx_filtered; /* buffer of TX frames that were
-					  * already given to low-level driver,
-					  * but were filtered */
-	int clear_dst_mask;
-
-	unsigned long rx_packets, tx_packets; /* number of RX/TX MSDUs */
-	unsigned long rx_bytes, tx_bytes;
-	unsigned long tx_retry_failed, tx_retry_count;
-	unsigned long tx_filtered_count;
-
-	unsigned int wep_weak_iv_count; /* number of RX frames with weak IV */
-
-	unsigned long last_rx;
-	u32 supp_rates; /* bitmap of supported rates in local->curr_rates */
-	int txrate; /* index in local->curr_rates */
-	int last_txrate; /* last rate used to send a frame to this STA */
-	int last_nonerp_idx;
-
-	struct net_device *dev; /* which net device is this station associated
-				 * to */
-
-	struct ieee80211_key *key;
-
-	u32 tx_num_consecutive_failures;
-	u32 tx_num_mpdu_ok;
-	u32 tx_num_mpdu_fail;
-
-	struct rate_control_ref *rate_ctrl;
-	void *rate_ctrl_priv;
-
-	/* last received seq/frag number from this STA (per RX queue) */
-	__le16 last_seq_ctrl[NUM_RX_DATA_QUEUES];
-	unsigned long num_duplicates; /* number of duplicate frames received
-				       * from this STA */
-	unsigned long tx_fragments; /* number of transmitted MPDUs */
-	unsigned long rx_fragments; /* number of received MPDUs */
-	unsigned long rx_dropped; /* number of dropped MPDUs from this STA */
-
-	int last_rssi; /* RSSI of last received frame from this STA */
-	int last_signal; /* signal of last received frame from this STA */
-	int last_noise; /* noise of last received frame from this STA */
-	int last_ack_rssi[3]; /* RSSI of last received ACKs from this STA */
-	unsigned long last_ack;
-	int channel_use;
-	int channel_use_raw;
-
-	u8 antenna_sel_tx;
-	u8 antenna_sel_rx;
-
-
-	int key_idx_compression; /* key table index for compression and TX
-				  * filtering; used only if sta->key is not
-				  * set */
-
-#ifdef CONFIG_MAC80211_DEBUGFS
-	int debugfs_registered;
-#endif
-	int assoc_ap; /* whether this is an AP that we are
-		       * associated with as a client */
-
-#ifdef CONFIG_MAC80211_DEBUG_COUNTERS
-	unsigned int wme_rx_queue[NUM_RX_DATA_QUEUES];
-	unsigned int wme_tx_queue[NUM_RX_DATA_QUEUES];
-#endif /* CONFIG_MAC80211_DEBUG_COUNTERS */
-
-	int vlan_id;
-
-	u16 listen_interval;
-
-#ifdef CONFIG_MAC80211_DEBUGFS
-	struct sta_info_debugfsdentries {
-		struct dentry *dir;
-		struct dentry *flags;
-		struct dentry *num_ps_buf_frames;
-		struct dentry *last_ack_rssi;
-		struct dentry *last_ack_ms;
-		struct dentry *inactive_ms;
-		struct dentry *last_seq_ctrl;
-#ifdef CONFIG_MAC80211_DEBUG_COUNTERS
-		struct dentry *wme_rx_queue;
-		struct dentry *wme_tx_queue;
-#endif
-	} debugfs;
-#endif
-};
 
 /*struct rate_control_ops {
 	struct module *module;
@@ -2509,17 +1938,17 @@ struct rate_control_alg {
 	struct rate_control_ops *ops;
 };
 
-/struct rate_control_extra {
+/*struct rate_control_extra {
 	struct ieee80211_rate *probe; 
 	struct ieee80211_rate *nonerp;
 	struct ieee80211_hw_mode *mode;
 	int mgmt_data; 
 	u16 ethertype;
 };*/
-static inline int is_multicast_ether_addr(const u8 *addr)
+/*static inline int is_multicast_ether_addr(const u8 *addr)
 {
        return addr[0] & 0x01;
-}
+}*/
 /*struct ieee80211_rx_status {
 	u64 mactime;
 	int freq; 
@@ -2536,238 +1965,21 @@ static inline int is_multicast_ether_addr(const u8 *addr)
 	int flag;
 };*/
 
-typedef enum {
+/*typedef enum {
 	SET_KEY, DISABLE_KEY, REMOVE_ALL_KEYS,
-} set_key_cmd;
-
-struct ieee80211_tx_queue_stats_data {
-	unsigned int len; /* num packets in queue */
-	unsigned int limit; /* queue len (soft) limit */
-	unsigned int count; /* total num frames sent */
-};
-struct ieee80211_tx_queue_stats {
-	struct ieee80211_tx_queue_stats_data data[6];
-};
-
-typedef enum { ALG_NONE, ALG_WEP, ALG_TKIP, ALG_CCMP, ALG_NULL }
-ieee80211_key_alg;
+} set_key_cmd;*/
 
 
-struct ieee80211_key_conf {
-
-	int hw_key_idx;			/* filled + used by low-level driver */
-	ieee80211_key_alg alg;
-	int keylen;
-
-#define IEEE80211_KEY_FORCE_SW_ENCRYPT (1<<0) /* to be cleared by low-level
-						 driver */
-#define IEEE80211_KEY_DEFAULT_TX_KEY   (1<<1) /* This key is the new default TX
-						// key (used only for broadcast
-						// keys). */
-#define IEEE80211_KEY_DEFAULT_WEP_ONLY (1<<2) /* static WEP is the only
-						 configured security policy;
-						 this allows some low-level
-						 drivers to determine when
-						 hwaccel can be used */
-	u32 flags; /* key configuration flags defined above */
-
-	s8 keyidx;			/* WEP key index */
-	u8 key[0];
-};
-struct ieee80211_if_conf {
-	int type;
-	u8 *bssid;
-	u8 *ssid;
-	size_t ssid_len;
-	u8 *generic_elem;
-	size_t generic_elem_len;
-	mbuf_t beacon;
-	struct ieee80211_tx_control *beacon_control;
-};
-struct ieee80211_if_init_conf {
-	int if_id;
-	int type;
-	void *mac_addr;
-};
 
 
-struct ieee80211_ops {
-	/* Handler that 802.11 module calls for each transmitted frame.
-	 * skb contains the buffer starting from the IEEE 802.11 header.
-	 * The low-level driver should send the frame out based on
-	 * configuration in the TX control data.
-	 * Must be atomic. */
-	int (*tx)(struct ieee80211_hw *hw, mbuf_t skb,
-		  struct ieee80211_tx_control *control);
+//typedef enum { ALG_NONE, ALG_WEP, ALG_TKIP, ALG_CCMP, ALG_NULL }
+//ieee80211_key_alg;
 
-	/* Handler for performing hardware reset. */
-	int (*reset)(struct ieee80211_hw *hw);
 
-	/* Handler that is called when any netdevice attached to the hardware
-	 * device is set UP for the first time. This can be used, e.g., to
-	 * enable interrupts and beacon sending. */
-	int (*open)(struct ieee80211_hw *hw);
 
-	/* Handler that is called when the last netdevice attached to the
-	 * hardware device is set DOWN. This can be used, e.g., to disable
-	 * interrupts and beacon sending. */
-	int (*stop)(struct ieee80211_hw *hw);
 
-	/* Handler for asking a driver if a new interface can be added (or,
-	 * more exactly, set UP). If the handler returns zero, the interface
-	 * is added. Driver should perform any initialization it needs prior
-	 * to returning zero. By returning non-zero addition of the interface
-	 * is inhibited. Unless monitor_during_oper is set, it is guaranteed
-	 * that monitor interfaces and normal interfaces are mutually
-	 * exclusive. The open() handler is called after add_interface()
-	 * if this is the first device added. At least one of the open()
-	 * open() and add_interface() callbacks has to be assigned. If
-	 * add_interface() is NULL, one STA interface is permitted only. */
-	int (*add_interface)(struct ieee80211_hw *hw,
-			     struct ieee80211_if_init_conf *conf);
 
-	/* Notify a driver that an interface is going down. The stop() handler
-	 * is called prior to this if this is a last interface. */
-	void (*remove_interface)(struct ieee80211_hw *hw,
-				 struct ieee80211_if_init_conf *conf);
 
-	/* Handler for configuration requests. IEEE 802.11 code calls this
-	 * function to change hardware configuration, e.g., channel. */
-	int (*config)(struct ieee80211_hw *hw, struct ieee80211_conf *conf);
-
-	/* Handler for configuration requests related to interfaces (e.g.
-	 * BSSID). */
-	int (*config_interface)(struct ieee80211_hw *hw,
-				int if_id, struct ieee80211_if_conf *conf);
-
-	/* ieee80211 drivers do not have access to the &struct net_device
-	 * that is (are) connected with their device. Hence (and because
-	 * we need to combine the multicast lists and flags for multiple
-	 * virtual interfaces), they cannot assign set_multicast_list.
-	 * The parameters here replace dev->flags and dev->mc_count,
-	 * dev->mc_list is replaced by calling ieee80211_get_mc_list_item.
-	 * Must be atomic. */
-	void (*set_multicast_list)(struct ieee80211_hw *hw,
-				   unsigned short flags, int mc_count);
-
-	/* Set TIM bit handler. If the hardware/firmware takes care of beacon
-	 * generation, IEEE 802.11 code uses this function to tell the
-	 * low-level to set (or clear if set==0) TIM bit for the given aid. If
-	 * host system is used to generate beacons, this handler is not used
-	 * and low-level driver should set it to NULL.
-	 * Must be atomic. */
-	int (*set_tim)(struct ieee80211_hw *hw, int aid, int set);
-
-	/* Set encryption key. IEEE 802.11 module calls this function to set
-	 * encryption keys. addr is ff:ff:ff:ff:ff:ff for default keys and
-	 * station hwaddr for individual keys. aid of the station is given
-	 * to help low-level driver in selecting which key->hw_key_idx to use
-	 * for this key. TX control data will use the hw_key_idx selected by
-	 * the low-level driver.
-	 * Must be atomic. */
-	int (*set_key)(struct ieee80211_hw *hw, set_key_cmd cmd,
-		       u8 *addr, struct ieee80211_key_conf *key, int aid);
-
-	/* Set TX key index for default/broadcast keys. This is needed in cases
-	 * where wlan card is doing full WEP/TKIP encapsulation (wep_include_iv
-	 * is not set), in other cases, this function pointer can be set to
-	 * NULL since the IEEE 802. 11 module takes care of selecting the key
-	 * index for each TX frame. */
-	int (*set_key_idx)(struct ieee80211_hw *hw, int idx);
-
-	/* Enable/disable IEEE 802.1X. This item requests wlan card to pass
-	 * unencrypted EAPOL-Key frames even when encryption is configured.
-	 * If the wlan card does not require such a configuration, this
-	 * function pointer can be set to NULL. */
-	int (*set_ieee8021x)(struct ieee80211_hw *hw, int use_ieee8021x);
-
-	/* Set port authorization state (IEEE 802.1X PAE) to be authorized
-	 * (authorized=1) or unauthorized (authorized=0). This function can be
-	 * used if the wlan hardware or low-level driver implements PAE.
-	 * 80211.o module will anyway filter frames based on authorization
-	 * state, so this function pointer can be NULL if low-level driver does
-	 * not require event notification about port state changes.
-	 * Currently unused. */
-	int (*set_port_auth)(struct ieee80211_hw *hw, u8 *addr,
-			     int authorized);
-
-	/* Ask the hardware to service the scan request, no need to start
-	 * the scan state machine in stack. */
-	int (*hw_scan)(struct ieee80211_hw *hw, u8 *ssid, size_t len);
-
-	/* return low-level statistics */
-	int (*get_stats)(struct ieee80211_hw *hw,
-			 struct ieee80211_low_level_stats *stats);
-
-	/* For devices that generate their own beacons and probe response
-	 * or association responses this updates the state of privacy_invoked
-	 * returns 0 for success or an error number */
-	int (*set_privacy_invoked)(struct ieee80211_hw *hw,
-				   int privacy_invoked);
-
-	/* For devices that have internal sequence counters, allow 802.11
-	 * code to access the current value of a counter */
-	int (*get_sequence_counter)(struct ieee80211_hw *hw,
-				    u8* addr, u8 keyidx, u8 txrx,
-				    u32* iv32, u16* iv16);
-
-	/* Configuration of RTS threshold (if device needs it) */
-	int (*set_rts_threshold)(struct ieee80211_hw *hw, u32 value);
-
-	/* Configuration of fragmentation threshold.
-	 * Assign this if the device does fragmentation by itself,
-	 * if this method is assigned then the stack will not do
-	 * fragmentation. */
-	int (*set_frag_threshold)(struct ieee80211_hw *hw, u32 value);
-
-	/* Configuration of retry limits (if device needs it) */
-	int (*set_retry_limit)(struct ieee80211_hw *hw,
-			       u32 short_retry, u32 long_retr);
-
-	/* Number of STAs in STA table notification (NULL = disabled).
-	 * Must be atomic. */
-	void (*sta_table_notification)(struct ieee80211_hw *hw,
-				       int num_sta);
-
-	/* Configure TX queue parameters (EDCF (aifs, cw_min, cw_max),
-	 * bursting) for a hardware TX queue.
-	 * queue = IEEE80211_TX_QUEUE_*.
-	 * Must be atomic. */
-	int (*conf_tx)(struct ieee80211_hw *hw, int queue,
-		       const struct ieee80211_tx_queue_params *params);
-
-	/* Get statistics of the current TX queue status. This is used to get
-	 * number of currently queued packets (queue length), maximum queue
-	 * size (limit), and total number of packets sent using each TX queue
-	 * (count).
-	 * Currently unused. */
-	int (*get_tx_stats)(struct ieee80211_hw *hw,
-			    struct ieee80211_tx_queue_stats *stats);
-
-	/* Get the current TSF timer value from firmware/hardware. Currently,
-	 * this is only used for IBSS mode debugging and, as such, is not a
-	 * required function.
-	 * Must be atomic. */
-	u64 (*get_tsf)(struct ieee80211_hw *hw);
-
-	/* Reset the TSF timer and allow firmware/hardware to synchronize with
-	 * other STAs in the IBSS. This is only used in IBSS mode. This
-	 * function is optional if the firmware/hardware takes full care of
-	 * TSF synchronization. */
-	void (*reset_tsf)(struct ieee80211_hw *hw);
-
-	/* Setup beacon data for IBSS beacons. Unlike access point (Master),
-	 * IBSS uses a fixed beacon frame which is configured using this
-	 * function. This handler is required only for IBSS mode. */
-	int (*beacon_update)(struct ieee80211_hw *hw,
-			     mbuf_t skb,
-			     struct ieee80211_tx_control *control);
-
-	/* Determine whether the last IBSS beacon was sent by us. This is
-	 * needed only for IBSS mode and the result of this function is used to
-	 * determine whether to reply to Probe Requests. */
-	int (*tx_last_beacon)(struct ieee80211_hw *hw);
-};
 
 struct ieee80211_fragment_entry {
 	unsigned long first_frag_time;
@@ -3176,39 +2388,27 @@ static inline void hlist_del(struct hlist_node *n)
 	(void*)n->pprev = LIST_POISON2;
 }
 
-static inline void __list_del(struct list_head * prev, struct list_head * next)
-{
-	next->prev = prev;
-	prev->next = next;
-}
 
-static inline void list_del(struct list_head *entry)
-{
-	__list_del(entry->prev, entry->next);
-	(void*)entry->next = LIST_POISON1;
-	(void*)entry->prev = LIST_POISON2;
-}
-static inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
+
+
+/*static inline unsigned compare_ether_addr(const u8 *_a, const u8 *_b)
 {
 	const u16 *a = (const u16 *) _a;
 	const u16 *b = (const u16 *) _b;
 
 	//BUILD_BUG_ON(ETH_ALEN != 6);
 	return ((a[0] ^ b[0]) | (a[1] ^ b[1]) | (a[2] ^ b[2])) != 0;
-}
-static inline int is_broadcast_ether_addr(const u8 *addr)
+}*/
+/*static inline int is_broadcast_ether_addr(const u8 *addr)
 {
         return (addr[0] & addr[1] & addr[2] & addr[3] & addr[4] & addr[5]) == 0xff;
-}
+}*/
 /*static inline int ieee80211_get_morefrag(struct ieee80211_hdr *hdr)
 {
 	return (le16_to_cpu(hdr->frame_control) &
 		IEEE80211_FCTL_MOREFRAGS) != 0;
 }*/
-static struct ieee80211_local* hw_to_local(struct ieee80211_hw *hw)
-{
-	return container_of(hw, struct ieee80211_local, hw);
-}
+
 static struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
 {
 	return &local->hw;

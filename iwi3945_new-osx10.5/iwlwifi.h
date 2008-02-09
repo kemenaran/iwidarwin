@@ -1,3 +1,4 @@
+#include "defines.h"
 /******************************************************************************
  *
  * Copyright(c) 2003 - 2007 Intel Corporation. All rights reserved.
@@ -31,7 +32,7 @@
 #define __iwlwifi_h__
 
 //#include <linux/pci.h> /* for struct pci_device_id */
-#include "net/ieee80211_radiotap.h"
+//#include "net/ieee80211_radiotap.h"
 
 struct iwl_priv;
 
