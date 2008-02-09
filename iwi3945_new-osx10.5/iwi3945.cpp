@@ -14,24 +14,21 @@ OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);//IO80211Con
 	
 bool darwin_iwi3945::init(OSDictionary *dict)
 {
-
 	//priv=(struct iwl_priv*)IOMalloc(sizeof(struct iwl_priv));
-
-/* module parameters */
-param_disable_hw_scan = 0;
-//need to define param_debug better
-param_debug =  0xffffffff;
-param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP|IWL_DL_POWER);
-param_debug |=IWL_DL_INFO;
-param_disable = 0;      /* def: enable radio */
-param_antenna = 0;      /* def: 0 = both antennas (use diversity) */
-param_hwcrypto = 0;     /* def: using software encryption */
-param_qos_enable = 0;
+	/* module parameters */
+	param_disable_hw_scan = 0;
+	//need to define param_debug better
+	param_debug =  0xffffffff;
+	param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP|IWL_DL_POWER);
+	param_debug |=IWL_DL_INFO;
+	param_disable = 0;      /* def: enable radio */
+	param_antenna = 0;      /* def: 0 = both antennas (use diversity) */
+	param_hwcrypto = 0;     /* def: using software encryption */
+	param_qos_enable = 0;
  
-param_disable=OSDynamicCast(OSNumber,dict->getObject("param_disable"))->unsigned32BitValue();
- //IOLog("debug_level %x sw_disable %d\n",param_debug, param_disable);
-
- return super::init(dict);
+	param_disable=OSDynamicCast(OSNumber,dict->getObject("param_disable"))->unsigned32BitValue();
+	//IOLog("debug_level %x sw_disable %d\n",param_debug, param_disable);
+	return super::init(dict);
 }
 
 void darwin_iwi3945::stop(IOService *provider)
@@ -404,9 +401,9 @@ IOReturn darwin_iwi3945::selectMedium(const IONetworkMedium * medium)
         // Defaults to Auto.
 		medium = mediumTable[MEDIUM_TYPE_AUTO];
         if ( medium == 0 ) {
-		//IOLog("selectMedium failed\n");
-		return kIOReturnError;
-	}
+			//IOLog("selectMedium failed\n");
+			return kIOReturnError;
+		}
     }
 
 	// Program PHY to select the desired medium.
@@ -932,8 +929,8 @@ int ieee80211_register_hw(struct ieee80211_hw *hw)
 	 * and we need some headroom for passing the frame to monitor
 	 * interfaces, but never both at the same time.
 	 */
-	local->tx_headroom = max(sizeof(unsigned int) , max(local->hw.extra_tx_headroom,
-				   sizeof(struct ieee80211_tx_status_rtap_hdr)));
+	 //test
+	//local->tx_headroom = max(sizeof(unsigned int) , max(local->hw.extra_tx_headroom,sizeof(struct ieee80211_tx_status_rtap_hdr)));
 
 	//debugfs_hw_add(local);
 
@@ -947,8 +944,8 @@ int ieee80211_register_hw(struct ieee80211_hw *hw)
 			       IW_QUAL_NOISE_UPDATED : IW_QUAL_NOISE_INVALID;
 	if (local->hw.max_rssi < 0 || local->hw.max_noise < 0)
 		local->wstats_flags |= IW_QUAL_DBM;
-
-	local->user_txpow = IEEE80211_MAX_TXPOWER;
+	//test
+	//local->user_txpow = IEEE80211_MAX_TXPOWER;
 	/*result = sta_info_start(local);
 	if (result < 0)
 		goto fail_sta_info;
@@ -1051,7 +1048,8 @@ void ieee80211_prepare_rates(struct ieee80211_local *local,
 			if (rate->rate == 10 || rate->rate == 20)
 				rate->flags |= IEEE80211_RATE_BASIC;
 			break;
-		case MODE_ATHEROS_TURBO:
+		//test
+		/*case MODE_ATHEROS_TURBO:
 			if (rate->rate == 120 || rate->rate == 240 ||
 			    rate->rate == 480)
 				rate->flags |= IEEE80211_RATE_BASIC;
@@ -1060,7 +1058,7 @@ void ieee80211_prepare_rates(struct ieee80211_local *local,
 			if (rate->rate == 10 || rate->rate == 20 ||
 			    rate->rate == 55 || rate->rate == 110)
 				rate->flags |= IEEE80211_RATE_BASIC;
-			break;
+			break;*/
 		}
 
 		/* Set ERP and MANDATORY flags based on phymode */
@@ -1074,7 +1072,8 @@ void ieee80211_prepare_rates(struct ieee80211_local *local,
 			if (rate->rate == 10)
 				rate->flags |= IEEE80211_RATE_MANDATORY;
 			break;
-		case MODE_ATHEROS_TURBO:
+		//test
+		/*case MODE_ATHEROS_TURBO:
 			break;
 		case MODE_IEEE80211G:
 			if (rate->rate == 10 || rate->rate == 20 ||
@@ -1082,15 +1081,18 @@ void ieee80211_prepare_rates(struct ieee80211_local *local,
 			    rate->rate == 60 || rate->rate == 120 ||
 			    rate->rate == 240)
 				rate->flags |= IEEE80211_RATE_MANDATORY;
-			break;
+			break;*/
 		}
 		if (ieee80211_is_erp_rate(mode->mode, rate->rate))
 			rate->flags |= IEEE80211_RATE_ERP;
 	}
 }
 
-int ieee80211_register_hwmode(struct ieee80211_hw *hw,
-			      struct ieee80211_hw_mode *mode)
+
+
+//test
+/*
+int ieee80211_register_hwmode(struct ieee80211_hw *hw,struct ieee80211_hw_mode *mode)
 {
 	struct ieee80211_local *local = hw_to_local(hw);
 	struct ieee80211_rate *rate;
@@ -1107,7 +1109,6 @@ int ieee80211_register_hwmode(struct ieee80211_hw *hw,
 	ieee80211_prepare_rates(local, mode);
 
 	if (!local->oper_hw_mode) {
-		/* Default to this mode */
 		local->hw.conf.phymode = mode->mode;
 		local->oper_hw_mode = local->scan_hw_mode = mode;
 		local->oper_channel = local->scan_channel = &mode->channels[0];
@@ -1127,4 +1128,5 @@ void ieee80211_set_default_regdomain(struct ieee80211_hw_mode *mode)
 	for (c = 0; c < mode->num_channels; c++)
 		ieee80211_unmask_channel(mode->mode, &mode->channels[c]);
 }
+*/
 

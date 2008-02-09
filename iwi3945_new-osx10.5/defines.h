@@ -1,7 +1,6 @@
 #ifndef __DEFINES_H__
 #define __DEFINES_H__
 
-
 typedef signed char s8;
 typedef unsigned char u8; 
 typedef signed short s16;
