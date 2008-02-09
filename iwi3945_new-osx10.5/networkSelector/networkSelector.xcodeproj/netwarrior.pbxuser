@@ -1,0 +1,90 @@
+// !$*UTF8*$!
+{
+	08FB7793FE84155DC02AAC07 /* Project object */ = {
+		activeArchitecture = i386;
+		activeBuildConfigurationName = Debug;
+		activeExecutable = C0DFE7D40D5A45D10035D80B /* networkSelector */;
+		activeTarget = 8DD76F620486A84900D96B5E /* networkSelector */;
+		codeSenseManager = C0DFE7DB0D5A45F00035D80B /* Code sense */;
+		executables = (
+			C0DFE7D40D5A45D10035D80B /* networkSelector */,
+		);
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					243,
+					20,
+					48,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 224082782;
+			PBXWorkspaceStateSaveDate = 224082782;
+		};
+		sourceControlManager = C0DFE7DA0D5A45F00035D80B /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	08FB7796FE84155DC02AAC07 /* main.cpp */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {967, 1288}}";
+			sepNavSelRange = "{1974, 0}";
+			sepNavVisRange = "{1219, 913}";
+			sepNavWindowFrame = "{{137, 108}, {1026, 649}}";
+		};
+	};
+	8DD76F620486A84900D96B5E /* networkSelector */ = {
+		activeExec = 0;
+		executables = (
+			C0DFE7D40D5A45D10035D80B /* networkSelector */,
+		);
+	};
+	C0DFE7D40D5A45D10035D80B /* networkSelector */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 1;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = networkSelector;
+		sourceDirectories = (
+		);
+	};
+	C0DFE7DA0D5A45F00035D80B /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+		};
+	};
+	C0DFE7DB0D5A45F00035D80B /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+}

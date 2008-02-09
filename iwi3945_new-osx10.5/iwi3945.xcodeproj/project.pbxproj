@@ -1,0 +1,386 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
+		61217DBD0CD7776800E3875C /* ieee80211.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B06DFF0B589546000DD1AE /* ieee80211.h */; };
+		61217DBE0CD7776900E3875C /* ieee80211_crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B06E000B589546000DD1AE /* ieee80211_crypt.h */; };
+		61217DBF0CD7776A00E3875C /* ieee80211_radiotap.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B06E010B589546000DD1AE /* ieee80211_radiotap.h */; };
+		61217ED30CD7847A00E3875C /* ipw3945.ucode.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B0CB590B824EF500F76542 /* ipw3945.ucode.h */; };
+		61B0347F0B59837C00286B6C /* iwi3945.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61B0347C0B59837C00286B6C /* iwi3945.cpp */; };
+		61B034800B59837C00286B6C /* iwi3945.h in Headers */ = {isa = PBXBuildFile; fileRef = 61B0347D0B59837C00286B6C /* iwi3945.h */; };
+		61D492C60CCA4B8F00BA5243 /* iwl-3945-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492B60CCA4B8F00BA5243 /* iwl-3945-hw.h */; };
+		61D492C80CCA4B8F00BA5243 /* iwl-3945-rs.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492B80CCA4B8F00BA5243 /* iwl-3945-rs.h */; };
+		61D492C90CCA4B8F00BA5243 /* iwl-3945.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61D492B90CCA4B8F00BA5243 /* iwl-3945.cpp */; };
+		61D492CA0CCA4B8F00BA5243 /* iwl-3945.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492BA0CCA4B8F00BA5243 /* iwl-3945.h */; };
+		61D492CB0CCA4B8F00BA5243 /* iwl-channel.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492BB0CCA4B8F00BA5243 /* iwl-channel.h */; };
+		61D492CC0CCA4B8F00BA5243 /* iwl-commands.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492BC0CCA4B8F00BA5243 /* iwl-commands.h */; };
+		61D492CD0CCA4B8F00BA5243 /* iwl-debug.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492BD0CCA4B8F00BA5243 /* iwl-debug.h */; };
+		61D492CE0CCA4B8F00BA5243 /* iwl-eeprom.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492BE0CCA4B8F00BA5243 /* iwl-eeprom.h */; };
+		61D492CF0CCA4B8F00BA5243 /* iwl-helpers.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492BF0CCA4B8F00BA5243 /* iwl-helpers.h */; };
+		61D492D00CCA4B8F00BA5243 /* iwl-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492C00CCA4B8F00BA5243 /* iwl-hw.h */; };
+		61D492D10CCA4B8F00BA5243 /* iwl-io.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492C10CCA4B8F00BA5243 /* iwl-io.h */; };
+		61D492D20CCA4B8F00BA5243 /* iwl-priv.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492C20CCA4B8F00BA5243 /* iwl-priv.h */; };
+		61D492D30CCA4B8F00BA5243 /* iwl-spectrum.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492C30CCA4B8F00BA5243 /* iwl-spectrum.h */; };
+		61D492D40CCA4B8F00BA5243 /* iwlwifi.h in Headers */ = {isa = PBXBuildFile; fileRef = 61D492C40CCA4B8F00BA5243 /* iwlwifi.h */; };
+		C0B277B80D5D03B80091A7D1 /* iwl3945-base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0B277B70D5D03B80091A7D1 /* iwl3945-base.cpp */; };
+		C0B277BA0D5D03CE0091A7D1 /* iwl-3945-rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0B277B90D5D03CE0091A7D1 /* iwl-3945-rs.cpp */; };
+		C0B277BC0D5D03E70091A7D1 /* compatibility.h in Headers */ = {isa = PBXBuildFile; fileRef = C0B277BB0D5D03E70091A7D1 /* compatibility.h */; };
+		C0B277C90D5D06810091A7D1 /* compat.h in Headers */ = {isa = PBXBuildFile; fileRef = C0B277C80D5D06810091A7D1 /* compat.h */; };
+		C0B277CB0D5D06900091A7D1 /* compatibility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0B277CA0D5D06900091A7D1 /* compatibility.cpp */; };
+		C0B277CF0D5D06F50091A7D1 /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = C0B277CE0D5D06F50091A7D1 /* defines.h */; };
+		C0B278320D5D0DD20091A7D1 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C0B278310D5D0DD20091A7D1 /* IOKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		089C167EFE841241C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		32D94FCF0562CBF700B6AF17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
+		32D94FD00562CBF700B6AF17 /* iwi3945.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwi3945.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		61B0347C0B59837C00286B6C /* iwi3945.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = iwi3945.cpp; sourceTree = "<group>"; };
+		61B0347D0B59837C00286B6C /* iwi3945.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwi3945.h; sourceTree = "<group>"; };
+		61B06DFF0B589546000DD1AE /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		61B06E000B589546000DD1AE /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
+		61B06E010B589546000DD1AE /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
+		61B0CB590B824EF500F76542 /* ipw3945.ucode.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw3945.ucode.h; sourceTree = "<group>"; };
+		61D492B60CCA4B8F00BA5243 /* iwl-3945-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-hw.h"; sourceTree = "<group>"; };
+		61D492B80CCA4B8F00BA5243 /* iwl-3945-rs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-rs.h"; sourceTree = "<group>"; };
+		61D492B90CCA4B8F00BA5243 /* iwl-3945.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = "iwl-3945.cpp"; sourceTree = "<group>"; };
+		61D492BA0CCA4B8F00BA5243 /* iwl-3945.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-3945.h"; sourceTree = "<group>"; };
+		61D492BB0CCA4B8F00BA5243 /* iwl-channel.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-channel.h"; sourceTree = "<group>"; };
+		61D492BC0CCA4B8F00BA5243 /* iwl-commands.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-commands.h"; sourceTree = "<group>"; };
+		61D492BD0CCA4B8F00BA5243 /* iwl-debug.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-debug.h"; sourceTree = "<group>"; };
+		61D492BE0CCA4B8F00BA5243 /* iwl-eeprom.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom.h"; sourceTree = "<group>"; };
+		61D492BF0CCA4B8F00BA5243 /* iwl-helpers.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-helpers.h"; sourceTree = "<group>"; };
+		61D492C00CCA4B8F00BA5243 /* iwl-hw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-hw.h"; sourceTree = "<group>"; };
+		61D492C10CCA4B8F00BA5243 /* iwl-io.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-io.h"; sourceTree = "<group>"; };
+		61D492C20CCA4B8F00BA5243 /* iwl-priv.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-priv.h"; sourceTree = "<group>"; };
+		61D492C30CCA4B8F00BA5243 /* iwl-spectrum.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = "iwl-spectrum.h"; sourceTree = "<group>"; };
+		61D492C40CCA4B8F00BA5243 /* iwlwifi.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iwlwifi.h; sourceTree = "<group>"; };
+		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
+		C0B277B70D5D03B80091A7D1 /* iwl3945-base.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "iwl3945-base.cpp"; sourceTree = "<group>"; };
+		C0B277B90D5D03CE0091A7D1 /* iwl-3945-rs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "iwl-3945-rs.cpp"; sourceTree = "<group>"; };
+		C0B277BB0D5D03E70091A7D1 /* compatibility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compatibility.h; sourceTree = "<group>"; };
+		C0B277C80D5D06810091A7D1 /* compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
+		C0B277CA0D5D06900091A7D1 /* compatibility.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compatibility.cpp; sourceTree = "<group>"; };
+		C0B277CE0D5D06F50091A7D1 /* defines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = SOURCE_ROOT; };
+		C0B278310D5D0DD20091A7D1 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		32D94FCB0562CBF700B6AF17 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C0B278320D5D0DD20091A7D1 /* IOKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		089C166AFE841209C02AAC07 /* iwi3945 */ = {
+			isa = PBXGroup;
+			children = (
+				247142CAFF3F8F9811CA285C /* Source */,
+				8DA8362C06AD9B9200E5AC22 /* Kernel.framework */,
+				089C167CFE841241C02AAC07 /* Resources */,
+				19C28FB6FE9D52B211CA2CBB /* Products */,
+			);
+			name = iwi3945;
+			sourceTree = "<group>";
+		};
+		089C167CFE841241C02AAC07 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				32D94FCF0562CBF700B6AF17 /* Info.plist */,
+				089C167DFE841241C02AAC07 /* InfoPlist.strings */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		19C28FB6FE9D52B211CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				32D94FD00562CBF700B6AF17 /* iwi3945.kext */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		247142CAFF3F8F9811CA285C /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				61D492B60CCA4B8F00BA5243 /* iwl-3945-hw.h */,
+				61D492B80CCA4B8F00BA5243 /* iwl-3945-rs.h */,
+				61D492B90CCA4B8F00BA5243 /* iwl-3945.cpp */,
+				61D492BA0CCA4B8F00BA5243 /* iwl-3945.h */,
+				61D492BB0CCA4B8F00BA5243 /* iwl-channel.h */,
+				C0B277BB0D5D03E70091A7D1 /* compatibility.h */,
+				61D492BC0CCA4B8F00BA5243 /* iwl-commands.h */,
+				61D492BD0CCA4B8F00BA5243 /* iwl-debug.h */,
+				61D492BE0CCA4B8F00BA5243 /* iwl-eeprom.h */,
+				61D492BF0CCA4B8F00BA5243 /* iwl-helpers.h */,
+				C0B277B90D5D03CE0091A7D1 /* iwl-3945-rs.cpp */,
+				C0B277CA0D5D06900091A7D1 /* compatibility.cpp */,
+				C0B277B70D5D03B80091A7D1 /* iwl3945-base.cpp */,
+				C0B278310D5D0DD20091A7D1 /* IOKit.framework */,
+				61D492C00CCA4B8F00BA5243 /* iwl-hw.h */,
+				61D492C10CCA4B8F00BA5243 /* iwl-io.h */,
+				61D492C20CCA4B8F00BA5243 /* iwl-priv.h */,
+				61D492C30CCA4B8F00BA5243 /* iwl-spectrum.h */,
+				61D492C40CCA4B8F00BA5243 /* iwlwifi.h */,
+				61B0347C0B59837C00286B6C /* iwi3945.cpp */,
+				61B0347D0B59837C00286B6C /* iwi3945.h */,
+				61B0346E0B59819700286B6C /* firmware */,
+				61B06DFD0B589546000DD1AE /* net */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		61B0346E0B59819700286B6C /* firmware */ = {
+			isa = PBXGroup;
+			children = (
+				61B0CB590B824EF500F76542 /* ipw3945.ucode.h */,
+			);
+			path = firmware;
+			sourceTree = "<group>";
+		};
+		61B06DFD0B589546000DD1AE /* net */ = {
+			isa = PBXGroup;
+			children = (
+				61B06DFF0B589546000DD1AE /* ieee80211.h */,
+				C0B277C80D5D06810091A7D1 /* compat.h */,
+				61B06E000B589546000DD1AE /* ieee80211_crypt.h */,
+				61B06E010B589546000DD1AE /* ieee80211_radiotap.h */,
+				C0B277CE0D5D06F50091A7D1 /* defines.h */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		32D94FC50562CBF700B6AF17 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				61B034800B59837C00286B6C /* iwi3945.h in Headers */,
+				61D492C60CCA4B8F00BA5243 /* iwl-3945-hw.h in Headers */,
+				61D492C80CCA4B8F00BA5243 /* iwl-3945-rs.h in Headers */,
+				61D492CA0CCA4B8F00BA5243 /* iwl-3945.h in Headers */,
+				61D492CB0CCA4B8F00BA5243 /* iwl-channel.h in Headers */,
+				61D492CC0CCA4B8F00BA5243 /* iwl-commands.h in Headers */,
+				61D492CD0CCA4B8F00BA5243 /* iwl-debug.h in Headers */,
+				61D492CE0CCA4B8F00BA5243 /* iwl-eeprom.h in Headers */,
+				61D492CF0CCA4B8F00BA5243 /* iwl-helpers.h in Headers */,
+				61D492D00CCA4B8F00BA5243 /* iwl-hw.h in Headers */,
+				61D492D10CCA4B8F00BA5243 /* iwl-io.h in Headers */,
+				61D492D20CCA4B8F00BA5243 /* iwl-priv.h in Headers */,
+				61D492D30CCA4B8F00BA5243 /* iwl-spectrum.h in Headers */,
+				61D492D40CCA4B8F00BA5243 /* iwlwifi.h in Headers */,
+				61217DBD0CD7776800E3875C /* ieee80211.h in Headers */,
+				61217DBE0CD7776900E3875C /* ieee80211_crypt.h in Headers */,
+				61217DBF0CD7776A00E3875C /* ieee80211_radiotap.h in Headers */,
+				61217ED30CD7847A00E3875C /* ipw3945.ucode.h in Headers */,
+				C0B277BC0D5D03E70091A7D1 /* compatibility.h in Headers */,
+				C0B277C90D5D06810091A7D1 /* compat.h in Headers */,
+				C0B277CF0D5D06F50091A7D1 /* defines.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		32D94FC30562CBF700B6AF17 /* iwi3945 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB91D908733DB10010E9CD /* Build configuration list for PBXNativeTarget "iwi3945" */;
+			buildPhases = (
+				32D94FC50562CBF700B6AF17 /* Headers */,
+				32D94FC70562CBF700B6AF17 /* Resources */,
+				32D94FC90562CBF700B6AF17 /* Sources */,
+				32D94FCB0562CBF700B6AF17 /* Frameworks */,
+				32D94FCC0562CBF700B6AF17 /* Rez */,
+				61487B800B8BB197008E5AD9 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = iwi3945;
+			productInstallPath = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+			productName = iwi3945;
+			productReference = 32D94FD00562CBF700B6AF17 /* iwi3945.kext */;
+			productType = "com.apple.product-type.kernel-extension.iokit";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		089C1669FE841209C02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 1DEB91DD08733DB10010E9CD /* Build configuration list for PBXProject "iwi3945" */;
+			compatibilityVersion = "Xcode 2.4";
+			hasScannedForEncodings = 1;
+			mainGroup = 089C166AFE841209C02AAC07 /* iwi3945 */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				32D94FC30562CBF700B6AF17 /* iwi3945 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		32D94FC70562CBF700B6AF17 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXRezBuildPhase section */
+		32D94FCC0562CBF700B6AF17 /* Rez */ = {
+			isa = PBXRezBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXRezBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		61487B800B8BB197008E5AD9 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#cd /private/var/root/svn/trunk/iwi3945\n#cd \"$SRCROOT\"\n\nxcodebuild -project networkSelector/networkSelector.xcodeproj\n#xcodebuild -project nsGUI/nsGUI.xcodeproj\n\nsudo chown -R root:wheel build/Debug/iwi3945.kext\n\n#rm -rf /System/Library/Extensions/iwi3945.kext\n\ncp -rf build/Debug/iwi3945.kext /System/Library/Extensions\n\nrm -rf iwi3945.pkg\n\n# build only if no .dmg exists\nif [ -e iwi3945.dmg ] ; then\n\texit 0\nfi\n\nrm -f iwi3945.dmg\nrm -rf iwi3945/iwi3945.pkg\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi3945/iwi3945.pkg -proj iwi3945.pmproj\n\ncp -f networkSelector/build/Release/networkSelector iwi3945\n\nhdiutil create -format UDZO -srcfolder iwi3945 iwi3945.dmg\n\nrm -rf iwi3945/iwi3945.pkg\nrm -f iwi3945/networkSelector\n\nsleep 1\n\nrm -rf iwi3945.pkg\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		32D94FC90562CBF700B6AF17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				61B0347F0B59837C00286B6C /* iwi3945.cpp in Sources */,
+				61D492C90CCA4B8F00BA5243 /* iwl-3945.cpp in Sources */,
+				C0B277B80D5D03B80091A7D1 /* iwl3945-base.cpp in Sources */,
+				C0B277BA0D5D03CE0091A7D1 /* iwl-3945-rs.cpp in Sources */,
+				C0B277CB0D5D06900091A7D1 /* compatibility.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		089C167DFE841241C02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				089C167EFE841241C02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB91DA08733DB10010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = i386;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_PREPROCESS = NO;
+				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				MODULE_NAME = com.yourcompany.driver.iwi3945;
+				MODULE_VERSION = 1.0.0d1;
+				OTHER_CPLUSPLUSFLAGS = "-w";
+				PRODUCT_NAME = iwi3945;
+				WRAPPER_EXTENSION = kext;
+				ZERO_LINK = NO;
+			};
+			name = Debug;
+		};
+		1DEB91DB08733DB10010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = i386;
+				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_PREPROCESS = NO;
+				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				MODULE_NAME = com.yourcompany.driver.iwi3945;
+				MODULE_VERSION = 1.0.0d1;
+				OTHER_CPLUSPLUSFLAGS = "-w";
+				PRODUCT_NAME = iwi3945;
+				WRAPPER_EXTENSION = kext;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		1DEB91DE08733DB10010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+			};
+			name = Debug;
+		};
+		1DEB91DF08733DB10010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB91D908733DB10010E9CD /* Build configuration list for PBXNativeTarget "iwi3945" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB91DA08733DB10010E9CD /* Debug */,
+				1DEB91DB08733DB10010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB91DD08733DB10010E9CD /* Build configuration list for PBXProject "iwi3945" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB91DE08733DB10010E9CD /* Debug */,
+				1DEB91DF08733DB10010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 089C1669FE841209C02AAC07 /* Project object */;
+}
