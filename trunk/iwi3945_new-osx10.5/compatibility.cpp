@@ -24,22 +24,29 @@
 static IONetworkController *currentController;
 
 void spin_lock_irqsave(spinlock_t *lock, int fl) {
+	//mask interupts
+	spin_lock(lock);
     return;
 }
 
 void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
+	//unmask interups
+	spin_unlock(lock);
     return;
 }
 
 void spin_lock_init(spinlock_t *lock) {
+	//don't know
     return;
 }
 
 void spin_lock(spinlock_t *lock) {
+	OSSpinLockLock(lock->lock);
     return;
 }
 
 void spin_unlock(spinlock_t *lock) {
+	OSSpinLockUnlock(lock->lock);
     return;
 }
 
@@ -60,7 +67,7 @@ void mutex_unlock(struct mutex *) {
 }
 
 void msleep(unsigned int msecs) {
-	udelay(msecs*1000);
+	udelay(msecs*100);
     return;
 }
 
