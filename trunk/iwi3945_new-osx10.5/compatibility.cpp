@@ -15,7 +15,7 @@
 #include <IOKit/network/IONetworkController.h>
 #include <IOKit/pci/IOPCIDevice.h>
 
-#include "defines.h"
+//#include "defines.h"
 
 
 // Note: This, in itself, makes this very much non-reentrant.  It's used
@@ -50,18 +50,22 @@ void spin_unlock(spinlock_t *lock) {
 }
 
 void spin_lock_bh( spinlock_t *lock ) {
+	//don't know
     return;
 }
 
 void spin_unlock_bh( spinlock_t *lock ) {
+	//don't know
     return;
 }
 
 void mutex_lock(struct mutex *) {
+	IOLockLock(&mutex->lock);
     return;
 }
 
 void mutex_unlock(struct mutex *) {
+	IOLockUnlock(&mutex->lock);
     return;
 }
 
@@ -70,8 +74,8 @@ void msleep(unsigned int msecs) {
     return;
 }
 
-void init_timer(struct timer_list *timer) {
-    return;
+int init_timer(struct timer_list *timer) {
+    return IOPCCardAddTimer(timer);;
 }
 
 
@@ -83,17 +87,17 @@ int in_interrupt() {
     return 1;
 }
 
-	bool isascii(char p){
-		return true;
-	}
+bool isascii(char p){
+	return true;
+}
 	
-	bool isprint(char p){
-		return true;
-	}
+bool isprint(char p){
+	return true;
+}
 	
 	
-
 void *dev_get_drvdata(void *p) {
+	//return p->driver_data;
     return p;
 }
 

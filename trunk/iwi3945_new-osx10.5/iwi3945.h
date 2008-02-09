@@ -3,8 +3,7 @@
 #define __iwi3945_h__
 	
 #include "defines_iwi.h"
-#include "iwlwifi.h"
-#include "iwl-helpers.h"
+
 
 void IWI_LOG(char *str,...);
 

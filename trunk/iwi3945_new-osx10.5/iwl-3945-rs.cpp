@@ -24,24 +24,8 @@
  *
  *****************************************************************************/
 
-/*#include <linux/kernel.h>
-#include <linux/init.h>
-#include <linux/skbuff.h>
-#include <linux/wireless.h>*/
 #include <net/mac80211.h>
-//#include <net/ieee80211.h>
-
-/*#include <linux/netdevice.h>
-#include <linux/etherdevice.h>
-#include <linux/delay.h>
-
-#include <linux/workqueue.h>*/
-
-#include <net/mac80211.h>
-//#include <linux/wireless.h>
-
-//#include "../net/mac80211/ieee80211_rate.h"
-
+#include "defines.h"
 #include "iwl-3945-rs.h"
 #include "iwlwifi.h"
 #include "iwl-helpers.h"

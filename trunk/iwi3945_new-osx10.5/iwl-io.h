@@ -29,7 +29,6 @@
 #ifndef __iwl_io_h__
 #define __iwl_io_h__
 
-//#include <linux/io.h>
 
 #include "iwl-debug.h"
 

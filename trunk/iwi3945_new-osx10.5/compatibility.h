@@ -6,7 +6,7 @@
  *  Copyright 2008 __MyCompanyName__. All rights reserved.
  *
  */
-
+#include "defines.h"
 #ifndef __COMPATIBILITY_H__
 #define __COMPATIBILITY_H__
 

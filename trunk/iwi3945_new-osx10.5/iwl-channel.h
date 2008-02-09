@@ -1,4 +1,4 @@
-#include "defines.h"
+#include "compatibility.h"
 /******************************************************************************
  *
  * Copyright(c) 2005 - 2007 Intel Corporation. All rights reserved.
