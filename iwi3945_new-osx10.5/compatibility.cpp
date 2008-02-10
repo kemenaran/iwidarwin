@@ -101,74 +101,6 @@ void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr){
 
 
 
-void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, size_t size, int direction){
-	return;
-}
-
-
-int pci_enable_msi  (struct pci_dev * dev){
-	return 1;
-}
-int pci_restore_state (	struct pci_dev *  	dev){
-	return 1;
-}
-int pci_enable_device (struct pci_dev * dev){
-	return 1;
-}
-int pci_register_driver  (struct pci_driver * drv){
-	return 1;
-}
-void pci_unregister_driver (struct pci_driver * drv){
-	return ;
-}
-void pci_set_master (struct pci_dev * dev){
-	return;
-}
-void free_irq (unsigned int irq, void *dev_id){
-	return;
-}
-void pci_disable_msi(struct pci_dev* dev){
-	return;
-}
-void pci_disable_device (struct pci_dev * dev){
-	return;
-}
-/*int pci_save_state (struct pci_dev * dev, u32 * buffer){
-	return 1;
-}*/
-int pci_save_state (struct pci_dev * dev){
-	return 1;
-}
-int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
-	return 1;
-}
-int pci_request_regions (struct pci_dev * pdev, char * res_name){
-	return 1;
-}
-int pci_write_config_byte(struct pci_dev *dev, int where, u8 val){
-	return 1;
-}
-void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen){
-	return NULL;
-}
-int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
-	return NULL;
-}
-void pci_iounmap(struct pci_dev *dev, void __iomem * addr){
-	return;
-}
-void pci_release_regions (struct pci_dev * pdev){
-	return;
-}
-void *pci_get_drvdata (struct pci_dev *pdev){
-	return NULL;
-}
-void pci_set_drvdata (struct pci_dev *pdev, void *data){
-	return;
-}
-int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask){
-	return 1;
-}
 
 /*int request_irq(unsigned int irq, void (*handler)(int, struct pt_regs *), unsigned long flags, const char *device){
 	return 1;
@@ -333,8 +265,128 @@ struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
 }
 
 
+
+
 #pragma mark -
 #pragma mark Kernel PCI fiddler adapters
+
+//http://www.promethos.org/lxr/http/source/arch/sparc64/kernel/pci_iommu.c#L698
+void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, size_t size, int direction){
+	return;
+}
+
+//http://www.promethos.org/lxr/http/source/drivers/pci/msi.c#L691
+int pci_enable_msi  (struct pci_dev * dev){
+	return 1;
+}
+
+//ok
+int pci_restore_state (	struct pci_dev *  	dev){
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	int i;
+	for (i = 0; i < 16; i++)
+		fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
+	return 0;
+}
+/*
+ IO and memory
+ */
+ //ok
+int pci_enable_device (struct pci_dev * dev){
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	fPCIDevice->setIOEnable(true);
+	fPCIDevice->setMemoryEnable(true);
+	return 0;
+}
+//ok but nor realy that on linux kernel
+void pci_disable_device (struct pci_dev * dev){
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	fPCIDevice->setIOEnable(true);
+	fPCIDevice->setMemoryEnable(true);
+}
+/*
+Adds the driver structure to the list of registered drivers.
+Returns a negative value on error, otherwise 0.
+If no error occurred, the driver remains registered even if no device was claimed during registration.
+*/
+//http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
+int pci_register_driver(struct pci_driver * drv){
+	return 0;
+}
+//http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
+void pci_unregister_driver (struct pci_driver * drv){
+	return ;
+}
+/*
+	set the device master of the bus
+*/
+void pci_set_master (struct pci_dev * dev){
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	fPCIDevice->setBusMasterEnable(true);
+	return;
+}
+
+void free_irq (unsigned int irq, void *dev_id){
+	return;
+}
+void pci_disable_msi(struct pci_dev* dev){
+	return;
+}
+
+/*int pci_save_state (struct pci_dev * dev, u32 * buffer){
+	return 1;
+}*/
+//ok no saved_config_space
+int pci_save_state (struct pci_dev * dev){
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	int i;
+/*	for (i = 0; i < 16; i++)
+		fPCIDevice->configRead32(i * 4,&dev->saved_config_space[i]);*/
+	return 0;
+}
+int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
+	//test if dma support (OK for 3945)
+	//dev->dma_mask = mask;
+	return 0;
+}
+/*
+	Strange , maybe already do by IOPCIDevice layer ?
+*/
+//http://www.promethos.org/lxr/http/source/drivers/pci/pci.c#L642
+int pci_request_regions (struct pci_dev * pdev, char * res_name){
+	return 1;
+}
+//ok
+int pci_write_config_byte(struct pci_dev *dev, int where, u8 val){
+    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+    *val = fPCIDevice->configWrite16(where);
+    return 0;
+}
+
+void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen){
+	return NULL;
+}
+int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
+	return NULL;
+}
+void pci_iounmap(struct pci_dev *dev, void __iomem * addr){
+	return;
+}
+void pci_release_regions (struct pci_dev * pdev){
+	return;
+}
+void *pci_get_drvdata (struct pci_dev *pdev){
+	return NULL;
+}
+void pci_set_drvdata (struct pci_dev *pdev, void *data){
+	return;
+}
+//ok
+int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask){
+	//test if dma supported (ok 3945)
+	dev->dev.coherent_dma_mask = mask;
+	return 0;
+}
 
 void pci_free_consistent(struct pci_dev *hwdev, size_t size,
                                  void *vaddr, dma_addr_t dma_handle) {
