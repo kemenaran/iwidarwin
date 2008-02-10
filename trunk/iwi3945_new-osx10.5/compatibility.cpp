@@ -14,6 +14,7 @@
 #include <IOKit/IOMemoryDescriptor.h>
 #include <IOKit/network/IONetworkController.h>
 #include <IOKit/pci/IOPCIDevice.h>
+#include <libkern/OSAtomic.h>
 
 #include "defines.h"
 #include "compatibility.h"
@@ -24,6 +25,10 @@
 static IONetworkController *currentController;
 
 //added
+int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
+	return NULL;
+}
+
 int request_firmware  (const struct firmware ** firmware_p, const char * name, struct device * device){
 	return 1;
 }
@@ -68,36 +73,6 @@ int is_zero_ether_addr (	const u8 *  	addr){
 	return 1;
 }
 
-void ieee80211_stop_queues(struct ieee80211_hw *hw) {
-    return;
-}
-int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
-	return 1;
-}
-void ieee80211_unregister_hw (	struct ieee80211_hw *  	hw){
-	return;
-}
-void ieee80211_start_queues(struct ieee80211_hw *hw){
-	return;
-}
-void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
-	return;
-}
-struct ieee80211_hw * ieee80211_alloc_hw (	size_t  	priv_data_len,const struct ieee80211_ops *  	ops){
-	return NULL;
-}
-void ieee80211_free_hw (	struct ieee80211_hw *  	hw){
-	return;
-}
-int ieee80211_register_hwmode(struct ieee80211_hw *hw,struct ieee80211_hw_mode *mode){
-	return 1;
-}
-void SET_IEEE80211_DEV(	struct ieee80211_hw *  	hw,struct device *  	dev){
-	return;
-}
-void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr){
-	return;
-}
 
 
 
@@ -115,25 +90,41 @@ void mutex_init(struct mutex *){
 }
 //end added
 void spin_lock_irqsave(spinlock_t *lock, int fl) {
-    return;
+//mask interupts
+//local_irq_save(fl) on linux
+/*
+#define local_irq_save(x) ({ __save_flags(x); __cli(); })
+#define __save_flags(x) asm volatile ("movew %%sr,%0":"=d" (x) : :
+"memory")
+#define __cli() asm volatile ("oriw #0x0700,%%sr": : : "memory")
+*/
+       spin_lock(lock);
+   return;
 }
 
 void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
-    return;
+ //unmask interups
+/*#define __restore_flags(x) asm volatile ("movew %0,%%sr": :"d" (x) :
+"memory")*/
+       spin_unlock(lock);
+   return;
 }
 
 void spin_lock_init(spinlock_t *lock) {
-    return;
+/*#define spin_lock_init(x) do { (x)->slock = 0; } while(0)*/
+   return;
 }
 
 void spin_lock(spinlock_t *lock) {
-    return;
+	OSSpinLockLock(lock);
+   return;
 }
 
 void spin_unlock(spinlock_t *lock) {
-    return;
+	OSSpinLockUnlock(lock);
+   return;
 }
-
+//http://hira.main.jp/wiki/pukiwiki.php?spin_lock_bh()%2Flinux2.6
 void spin_lock_bh( spinlock_t *lock ) {
     return;
 }
@@ -143,19 +134,22 @@ void spin_unlock_bh( spinlock_t *lock ) {
 }
 
 void mutex_lock(struct mutex *) {
+	IOLockLock(mutex->lock);
     return;
 }
 
 void mutex_unlock(struct mutex *) {
+	IOLockUnlock(mutex->lock);
     return;
 }
 
 void msleep(unsigned int msecs) {
+	udelay(msecs*100);
     return;
 }
 
 void init_timer(struct timer_list *timer) {
-    return;
+    return IOPCCardAddTimer(timer);
 }
 
 
@@ -265,6 +259,36 @@ struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
 }
 
 
+void ieee80211_stop_queues(struct ieee80211_hw *hw) {
+    return;
+}
+int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
+	return 1;
+}
+void ieee80211_unregister_hw (	struct ieee80211_hw *  	hw){
+	return;
+}
+void ieee80211_start_queues(struct ieee80211_hw *hw){
+	return;
+}
+void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
+	return;
+}
+struct ieee80211_hw * ieee80211_alloc_hw (	size_t  	priv_data_len,const struct ieee80211_ops *  	ops){
+	return NULL;
+}
+void ieee80211_free_hw (	struct ieee80211_hw *  	hw){
+	return;
+}
+int ieee80211_register_hwmode(struct ieee80211_hw *hw,struct ieee80211_hw_mode *mode){
+	return 1;
+}
+void SET_IEEE80211_DEV(	struct ieee80211_hw *  	hw,struct device *  	dev){
+	return;
+}
+void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr){
+	return;
+}
 
 
 #pragma mark -
@@ -284,8 +308,8 @@ int pci_enable_msi  (struct pci_dev * dev){
 int pci_restore_state (	struct pci_dev *  	dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
 	int i;
-	for (i = 0; i < 16; i++)
-		fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
+	//for (i = 0; i < 16; i++)
+	//	fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
 	return 0;
 }
 /*
@@ -301,8 +325,8 @@ int pci_enable_device (struct pci_dev * dev){
 //ok but nor realy that on linux kernel
 void pci_disable_device (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
-	fPCIDevice->setIOEnable(true);
-	fPCIDevice->setMemoryEnable(true);
+	fPCIDevice->setIOEnable(false);
+	fPCIDevice->setMemoryEnable(false);
 }
 /*
 Adds the driver structure to the list of registered drivers.
@@ -333,10 +357,7 @@ void pci_disable_msi(struct pci_dev* dev){
 	return;
 }
 
-/*int pci_save_state (struct pci_dev * dev, u32 * buffer){
-	return 1;
-}*/
-//ok no saved_config_space
+//ok but no saved_config_space in pci_dev struct
 int pci_save_state (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
 	int i;
@@ -359,19 +380,13 @@ int pci_request_regions (struct pci_dev * pdev, char * res_name){
 //ok
 int pci_write_config_byte(struct pci_dev *dev, int where, u8 val){
     IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
-    *val = fPCIDevice->configWrite16(where);
+    fPCIDevice->configWrite8(where,val);
     return 0;
 }
 
-void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen){
-	return NULL;
-}
-int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
-	return NULL;
-}
-void pci_iounmap(struct pci_dev *dev, void __iomem * addr){
-	return;
-}
+
+
+
 void pci_release_regions (struct pci_dev * pdev){
 	return;
 }
@@ -384,7 +399,7 @@ void pci_set_drvdata (struct pci_dev *pdev, void *data){
 //ok
 int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask){
 	//test if dma supported (ok 3945)
-	dev->dev.coherent_dma_mask = mask;
+	//dev->dev.coherent_dma_mask = mask;
 	return 0;
 }
 
@@ -397,6 +412,19 @@ void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
                            dma_addr_t *dma_handle) {
     return IOMallocContiguous(size, 4, dma_handle);
 }
+
+void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen){
+/* only memory
+virtual IOMemoryMap * mapDeviceMemoryWithRegister(
+    UInt8 reg, 
+    IOOptionBits options = 0 );
+*/
+	return NULL;
+}
+void pci_iounmap(struct pci_dev *dev, void __iomem * addr){
+	return;
+}
+
 
 void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,
                       size_t size, int direction) {
