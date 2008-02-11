@@ -70,10 +70,10 @@ extern "C" {
 	extern void pci_set_drvdata (struct pci_dev *pdev, void *data);
 	extern void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, size_t size, int direction);
 	extern int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask);
-	
+#define pci_resource_len(dev,bar) 8
 	
 	extern void mutex_init(struct mutex *);
-	//extern int request_irq(unsigned int irq, void (*handler)(int, struct pt_regs *), unsigned long flags, const char *device);
+    extern int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id);
 //end added	
 	
     extern void spin_lock_irqsave(spinlock_t *a, int b);
@@ -151,6 +151,7 @@ extern "C" {
 #define TASK_STOPPED        4
 #define TASK_TRACED     8    
 #define wake_up_interruptible(x)    __wake_up(x, TASK_INTERRUPTIBLE, 1, NULL)
+#define wake_up_interruptible_all(x)	__wake_up(x, TASK_INTERRUPTIBLE, 0, NULL)
     extern void __wake_up(wait_queue_head_t *q, unsigned int mode, int nr, void *key);
     extern int cancel_delayed_work(struct delayed_work *work);
     extern long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout);

@@ -145,21 +145,27 @@ typedef IOPhysicalAddress dma_addr_t;
 
 #define __must_check
 
+/*
 struct p_dev {
     void *kobj; // Device of type IOPCIDevice.
+}; */
+
+struct kobject {
+    void *ptr;
+};
+
+struct device {
+    struct kobject kobj; // Device of type IOPCIDevice.
+    void *driver_data;
 };
 
 struct pci_dev {
     unsigned long device;
     unsigned long subsystem_device;
-    struct p_dev dev;
-    void *irq;
+    struct device dev;
+    unsigned int irq;
 };
 
-
-struct kobject {
-    void *ptr;
-};
 
 struct mutex {
     lck_mtx_t *lock;
@@ -1016,10 +1022,6 @@ struct ieee80211_tx_queue_stats {
 };
 
 
-
-struct device {
-    void *driver_data;
-};
 
 
 /* Indirect stringification.  Doing two levels allows the parameter to be a

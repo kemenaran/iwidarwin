@@ -7,6 +7,9 @@
  *
  */
 
+#define NO_SPIN_LOCKS 1
+#define NO_MUTEX_LOCKS 1
+
 #include <sys/kernel_types.h>
 #include <mach/vm_types.h>
 #include <sys/kpi_mbuf.h>
@@ -46,7 +49,8 @@ void sysfs_remove_group(struct kobject * kobj,const struct attribute_group * grp
 
 
 void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, char *linebuf, size_t linebuflen, bool ascii){
-/*         const u8 *ptr = buf;
+    /*
+         const u8 *ptr = (const u8 *)buf;
 		u8 ch;
 		int j, lx = 0;
 		int ascii_column;
@@ -55,40 +59,40 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, 
   
           if (!len)
                  goto nil;
-          if (len > rowsize)             
+          if (len > rowsize)              // limit to one line at a time
                   len = rowsize;
-          if ((len % groupsize) != 0)     
+          if ((len % groupsize) != 0)     // no mixed size output
                   groupsize = 1;
   
           switch (groupsize) {
           case 8: {
-                  const u64 *ptr8 = buf;
+                  const u64 *ptr8 = (const u64 *)buf;
                   int ngroups = len / groupsize;
   
                   for (j = 0; j < ngroups; j++)
-                          lx += scnprintf(linebuf + lx, linebuflen - lx,
+                          lx += snprintf(linebuf + lx, linebuflen - lx,
                                   "%16.16llx ", (unsigned long long)*(ptr8 + j));
                   ascii_column = 17 * ngroups + 2;
                   break;
           }
   
           case 4: {
-                  const u32 *ptr4 = buf;
+                  const u32 *ptr4 = (const u32 *)buf;
                  int ngroups = len / groupsize;
   
                   for (j = 0; j < ngroups; j++)
-                          lx += scnprintf(linebuf + lx, linebuflen - lx,
+                          lx += snprintf(linebuf + lx, linebuflen - lx,
                                   "%8.8x ", *(ptr4 + j));
                   ascii_column = 9 * ngroups + 2;
                   break;
           }
   
           case 2: {
-                  const u16 *ptr2 = buf;
+                  const u16 *ptr2 = (const u16 *)buf;
                   int ngroups = len / groupsize;
   
                   for (j = 0; j < ngroups; j++)
-                          lx += scnprintf(linebuf + lx, linebuflen - lx,
+                          lx += snprintf(linebuf + lx, linebuflen - lx,
 								"%4.4x ", *(ptr2 + j));
 				ascii_column = 5 * ngroups + 2;
 				break;
@@ -129,9 +133,9 @@ int is_zero_ether_addr (	const u8 *  	addr){
 
 
 
-/*int request_irq(unsigned int irq, void (*handler)(int, struct pt_regs *), unsigned long flags, const char *device){
+int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id) {
 	return 1;
-}*/
+}
 
 
 
@@ -168,14 +172,19 @@ void spin_lock_init(spinlock_t *lock) {
 }
 
 void spin_lock(spinlock_t *lock) {
-	//OSSpinLockLock(lock);
-   return;
+#ifndef NO_SPIN_LOCKS
+    lck_spin_lock(lock->slock);
+#endif //NO_SPIN_LOCKS
+    return;
 }
 
 void spin_unlock(spinlock_t *lock) {
-	//OSSpinLockUnlock(lock);
-   return;
+#ifndef NO_SPIN_LOCKS
+    lck_spin_unlock(lock->slock);
+#endif //NO_SPIN_LOCKS
+    return;
 }
+
 //http://hira.main.jp/wiki/pukiwiki.php?spin_lock_bh()%2Flinux2.6
 void spin_lock_bh( spinlock_t *lock ) {
     return;
@@ -185,13 +194,17 @@ void spin_unlock_bh( spinlock_t *lock ) {
     return;
 }
 
-void mutex_lock(struct mutex *) {
-	//IOLockLock(mutex->lock);
+void mutex_lock(struct mutex *new_mtx) {
+#ifndef NO_MUTEX_LOCKS
+	lck_mtx_lock(new_mtx->lock);
+#endif
     return;
 }
 
-void mutex_unlock(struct mutex *) {
-	//IOLockUnlock(mutex->lock);
+void mutex_unlock(struct mutex *new_mtz) {
+#ifndef NO_MUTEX_LOCKS
+	lck_mtx_unlock(new_mtx->lock);
+#endif
     return;
 }
 
@@ -487,7 +500,7 @@ int pci_enable_msi  (struct pci_dev * dev){
 
 //ok
 int pci_restore_state (	struct pci_dev *  	dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	int i;
 	//for (i = 0; i < 16; i++)
 	//	fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
@@ -498,14 +511,14 @@ int pci_restore_state (	struct pci_dev *  	dev){
  */
  //ok
 int pci_enable_device (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setIOEnable(true);
 	fPCIDevice->setMemoryEnable(true);
 	return 0;
 }
 //ok but nor realy that on linux kernel
 void pci_disable_device (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setIOEnable(false);
 	fPCIDevice->setMemoryEnable(false);
 }
@@ -526,7 +539,7 @@ void pci_unregister_driver (struct pci_driver * drv){
 	set the device master of the bus
 */
 void pci_set_master (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setBusMasterEnable(true);
 	return;
 }
@@ -540,7 +553,7 @@ void pci_disable_msi(struct pci_dev* dev){
 
 //ok but no saved_config_space in pci_dev struct
 int pci_save_state (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	int i;
 /*	for (i = 0; i < 16; i++)
 		fPCIDevice->configRead32(i * 4,&dev->saved_config_space[i]);*/
@@ -560,7 +573,7 @@ int pci_request_regions (struct pci_dev * pdev, char * res_name){
 }
 //ok
 int pci_write_config_byte(struct pci_dev *dev, int where, u8 val){
-    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
     fPCIDevice->configWrite8(where,val);
     return 0;
 }
@@ -601,7 +614,7 @@ void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxl
 	IOMemoryMap	*				map;
 	IOPhysicalAddress			ioBase;
 	UInt16 *					memBase;
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	map = fPCIDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0, kIOMapInhibitCache);
 	if (map == 0) {
 		return NULL;
@@ -630,19 +643,19 @@ addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direc
 
 
 int pci_read_config_byte(struct pci_dev *dev, int where, u8 *val) {
-    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
     *val = fPCIDevice->configRead8(where);
     return 0;
 }
 
 int pci_read_config_word(struct pci_dev *dev, int where, u16 *val) {
-    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
     *val = fPCIDevice->configRead16(where);
     return 0;
 }
 
 int pci_read_config_dword(struct pci_dev *dev, int where, u32 *val) {
-    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+    IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
     *val = fPCIDevice->configRead32(where);
     return 0;
 }
