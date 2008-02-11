@@ -23,6 +23,15 @@
 #define DMA_32BIT_MASK 0
 #define S_IRUSR 0
 
+/* miscellaneous IEEE 802.11 constants */
+#define IEEE80211_MAX_FRAG_THRESHOLD	2346
+#define IEEE80211_MAX_RTS_THRESHOLD	2347
+#define IEEE80211_MAX_AID		2007
+#define IEEE80211_MAX_TIM_LEN		251
+#define IEEE80211_MAX_DATA_LEN		2304
+#define RATE_CONTROL_NUM_DOWN 20
+#define RATE_CONTROL_NUM_UP   15
+
 
 #define __builtin_expect(x, expected_value) (x)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -1328,7 +1337,15 @@ struct pci_driver {
     int multithread_probe;
 };
 
-
+//SKB
+struct sk_buff_head {
+         /* These two members must be first. */
+         struct sk_buff  *next;
+         struct sk_buff  *prev;
+ 
+         __u32           qlen;
+         spinlock_t      lock;
+};
 
 
 
@@ -1338,8 +1355,281 @@ static inline struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw)
     return container_of(hw, struct ieee80211_local, hw);
 }
 
+struct ieee80211_fragment_entry {
+		unsigned long first_frag_time;
+		unsigned int seq;
+		unsigned int rx_queue;
+		unsigned int last_frag;
+		unsigned int extra_len;
+		struct sk_buff_head skb_list;
+		int ccmp; /* Whether fragments were encrypted with CCMP */
+		u8 last_pn[6]; /* PN of the last fragment if CCMP was used */
+};
+
+struct sta_ts_data {
+	enum {
+		TS_STATUS_UNUSED	= 0,
+		TS_STATUS_ACTIVE	= 1,
+		TS_STATUS_INACTIVE	= 2,
+		TS_STATUS_THROTTLING	= 3,
+	} status;
+	u8 dialog_token;
+	u8 up;
+	u32 admitted_time_usec;
+	u32 used_time_usec;
+};
+
+#define IEEE80211_MAX_AID 2007
+struct ieee80211_if_sta {
+	enum {
+		IEEE80211_DISABLED, IEEE80211_AUTHENTICATE,
+		IEEE80211_ASSOCIATE, IEEE80211_ASSOCIATED,
+		IEEE80211_IBSS_SEARCH, IEEE80211_IBSS_JOINED,
+		IEEE80211_CHANNEL_SWITCH
+	} state;
+	//struct timer_list 
+	void* timer;
+	//struct work_struct 
+	void* work;
+	//struct timer_list 
+	void* admit_timer; /* Recompute EDCA admitted time */
+	u8 bssid[ETH_ALEN], prev_bssid[ETH_ALEN];
+	u8 ssid[IEEE80211_MAX_SSID_LEN];
+	size_t ssid_len;
+	u16 aid;
+	u16 ap_capab, capab;
+	u8 *extra_ie; /* to be added to the end of AssocReq */
+	size_t extra_ie_len;
+	u8 nick[IW_ESSID_MAX_SIZE];
+
+	/* The last AssocReq/Resp IEs */
+	u8 *assocreq_ies, *assocresp_ies;
+	size_t assocreq_ies_len, assocresp_ies_len;
+
+	int auth_tries, assoc_tries;
+
+	unsigned int ssid_set:1;
+	unsigned int bssid_set:1;
+	unsigned int prev_bssid_set:1;
+	unsigned int authenticated:1;
+	unsigned int associated:1;
+	unsigned int probereq_poll:1;
+	unsigned int create_ibss:1;
+	unsigned int mixed_cell:1;
+	unsigned int wmm_enabled:1;
+	unsigned int ht_enabled:1;
+	unsigned int auto_ssid_sel:1;
+	unsigned int auto_bssid_sel:1;
+	unsigned int auto_channel_sel:1;
+#define IEEE80211_STA_REQ_SCAN 0
+#define IEEE80211_STA_REQ_AUTH 1
+#define IEEE80211_STA_REQ_RUN  2
+	unsigned long request;
+	//struct sk_buff_head 
+	struct list_head skb_queue;
+
+	int key_mgmt;
+	unsigned long last_probe;
+
+#define IEEE80211_AUTH_ALG_OPEN BIT(0)
+#define IEEE80211_AUTH_ALG_SHARED_KEY BIT(1)
+#define IEEE80211_AUTH_ALG_LEAP BIT(2)
+	unsigned int auth_algs; /* bitfield of allowed auth algs */
+	int auth_alg; /* currently used IEEE 802.11 authentication algorithm */
+	int auth_transaction;
+
+	unsigned long ibss_join_req;
+	//struct sk_buff *
+	mbuf_t probe_resp; /* ProbeResp template for IBSS */
+	u32 supp_rates_bits;
+
+	u32 last_rate; /* last tx data rate value. management and multi cast frame
+			* wont be used. */
+
+	int wmm_last_param_set;
+
+	u32 dot11EDCAAveragingPeriod;
+	u32 MPDUExchangeTime;
+#define STA_TSID_NUM   16
+#define STA_TSDIR_NUM  2
+	/* EDCA: 0~7, HCCA: 8~15 */
+	struct sta_ts_data ts_data[STA_TSID_NUM][STA_TSDIR_NUM];
+#ifdef CONFIG_MAC80211_DEBUGFS
+	struct ieee80211_elem_tspec tspec;
+	u8 dls_mac[ETH_ALEN];
+#endif
+	struct ieee80211_channel *switch_channel;
+};
+
+struct ieee80211_if_ap {
+	u8 *beacon_head, *beacon_tail;
+	int beacon_head_len, beacon_tail_len;
+
+	u8 ssid[IEEE80211_MAX_SSID_LEN];
+	size_t ssid_len;
+	u8 *generic_elem;
+	size_t generic_elem_len;
+
+	/* yes, this looks ugly, but guarantees that we can later use
+	 * bitmap_empty :)
+	 * NB: don't ever use set_bit, use bss_tim_set/bss_tim_clear! */
+	u8 tim[sizeof(unsigned long) * (IEEE80211_MAX_AID + 1)];//BITS_TO_LONGS
+	//atomic_t 
+	int num_sta_ps; /* number of stations in PS mode */
+	//struct sk_buff_head 
+	struct list_head ps_bc_buf;
+	int dtim_period, dtim_count;
+	int force_unicast_rateidx; /* forced TX rateidx for unicast frames */
+	int max_ratectrl_rateidx; /* max TX rateidx for rate control */
+	int num_beacons; /* number of TXed beacon frames for this BSS */
+};
+
+struct ieee80211_if_wds {
+	u8 remote_addr[ETH_ALEN];
+	struct sta_info *sta;
+};
+
+struct ieee80211_if_vlan {
+	u8 id;
+};
 
 
+#define IEEE80211_FRAGMENT_MAX 4
+struct ieee80211_sub_if_data {
+	struct list_head list;
+	unsigned int type;
+
+	void* wdev;
+
+	struct net_device *dev;
+	struct ieee80211_local *local;
+
+	int mc_count;
+	unsigned int allmulti:1;
+	unsigned int promisc:1;
+	unsigned int use_protection:1; /* CTS protect ERP frames */
+
+	struct net_device_stats stats;
+	int drop_unencrypted;
+	int eapol; /* 0 = process EAPOL frames as normal data frames,
+		    * 1 = send EAPOL frames through wlan#ap to hostapd
+		    *     (default) */
+	int ieee802_1x; /* IEEE 802.1X PAE - drop packet to/from unauthorized
+			 * port */
+
+	u16 sequence;
+
+	/* Fragment table for host-based reassembly */
+	struct ieee80211_fragment_entry	fragments[IEEE80211_FRAGMENT_MAX];
+	unsigned int fragment_next;
+
+#define NUM_DEFAULT_KEYS 4
+	struct ieee80211_key *keys[NUM_DEFAULT_KEYS];
+	struct ieee80211_key *default_key;
+
+	struct ieee80211_if_ap *bss; /* BSS that this device belongs to */
+
+	union {
+		struct ieee80211_if_ap ap;
+		struct ieee80211_if_wds wds;
+		struct ieee80211_if_vlan vlan;
+		struct ieee80211_if_sta sta;
+	} u;
+	int channel_use;
+	int channel_use_raw;
+
+#ifdef CONFIG_MAC80211_DEBUGFS
+	struct dentry *debugfsdir;
+	union {
+		struct {
+			struct dentry *channel_use;
+			struct dentry *drop_unencrypted;
+			struct dentry *eapol;
+			struct dentry *ieee8021_x;
+			struct dentry *state;
+			struct dentry *bssid;
+			struct dentry *prev_bssid;
+			struct dentry *ssid_len;
+			struct dentry *aid;
+			struct dentry *ap_capab;
+			struct dentry *capab;
+			struct dentry *extra_ie_len;
+			struct dentry *auth_tries;
+			struct dentry *assoc_tries;
+			struct dentry *auth_algs;
+			struct dentry *auth_alg;
+			struct dentry *auth_transaction;
+			struct dentry *flags;
+			struct dentry *qos_dir;
+			struct {
+				struct dentry *addts_11e;
+				struct dentry *addts_wmm;
+				struct dentry *delts_11e;
+				struct dentry *delts_wmm;
+				struct dentry *dls_mac;
+				struct dentry *dls_op;
+			} qos;
+			struct dentry *tsinfo_dir;
+			struct {
+				struct dentry *tsid;
+				struct dentry *direction;
+				struct dentry *up;
+			} tsinfo;
+			struct dentry *tspec_dir;
+			struct {
+				struct dentry *nominal_msdu_size;
+				struct dentry *max_msdu_size;
+				struct dentry *min_service_interval;
+				struct dentry *max_service_interval;
+				struct dentry *inactivity_interval;
+				struct dentry *suspension_interval;
+				struct dentry *service_start_time;
+				struct dentry *min_data_rate;
+				struct dentry *mean_data_rate;
+				struct dentry *peak_data_rate;
+				struct dentry *burst_size;
+				struct dentry *delay_bound;
+				struct dentry *min_phy_rate;
+				struct dentry *surplus_band_allow;
+				struct dentry *medium_time;
+			} tspec;
+		} sta;
+		struct {
+			struct dentry *channel_use;
+			struct dentry *drop_unencrypted;
+			struct dentry *eapol;
+			struct dentry *ieee8021_x;
+			struct dentry *num_sta_ps;
+			struct dentry *dtim_period;
+			struct dentry *dtim_count;
+			struct dentry *num_beacons;
+			struct dentry *force_unicast_rateidx;
+			struct dentry *max_ratectrl_rateidx;
+			struct dentry *num_buffered_multicast;
+			struct dentry *beacon_head_len;
+			struct dentry *beacon_tail_len;
+		} ap;
+		struct {
+			struct dentry *channel_use;
+			struct dentry *drop_unencrypted;
+			struct dentry *eapol;
+			struct dentry *ieee8021_x;
+			struct dentry *peer;
+		} wds;
+		struct {
+			struct dentry *channel_use;
+			struct dentry *drop_unencrypted;
+			struct dentry *eapol;
+			struct dentry *ieee8021_x;
+			struct dentry *vlan_id;
+		} vlan;
+		struct {
+			struct dentry *mode;
+		} monitor;
+		struct dentry *default_key;
+	} debugfs;
+#endif
+};
 
 #define INIT_DELAYED_WORK(_work, _func)             \
 do {                            \

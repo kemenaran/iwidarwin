@@ -46,7 +46,7 @@ void sysfs_remove_group(struct kobject * kobj,const struct attribute_group * grp
 
 
 void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, char *linebuf, size_t linebuflen, bool ascii){
-         const u8 *ptr = buf;
+/*         const u8 *ptr = buf;
 		u8 ch;
 		int j, lx = 0;
 		int ascii_column;
@@ -55,9 +55,9 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, 
   
           if (!len)
                  goto nil;
-          if (len > rowsize)              /* limit to one line at a time */
+          if (len > rowsize)             
                   len = rowsize;
-          if ((len % groupsize) != 0)     /* no mixed size output */
+          if ((len % groupsize) != 0)     
                   groupsize = 1;
   
           switch (groupsize) {
@@ -113,7 +113,7 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, 
                  linebuf[lx++] = (isascii(ptr[j]) && isprint(ptr[j])) ? ptr[j]
                                  : '.';
  nil:
-         linebuf[lx++] = '\0';
+         linebuf[lx++] = '\0';*/
 	return;
 }
 
@@ -168,12 +168,12 @@ void spin_lock_init(spinlock_t *lock) {
 }
 
 void spin_lock(spinlock_t *lock) {
-	OSSpinLockLock(lock);
+	//OSSpinLockLock(lock);
    return;
 }
 
 void spin_unlock(spinlock_t *lock) {
-	OSSpinLockUnlock(lock);
+	//OSSpinLockUnlock(lock);
    return;
 }
 //http://hira.main.jp/wiki/pukiwiki.php?spin_lock_bh()%2Flinux2.6
@@ -186,12 +186,12 @@ void spin_unlock_bh( spinlock_t *lock ) {
 }
 
 void mutex_lock(struct mutex *) {
-	IOLockLock(mutex->lock);
+	//IOLockLock(mutex->lock);
     return;
 }
 
 void mutex_unlock(struct mutex *) {
-	IOLockUnlock(mutex->lock);
+	//IOLockUnlock(mutex->lock);
     return;
 }
 
@@ -324,8 +324,139 @@ void ieee80211_start_queues(struct ieee80211_hw *hw){
 void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	return;
 }
-struct ieee80211_hw * ieee80211_alloc_hw (	size_t  	priv_data_len,const struct ieee80211_ops *  	ops){
-	return NULL;
+static void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
+{
+	int i;
+
+	/* Default values for sub-interface parameters */
+	sdata->drop_unencrypted = 0;
+	sdata->eapol = 1;
+	for (i = 0; i < IEEE80211_FRAGMENT_MAX; i++)
+	{
+#warning error herre
+		//INIT_LIST_HEAD(&sdata->fragments[i].skb_list);
+	//	skb_queue_head_init(&sdata->fragments[i].skb_list);
+	}
+}
+static struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
+{
+	return &local->hw;
+}
+struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee80211_ops *  ops){
+	struct net_device *mdev;
+	struct ieee80211_local *local;
+	
+	struct ieee80211_sub_if_data *sdata;
+	int priv_size;
+	//struct wiphy *wiphy;
+
+	priv_size = ((sizeof(struct ieee80211_local) +
+		      NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST) +
+		    priv_data_len;
+
+/*	wiphy = wiphy_new(&mac80211_config_ops, priv_size);
+
+	if (!wiphy)
+		return NULL;
+
+	wiphy->privid = mac80211_wiphy_privid;
+
+	local = wiphy_priv(wiphy);
+	local->hw.wiphy = wiphy;
+*/
+
+	local=(struct ieee80211_local*)IOMalloc(priv_size);
+	memset(local,0,priv_size);
+	local->hw.priv =
+	(char*)local +
+			((sizeof(struct ieee80211_local) +
+			   NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST);
+
+	local->ops = ops;
+
+	/* for now, mdev needs sub_if_data :/ */
+/*	mdev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+			    "wmaster%d", ether_setup);
+	if (!mdev) {
+		wiphy_free(wiphy);
+		return NULL;
+	}
+
+	sdata = IEEE80211_DEV_TO_SUB_IF(mdev);
+	mdev->ieee80211_ptr = &sdata->wdev;
+	sdata->wdev.wiphy = wiphy;
+*/
+
+	mdev=(struct net_device*)IOMalloc(sizeof(struct ieee80211_sub_if_data));
+	memset(mdev,0,sizeof(struct ieee80211_sub_if_data));
+	sdata = (struct ieee80211_sub_if_data*)netdev_priv(mdev);
+	mdev->ieee80211_ptr=local;
+	local->mdev=mdev;
+	local->hw.queues = 1; /* default */
+	
+/*	local->mdev = mdev;
+	local->rx_pre_handlers = ieee80211_rx_pre_handlers;
+	local->rx_handlers = ieee80211_rx_handlers;
+	local->tx_handlers = ieee80211_tx_handlers;
+*/
+	local->bridge_packets = 1;
+
+	local->rts_threshold = IEEE80211_MAX_RTS_THRESHOLD;
+	local->fragmentation_threshold = IEEE80211_MAX_FRAG_THRESHOLD;
+	local->short_retry_limit = 7;
+	local->long_retry_limit = 4;
+	local->hw.conf.radio_enabled = 1;
+	//local->rate_ctrl_num_up = RATE_CONTROL_NUM_UP;
+	//local->rate_ctrl_num_down = RATE_CONTROL_NUM_DOWN;
+
+	local->enabled_modes = (unsigned int) -1;
+
+	INIT_LIST_HEAD(&local->modes_list);
+
+//	rwlock_init(&local->sub_if_lock);
+	INIT_LIST_HEAD(&local->sub_if_list);
+
+//	INIT_DELAYED_WORK(&local->scan_work, ieee80211_sta_scan_work);
+//	init_timer(&local->stat_timer);
+//	local->stat_timer.function = ieee80211_stat_refresh;
+	//local->stat_timer.data = (unsigned long) local;
+//	ieee80211_rx_bss_list_init(mdev);
+
+	//sta_info_init(local);
+	INIT_LIST_HEAD(&local->sta_list);
+	INIT_LIST_HEAD(&local->deleted_sta_list);
+	//local->sta_cleanup.expires = jiffies + STA_INFO_CLEANUP_INTERVAL;
+	//local->sta_cleanup.data = (unsigned long) local;
+	
+/*	mdev->hard_start_xmit = ieee80211_master_start_xmit;
+	mdev->open = ieee80211_master_open;
+	mdev->stop = ieee80211_master_stop;
+	mdev->type = ARPHRD_IEEE80211;
+	mdev->hard_header_parse = header_parse_80211;*/
+	sdata->type = IEEE80211_IF_TYPE_AP;
+	sdata->dev = mdev;
+	sdata->local = local;
+	sdata->u.ap.force_unicast_rateidx = -1;
+	sdata->u.ap.max_ratectrl_rateidx = -1;
+	ieee80211_if_sdata_init(sdata);
+	list_add_tail(&sdata->list, &local->sub_if_list);
+/*	tasklet_init(&local->tx_pending_tasklet, ieee80211_tx_pending,
+		     (unsigned long)local);
+	tasklet_disable(&local->tx_pending_tasklet);
+
+	tasklet_init(&local->tasklet,
+		     ieee80211_tasklet_handler,
+		     (unsigned long) local);
+	tasklet_disable(&local->tasklet);
+
+	skb_queue_head_init(&local->skb_queue);
+	skb_queue_head_init(&local->skb_queue_unreliable);
+*/
+	//INIT_LIST_HEAD(&local->skb_queue);
+	//INIT_LIST_HEAD(&local->skb_queue_unreliable);
+	
+	return local_to_hw(local);
+	//return NULL;
 }
 void ieee80211_free_hw (	struct ieee80211_hw *  	hw){
 	return;
@@ -440,6 +571,9 @@ int pci_write_config_byte(struct pci_dev *dev, int where, u8 val){
 void pci_release_regions (struct pci_dev * pdev){
 	return;
 }
+/*
+	get the priv...
+*/
 void *pci_get_drvdata (struct pci_dev *pdev){
 	return NULL;
 }
