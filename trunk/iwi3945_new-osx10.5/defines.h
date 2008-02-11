@@ -242,6 +242,7 @@ struct delayed_work {
 
 struct workqueue_struct {
     char data[4];
+	thread_call_t tlink[20];
 };
 
 

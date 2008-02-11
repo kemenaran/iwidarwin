@@ -36,24 +36,7 @@ void release_firmware (	const struct firmware *  	fw){
 	return;
 }
 
-void flush_workqueue(struct workqueue_struct *wq){
-	return;
-}
-struct workqueue_struct *__create_workqueue(const char *name,int singlethread){
-	return NULL;
-}
-void destroy_workqueue (	struct workqueue_struct *  	wq){
-	return;
-}
-int cancel_work_sync(struct work_struct *work){
-	return 1;
-}
-void tasklet_schedule(struct tasklet_struct *t){
-	return;
-}
-void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data){
-	return;
-}
+
 
 
 void sysfs_remove_group(struct kobject * kobj,const struct attribute_group * grp){
@@ -520,25 +503,107 @@ struct sk_buff *__alloc_skb(unsigned int size,
 #pragma mark -
 #pragma mark Adapt workqueue calls
 
+void flush_workqueue(struct workqueue_struct *wq){
+	return;
+}
+struct workqueue_struct *__create_workqueue(const char *name,int singlethread){
+	return NULL;
+}
+void destroy_workqueue (	struct workqueue_struct *  	wq){
+	//for ...x in
+	//wq->tlink[x]=NULL;
+	return;
+}
+int cancel_work_sync(struct work_struct *work){
+	return 1;
+}
+void tasklet_schedule(struct tasklet_struct *t){
+	return;
+}
+void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data){
+	return;
+}
+
+
 int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
 #warning Get this to run in a gated manner
     (work->func)(work);
+	//maybe add a counter in workqueue struct
+	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,work),NULL,NULL,false,wq->tlink);
     return 0;
 }
+/*void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start,thread_call_t tkink)
+{
+	if (tlink[num]) queue_td(num,NULL);
+	//IWI_DEBUG("queue_te0 %d\n",tlink[num]);
+	if (!tlink[num]) tlink[num]=thread_call_allocate(func,this);
+	//IWI_DEBUG("queue_te1 %d\n",tlink[num]);
+	uint64_t timei2;
+	if (timei) clock_interval_to_deadline(timei,kMillisecondScale,&timei2);
+	//IWI_DEBUG("queue_te time %d %d\n",timei,timei2);
+	int r;
+	if (start==true && tlink[num])
+	{
+		if (!par && !timei)	r=thread_call_enter(tlink[num]);
+		if (!par && timei)	r=thread_call_enter_delayed(tlink[num],timei2);
+		if (par && !timei)	r=thread_call_enter1(tlink[num],par);
+		if (par && timei)	r=thread_call_enter1_delayed(tlink[num],par,timei2);
+	}
+	//IWI_DEBUG("queue_te result %d\n",r);
+}
+
+void queue_td(int num , thread_call_func_t func)
+{
+	//IWI_DEBUG("queue_td0 %d\n",tlink[num]);
+	//IWI_DEBUG("queue_td0 %d\n",tlink[num]);
+	if (tlink[num])
+	{
+		thread_call_cancel(tlink[num]);
+		//if (thread_call_cancel(tlink[num])==0)
+		//	thread_call_free(tlink[num]);
+		//tlink[num]=NULL;
+	}
+	//IWI_DEBUG("queue_td1-%d , %d %d\n",num,r,r1);
+}*/
 
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay) {
     IOLog("todo queue_delayed_work\n");
+	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,work),NULL,delay,false,wq->tlink);
     return 0;
 }
-
+/**
+* __wake_up - wake up threads blocked on a waitqueue.
+* @q: the waitqueue
+* @mode: which threads
+* @nr_exclusive: how many wake-one or wake-many threads to wake up
+* @key: is directly passed to the wakeup function
+*/
 void __wake_up(wait_queue_head_t *q, unsigned int mode, int nr, void *key) {
     return;
 }
 
 int cancel_delayed_work(struct delayed_work *work) {
+	//?
     return 0;
 }
 
+/**
+* wait_event_interruptible_timeout - sleep until a condition gets true or a timeout elapses
+* @wq: the waitqueue to wait on
+* @condition: a C expression for the event to wait for
+* @timeout: timeout, in jiffies
+*
+* The process is put to sleep (TASK_INTERRUPTIBLE) until the
+* @condition evaluates to true or a signal is received.
+* The @condition is checked each time the waitqueue @wq is woken up.
+*
+* wake_up() has to be called after changing any variable that could
+* change the result of the wait condition.
+*
+* The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
+* was interrupted by a signal, and the remaining jiffies otherwise
+* if the condition evaluated to true before the timeout elapsed.
+*/
 long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout) {
     return 0;
 }
