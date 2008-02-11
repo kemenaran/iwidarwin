@@ -30,6 +30,7 @@ int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp)
 }
 
 int request_firmware  (const struct firmware ** firmware_p, const char * name, struct device * device){
+	//load the file "name" in
 	return 1;
 }
 void release_firmware (	const struct firmware *  	fw){
@@ -45,6 +46,74 @@ void sysfs_remove_group(struct kobject * kobj,const struct attribute_group * grp
 
 
 void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, char *linebuf, size_t linebuflen, bool ascii){
+         const u8 *ptr = buf;
+		u8 ch;
+		int j, lx = 0;
+		int ascii_column;
+          if (rowsize != 16 && rowsize != 32)
+                  rowsize = 16;
+  
+          if (!len)
+                 goto nil;
+          if (len > rowsize)              /* limit to one line at a time */
+                  len = rowsize;
+          if ((len % groupsize) != 0)     /* no mixed size output */
+                  groupsize = 1;
+  
+          switch (groupsize) {
+          case 8: {
+                  const u64 *ptr8 = buf;
+                  int ngroups = len / groupsize;
+  
+                  for (j = 0; j < ngroups; j++)
+                          lx += scnprintf(linebuf + lx, linebuflen - lx,
+                                  "%16.16llx ", (unsigned long long)*(ptr8 + j));
+                  ascii_column = 17 * ngroups + 2;
+                  break;
+          }
+  
+          case 4: {
+                  const u32 *ptr4 = buf;
+                 int ngroups = len / groupsize;
+  
+                  for (j = 0; j < ngroups; j++)
+                          lx += scnprintf(linebuf + lx, linebuflen - lx,
+                                  "%8.8x ", *(ptr4 + j));
+                  ascii_column = 9 * ngroups + 2;
+                  break;
+          }
+  
+          case 2: {
+                  const u16 *ptr2 = buf;
+                  int ngroups = len / groupsize;
+  
+                  for (j = 0; j < ngroups; j++)
+                          lx += scnprintf(linebuf + lx, linebuflen - lx,
+								"%4.4x ", *(ptr2 + j));
+				ascii_column = 5 * ngroups + 2;
+				break;
+		}
+		default:
+				for (j = 0; (j < rowsize) && (j < len) && (lx + 4) < linebuflen;
+					j++) {
+						ch = ptr[j];
+						linebuf[lx++] = hex_asc(ch >> 4);
+						linebuf[lx++] = hex_asc(ch & 0x0f);
+						linebuf[lx++] = ' ';
+                  }
+                 ascii_column = 3 * rowsize + 2;
+                 break;
+        }
+         if (!ascii)
+                 goto nil;
+ 
+         while (lx < (linebuflen - 1) && lx < (ascii_column - 1))
+                 linebuf[lx++] = ' ';
+         for (j = 0; (j < rowsize) && (j < len) && (lx + 2) < linebuflen; j++)
+                 linebuf[lx++] = (isascii(ptr[j]) && isprint(ptr[j])) ? ptr[j]
+                                 : '.';
+ nil:
+         linebuf[lx++] = '\0';
 	return;
 }
 
@@ -53,7 +122,7 @@ unsigned long simple_strtoul (const char * cp, char ** endp, unsigned int base){
 }
 
 int is_zero_ether_addr (	const u8 *  	addr){
-	return 1;
+	return !(addr[0] | addr[1] | addr[2] | addr[3] | addr[4] | addr[5]);
 }
 
 
@@ -235,9 +304,7 @@ void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue) {
     return;
 }
 
-struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
-                                     int if_id,
-                                     struct ieee80211_tx_control *control) {
+struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,int if_id,struct ieee80211_tx_control *control) {
     return NULL;
 }
 
@@ -248,7 +315,7 @@ void ieee80211_stop_queues(struct ieee80211_hw *hw) {
 int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
 	return 1;
 }
-void ieee80211_unregister_hw (	struct ieee80211_hw *  	hw){
+void ieee80211_unregister_hw(struct ieee80211_hw *  hw){
 	return;
 }
 void ieee80211_start_queues(struct ieee80211_hw *hw){
@@ -397,12 +464,17 @@ void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
 }
 
 void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen){
-/* only memory
-virtual IOMemoryMap * mapDeviceMemoryWithRegister(
-    UInt8 reg, 
-    IOOptionBits options = 0 );
-*/
-	return NULL;
+	IOMemoryMap	*				map;
+	IOPhysicalAddress			ioBase;
+	UInt16 *					memBase;
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj;
+	map = fPCIDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0, kIOMapInhibitCache);
+	if (map == 0) {
+		return NULL;
+	}
+	ioBase = map->getPhysicalAddress();
+	memBase = (UInt16 *)map->getVirtualAddress();
+	return memBase;
 }
 void pci_iounmap(struct pci_dev *dev, void __iomem * addr){
 	return;
@@ -579,6 +651,8 @@ int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, u
 * @key: is directly passed to the wakeup function
 */
 void __wake_up(wait_queue_head_t *q, unsigned int mode, int nr, void *key) {
+//wait_queue_wakeup_thread(wait_queue_t wq, event_t  event,
+//            thread_t thread, int result);
     return;
 }
 
