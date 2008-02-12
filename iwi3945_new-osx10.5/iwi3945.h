@@ -38,7 +38,7 @@
 
 
 
-class darwin_iwi3945 : public IOEthernetController//IO80211Controller
+class darwin_iwi3945 : public IO80211Controller
     {
         OSDeclareDefaultStructors(darwin_iwi3945)
         

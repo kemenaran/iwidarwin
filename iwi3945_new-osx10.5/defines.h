@@ -1383,12 +1383,7 @@ struct sta_ts_data {
 
 #define IEEE80211_MAX_AID 2007
 struct ieee80211_if_sta {
-	enum {
-		IEEE80211_DISABLED, IEEE80211_AUTHENTICATE,
-		IEEE80211_ASSOCIATE, IEEE80211_ASSOCIATED,
-		IEEE80211_IBSS_SEARCH, IEEE80211_IBSS_JOINED,
-		IEEE80211_CHANNEL_SWITCH
-	} state;
+	enum ieee80211_state state;
 	//struct timer_list 
 	void* timer;
 	//struct work_struct 
@@ -1666,6 +1661,12 @@ int __x = (x);          \
 
 #define net_ratelimit() 0
 
+
+// This magic allows us to call init() and exit(), despite them being declared static
+#define module_exit(func) int (*init_routine)(void) = func
+#define module_init(func) void (*exit_routine)(void) = func
+
+
 #include "compatibility.h"
 
 
@@ -1677,6 +1678,15 @@ int __x = (x);          \
 // #define skb->len    mbuf_len(skb->mac_data)
 
 
-
+// Fix up brokenness from k_compat.h
+#undef readl
+#undef writel
+#define readl(addr) OSReadLittleInt32(addr, 0)
+#define writel(value, addr) OSWriteLittleInt32(addr, 0, value)
+#define IOPCCardAddTimer(x) q
+#define DEBUG(level,...) IOLog(__VA_ARGS__)
+#undef mod_timer
+#undef add_timer
+#undef mod_timer
 
 #endif //__DEFINES_H__

@@ -27,6 +27,8 @@
 // primarily when allocating sk_buff entries.
 static IONetworkController *currentController;
 
+
+
 //added
 int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
 	return NULL;
@@ -208,18 +210,16 @@ void mutex_unlock(struct mutex *new_mtz) {
     return;
 }
 
-void msleep(unsigned int msecs) {
-	udelay(msecs*100);
-    return;
-}
-
 void init_timer(struct timer_list *timer) {
-    return IOPCCardAddTimer(timer);
+//(Doesn't actually work)    return IOPCCardAddTimer(timer);
 }
 
+int mod_timer(struct timer_list *timer, int length) {
+    return 0;
+}
 
 int del_timer_sync(struct timer_list *timer) {
-    return IOPCCardDeleteTimer(timer);
+//(Doesn't actually work)    return IOPCCardDeleteTimer(timer);
 }
 
 int in_interrupt() {
@@ -828,5 +828,6 @@ int cancel_delayed_work(struct delayed_work *work) {
 long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout) {
     return 0;
 }
+
 
 
