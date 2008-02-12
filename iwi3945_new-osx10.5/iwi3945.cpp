@@ -76,7 +76,6 @@ bool darwin_iwi3945::start(IOService *provider)
 		}
         
         return true;
-        
     } while(false);
     
     free();
@@ -88,12 +87,13 @@ bool darwin_iwi3945::start(IOService *provider)
 void darwin_iwi3945::free(void)
 {
 	IOLog("iwi3945: Freeing\n");
-    
+    super::free();
 }
 
 
 void darwin_iwi3945::stop(IOService *provider)
 {
 	IOLog("iwi3945: Stopping\n");
+	super::stop(provider);
 
 }

@@ -21,6 +21,8 @@
 
 #include "defines.h"
 #include "compatibility.h"
+#include "firmware/ipw3945.ucode.h"
+
 
 
 // Note: This, in itself, makes this very much non-reentrant.  It's used
@@ -33,12 +35,20 @@ static IONetworkController *currentController;
 int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
 	return NULL;
 }
-
-int request_firmware  (const struct firmware ** firmware_p, const char * name, struct device * device){
+/**
+	name not used for the moment
+	device too
+*/
+int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device){
+	//struct class_device *class_dev;
+	struct firmware *firmware;
+	*firmware_p = firmware =(struct firmware*)IOMalloc(sizeof(struct firmware));
+	firmware->size=sizeof(ipw3945_ucode_raw);
+	//firmware->data=ipw3945_ucode_raw;
 	//load the file "name" in
 	return 1;
 }
-void release_firmware (	const struct firmware *  	fw){
+void release_firmware (	const struct firmware *  fw){
 	return;
 }
 
@@ -49,9 +59,11 @@ void sysfs_remove_group(struct kobject * kobj,const struct attribute_group * grp
 	return;
 }
 
-
+#define hex_asc(x)	"0123456789abcdef"[x]
+#define isascii(c) (((unsigned char)(c))<=0x7f)
+#define isprint(a) ((a >=' ')&&(a <= '~'))
 void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, char *linebuf, size_t linebuflen, bool ascii){
-    /*
+
          const u8 *ptr = (const u8 *)buf;
 		u8 ch;
 		int j, lx = 0;
@@ -119,7 +131,7 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, 
                  linebuf[lx++] = (isascii(ptr[j]) && isprint(ptr[j])) ? ptr[j]
                                  : '.';
  nil:
-         linebuf[lx++] = '\0';*/
+         linebuf[lx++] = '\0';
 	return;
 }
 
@@ -529,6 +541,13 @@ If no error occurred, the driver remains registered even if no device was claime
 */
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
 int pci_register_driver(struct pci_driver * drv){
+	//maybe get the pointer for the good function as iwl3945_pci_probe ...
+	struct pci_device_id *test=(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
+	struct pci_dev *test_pci=(struct pci_dev *)IOMalloc(sizeof(struct pci_dev));
+	//*test_pci-
+	//drv->id_table->vendor=PCI_ANY_ID;
+	//drv->id_table->vendor=device;
+	int result2 = (drv->probe) (test_pci,test);
 	return 0;
 }
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
