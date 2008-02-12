@@ -480,6 +480,7 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	//INIT_LIST_HEAD(&local->skb_queue);
 	//INIT_LIST_HEAD(&local->skb_queue_unreliable);
 	
+	printf("ieee80211_alloc_hw [OK]\n");
 	return local_to_hw(local);
 	//return NULL;
 }
@@ -489,6 +490,7 @@ void ieee80211_free_hw (	struct ieee80211_hw *  	hw){
 int ieee80211_register_hwmode(struct ieee80211_hw *hw,struct ieee80211_hw_mode *mode){
 	return 1;
 }
+//define the whispy for the driver
 void SET_IEEE80211_DEV(	struct ieee80211_hw *  	hw,struct device *  	dev){
 	return;
 }
@@ -544,10 +546,13 @@ int pci_register_driver(struct pci_driver * drv){
 	//maybe get the pointer for the good function as iwl3945_pci_probe ...
 	struct pci_device_id *test=(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
 	struct pci_dev *test_pci=(struct pci_dev *)IOMalloc(sizeof(struct pci_dev));
-	//*test_pci-
-	//drv->id_table->vendor=PCI_ANY_ID;
-	//drv->id_table->vendor=device;
-	int result2 = (drv->probe) (test_pci,test);
+	//pci_dev create the os-x kobj
+	test_pci->dev.kobj.ptr=OSDynamicCast(IOPCIDevice, currentController->getProvider());
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)test_pci->dev.kobj.ptr;
+	fPCIDevice->retain();
+	fPCIDevice->open(currentController);
+	//call of pci_probe
+	//int result2 = (drv->probe) (test_pci,test);
 	return 0;
 }
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
@@ -848,5 +853,9 @@ long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long
     return 0;
 }
 
+void settCurController(IONetworkController * tmp){
+	currentController=tmp;
+	printf("settCurController [OK]\n");
+}
 
 

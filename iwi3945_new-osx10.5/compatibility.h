@@ -161,7 +161,6 @@ extern "C" {
     extern long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout);
     
     
-    
     // This has to be one of the most beautiful algorithms I've seen:
     static inline __attribute__((const))
     bool is_power_of_2(unsigned long n)
@@ -204,6 +203,7 @@ extern "C" {
         list->prev = list;
     }
     
+
 #ifdef __cplusplus
 }
 #endif

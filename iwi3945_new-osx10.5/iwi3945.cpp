@@ -26,6 +26,7 @@ OSDefineMetaClassAndStructors(darwin_iwi3945, IO80211Controller);
 extern "C" {
     extern int (*init_routine)();
     extern void (*exit_routine)();
+	
 }
 
 
@@ -33,7 +34,9 @@ extern "C" {
 #pragma mark Overrides required for implementation
 
 IOService *darwin_iwi3945::getProvider() {
-    return NULL;
+/*	if(!provider)
+		return NULL;*/
+    return super::getProvider();
 }
 
 bool darwin_iwi3945::addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name) {
@@ -74,7 +77,8 @@ bool darwin_iwi3945::start(IOService *provider)
 			IOLog("%s ERR: super::start failed\n", getName());
 			break;
 		}
-        
+        //currentController=this;
+		//setCurControler(this);
         return true;
     } while(false);
     
