@@ -8489,6 +8489,7 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 		err = -ENOMEM;
 		goto out;
 	}
+
 	SET_IEEE80211_DEV(hw, &pdev->dev);
 
 	IWL_DEBUG_INFO("*** LOAD DRIVER ***\n");
@@ -8538,7 +8539,7 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 		err = -ENODEV;
 		goto out_ieee80211_free_hw;
 	}
-
+return 0;
 	pci_set_master(pdev);
 
 	/* Clear the driver's (not device's) station table */
