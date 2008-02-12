@@ -85,6 +85,10 @@ extern "C" {
     extern void mutex_unlock(struct mutex *);
     extern void msleep(unsigned int msecs);
     extern void init_timer(struct timer_list *timer);
+#undef mod_timer
+#undef add_timer
+#undef mod_timer    
+    extern int mod_timer(struct timer_list *timer, int length);
     extern int del_timer_sync(struct timer_list *timer);
     extern int in_interrupt();
     extern void *dev_get_drvdata(void *p);

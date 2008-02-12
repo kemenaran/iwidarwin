@@ -37,6 +37,7 @@
 		61B06E010B589546000DD1AE /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
 		61B0CB590B824EF500F76542 /* ipw3945.ucode.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw3945.ucode.h; sourceTree = "<group>"; };
 		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
+		9B698EFC0D61A895004A4B92 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 		9BC214560D40F0BA000BA789 /* iwl-3945-commands.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-commands.h"; sourceTree = "<group>"; };
 		9BC214570D40F0BA000BA789 /* iwl-3945-debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-debug.h"; sourceTree = "<group>"; };
 		9BC214580D40F0BA000BA789 /* iwl-3945-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-hw.h"; sourceTree = "<group>"; };
@@ -74,6 +75,7 @@
 				9BC2146E0D40F0C3000BA789 /* iwl-1.2.23 */,
 				247142CAFF3F8F9811CA285C /* Source */,
 				8DA8362C06AD9B9200E5AC22 /* Kernel.framework */,
+				9B698EFC0D61A895004A4B92 /* IOKit.framework */,
 				089C167CFE841241C02AAC07 /* Resources */,
 				19C28FB6FE9D52B211CA2CBB /* Products */,
 			);
