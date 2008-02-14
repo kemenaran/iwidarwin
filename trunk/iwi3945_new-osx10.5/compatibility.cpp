@@ -45,7 +45,7 @@ int request_firmware(const struct firmware ** firmware_p, const char * name, str
 	//struct class_device *class_dev;
 	struct firmware *firmware;
 	*firmware_p = firmware =(struct firmware*)IOMalloc(sizeof(struct firmware));
-	firmware->size=sizeof(ipw3945_ucode_raw);
+	firmware->size=149652;//crappy
 	
 	firmware->data=(u8*)ipw3945_ucode_raw;
 	//load the file "name" in
