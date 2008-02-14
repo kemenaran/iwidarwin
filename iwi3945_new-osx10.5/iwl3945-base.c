@@ -6018,14 +6018,13 @@ static int iwl3945_read_ucode(struct iwl3945_priv *priv)
 	printf("uCode instr buf vaddr = 0x%p, paddr = 0x%08x\n",
 		priv->ucode_code.v_addr, (u32)priv->ucode_code.p_addr);
 
-printf(" iwl3945_read_ucode to be continue ... \n");
-return 0;
+
 
 	/* Runtime data (2nd block)
 	 * NOTE:  Copy into backup buffer will be done in iwl3945_up()  */
 	src = &ucode->data[inst_size];
 	len = priv->ucode_data.len;
-	IWL_DEBUG_INFO("Copying (but not loading) uCode data len %Zd\n", len);
+	printf("Copying (but not loading) uCode data len %Zd\n", len);
 	memcpy(priv->ucode_data.v_addr, src, len);
 	memcpy(priv->ucode_data_backup.v_addr, src, len);
 
@@ -6033,7 +6032,7 @@ return 0;
 	if (init_size) {
 		src = &ucode->data[inst_size + data_size];
 		len = priv->ucode_init.len;
-		IWL_DEBUG_INFO("Copying (but not loading) init instr len %Zd\n",
+		printf("Copying (but not loading) init instr len %Zd\n",
 			       len);
 		memcpy(priv->ucode_init.v_addr, src, len);
 	}
@@ -6042,7 +6041,7 @@ return 0;
 	if (init_data_size) {
 		src = &ucode->data[inst_size + data_size + init_size];
 		len = priv->ucode_init_data.len;
-		IWL_DEBUG_INFO("Copying (but not loading) init data len %d\n",
+		printf("Copying (but not loading) init data len %d\n",
 			       (int)len);
 		memcpy(priv->ucode_init_data.v_addr, src, len);
 	}
@@ -6050,7 +6049,7 @@ return 0;
 	/* Bootstrap instructions (5th block) */
 	src = &ucode->data[inst_size + data_size + init_size + init_data_size];
 	len = priv->ucode_boot.len;
-	IWL_DEBUG_INFO("Copying (but not loading) boot instr len %d\n",
+	printf("Copying (but not loading) boot instr len %d\n",
 		       (int)len);
 	memcpy(priv->ucode_boot.v_addr, src, len);
 
@@ -6411,6 +6410,7 @@ static int __iwl3945_up(struct iwl3945_priv *priv)
 	iwl3945_write32(priv, CSR_INT, 0xFFFFFFFF);
 
 	rc = iwl3945_hw_nic_init(priv);
+return 0;
 	if (rc) {
 		IWL_ERROR("Unable to int nic\n");
 		return rc;
@@ -6975,7 +6975,6 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 
 	if (!priv->ucode_code.len) {
 		ret = iwl3945_read_ucode(priv);
-		return 0;
 		if (ret) {
 			IWL_ERROR("Could not read microcode: %d\n", ret);
 			mutex_unlock(&priv->mutex);
@@ -6984,7 +6983,6 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 	}
 
 	ret = __iwl3945_up(priv);
-
 	mutex_unlock(&priv->mutex);
 
 	if (ret)
