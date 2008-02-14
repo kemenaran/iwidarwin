@@ -164,6 +164,7 @@ struct pci_dev {
     unsigned long subsystem_device;
     struct device dev;
     unsigned int irq;
+	u32 saved_config_space[16];
 };
 
 
@@ -1307,7 +1308,8 @@ struct ieee80211_ops {
 
 struct firmware {
 	size_t size;
-	u8 data[0];
+	//u8 data[0];
+	u8 *data;
 };
 
 

@@ -13,6 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 //added
 	extern int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device);
 	extern void release_firmware (	const struct firmware *  	fw);
