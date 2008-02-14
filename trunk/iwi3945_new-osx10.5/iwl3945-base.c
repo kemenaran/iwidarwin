@@ -4948,9 +4948,11 @@ static irqreturn_t iwl3945_isr(int irq, void *data)
 	struct iwl3945_priv *priv = data;
 	u32 inta, inta_mask;
 	u32 inta_fh;
-	if (!priv)
+	if (!priv){
+		printf("No priv defined\n");
 		return IRQ_NONE;
-
+	}
+		
 	spin_lock(&priv->lock);
 
 	/* Disable (but don't clear!) interrupts here to avoid
@@ -4968,20 +4970,20 @@ static irqreturn_t iwl3945_isr(int irq, void *data)
 	 * This may be due to IRQ shared with another device,
 	 * or due to sporadic interrupts thrown from our NIC. */
 	if (!inta && !inta_fh) {
-		IWL_DEBUG_ISR("Ignore interrupt, inta == 0, inta_fh == 0\n");
+		printf("Ignore interrupt, inta == 0, inta_fh == 0\n");
 		goto none;
 	}
 
 	if ((inta == 0xFFFFFFFF) || ((inta & 0xFFFFFFF0) == 0xa5a5a5a0)) {
 		/* Hardware disappeared. It might have already raised
 		 * an interrupt */
-		IWL_WARNING("HARDWARE GONE?? INTA == 0x%080x\n", inta);
+		printf("HARDWARE GONE?? INTA == 0x%080x\n", inta);
 		goto unplugged;
 	}
 
-	IWL_DEBUG_ISR("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
+	printf("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
 		      inta, inta_mask, inta_fh);
-
+return 0;
 	/* iwl3945_irq_tasklet() will service interrupts and re-enable them */
 	tasklet_schedule(&priv->irq_tasklet);
 
@@ -5794,11 +5796,13 @@ static int iwl3945_load_bsm(struct iwl3945_priv *priv)
 	u32 done;
 	u32 reg_offset;
 
-	IWL_DEBUG_INFO("Begin load bsm\n");
+	printf("Begin load bsm\n");
 
 	/* make sure bootstrap program is no larger than BSM's SRAM size */
-	if (len > IWL_MAX_BSM_SIZE)
+	if (len > IWL_MAX_BSM_SIZE){
+		printf("bootstrap program is larger than BSM's SRAM size\n");
 		return -EINVAL;
+	}
 
 	/* Tell bootstrap uCode where to find the "Initialize" uCode
 	 *   in host DRAM ... host DRAM physical address bits 31:0 for 3945.
@@ -5811,8 +5815,10 @@ static int iwl3945_load_bsm(struct iwl3945_priv *priv)
 	data_len = priv->ucode_init_data.len;
 
 	rc = iwl3945_grab_nic_access(priv);
-	if (rc)
+	if (rc){
+		printf("!RC\n");
 		return rc;
+	}
 
 	iwl3945_write_prph(priv, BSM_DRAM_INST_PTR_REG, pinst);
 	iwl3945_write_prph(priv, BSM_DRAM_DATA_PTR_REG, pdata);
@@ -5828,6 +5834,7 @@ static int iwl3945_load_bsm(struct iwl3945_priv *priv)
 
 	rc = iwl3945_verify_bsm(priv);
 	if (rc) {
+		printf("error Verrify BSM\n");
 		iwl3945_release_nic_access(priv);
 		return rc;
 	}
@@ -5851,9 +5858,9 @@ static int iwl3945_load_bsm(struct iwl3945_priv *priv)
 		udelay(10);
 	}
 	if (i < 100)
-		IWL_DEBUG_INFO("BSM write complete, poll %d iterations\n", i);
+		printf("BSM write complete, poll %d iterations\n", i);
 	else {
-		IWL_ERROR("BSM write did not complete!\n");
+		printf("BSM write did not complete!\n");
 		return -EIO;
 	}
 
@@ -6382,6 +6389,7 @@ static void iwl3945_down(struct iwl3945_priv *priv)
 
 static int __iwl3945_up(struct iwl3945_priv *priv)
 {
+printf("__iwl3945_up\n");
 	int rc, i;
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status)) {
@@ -6410,7 +6418,7 @@ static int __iwl3945_up(struct iwl3945_priv *priv)
 	iwl3945_write32(priv, CSR_INT, 0xFFFFFFFF);
 
 	rc = iwl3945_hw_nic_init(priv);
-return 0;
+//return 0;
 	if (rc) {
 		IWL_ERROR("Unable to int nic\n");
 		return rc;
@@ -6424,7 +6432,7 @@ return 0;
 	/* clear (again), then enable host interrupts */
 	iwl3945_write32(priv, CSR_INT, 0xFFFFFFFF);
 	iwl3945_enable_interrupts(priv);
-
+printf("enable int\n");
 	/* really make sure rfkill handshake bits are cleared */
 	iwl3945_write32(priv, CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
 	iwl3945_write32(priv, CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
@@ -6436,13 +6444,15 @@ return 0;
 	       priv->ucode_data.len);
 
 	/* We return success when we resume from suspend and rf_kill is on. */
-	if (test_bit(STATUS_RF_KILL_HW, &priv->status))
+	if (test_bit(STATUS_RF_KILL_HW, &priv->status)){
+		printf("Strange...\n");
 		return 0;
+	}
 
 	for (i = 0; i < MAX_HW_RESTARTS; i++) {
 
 		iwl3945_clear_stations_table(priv);
-
+printf("Load the BSM\n");
 		/* load bootstrap state machine,
 		 * load bootstrap program into processor's memory,
 		 * prepare to load the "initialize" uCode */
@@ -6456,7 +6466,7 @@ return 0;
 		/* start card; "initialize" will load runtime ucode */
 		iwl3945_nic_start(priv);
 
-		IWL_DEBUG_INFO(DRV_NAME " is coming up\n");
+		printf(DRV_NAME " is coming up\n");
 
 		return 0;
 	}

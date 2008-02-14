@@ -147,25 +147,57 @@ int is_zero_ether_addr (	const u8 *  	addr){
 }
 
 
+static irqreturn_t (*realHandler)(int, void *);
 
+/*
+	herre we call the real interuptsHandler from ipw3945
+*/
+void interuptsHandler(){
+	if(!realHandler){
+		printf("No Handler defined\n");
+		return;
+	}
+	//printf("Call the IRQ Handler\n");
+	(*realHandler)(1,my_hw->priv);
+}
+
+static IOWorkLoop * workqueue;
 
 /*
 	not finish parameter of handler and workqueue
 */
 int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id) {
+	if(!workqueue){
+		workqueue = IOWorkLoop::workLoop();
+		if(workqueue)
+			IOLog("Workloop creation successful!\n");
+		else
+			IOLog("FAILED!  Couldn't create workloop\n");
+		if( workqueue )
+        workqueue->init();
+        if (!workqueue) {
+            IOLog(" ERR: start - getWorkLoop failed\n");
+			return -1;
+        }
+	}
+	/*
+		set the handler for intterupts
+	*/
+		realHandler=handler;
         IOInterruptEventSource *	fInterruptSrc;
 		fInterruptSrc = IOInterruptEventSource::interruptEventSource(
-							currentController, (IOInterruptEventAction)handler,currentController->getProvider());
-		/*if(!fInterruptSrc || (workqueue->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
-			IOLog("%s fInterruptSrc error\n", getName());
-            return 1;
-		}*/
+							currentController, (IOInterruptEventAction)&interuptsHandler,currentController->getProvider()
+							);
+		if(!fInterruptSrc || (workqueue->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
+			IOLog(" fInterruptSrc error\n");
+            //break;
+		}
 		// This is important. If the interrupt line is shared with other devices,
 		// then the interrupt vector will be enabled only if all corresponding
 		// interrupt event sources are enabled. To avoid masking interrupts for
 		// other devices that are sharing the interrupt line, the event source
 		// is enabled immediately.
-		//fInterruptSrc->enable();
+		fInterruptSrc->enable();
 	printf("request_irq [OK]\n");
 	return 0;
 }
@@ -661,6 +693,8 @@ int pci_enable_device (struct pci_dev * dev){
 	printf("PCI device enabled [OK]\n");
 	return 0;
 }
+
+
 //ok but nor realy that on linux kernel
 void pci_disable_device (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
@@ -673,6 +707,8 @@ void pci_disable_device (struct pci_dev * dev){
 Adds the driver structure to the list of registered drivers.
 Returns a negative value on error, otherwise 0.
 If no error occurred, the driver remains registered even if no device was claimed during registration.
+
+Starting of the card will be moved after...
 */
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
 int pci_register_driver(struct pci_driver * drv){
@@ -680,16 +716,12 @@ int pci_register_driver(struct pci_driver * drv){
 	struct pci_device_id *test=(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
 	struct pci_dev *test_pci=(struct pci_dev *)IOMalloc(sizeof(struct pci_dev));
 	
-	//struct device *dev=(struct device *)IOMalloc(sizeof(struct device));
-	//=test_dev;
-	//pci_dev create the os-x kobj
 	
 	if(!currentController){
 		printf("No currentController set\n");
 		return 1;
 	}
 	OSDynamicCast(IOPCIDevice, currentController->getProvider());
-	//printf("OK IOPCIDevice");
 
 	test_pci->dev.kobj.ptr=OSDynamicCast(IOPCIDevice, currentController->getProvider());
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)test_pci->dev.kobj.ptr;
@@ -700,9 +732,9 @@ int pci_register_driver(struct pci_driver * drv){
 	int result2 = (drv->probe) (test_pci,test);
 	//Start ...
 	struct ieee80211_local *local = hw_to_local(my_hw);
-	//priv->pci_dev=(struct pci_device *)test_pci;
-	//local->hw.priv->pci_dev=test_pci;
 	result2 = (local->ops->open) (&local->hw);
+	//call on interupt to test
+	//interuptsHandler();
 	return 0;
 }
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
@@ -1005,7 +1037,7 @@ int cancel_delayed_work(struct delayed_work *work) {
 * if the condition evaluated to true before the timeout elapsed.
 */
 long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout) {
-    return 0;
+    return 10;
 }
 
 void setCurController(IONetworkController *tmp){
