@@ -29,6 +29,7 @@
 #ifndef __iwl3945_debug_h__
 #define __iwl3945_debug_h__
 
+
 #ifdef CONFIG_IWL3945_DEBUG
 extern u32 iwl3945_debug_level;
 #define IWL_DEBUG(level, fmt, args...) \

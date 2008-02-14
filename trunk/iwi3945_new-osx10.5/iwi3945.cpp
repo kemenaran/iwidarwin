@@ -27,8 +27,10 @@ extern "C" {
     extern int (*init_routine)();
     extern void (*exit_routine)();
 	
+	
 }
-
+extern void setCurController(IONetworkController * tmp);
+IOService* my_provider;
 
 #pragma mark -
 #pragma mark Overrides required for implementation
@@ -36,7 +38,7 @@ extern "C" {
 IOService *darwin_iwi3945::getProvider() {
 /*	if(!provider)
 		return NULL;*/
-    return super::getProvider();
+    return my_provider;
 }
 
 bool darwin_iwi3945::addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name) {
@@ -57,9 +59,6 @@ int darwin_iwi3945::outputRaw80211Packet( IO80211Interface * interface, mbuf_t m
 #pragma mark Setup and teardown
 bool darwin_iwi3945::init(OSDictionary *dict)
 {
-    if( init_routine() )
-        return false;
-    
 	return super::init(dict);
 }
 
@@ -77,8 +76,13 @@ bool darwin_iwi3945::start(IOService *provider)
 			IOLog("%s ERR: super::start failed\n", getName());
 			break;
 		}
+		
+		setCurController(this);
+		my_provider=provider;
+		if( init_routine() )
+			return false;
         //currentController=this;
-		//setCurControler(this);
+
         return true;
     } while(false);
     

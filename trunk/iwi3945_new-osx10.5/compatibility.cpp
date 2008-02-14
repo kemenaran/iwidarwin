@@ -18,6 +18,7 @@
 #include <IOKit/network/IONetworkController.h>
 #include <IOKit/pci/IOPCIDevice.h>
 #include <libkern/OSAtomic.h>
+#include <IOKit/IOInterruptEventSource.h>
 
 #include "defines.h"
 #include "compatibility.h"
@@ -28,25 +29,27 @@
 // Note: This, in itself, makes this very much non-reentrant.  It's used
 // primarily when allocating sk_buff entries.
 static IONetworkController *currentController;
-
+static ieee80211_hw * my_hw;
 
 
 //added
 int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
-	return NULL;
+	return 0;
 }
 /**
 	name not used for the moment
 	device too
+	size error
 */
 int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device){
 	//struct class_device *class_dev;
 	struct firmware *firmware;
 	*firmware_p = firmware =(struct firmware*)IOMalloc(sizeof(struct firmware));
 	firmware->size=sizeof(ipw3945_ucode_raw);
-	//firmware->data=ipw3945_ucode_raw;
+	
+	firmware->data=(u8*)ipw3945_ucode_raw;
 	//load the file "name" in
-	return 1;
+	return 0;
 }
 void release_firmware (	const struct firmware *  fw){
 	return;
@@ -146,9 +149,25 @@ int is_zero_ether_addr (	const u8 *  	addr){
 
 
 
-
+/*
+	not finish parameter of handler and workqueue
+*/
 int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id) {
-	return 1;
+        IOInterruptEventSource *	fInterruptSrc;
+		fInterruptSrc = IOInterruptEventSource::interruptEventSource(
+							currentController, (IOInterruptEventAction)handler,currentController->getProvider());
+		/*if(!fInterruptSrc || (workqueue->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
+			IOLog("%s fInterruptSrc error\n", getName());
+            return 1;
+		}*/
+		// This is important. If the interrupt line is shared with other devices,
+		// then the interrupt vector will be enabled only if all corresponding
+		// interrupt event sources are enabled. To avoid masking interrupts for
+		// other devices that are sharing the interrupt line, the event source
+		// is enabled immediately.
+		//fInterruptSrc->enable();
+	printf("request_irq [OK]\n");
+	return 0;
 }
 
 
@@ -337,9 +356,112 @@ struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,int if_id,struct ie
 void ieee80211_stop_queues(struct ieee80211_hw *hw) {
     return;
 }
+
+#define max_t(type,x,y) \
+	({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
 int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
-	return 1;
+	struct ieee80211_local *local = hw_to_local(hw);
+	const char *name;
+	int result;
+
+	/*result = wiphy_register(local->hw.wiphy);
+	if (result < 0)
+		return result;
+
+	name = wiphy_dev(local->hw.wiphy)->driver->name;
+	local->hw.workqueue = create_singlethread_workqueue(name);
+	if (!local->hw.workqueue) {
+		result = -ENOMEM;
+		goto fail_workqueue;
+	}*/
+
+	/*
+	 * The hardware needs headroom for sending the frame,
+	 * and we need some headroom for passing the frame to monitor
+	 * interfaces, but never both at the same time.
+	 */
+	//local->tx_headroom = max_t(unsigned int , local->hw.extra_tx_headroom,
+	//			   sizeof(struct ieee80211_tx_status_rtap_hdr));
+
+	//debugfs_hw_add(local);
+
+	local->hw.conf.beacon_int = 1000;
+
+	local->wstats_flags |= local->hw.max_rssi ?
+			       IW_QUAL_LEVEL_UPDATED : IW_QUAL_LEVEL_INVALID;
+	local->wstats_flags |= local->hw.max_signal ?
+			       IW_QUAL_QUAL_UPDATED : IW_QUAL_QUAL_INVALID;
+	local->wstats_flags |= local->hw.max_noise ?
+			       IW_QUAL_NOISE_UPDATED : IW_QUAL_NOISE_INVALID;
+	if (local->hw.max_rssi < 0 || local->hw.max_noise < 0)
+		local->wstats_flags |= IW_QUAL_DBM;
+
+	/*result = sta_info_start(local);
+	if (result < 0)
+		goto fail_sta_info;*/
+
+	/*rtnl_lock();
+	result = dev_alloc_name(local->mdev, local->mdev->name);
+	if (result < 0)
+		goto fail_dev;
+
+	memcpy(local->mdev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN);
+	SET_NETDEV_DEV(local->mdev, wiphy_dev(local->hw.wiphy));*/
+
+	/*result = register_netdevice(local->mdev);
+	if (result < 0)
+		goto fail_dev;
+
+	ieee80211_debugfs_add_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));*/
+
+	/*result = ieee80211_init_rate_ctrl_alg(local, NULL);
+	if (result < 0) {
+		printk(KERN_DEBUG "%s: Failed to initialize rate control "
+		       "algorithm\n", local->mdev->name);
+		goto fail_rate;
+	}*/
+//this one maybe
+/*	result = ieee80211_wep_init(local);
+
+	if (result < 0) {
+		printk(KERN_DEBUG "%s: Failed to initialize wep\n",
+		       local->mdev->name);
+		goto fail_wep;
+	}*/
+
+	//ieee80211_install_qdisc(local->mdev);
+
+	/* add one default STA interface */
+/*	result = ieee80211_if_add(local->mdev, "wlan%d", NULL,
+				  IEEE80211_IF_TYPE_STA);
+	if (result)
+		printk(KERN_WARNING "%s: Failed to add default virtual iface\n",
+		       local->mdev->name);
+
+	local->reg_state = IEEE80211_DEV_REGISTERED;
+	rtnl_unlock();
+
+	ieee80211_led_init(local);*/
+
+	return 0;
+
+/*fail_wep:
+	rate_control_deinitialize(local);
+fail_rate:
+	ieee80211_debugfs_remove_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));
+	unregister_netdevice(local->mdev);
+fail_dev:
+	rtnl_unlock();
+	sta_info_stop(local);
+fail_sta_info:
+	debugfs_hw_del(local);
+	destroy_workqueue(local->hw.workqueue);
+fail_workqueue:
+	wiphy_unregister(local->hw.wiphy);*/
+	return result;
 }
+
+
 void ieee80211_unregister_hw(struct ieee80211_hw *  hw){
 	return;
 }
@@ -363,10 +485,12 @@ static void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
 	//	skb_queue_head_init(&sdata->fragments[i].skb_list);
 	}
 }
+
 static struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
 {
 	return &local->hw;
 }
+
 struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee80211_ops *  ops){
 	struct net_device *mdev;
 	struct ieee80211_local *local;
@@ -481,7 +605,8 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	//INIT_LIST_HEAD(&local->skb_queue_unreliable);
 	
 	printf("ieee80211_alloc_hw [OK]\n");
-	return local_to_hw(local);
+	my_hw=local_to_hw(local);
+	return my_hw;
 	//return NULL;
 }
 void ieee80211_free_hw (	struct ieee80211_hw *  	hw){
@@ -509,15 +634,16 @@ void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, s
 
 //http://www.promethos.org/lxr/http/source/drivers/pci/msi.c#L691
 int pci_enable_msi  (struct pci_dev * dev){
-	return 1;
+	return 0;
 }
 
 //ok
 int pci_restore_state (	struct pci_dev *  	dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	int i;
-	//for (i = 0; i < 16; i++)
-	//	fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
+	for (i = 0; i < 16; i++)
+		fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
+	printf("PCI restore state [OK]\n");
 	return 0;
 }
 /*
@@ -525,9 +651,14 @@ int pci_restore_state (	struct pci_dev *  	dev){
  */
  //ok
 int pci_enable_device (struct pci_dev * dev){
+	if(!dev){
+		printf("No pci_dev defined\n");
+		return 1;
+	}
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setIOEnable(true);
 	fPCIDevice->setMemoryEnable(true);
+	printf("PCI device enabled [OK]\n");
 	return 0;
 }
 //ok but nor realy that on linux kernel
@@ -535,7 +666,9 @@ void pci_disable_device (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setIOEnable(false);
 	fPCIDevice->setMemoryEnable(false);
+	printf("PCI device Disabled [OK]\n");
 }
+
 /*
 Adds the driver structure to the list of registered drivers.
 Returns a negative value on error, otherwise 0.
@@ -546,13 +679,30 @@ int pci_register_driver(struct pci_driver * drv){
 	//maybe get the pointer for the good function as iwl3945_pci_probe ...
 	struct pci_device_id *test=(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
 	struct pci_dev *test_pci=(struct pci_dev *)IOMalloc(sizeof(struct pci_dev));
+	
+	//struct device *dev=(struct device *)IOMalloc(sizeof(struct device));
+	//=test_dev;
 	//pci_dev create the os-x kobj
+	
+	if(!currentController){
+		printf("No currentController set\n");
+		return 1;
+	}
+	OSDynamicCast(IOPCIDevice, currentController->getProvider());
+	//printf("OK IOPCIDevice");
+
 	test_pci->dev.kobj.ptr=OSDynamicCast(IOPCIDevice, currentController->getProvider());
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)test_pci->dev.kobj.ptr;
 	fPCIDevice->retain();
 	fPCIDevice->open(currentController);
+	printf("PCI device [OK]\n");
 	//call of pci_probe
-	//int result2 = (drv->probe) (test_pci,test);
+	int result2 = (drv->probe) (test_pci,test);
+	//Start ...
+	struct ieee80211_local *local = hw_to_local(my_hw);
+	//priv->pci_dev=(struct pci_device *)test_pci;
+	//local->hw.priv->pci_dev=test_pci;
+	result2 = (local->ops->open) (&local->hw);
 	return 0;
 }
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
@@ -565,6 +715,7 @@ void pci_unregister_driver (struct pci_driver * drv){
 void pci_set_master (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setBusMasterEnable(true);
+	printf("PCI setMaster [OK]\n");
 	return;
 }
 
@@ -579,8 +730,9 @@ void pci_disable_msi(struct pci_dev* dev){
 int pci_save_state (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	int i;
-/*	for (i = 0; i < 16; i++)
-		fPCIDevice->configRead32(i * 4,&dev->saved_config_space[i]);*/
+	for (i = 0; i < 16; i++)
+		dev->saved_config_space[i]=fPCIDevice->configRead32(i * 4);
+	printf("PCI save state [OK]\n");
 	return 0;
 }
 int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
@@ -593,7 +745,7 @@ int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
 */
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci.c#L642
 int pci_request_regions (struct pci_dev * pdev, char * res_name){
-	return 1;
+	return 0;
 }
 //ok
 int pci_write_config_byte(struct pci_dev *dev, int where, u8 val){
@@ -612,7 +764,7 @@ void pci_release_regions (struct pci_dev * pdev){
 	get the priv...
 */
 void *pci_get_drvdata (struct pci_dev *pdev){
-	return NULL;
+	return my_hw->priv;
 }
 void pci_set_drvdata (struct pci_dev *pdev, void *data){
 	return;
@@ -645,6 +797,7 @@ void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxl
 	}
 	ioBase = map->getPhysicalAddress();
 	memBase = (UInt16 *)map->getVirtualAddress();
+	printf("Iomap [OK]\n");
 	return memBase;
 }
 void pci_iounmap(struct pci_dev *dev, void __iomem * addr){
@@ -763,6 +916,8 @@ int cancel_work_sync(struct work_struct *work){
 void tasklet_schedule(struct tasklet_struct *t){
 	return;
 }
+/*
+*/
 void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data){
 	return;
 }
@@ -853,9 +1008,13 @@ long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long
     return 0;
 }
 
-void settCurController(IONetworkController * tmp){
+void setCurController(IONetworkController *tmp){
 	currentController=tmp;
 	printf("settCurController [OK]\n");
+}
+
+struct ieee80211_hw * get_my_hw(){
+	return my_hw;
 }
 
 

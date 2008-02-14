@@ -5898,7 +5898,7 @@ static int iwl3945_read_ucode(struct iwl3945_priv *priv)
 		goto error;
 	}
 
-	IWL_DEBUG_INFO("Got firmware '%s' file (%zd bytes) from disk\n",
+	printf("Got firmware '%s' file (%zd bytes) from disk\n",
 		       name, ucode_raw->size);
 
 	/* Make sure that we got at least our header! */
@@ -5918,19 +5918,19 @@ static int iwl3945_read_ucode(struct iwl3945_priv *priv)
 	init_data_size = le32_to_cpu(ucode->init_data_size);
 	boot_size = le32_to_cpu(ucode->boot_size);
 
-	IWL_DEBUG_INFO("f/w package hdr ucode version = 0x%x\n", ver);
-	IWL_DEBUG_INFO("f/w package hdr runtime inst size = %u\n", inst_size);
-	IWL_DEBUG_INFO("f/w package hdr runtime data size = %u\n", data_size);
-	IWL_DEBUG_INFO("f/w package hdr init inst size = %u\n", init_size);
-	IWL_DEBUG_INFO("f/w package hdr init data size = %u\n", init_data_size);
-	IWL_DEBUG_INFO("f/w package hdr boot inst size = %u\n", boot_size);
+	printf("f/w package hdr ucode version = 0x%x\n", ver);
+	printf("f/w package hdr runtime inst size = %u\n", inst_size);
+	printf("f/w package hdr runtime data size = %u\n", data_size);
+	printf("f/w package hdr init inst size = %u\n", init_size);
+	printf("f/w package hdr init data size = %u\n", init_data_size);
+	printf("f/w package hdr boot inst size = %u\n", boot_size);
 
 	/* Verify size of file vs. image size info in file's header */
 	if (ucode_raw->size < sizeof(*ucode) +
 		inst_size + data_size + init_size +
 		init_data_size + boot_size) {
 
-		IWL_DEBUG_INFO("uCode file size %d too small\n",
+		printf("uCode file size %d too small\n",
 			       (int)ucode_raw->size);
 		ret = -EINVAL;
 		goto err_release;
@@ -5938,32 +5938,32 @@ static int iwl3945_read_ucode(struct iwl3945_priv *priv)
 
 	/* Verify that uCode images will fit in card's SRAM */
 	if (inst_size > IWL_MAX_INST_SIZE) {
-		IWL_DEBUG_INFO("uCode instr len %d too large to fit in\n",
+		printf("uCode instr len %d too large to fit in\n",
 			       inst_size);
 		ret = -EINVAL;
 		goto err_release;
 	}
 
 	if (data_size > IWL_MAX_DATA_SIZE) {
-		IWL_DEBUG_INFO("uCode data len %d too large to fit in\n",
+		printf("uCode data len %d too large to fit in\n",
 			       data_size);
 		ret = -EINVAL;
 		goto err_release;
 	}
 	if (init_size > IWL_MAX_INST_SIZE) {
-		IWL_DEBUG_INFO("uCode init instr len %d too large to fit in\n",
+		printf("uCode init instr len %d too large to fit in\n",
 				init_size);
 		ret = -EINVAL;
 		goto err_release;
 	}
 	if (init_data_size > IWL_MAX_DATA_SIZE) {
-		IWL_DEBUG_INFO("uCode init data len %d too large to fit in\n",
+		printf("uCode init data len %d too large to fit in\n",
 				init_data_size);
 		ret = -EINVAL;
 		goto err_release;
 	}
 	if (boot_size > IWL_MAX_BSM_SIZE) {
-		IWL_DEBUG_INFO("uCode boot instr len %d too large to fit in\n",
+		printf("uCode boot instr len %d too large to fit in\n",
 				boot_size);
 		ret = -EINVAL;
 		goto err_release;
@@ -6013,10 +6013,13 @@ static int iwl3945_read_ucode(struct iwl3945_priv *priv)
 	/* Runtime instructions (first block of data in file) */
 	src = &ucode->data[0];
 	len = priv->ucode_code.len;
-	IWL_DEBUG_INFO("Copying (but not loading) uCode instr len %Zd\n", len);
+	printf("Copying (but not loading) uCode instr len %Zd\n", len);
 	memcpy(priv->ucode_code.v_addr, src, len);
-	IWL_DEBUG_INFO("uCode instr buf vaddr = 0x%p, paddr = 0x%08x\n",
+	printf("uCode instr buf vaddr = 0x%p, paddr = 0x%08x\n",
 		priv->ucode_code.v_addr, (u32)priv->ucode_code.p_addr);
+
+printf(" iwl3945_read_ucode to be continue ... \n");
+return 0;
 
 	/* Runtime data (2nd block)
 	 * NOTE:  Copy into backup buffer will be done in iwl3945_up()  */
@@ -6952,6 +6955,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 		IWL_ERROR("Fail to pci_enable_device\n");
 		return -ENODEV;
 	}
+
 	pci_restore_state(priv->pci_dev);
 	pci_enable_msi(priv->pci_dev);
 
@@ -6961,7 +6965,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 		IWL_ERROR("Error allocating IRQ %d\n", priv->pci_dev->irq);
 		goto out_disable_msi;
 	}
-
+//return 0;
 	/* we should be verifying the device is ready to be opened */
 	mutex_lock(&priv->mutex);
 
@@ -6971,6 +6975,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 
 	if (!priv->ucode_code.len) {
 		ret = iwl3945_read_ucode(priv);
+		return 0;
 		if (ret) {
 			IWL_ERROR("Could not read microcode: %d\n", ret);
 			mutex_unlock(&priv->mutex);
@@ -8539,7 +8544,7 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 		err = -ENODEV;
 		goto out_ieee80211_free_hw;
 	}
-return 0;
+
 	pci_set_master(pdev);
 
 	/* Clear the driver's (not device's) station table */
@@ -8568,6 +8573,7 @@ return 0;
 	pci_write_config_byte(pdev, 0x41, 0x00);
 
 	priv->hw_base = pci_iomap(pdev, 0, 0);
+
 	if (!priv->hw_base) {
 		err = -ENODEV;
 		goto out_pci_release_regions;
@@ -8665,11 +8671,13 @@ return 0;
 		IWL_ERROR("Unable to init EEPROM\n");
 		goto out_remove_sysfs;
 	}
+	//printf("EEPROM [OK]\n");
+
 	/* MAC Address location in EEPROM same for 3945/4965 */
 	get_eeprom_mac(priv, priv->mac_addr);
-	IWL_DEBUG_INFO("MAC address: " MAC_FMT "\n", MAC_ARG(priv->mac_addr));
+	printf("MAC address: " MAC_FMT "\n", MAC_ARG(priv->mac_addr));
 	SET_IEEE80211_PERM_ADDR(priv->hw, priv->mac_addr);
-
+	
 	iwl3945_rate_control_register(priv->hw);
 	err = ieee80211_register_hw(priv->hw);
 	if (err) {
@@ -8792,7 +8800,7 @@ static int iwl3945_pci_resume(struct pci_dev *pdev)
 	struct iwl3945_priv *priv = pci_get_drvdata(pdev);
 
 	pci_set_power_state(pdev, PCI_D0);
-
+return 0;
 	if (priv->is_open)
 		iwl3945_mac_open(priv->hw);
 
