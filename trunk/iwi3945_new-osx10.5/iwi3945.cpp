@@ -32,6 +32,7 @@ extern "C" {
 extern void setCurController(IONetworkController * tmp);
 extern IOWorkLoop * getWorkLoop();
 extern IOInterruptEventSource * getInterruptEventSource();
+extern int if_down();
 
 IOService * my_provider;
 #pragma mark -
@@ -96,10 +97,16 @@ bool darwin_iwi3945::start(IOService *provider)
 
 void darwin_iwi3945::free(void)
 {
+	if_down();
 	IOLog("iwi3945: Freeing\n");
 	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
-	if( fInterruptSrc ) fInterruptSrc->release();
-    super::free();
+	if( fInterruptSrc ){
+		printf("INT OK\n");
+		fInterruptSrc->disable();
+		fInterruptSrc->release();
+		super::free();
+	}
+    
 }
 
 
@@ -108,8 +115,9 @@ void darwin_iwi3945::stop(IOService *provider)
 	IOLog("iwi3945: Stopping\n");
 	IOWorkLoop * workqueue = getWorkLoop();
 	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
-	if (fInterruptSrc && workqueue)
+	if (fInterruptSrc && workqueue){
+		printf("Stopping OK\n");
         workqueue->removeEventSource(fInterruptSrc);
-	super::stop(provider);
-
+		super::stop(provider);
+	}
 }
