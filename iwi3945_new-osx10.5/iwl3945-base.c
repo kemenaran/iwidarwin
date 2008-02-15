@@ -4413,8 +4413,7 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 				r, i, get_cmd_string(pkt->hdr.cmd),
 				pkt->hdr.cmd);
 		}
-//FIXME: to be continue
-return 0;
+
 		if (reclaim) {
 			/* Invoke any callbacks, transfer the skb to caller, and
 			 * fire off the (possibly) blocking iwl3945_send_cmd()

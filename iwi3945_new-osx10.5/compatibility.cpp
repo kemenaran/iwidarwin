@@ -39,6 +39,15 @@ IOPCIDevice* my_pci_device;
 /*
 	Getters
 */
+void setCurController(IONetworkController *tmp){
+	currentController=tmp;
+	printf("settCurController [OK]\n");
+}
+
+struct ieee80211_hw * get_my_hw(){
+	return my_hw;
+}
+
 IOWorkLoop * getWorkLoop(){
 	if(workqueue)
 		return workqueue;
@@ -180,7 +189,7 @@ void interuptsHandler(){
 		printf("No Handler defined\n");
 		return;
 	}
-	printf("Call the IRQ Handler\n");
+	//printf("Call the IRQ Handler\n");
 	(*realHandler)(1,my_hw->priv);
 }
 
@@ -970,22 +979,65 @@ struct sk_buff *__alloc_skb(unsigned int size,
 
 #pragma mark -
 #pragma mark Adapt workqueue calls
+/*
+	Proposition : lauch a thread at the init of the driver who check every ms if a thread have to be lauch
+	
+	struct thread_struct{
+		...thread,
+		microtimestamp starttime,
+		boolean started
+	}
 
+//Thread lauch at the start of the driver
+void threadHandller(){
+	foreach ms{
+		foreachworkqueue{
+				if(thread_struct[0]->started){
+					//if finished
+						//clean
+						//and replace all the thread (1 goes to 0 , 2 goes to 1)
+						//start the next thread
+				}else{
+					if(starttime<=now_time){
+						//start
+						thrad_struct[0]->started=true;
+					}
+				}	
+		}
+	}
+}
+
+*/
+/*
+	wait for the end of all threads ?
+*/
 void flush_workqueue(struct workqueue_struct *wq){
+	//int i
+	//for(;;)
+		//wq->tlink;
 	return;
 }
+/*
+	Alloc the memory for a workqueue struct
+*/
 struct workqueue_struct *__create_workqueue(const char *name,int singlethread){
-	return NULL;
+	struct workqueue_struct* tmp_workqueue = (struct workqueue_struct*)IOMalloc(sizeof(struct workqueue_struct));
+	if(!tmp_workqueue)
+		return NULL;
+	return tmp_workqueue;
 }
+/*
+	Unalloc? 
+*/
 void destroy_workqueue (	struct workqueue_struct *  	wq){
 	//for ...x in
 	//wq->tlink[x]=NULL;
 	return;
 }
+//?
 int cancel_work_sync(struct work_struct *work){
 	return 1;
 }
-
 /*
 	FIXME: Finish IT ;)
 	Used only once
@@ -1005,19 +1057,31 @@ void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigne
 	return;
 }
 
-
-int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
-#warning Get this to run in a gated manner
-    (work->func)(work);
-	//maybe add a counter in workqueue struct
-	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,work),NULL,NULL,false,wq->tlink);
-    return 0;
+static thread_call_t tlink[20];//for the queue work...
+/*
+	Cancel a work queue
+*/
+void queue_td(int num , thread_call_func_t func)
+{
+	//IWI_DEBUG("queue_td0 %d\n",tlink[num]);
+	//IWI_DEBUG("queue_td0 %d\n",tlink[num]);
+	if (tlink[num])
+	{
+		thread_call_cancel(tlink[num]);
+		//if (thread_call_cancel(tlink[num])==0)
+		//	thread_call_free(tlink[num]);
+		//tlink[num]=NULL;
+	}
+	//IWI_DEBUG("queue_td1-%d , %d %d\n",num,r,r1);
 }
-/*void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start,thread_call_t tkink)
+/*
+	Add a queue work 
+*/
+void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start,thread_call_t tkink)
 {
 	if (tlink[num]) queue_td(num,NULL);
 	//IWI_DEBUG("queue_te0 %d\n",tlink[num]);
-	if (!tlink[num]) tlink[num]=thread_call_allocate(func,this);
+	if (!tlink[num]) tlink[num]=thread_call_allocate(func,currentController);
 	//IWI_DEBUG("queue_te1 %d\n",tlink[num]);
 	uint64_t timei2;
 	if (timei) clock_interval_to_deadline(timei,kMillisecondScale,&timei2);
@@ -1033,23 +1097,18 @@ int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
 	//IWI_DEBUG("queue_te result %d\n",r);
 }
 
-void queue_td(int num , thread_call_func_t func)
-{
-	//IWI_DEBUG("queue_td0 %d\n",tlink[num]);
-	//IWI_DEBUG("queue_td0 %d\n",tlink[num]);
-	if (tlink[num])
-	{
-		thread_call_cancel(tlink[num]);
-		//if (thread_call_cancel(tlink[num])==0)
-		//	thread_call_free(tlink[num]);
-		//tlink[num]=NULL;
-	}
-	//IWI_DEBUG("queue_td1-%d , %d %d\n",num,r,r1);
-}*/
 
+int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
+#warning Get this to run in a gated manner
+    (work->func)(work);
+	//maybe add a counter in workqueue struct
+	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,currentController,work),NULL,NULL,false,wq->tlink);
+    return 0;
+}
+//FIXME: !
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay) {
     IOLog("todo queue_delayed_work\n");
-	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,this,work),NULL,delay,false,wq->tlink);
+	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,currentController,work),NULL,delay,false,wq->tlink);
     return 0;
 }
 /**
@@ -1091,13 +1150,5 @@ long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long
     return 10;
 }
 
-void setCurController(IONetworkController *tmp){
-	currentController=tmp;
-	printf("settCurController [OK]\n");
-}
-
-struct ieee80211_hw * get_my_hw(){
-	return my_hw;
-}
 
 
