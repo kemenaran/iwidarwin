@@ -33,7 +33,9 @@ static ieee80211_hw * my_hw;
 static IOWorkLoop * workqueue;
 static IOInterruptEventSource *	fInterruptSrc;
 static irqreturn_t (*realHandler)(int, void *);
-
+static pci_driver * my_drv;
+struct pci_dev* my_pci_dev;
+IOPCIDevice* my_pci_device;
 /*
 	Getters
 */
@@ -46,6 +48,11 @@ IOWorkLoop * getWorkLoop(){
 IOInterruptEventSource * getInterruptEventSource(){
 	if(fInterruptSrc)
 		return fInterruptSrc;
+	return NULL;
+}
+IOPCIDevice * getPCIDevice(){
+	if(my_pci_device)
+		return my_pci_device;
 	return NULL;
 }
 //added
@@ -718,8 +725,6 @@ void pci_disable_device (struct pci_dev * dev){
 	fPCIDevice->setMemoryEnable(false);
 	printf("PCI device Disabled [OK]\n");
 }
-static pci_driver * my_drv;
-struct pci_dev* my_pci_dev;
 
 /*
 	put the Iface down
@@ -759,6 +764,7 @@ int pci_register_driver(struct pci_driver * drv){
 
 	test_pci->dev.kobj.ptr=OSDynamicCast(IOPCIDevice, currentController->getProvider());
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)test_pci->dev.kobj.ptr;
+	my_pci_device=fPCIDevice;
 	fPCIDevice->retain();
 	fPCIDevice->open(currentController);
 	printf("PCI device [OK]\n");
