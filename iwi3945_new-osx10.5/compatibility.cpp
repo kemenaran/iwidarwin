@@ -173,7 +173,7 @@ void interuptsHandler(){
 		printf("No Handler defined\n");
 		return;
 	}
-	//printf("Call the IRQ Handler\n");
+	printf("Call the IRQ Handler\n");
 	(*realHandler)(1,my_hw->priv);
 }
 
@@ -718,6 +718,21 @@ void pci_disable_device (struct pci_dev * dev){
 	fPCIDevice->setMemoryEnable(false);
 	printf("PCI device Disabled [OK]\n");
 }
+static pci_driver * my_drv;
+struct pci_dev* my_pci_dev;
+
+/*
+	put the Iface down
+*/
+int if_down(){
+	if(!my_drv)
+		return -6;
+	if(!my_pci_dev)
+		return -5;
+	printf("if_down\n");
+	(my_drv->remove) (my_pci_dev);
+	return 0;
+}
 
 /*
 Adds the driver structure to the list of registered drivers.
@@ -728,10 +743,13 @@ Starting of the card will be moved after...
 */
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
 int pci_register_driver(struct pci_driver * drv){
+	if(!drv)
+		return -6;
+	my_drv=drv;
 	//maybe get the pointer for the good function as iwl3945_pci_probe ...
 	struct pci_device_id *test=(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
 	struct pci_dev *test_pci=(struct pci_dev *)IOMalloc(sizeof(struct pci_dev));
-	
+	my_pci_dev=test_pci;
 	
 	if(!currentController){
 		printf("No currentController set\n");
@@ -961,8 +979,9 @@ void destroy_workqueue (	struct workqueue_struct *  	wq){
 int cancel_work_sync(struct work_struct *work){
 	return 1;
 }
-#warning Finish IT ;)
+
 /*
+	FIXME: Finish IT ;)
 	Used only once
 	Have be finished...
 */
