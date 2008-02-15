@@ -4371,7 +4371,7 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 		fill_rx = 1;
 	/* Rx interrupt, but nothing sent from uCode */
 	if (i == r)
-		IWL_DEBUG(IWL_DL_RX | IWL_DL_ISR, "r = %d, i = %d\n", r, i);
+		printf(IWL_DL_RX | IWL_DL_ISR, "r = %d, i = %d\n", r, i);
 
 	while (i != r) {
 		rxb = rxq->queue[i];
@@ -4402,18 +4402,19 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 		 *   handle those that need handling via function in
 		 *   rx_handlers table.  See iwl3945_setup_rx_handlers() */
 		if (priv->rx_handlers[pkt->hdr.cmd]) {
-			IWL_DEBUG(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
+			printf(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
 				"r = %d, i = %d, %s, 0x%02x\n", r, i,
 				get_cmd_string(pkt->hdr.cmd), pkt->hdr.cmd);
 			priv->rx_handlers[pkt->hdr.cmd] (priv, rxb);
 		} else {
 			/* No handling needed */
-			IWL_DEBUG(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
+			printf(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
 				"r %d i %d No handler needed for %s, 0x%02x\n",
 				r, i, get_cmd_string(pkt->hdr.cmd),
 				pkt->hdr.cmd);
 		}
-
+//FIXME: to be continue
+return 0;
 		if (reclaim) {
 			/* Invoke any callbacks, transfer the skb to caller, and
 			 * fire off the (possibly) blocking iwl3945_send_cmd()
@@ -4785,8 +4786,6 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 	u32 inta_mask;
 #endif
 
-printf(".");
-return;
 	spin_lock_irqsave(&priv->lock, flags);
 
 	/* Ack/clear/reset pending uCode interrupts.
@@ -4874,15 +4873,16 @@ return;
 
 	/* Chip got too hot and stopped itself (4965 only) */
 	if (inta & CSR_INT_BIT_CT_KILL) {
-		IWL_ERROR("Microcode CT kill error detected.\n");
+		printf("Microcode CT kill error detected.\n");
 		handled |= CSR_INT_BIT_CT_KILL;
 	}
 
 	/* Error detected by uCode */
 	if (inta & CSR_INT_BIT_SW_ERR) {
-		IWL_ERROR("Microcode SW error detected.  Restarting 0x%X.\n",
+		printf("Microcode SW error detected.  Restarting 0x%X.\n",
 			  inta);
-		iwl3945_irq_handle_error(priv);
+		printf("iwl3945_irq_handle_error\n");
+		//iwl3945_irq_handle_error(priv);
 		handled |= CSR_INT_BIT_SW_ERR;
 	}
 
@@ -4904,6 +4904,7 @@ return;
 	 * Rx "responses" (frame-received notification), and other
 	 * notifications from uCode come through here*/
 	if (inta & (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX)) {
+		//printf("iwl3945_rx_handle\n");
 		iwl3945_rx_handle(priv);
 		handled |= (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX);
 	}

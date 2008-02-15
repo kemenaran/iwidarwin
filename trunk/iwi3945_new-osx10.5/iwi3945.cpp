@@ -33,6 +33,7 @@ extern void setCurController(IONetworkController * tmp);
 extern IOWorkLoop * getWorkLoop();
 extern IOInterruptEventSource * getInterruptEventSource();
 extern int if_down();
+extern IOPCIDevice * getPCIDevice();
 
 IOService * my_provider;
 #pragma mark -
@@ -101,12 +102,18 @@ void darwin_iwi3945::free(void)
 	IOLog("iwi3945: Freeing\n");
 	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
 	if( fInterruptSrc ){
-		printf("INT OK\n");
+		//printf("INT OK\n");
 		fInterruptSrc->disable();
 		fInterruptSrc->release();
+
+		IOPCIDevice *fPCIDevice = getPCIDevice();
+		if( fPCIDevice) {
+			printf("Stop PCI Device");
+			fPCIDevice->close(this);
+			fPCIDevice->release();
+		}
 		super::free();
 	}
-    
 }
 
 
