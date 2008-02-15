@@ -30,8 +30,10 @@ extern "C" {
 	
 }
 extern void setCurController(IONetworkController * tmp);
-IOService* my_provider;
+extern IOWorkLoop * getWorkLoop();
+extern IOInterruptEventSource * getInterruptEventSource();
 
+IOService * my_provider;
 #pragma mark -
 #pragma mark Overrides required for implementation
 
@@ -95,6 +97,8 @@ bool darwin_iwi3945::start(IOService *provider)
 void darwin_iwi3945::free(void)
 {
 	IOLog("iwi3945: Freeing\n");
+	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
+	if( fInterruptSrc ) fInterruptSrc->release();
     super::free();
 }
 
@@ -102,6 +106,10 @@ void darwin_iwi3945::free(void)
 void darwin_iwi3945::stop(IOService *provider)
 {
 	IOLog("iwi3945: Stopping\n");
+	IOWorkLoop * workqueue = getWorkLoop();
+	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
+	if (fInterruptSrc && workqueue)
+        workqueue->removeEventSource(fInterruptSrc);
 	super::stop(provider);
 
 }

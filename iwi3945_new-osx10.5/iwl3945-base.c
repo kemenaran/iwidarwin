@@ -4832,7 +4832,8 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 
 		return;
 	}
-
+#warning return herre for debug ;)
+return;
 #ifdef CONFIG_IWL3945_DEBUG
 	if (iwl3945_debug_level & (IWL_DL_ISR)) {
 		/* NIC fires this, but we don't use it, redundant with WAKEUP */
@@ -4983,10 +4984,10 @@ static irqreturn_t iwl3945_isr(int irq, void *data)
 
 	printf("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
 		      inta, inta_mask, inta_fh);
-return 0;
+			  
 	/* iwl3945_irq_tasklet() will service interrupts and re-enable them */
 	tasklet_schedule(&priv->irq_tasklet);
-
+return 0;
  unplugged:
 	spin_unlock(&priv->lock);
 	return IRQ_HANDLED;

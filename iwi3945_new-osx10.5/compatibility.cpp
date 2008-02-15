@@ -30,8 +30,24 @@
 // primarily when allocating sk_buff entries.
 static IONetworkController *currentController;
 static ieee80211_hw * my_hw;
+static IOWorkLoop * workqueue;
+static IOInterruptEventSource *	fInterruptSrc;
+static irqreturn_t (*realHandler)(int, void *);
 
+/*
+	Getters
+*/
+IOWorkLoop * getWorkLoop(){
+	if(workqueue)
+		return workqueue;
+	return NULL;
+}
 
+IOInterruptEventSource * getInterruptEventSource(){
+	if(fInterruptSrc)
+		return fInterruptSrc;
+	return NULL;
+}
 //added
 int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
 	return 0;
@@ -147,7 +163,7 @@ int is_zero_ether_addr (	const u8 *  	addr){
 }
 
 
-static irqreturn_t (*realHandler)(int, void *);
+
 
 /*
 	herre we call the real interuptsHandler from ipw3945
@@ -161,7 +177,7 @@ void interuptsHandler(){
 	(*realHandler)(1,my_hw->priv);
 }
 
-static IOWorkLoop * workqueue;
+
 
 /*
 	not finish parameter of handler and workqueue
@@ -184,7 +200,7 @@ int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned 
 		set the handler for intterupts
 	*/
 		realHandler=handler;
-        IOInterruptEventSource *	fInterruptSrc;
+
 		fInterruptSrc = IOInterruptEventSource::interruptEventSource(
 							currentController, (IOInterruptEventAction)&interuptsHandler,currentController->getProvider()
 							);
@@ -945,12 +961,22 @@ void destroy_workqueue (	struct workqueue_struct *  	wq){
 int cancel_work_sync(struct work_struct *work){
 	return 1;
 }
+#warning Finish IT ;)
+/*
+	Used only once
+	Have be finished...
+*/
 void tasklet_schedule(struct tasklet_struct *t){
+	//queue_te(13,OSMemberFunctionCast(thread_call_func_t,currentController,t->func),t->data,NULL,true);
+	(t->func)(t->data);
 	return;
 }
 /*
+	Used only once ,
 */
 void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data){
+	t->func=func;
+	t->data=data;
 	return;
 }
 

@@ -177,6 +177,8 @@ struct work_struct;
 
 struct tasklet_struct {
     int padding;
+	void (*func)(unsigned long);
+	unsigned long data;
 };
 
 struct delayed_work;
