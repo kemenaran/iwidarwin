@@ -2226,6 +2226,7 @@ int iwl3945_hw_set_hw_setting(struct iwl3945_priv *priv)
 	priv->hw_setting.bcast_sta_id = IWL3945_BROADCAST_ID;
 	return 0;
 }
+//init_waitqueue_head
 
 unsigned int iwl3945_hw_get_beacon_cmd(struct iwl3945_priv *priv,
 			  struct iwl3945_frame *frame, u8 rate)
