@@ -3541,19 +3541,19 @@ static void iwl3945_rx_reply_alive(struct iwl3945_priv *priv,
 
 	palive = &pkt->u.alive_frame;
 
-	IWL_DEBUG_INFO("Alive ucode status 0x%08X revision "
+	printf("Alive ucode status 0x%08X revision "
 		       "0x%01X 0x%01X\n",
 		       palive->is_valid, palive->ver_type,
 		       palive->ver_subtype);
 
 	if (palive->ver_subtype == INITIALIZE_SUBTYPE) {
-		IWL_DEBUG_INFO("Initialization Alive received.\n");
+		printf("Initialization Alive received.\n");
 		memcpy(&priv->card_alive_init,
 		       &pkt->u.alive_frame,
 		       sizeof(struct iwl3945_init_alive_resp));
 		pwork = &priv->init_alive_start;
 	} else {
-		IWL_DEBUG_INFO("Runtime Alive received.\n");
+		printf("Runtime Alive received.\n");
 		memcpy(&priv->card_alive, &pkt->u.alive_frame,
 		       sizeof(struct iwl3945_alive_resp));
 		pwork = &priv->alive_start;
@@ -4370,8 +4370,8 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 	if (iwl3945_rx_queue_space(rxq) > (RX_QUEUE_SIZE / 2))
 		fill_rx = 1;
 	/* Rx interrupt, but nothing sent from uCode */
-	if (i == r)
-		printf(IWL_DL_RX | IWL_DL_ISR, "r = %d, i = %d\n", r, i);
+	//if (i == r)
+	//	printf(IWL_DL_RX | IWL_DL_ISR, "r = %d, i = %d\n", r, i);
 
 	while (i != r) {
 		rxb = rxq->queue[i];
@@ -4402,14 +4402,12 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 		 *   handle those that need handling via function in
 		 *   rx_handlers table.  See iwl3945_setup_rx_handlers() */
 		if (priv->rx_handlers[pkt->hdr.cmd]) {
-			printf(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
-				"r = %d, i = %d, %s, 0x%02x\n", r, i,
+			printf("r = %d, i = %d, %s, 0x%02x\n", r, i,
 				get_cmd_string(pkt->hdr.cmd), pkt->hdr.cmd);
 			priv->rx_handlers[pkt->hdr.cmd] (priv, rxb);
 		} else {
 			/* No handling needed */
-			printf(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
-				"r %d i %d No handler needed for %s, 0x%02x\n",
+			printf("r %d i %d No handler needed for %s, 0x%02x\n",
 				r, i, get_cmd_string(pkt->hdr.cmd),
 				pkt->hdr.cmd);
 		}
@@ -4418,9 +4416,10 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 			/* Invoke any callbacks, transfer the skb to caller, and
 			 * fire off the (possibly) blocking iwl3945_send_cmd()
 			 * as we reclaim the driver command queue */
-			if (rxb && rxb->skb)
-				iwl3945_tx_cmd_complete(priv, rxb);
-			else
+			if (rxb && rxb->skb){
+				//iwl3945_tx_cmd_complete(priv, rxb);
+				printf("iwl3945_tx_cmd_complete()\n");
+			}else
 				IWL_WARNING("Claim null rxb?\n");
 		}
 
@@ -4445,7 +4444,8 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 			count++;
 			if (count >= 8) {
 				priv->rxq.read = i;
-				__iwl3945_rx_replenish(priv);
+				//__iwl3945_rx_replenish(priv);
+				printf("__iwl3945_rx_replenish()\n");
 				count = 0;
 			}
 		}
@@ -4454,6 +4454,7 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 	/* Backtrack one entry */
 	priv->rxq.read = i;
 	iwl3945_rx_queue_restock(priv);
+	//printf("iwl3945_rx_queue_restock()\n");
 }
 
 /**
@@ -6130,7 +6131,7 @@ static void iwl3945_init_alive_start(struct iwl3945_priv *priv)
 	if (priv->card_alive_init.is_valid != UCODE_VALID_OK) {
 		/* We had an error bringing up the hardware, so take it
 		 * all the way back down so we can try again */
-		IWL_DEBUG_INFO("Initialize Alive failed.\n");
+		printf("Initialize Alive failed.\n");
 		goto restart;
 	}
 
@@ -6140,24 +6141,25 @@ static void iwl3945_init_alive_start(struct iwl3945_priv *priv)
 	if (iwl3945_verify_ucode(priv)) {
 		/* Runtime instruction load was bad;
 		 * take it all the way back down so we can try again */
-		IWL_DEBUG_INFO("Bad \"initialize\" uCode load.\n");
+		printf("Bad \"initialize\" uCode load.\n");
 		goto restart;
 	}
 
 	/* Send pointers to protocol/runtime uCode image ... init code will
 	 * load and launch runtime uCode, which will send us another "Alive"
 	 * notification. */
-	IWL_DEBUG_INFO("Initialization Alive received.\n");
+	printf("Initialization Alive received.\n");
 	if (iwl3945_set_ucode_ptrs(priv)) {
 		/* Runtime instruction load won't happen;
 		 * take it all the way back down so we can try again */
-		IWL_DEBUG_INFO("Couldn't set up uCode pointers.\n");
+		printf("Couldn't set up uCode pointers.\n");
 		goto restart;
 	}
 	return;
 
  restart:
-	queue_work(priv->workqueue, &priv->restart);
+	//queue_work(priv->workqueue, &priv->restart);
+	printf("restart\n");
 }
 
 
@@ -6478,9 +6480,8 @@ static int __iwl3945_up(struct iwl3945_priv *priv)
 
 static void iwl3945_bg_init_alive_start(struct work_struct *data)
 {
-	struct iwl3945_priv *priv =
-	    container_of(data, struct iwl3945_priv, init_alive_start.work);
-
+	struct iwl3945_priv *priv = 
+		container_of(data, struct iwl3945_priv, init_alive_start.work);
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
 

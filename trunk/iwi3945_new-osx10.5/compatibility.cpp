@@ -7,8 +7,8 @@
  *
  */
 
-#define NO_SPIN_LOCKS 1
-#define NO_MUTEX_LOCKS 1
+#define NO_SPIN_LOCKS 0
+#define NO_MUTEX_LOCKS 0
 
 #include <sys/kernel_types.h>
 #include <mach/vm_types.h>
@@ -242,25 +242,26 @@ void mutex_init(struct mutex *){
 	return;
 }
 //end added
+#define local_irq_save(x)       __asm__ __volatile__("pushfl ; popl %0 ; cli":"=g" (x): /* no input */ :"memory")
 void spin_lock_irqsave(spinlock_t *lock, int fl) {
-//mask interupts
-//local_irq_save(fl) on linux
-/*
-#define local_irq_save(x) ({ __save_flags(x); __cli(); })
-#define __save_flags(x) asm volatile ("movew %%sr,%0":"=d" (x) : :
-"memory")
-#define __cli() asm volatile ("oriw #0x0700,%%sr": : : "memory")
-*/
-       spin_lock(lock);
-   return;
+	//local_irq_save(fl);
+	spin_lock(lock);
+	return;
 }
 
+#define typecheck(type,x) \
+({      type __dummy; \
+         typeof(x) __dummy2; \
+         (void)(&__dummy == &__dummy2); \
+         1; \
+})
+
+#define local_irq_restore(x)    do { typecheck(unsigned long,x); __asm__ __volatile__("pushl %0 ; popfl": /* no output */ :"g" (x):"memory", "cc"); } while (0)
 void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
- //unmask interups
-/*#define __restore_flags(x) asm volatile ("movew %0,%%sr": :"d" (x) :
-"memory")*/
-       spin_unlock(lock);
-   return;
+	unsigned long tmp= fl;
+	spin_unlock(lock);
+	//local_irq_restore(tmp);
+	return;
 }
 
 void spin_lock_init(spinlock_t *lock) {
@@ -1057,7 +1058,8 @@ void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigne
 	return;
 }
 
-static thread_call_t tlink[20];//for the queue work...
+static thread_call_t tlink[200];//for the queue work...
+static int thread_pos=0;
 /*
 	Cancel a work queue
 */
@@ -1077,15 +1079,15 @@ void queue_td(int num , thread_call_func_t func)
 /*
 	Add a queue work 
 */
-void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start,thread_call_t tkink)
+void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start)
 {
 	if (tlink[num]) queue_td(num,NULL);
-	//IWI_DEBUG("queue_te0 %d\n",tlink[num]);
+	//printf("queue_te0 %d\n",tlink[num]);
 	if (!tlink[num]) tlink[num]=thread_call_allocate(func,currentController);
-	//IWI_DEBUG("queue_te1 %d\n",tlink[num]);
+	//printf("queue_te1 %d\n",tlink[num]);
 	uint64_t timei2;
 	if (timei) clock_interval_to_deadline(timei,kMillisecondScale,&timei2);
-	//IWI_DEBUG("queue_te time %d %d\n",timei,timei2);
+	//printf("queue_te time %d %d\n",timei,timei2);
 	int r;
 	if (start==true && tlink[num])
 	{
@@ -1100,15 +1102,23 @@ void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 
 
 int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
 #warning Get this to run in a gated manner
-    (work->func)(work);
-	//maybe add a counter in workqueue struct
-	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,currentController,work),NULL,NULL,false,wq->tlink);
+	queue_te(thread_pos,(thread_call_func_t)work->func,work,NULL,true);
+	thread_pos++;
+	if(thread_pos>=200)
+		thread_pos=0;
     return 0;
 }
 //FIXME: !
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay) {
-    IOLog("todo queue_delayed_work\n");
-	//queue_te(0,OSMemberFunctionCast(thread_call_func_t,currentController,work),NULL,delay,false,wq->tlink);
+	struct work_struct tmp;
+	tmp=work->work;
+	struct work_struct *tmp2;
+	tmp2=&tmp;
+	
+	queue_te(thread_pos,(thread_call_func_t)tmp2->func,tmp2,delay,true);
+	thread_pos++;
+	if(thread_pos>=200)
+		thread_pos=0;
     return 0;
 }
 /**
