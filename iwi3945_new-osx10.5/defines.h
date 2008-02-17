@@ -240,7 +240,7 @@ typedef void (*work_func_t)(struct work_struct *work);
 
 
 struct work_struct {
-    long data;
+    void* data;
 #define WORK_STRUCT_PENDING 0       /* T if work item pending execution */
 #define WORK_STRUCT_NOAUTOREL 1     /* F if work item automatically released on 
 exec */
