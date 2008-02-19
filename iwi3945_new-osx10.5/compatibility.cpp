@@ -36,6 +36,10 @@ static irqreturn_t (*realHandler)(int, void *);
 static pci_driver * my_drv;
 struct pci_dev* my_pci_dev;
 IOPCIDevice* my_pci_device;
+
+static int next_thread=0;
+static int thread_pos=0;
+static IOLock* thread_lock;
 /*
 	Getters
 */
@@ -768,6 +772,8 @@ Starting of the card will be moved after...
 */
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
 int pci_register_driver(struct pci_driver * drv){
+	if(!thread_lock)
+		thread_lock = IOLockAlloc();
 	if(!drv)
 		return -6;
 	my_drv=drv;
@@ -1113,9 +1119,7 @@ void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigne
 	//IWI_DEBUG("queue_te result %d\n",r);
 }*/
 
-static int next_thread=0;
-static int thread_pos=0;
-static IOLock *thread_lock;
+
 	
 
 //static mutex
@@ -1129,19 +1133,19 @@ struct thread_data{
 void start_thread(void* data){
 
 	struct thread_data* data_thread=(struct thread_data *)data;
-	if(!thread_lock)
-		thread_lock = IOLockAlloc();
-	/*while(data_thread->thread_number!=next_thread){
+//	if(!thread_lock)
+//		thread_lock = IOLockAlloc();
+	do{
 		//mutex
 		IOLockLock(thread_lock);
-	}*/
+	}while(data_thread->thread_number!=next_thread);
 	if(data_thread->delay>0){
 		IOSleep(data_thread->delay);  
 	}
 	(data_thread->func)((work_struct*)my_hw->priv);
 	next_thread++;
 	//mutex
-	//IOLockUnlock(thread_lock);
+	IOLockUnlock(thread_lock);
 	IOExitThread();
 }
 
@@ -1154,9 +1158,9 @@ int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
     md->func = work->func;
 	md->delay = 0;
 	md->thread_number = thread_pos++;
-    //mythread = IOCreateThread(&start_thread, (void *)md);
+    mythread = IOCreateThread(&start_thread, (void *)md);
 	//(work->func)((work_struct*)my_hw->priv);
-	IOCreateThread((IOThreadFunc)work->func,my_hw->priv);
+	//IOCreateThread((IOThreadFunc)work->func,my_hw->priv);
 	//queue_te(thread_pos,(thread_call_func_t)work->func,my_hw->priv,NULL,true);
 	/*thread_pos++;
 	if(thread_pos>=200)
@@ -1175,12 +1179,12 @@ int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, u
     md->func = tmp2->func;
 	md->delay = delay;
 	md->thread_number = thread_pos++;
-    //mythread = IOCreateThread(&start_thread, (void *)md);
+    mythread = IOCreateThread(&start_thread, (void *)md);
 	//IOLog("PRIV: %08x\n",my_hw->priv);
 	//IOLog("TMP2: %08x\n",tmp2);
 	//(tmp2->func)((work_struct*)my_hw->priv);
 	//queue_te(thread_pos,(thread_call_func_t)tmp2->func,my_hw->priv,delay,true);
-	IOCreateThread((IOThreadFunc)tmp2->func,my_hw->priv);
+	//IOCreateThread((IOThreadFunc)tmp2->func,my_hw->priv);
 	/*if(thread_pos>=200)
 		thread_pos=0;*/
     return 0;
