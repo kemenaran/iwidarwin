@@ -802,9 +802,17 @@ static int iwl3945_send_cmd_sync(struct iwl3945_priv *priv, struct iwl3945_host_
 		goto out;
 	}
 
-	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
-			!test_bit(STATUS_HCMD_ACTIVE, &priv->status),
-			HOST_COMPLETE_TIMEOUT);
+	//ret = wait_event_interruptible_timeout(priv->wait_command_queue,
+	//		!test_bit(STATUS_HCMD_ACTIVE, &priv->status),
+	//		HOST_COMPLETE_TIMEOUT);
+	ret=HOST_COMPLETE_TIMEOUT;
+	while(test_bit(STATUS_HCMD_ACTIVE, &priv->status)){
+		IOSleep(1);
+		ret--;
+		if(ret==0)
+			break;
+	}
+	printf("Wait Condition: %d\n",ret);	
 	if (!ret) {
 		if (test_bit(STATUS_HCMD_ACTIVE, &priv->status)) {
 			IWL_ERROR("Error sending %s: time out after %dms.\n",
@@ -4982,7 +4990,7 @@ static irqreturn_t iwl3945_isr(int irq, void *data)
 	if ((inta == 0xFFFFFFFF) || ((inta & 0xFFFFFFF0) == 0xa5a5a5a0)) {
 		/* Hardware disappeared. It might have already raised
 		 * an interrupt */
-		IWL_WARNING("HARDWARE GONE?? INTA == 0x%080x\n", inta);
+		//IWL_WARNING("HARDWARE GONE?? INTA == 0x%080x\n", inta);
 		goto unplugged;
 	}
 
@@ -6999,12 +7007,20 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 
 	/* Wait for START_ALIVE from ucode. Otherwise callbacks from
 	 * mac80211 will not be run successfully. */
-	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
+	/*ret = wait_event_interruptible_timeout(priv->wait_command_queue,
 			test_bit(STATUS_READY, &priv->status),
-			UCODE_READY_TIMEOUT);
+			UCODE_READY_TIMEOUT);*/
+	ret=200;
+	while(!test_bit(STATUS_READY, &priv->status)){
+		IOSleep(1);
+		ret--;
+		if(ret==0)
+			break;
+	}
+	printf("Wait Condition: %d\n",ret);
 	if (!ret) {
 		if (!test_bit(STATUS_READY, &priv->status)) {
-			IWL_ERROR("Wait for START_ALIVE timeout after %dms.\n",
+			IOLog("Wait for START_ALIVE timeout after %dms.\n",
 				  jiffies_to_msecs(UCODE_READY_TIMEOUT));
 			ret = -ETIMEDOUT;
 			goto out_release_irq;
