@@ -201,10 +201,10 @@ void interuptsHandler(){
 int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id) {
 	if(!workqueue){
 		workqueue = IOWorkLoop::workLoop();
-		if(workqueue)
+		/*if(workqueue)
 			IOLog("Workloop creation successful!\n");
 		else
-			IOLog("FAILED!  Couldn't create workloop\n");
+			IOLog("FAILED!  Couldn't create workloop\n");*/
 		if( workqueue )
         workqueue->init();
         if (!workqueue) {
@@ -230,11 +230,19 @@ int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned 
 		// other devices that are sharing the interrupt line, the event source
 		// is enabled immediately.
 		fInterruptSrc->enable();
-	printf("request_irq [OK]\n");
+	//printf("request_irq [OK]\n");
 	return 0;
 }
 
-
+//FIXME: test
+void enable_int(){
+	if(fInterruptSrc)
+		fInterruptSrc->enable();
+}
+void disable_int(){
+	if(fInterruptSrc)
+		fInterruptSrc->disable();
+}
 
 
 
@@ -258,7 +266,7 @@ void spin_lock_irqsave(spinlock_t *lock, int fl) {
 
 #define local_irq_restore(x)    do { typecheck(unsigned long,x); __asm__ __volatile__("pushl %0 ; popfl": /* no output */ :"g" (x):"memory", "cc"); } while (0)
 void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
-	unsigned long tmp= fl;
+	//unsigned long tmp= fl;
 	spin_unlock(lock);
 	//local_irq_restore(tmp);
 	return;
@@ -285,10 +293,12 @@ void spin_unlock(spinlock_t *lock) {
 
 //http://hira.main.jp/wiki/pukiwiki.php?spin_lock_bh()%2Flinux2.6
 void spin_lock_bh( spinlock_t *lock ) {
+	spin_lock(lock);
     return;
 }
 
 void spin_unlock_bh( spinlock_t *lock ) {
+	spin_unlock(lock);
     return;
 }
 
@@ -669,7 +679,7 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	//INIT_LIST_HEAD(&local->skb_queue);
 	//INIT_LIST_HEAD(&local->skb_queue_unreliable);
 	
-	printf("ieee80211_alloc_hw [OK]\n");
+	//printf("ieee80211_alloc_hw [OK]\n");
 	my_hw=local_to_hw(local);
 	return my_hw;
 	//return NULL;
@@ -708,7 +718,7 @@ int pci_restore_state (	struct pci_dev *  	dev){
 	int i;
 	for (i = 0; i < 16; i++)
 		fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
-	printf("PCI restore state [OK]\n");
+	//printf("PCI restore state [OK]\n");
 	return 0;
 }
 /*
@@ -723,7 +733,7 @@ int pci_enable_device (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setIOEnable(true);
 	fPCIDevice->setMemoryEnable(true);
-	printf("PCI device enabled [OK]\n");
+	//printf("PCI device enabled [OK]\n");
 	return 0;
 }
 
@@ -733,7 +743,7 @@ void pci_disable_device (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setIOEnable(false);
 	fPCIDevice->setMemoryEnable(false);
-	printf("PCI device Disabled [OK]\n");
+	//printf("PCI device Disabled [OK]\n");
 }
 
 /*
@@ -744,7 +754,7 @@ int if_down(){
 		return -6;
 	if(!my_pci_dev)
 		return -5;
-	printf("if_down\n");
+	//printf("if_down\n");
 	(my_drv->remove) (my_pci_dev);
 	return 0;
 }
@@ -777,14 +787,12 @@ int pci_register_driver(struct pci_driver * drv){
 	my_pci_device=fPCIDevice;
 	fPCIDevice->retain();
 	fPCIDevice->open(currentController);
-	printf("PCI device [OK]\n");
+	//printf("PCI device [OK]\n");
 	//call of pci_probe
 	int result2 = (drv->probe) (test_pci,test);
 	//Start ...
 	struct ieee80211_local *local = hw_to_local(my_hw);
 	result2 = (local->ops->open) (&local->hw);
-	//call on interupt to test
-	//interuptsHandler();
 	return 0;
 }
 //http://www.promethos.org/lxr/http/source/drivers/pci/pci-driver.c#L376
@@ -797,7 +805,7 @@ void pci_unregister_driver (struct pci_driver * drv){
 void pci_set_master (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setBusMasterEnable(true);
-	printf("PCI setMaster [OK]\n");
+	//printf("PCI setMaster [OK]\n");
 	return;
 }
 
@@ -814,7 +822,7 @@ int pci_save_state (struct pci_dev * dev){
 	int i;
 	for (i = 0; i < 16; i++)
 		dev->saved_config_space[i]=fPCIDevice->configRead32(i * 4);
-	printf("PCI save state [OK]\n");
+	//printf("PCI save state [OK]\n");
 	return 0;
 }
 int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
@@ -879,7 +887,7 @@ void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxl
 	}
 	ioBase = map->getPhysicalAddress();
 	memBase = (UInt16 *)map->getVirtualAddress();
-	printf("Iomap [OK]\n");
+	//printf("Iomap [OK]\n");
 	return memBase;
 }
 void pci_iounmap(struct pci_dev *dev, void __iomem * addr){
@@ -1058,12 +1066,12 @@ void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigne
 	return;
 }
 
-static thread_call_t tlink[200];//for the queue work...
-static int thread_pos=0;
+//static thread_call_t tlink[200];//for the queue work...
+//static int thread_pos=0;
 /*
 	Cancel a work queue
 */
-void queue_td(int num , thread_call_func_t func)
+/*void queue_td(int num , thread_call_func_t func)
 {
 	//IWI_DEBUG("queue_td0 %d\n",tlink[num]);
 	//IWI_DEBUG("queue_td0 %d\n",tlink[num]);
@@ -1075,11 +1083,11 @@ void queue_td(int num , thread_call_func_t func)
 		//tlink[num]=NULL;
 	}
 	//IWI_DEBUG("queue_td1-%d , %d %d\n",num,r,r1);
-}
+}*/
 /*
 	Add a queue work 
 */
-void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start)
+/*void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start)
 {
 	if (tlink[num]) queue_td(num,NULL);
 	//printf("queue_te0 %d\n",tlink[num]);
@@ -1093,32 +1101,88 @@ void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 
 	{
 		if (!par && !timei)	r=thread_call_enter(tlink[num]);
 		if (!par && timei)	r=thread_call_enter_delayed(tlink[num],timei2);
-		if (par && !timei)	r=thread_call_enter1(tlink[num],par);
-		if (par && timei)	r=thread_call_enter1_delayed(tlink[num],par,timei2);
+		if (par && !timei){
+			IOLog("PAR: %08x\n",par);
+			r=thread_call_enter1(tlink[num],my_hw->priv);
+		}
+		if (par && timei){
+			IOLog("PAR: %08x\n",par);
+			r=thread_call_enter1_delayed(tlink[num],my_hw->priv,timei2);
+		}
 	}
 	//IWI_DEBUG("queue_te result %d\n",r);
+}*/
+
+static int next_thread=0;
+static int thread_pos=0;
+static IOLock *thread_lock;
+	
+
+//static mutex
+struct thread_data{
+	work_func_t func;
+	void* param;
+	int delay;
+	int thread_number;
+};
+
+void start_thread(void* data){
+
+	struct thread_data* data_thread=(struct thread_data *)data;
+	if(!thread_lock)
+		thread_lock = IOLockAlloc();
+	/*while(data_thread->thread_number!=next_thread){
+		//mutex
+		IOLockLock(thread_lock);
+	}*/
+	if(data_thread->delay>0){
+		IOSleep(data_thread->delay);  
+	}
+	(data_thread->func)((work_struct*)my_hw->priv);
+	next_thread++;
+	//mutex
+	//IOLockUnlock(thread_lock);
+	IOExitThread();
 }
 
 
+//FIXME: thread change param adresse
 int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
 #warning Get this to run in a gated manner
-	queue_te(thread_pos,(thread_call_func_t)work->func,work,NULL,true);
-	thread_pos++;
+	IOThread mythread;
+    struct thread_data *md = (struct thread_data *)IOMalloc(sizeof(*md));
+    md->func = work->func;
+	md->delay = 0;
+	md->thread_number = thread_pos++;
+    //mythread = IOCreateThread(&start_thread, (void *)md);
+	//(work->func)((work_struct*)my_hw->priv);
+	IOCreateThread((IOThreadFunc)work->func,my_hw->priv);
+	//queue_te(thread_pos,(thread_call_func_t)work->func,my_hw->priv,NULL,true);
+	/*thread_pos++;
 	if(thread_pos>=200)
-		thread_pos=0;
+		thread_pos=0;*/
     return 0;
 }
-//FIXME: !
+//FIXME: thread change param adresse
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay) {
 	struct work_struct tmp;
 	tmp=work->work;
 	struct work_struct *tmp2;
 	tmp2=&tmp;
 	
-	queue_te(thread_pos,(thread_call_func_t)tmp2->func,tmp2,delay,true);
-	thread_pos++;
-	if(thread_pos>=200)
-		thread_pos=0;
+	IOThread mythread;
+    struct thread_data *md = (struct thread_data *)IOMalloc(sizeof(*md));
+    md->func = tmp2->func;
+	md->delay = delay;
+	md->thread_number = thread_pos++;
+    //mythread = IOCreateThread(&start_thread, (void *)md);
+	//IOLog("PRIV: %08x\n",my_hw->priv);
+	//IOLog("TMP2: %08x\n",tmp2);
+	//(tmp2->func)((work_struct*)my_hw->priv);
+	//queue_te(thread_pos,(thread_call_func_t)tmp2->func,my_hw->priv,delay,true);
+	IOCreateThread((IOThreadFunc)tmp2->func,my_hw->priv);
+	/*if(thread_pos>=200)
+		thread_pos=0;*/
     return 0;
 }
 /**
@@ -1157,8 +1221,15 @@ int cancel_delayed_work(struct delayed_work *work) {
 * if the condition evaluated to true before the timeout elapsed.
 */
 long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout) {
-    return 10;
+	/*for(;;){
+		if(condition)
+			return timeout;
+		if(timeout=0)
+			return timeout;
+		timeout--;
+	} */
+	IOSleep(1);
+	return 1;                                                      
 }
-
 
 

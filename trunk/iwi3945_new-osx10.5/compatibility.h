@@ -204,6 +204,8 @@ extern "C" {
         list->prev = list;
     }
     
+	extern void enable_int();
+	extern void disable_int();
 
 #ifdef __cplusplus
 }

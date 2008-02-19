@@ -902,37 +902,37 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 	rc = pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &rev_id);
 	if (rc)
 		return rc;
-	printf("HW Revision ID = 0x%X\n", rev_id);
+	IWL_DEBUG_INFO("HW Revision ID = 0x%X\n", rev_id);
 
 	iwl3945_nic_set_pwr_src(priv, 1);
 	spin_lock_irqsave(&priv->lock, flags);
 
 	if (rev_id & PCI_CFG_REV_ID_BIT_RTP)
-		printf("RTP type \n");
+		IWL_DEBUG_INFO("RTP type \n");
 	else if (rev_id & PCI_CFG_REV_ID_BIT_BASIC_SKU) {
-		printf("ALM-MB type\n");
+		IWL_DEBUG_INFO("ALM-MB type\n");
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_ALMAGOR_MB);
 	} else {
-		printf("ALM-MM type\n");
+		IWL_DEBUG_INFO("ALM-MM type\n");
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_ALMAGOR_MM);
 	}
 
 	if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
-		printf("SKU OP mode is mrc\n");
+		IWL_DEBUG_INFO("SKU OP mode is mrc\n");
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_SKU_MRC);
 	} else
-		printf("SKU OP mode is basic\n");
+		IWL_DEBUG_INFO("SKU OP mode is basic\n");
 
 	if ((priv->eeprom.board_revision & 0xF0) == 0xD0) {
-		printf("3945ABG revision is 0x%X\n",
+		IWL_DEBUG_INFO("3945ABG revision is 0x%X\n",
 			       priv->eeprom.board_revision);
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
 	} else {
-		printf("3945ABG revision is 0x%X\n",
+		IWL_DEBUG_INFO("3945ABG revision is 0x%X\n",
 			       priv->eeprom.board_revision);
 		iwl3945_clear_bit(priv, CSR_HW_IF_CONFIG_REG,
 			      CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
@@ -941,10 +941,10 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 	if (priv->eeprom.almgor_m_version <= 1) {
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_A);
-		printf("Card M type A version is 0x%X\n",
+		IWL_DEBUG_INFO("Card M type A version is 0x%X\n",
 			       priv->eeprom.almgor_m_version);
 	} else {
-		printf("Card M type B version is 0x%X\n",
+		IWL_DEBUG_INFO("Card M type B version is 0x%X\n",
 			       priv->eeprom.almgor_m_version);
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_B);
@@ -952,16 +952,16 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 	spin_unlock_irqrestore(&priv->lock, flags);
 
 	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
-		printf("SW RF KILL supported in EEPROM.\n");
+		IWL_DEBUG_RF_KILL("SW RF KILL supported in EEPROM.\n");
 
 	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
-		printf("HW RF KILL supported in EEPROM.\n");
+		IWL_DEBUG_RF_KILL("HW RF KILL supported in EEPROM.\n");
 
 	/* Allocate the RX queue, or reset if it is already allocated */
 	if (!rxq->bd) {
 		rc = iwl3945_rx_queue_alloc(priv);
 		if (rc) {
-			printf("Unable to initialize Rx queue\n");
+			IWL_ERROR("Unable to initialize Rx queue\n");
 			return -ENOMEM;
 		}
 	} else
@@ -2226,7 +2226,6 @@ int iwl3945_hw_set_hw_setting(struct iwl3945_priv *priv)
 	priv->hw_setting.bcast_sta_id = IWL3945_BROADCAST_ID;
 	return 0;
 }
-//init_waitqueue_head
 
 unsigned int iwl3945_hw_get_beacon_cmd(struct iwl3945_priv *priv,
 			  struct iwl3945_frame *frame, u8 rate)

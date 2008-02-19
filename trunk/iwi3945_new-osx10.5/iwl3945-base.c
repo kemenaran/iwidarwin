@@ -55,6 +55,10 @@
 #include "iwl-3945.h"
 #include "iwl-helpers.h"
 
+#define IWL_DEBUG(level, fmt, args...) \
+do { printk(KERN_ERR DRV_NAME": %c %s " fmt, \
+	 in_interrupt() ? 'I' : 'U', __FUNCTION__ , ## args); } while (0)
+
 #ifdef CONFIG_IWL3945_DEBUG
 u32 iwl3945_debug_level;
 #endif
@@ -3541,19 +3545,19 @@ static void iwl3945_rx_reply_alive(struct iwl3945_priv *priv,
 
 	palive = &pkt->u.alive_frame;
 
-	printf("Alive ucode status 0x%08X revision "
+	IWL_DEBUG_INFO("Alive ucode status 0x%08X revision "
 		       "0x%01X 0x%01X\n",
 		       palive->is_valid, palive->ver_type,
 		       palive->ver_subtype);
 
 	if (palive->ver_subtype == INITIALIZE_SUBTYPE) {
-		printf("Initialization Alive received.\n");
+		IWL_DEBUG_INFO("Initialization Alive received.\n");
 		memcpy(&priv->card_alive_init,
 		       &pkt->u.alive_frame,
 		       sizeof(struct iwl3945_init_alive_resp));
 		pwork = &priv->init_alive_start;
 	} else {
-		printf("Runtime Alive received.\n");
+		IWL_DEBUG_INFO("Runtime Alive received.\n");
 		memcpy(&priv->card_alive, &pkt->u.alive_frame,
 		       sizeof(struct iwl3945_alive_resp));
 		pwork = &priv->alive_start;
@@ -4370,8 +4374,8 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 	if (iwl3945_rx_queue_space(rxq) > (RX_QUEUE_SIZE / 2))
 		fill_rx = 1;
 	/* Rx interrupt, but nothing sent from uCode */
-	//if (i == r)
-	//	printf(IWL_DL_RX | IWL_DL_ISR, "r = %d, i = %d\n", r, i);
+	if (i == r)
+		IWL_DEBUG(IWL_DL_RX | IWL_DL_ISR, "r = %d, i = %d\n", r, i);
 
 	while (i != r) {
 		rxb = rxq->queue[i];
@@ -4402,12 +4406,14 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 		 *   handle those that need handling via function in
 		 *   rx_handlers table.  See iwl3945_setup_rx_handlers() */
 		if (priv->rx_handlers[pkt->hdr.cmd]) {
-			printf("r = %d, i = %d, %s, 0x%02x\n", r, i,
+			IWL_DEBUG(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
+				"r = %d, i = %d, %s, 0x%02x\n", r, i,
 				get_cmd_string(pkt->hdr.cmd), pkt->hdr.cmd);
 			priv->rx_handlers[pkt->hdr.cmd] (priv, rxb);
 		} else {
 			/* No handling needed */
-			printf("r %d i %d No handler needed for %s, 0x%02x\n",
+			IWL_DEBUG(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
+				"r %d i %d No handler needed for %s, 0x%02x\n",
 				r, i, get_cmd_string(pkt->hdr.cmd),
 				pkt->hdr.cmd);
 		}
@@ -4416,10 +4422,9 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 			/* Invoke any callbacks, transfer the skb to caller, and
 			 * fire off the (possibly) blocking iwl3945_send_cmd()
 			 * as we reclaim the driver command queue */
-			if (rxb && rxb->skb){
-				//iwl3945_tx_cmd_complete(priv, rxb);
-				printf("iwl3945_tx_cmd_complete()\n");
-			}else
+			if (rxb && rxb->skb)
+				iwl3945_tx_cmd_complete(priv, rxb);
+			else
 				IWL_WARNING("Claim null rxb?\n");
 		}
 
@@ -4444,8 +4449,7 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 			count++;
 			if (count >= 8) {
 				priv->rxq.read = i;
-				//__iwl3945_rx_replenish(priv);
-				printf("__iwl3945_rx_replenish()\n");
+				__iwl3945_rx_replenish(priv);
 				count = 0;
 			}
 		}
@@ -4454,7 +4458,6 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 	/* Backtrack one entry */
 	priv->rxq.read = i;
 	iwl3945_rx_queue_restock(priv);
-	//printf("iwl3945_rx_queue_restock()\n");
 }
 
 /**
@@ -4526,9 +4529,11 @@ static void iwl3945_print_rx_config_cmd(struct iwl3945_rxon_cmd *rxon)
 
 static void iwl3945_enable_interrupts(struct iwl3945_priv *priv)
 {
-	printf("Enabling interrupts\n");
+	IWL_DEBUG_ISR("Enabling interrupts\n");
 	set_bit(STATUS_INT_ENABLED, &priv->status);
 	iwl3945_write32(priv, CSR_INT_MASK, CSR_INI_SET_MASK);
+	enable_int();
+
 }
 
 static inline void iwl3945_disable_interrupts(struct iwl3945_priv *priv)
@@ -4542,7 +4547,8 @@ static inline void iwl3945_disable_interrupts(struct iwl3945_priv *priv)
 	 * from uCode or flow handler (Rx/Tx DMA) */
 	iwl3945_write32(priv, CSR_INT, 0xffffffff);
 	iwl3945_write32(priv, CSR_FH_INT_STATUS, 0xffffffff);
-	printf("Disabled interrupts\n");
+	IWL_DEBUG_ISR("Disabled interrupts\n");
+	disable_int();
 }
 
 static const char *desc_lookup(int i)
@@ -4873,16 +4879,15 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 
 	/* Chip got too hot and stopped itself (4965 only) */
 	if (inta & CSR_INT_BIT_CT_KILL) {
-		printf("Microcode CT kill error detected.\n");
+		IWL_ERROR("Microcode CT kill error detected.\n");
 		handled |= CSR_INT_BIT_CT_KILL;
 	}
 
 	/* Error detected by uCode */
 	if (inta & CSR_INT_BIT_SW_ERR) {
-		printf("Microcode SW error detected.  Restarting 0x%X.\n",
+		IWL_ERROR("Microcode SW error detected.  Restarting 0x%X.\n",
 			  inta);
-		printf("iwl3945_irq_handle_error\n");
-		//iwl3945_irq_handle_error(priv);
+		iwl3945_irq_handle_error(priv);
 		handled |= CSR_INT_BIT_SW_ERR;
 	}
 
@@ -4904,7 +4909,6 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 	 * Rx "responses" (frame-received notification), and other
 	 * notifications from uCode come through here*/
 	if (inta & (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX)) {
-		//printf("iwl3945_rx_handle\n");
 		iwl3945_rx_handle(priv);
 		handled |= (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX);
 	}
@@ -6131,7 +6135,7 @@ static void iwl3945_init_alive_start(struct iwl3945_priv *priv)
 	if (priv->card_alive_init.is_valid != UCODE_VALID_OK) {
 		/* We had an error bringing up the hardware, so take it
 		 * all the way back down so we can try again */
-		printf("Initialize Alive failed.\n");
+		IWL_DEBUG_INFO("Initialize Alive failed.\n");
 		goto restart;
 	}
 
@@ -6141,25 +6145,24 @@ static void iwl3945_init_alive_start(struct iwl3945_priv *priv)
 	if (iwl3945_verify_ucode(priv)) {
 		/* Runtime instruction load was bad;
 		 * take it all the way back down so we can try again */
-		printf("Bad \"initialize\" uCode load.\n");
+		IWL_DEBUG_INFO("Bad \"initialize\" uCode load.\n");
 		goto restart;
 	}
 
 	/* Send pointers to protocol/runtime uCode image ... init code will
 	 * load and launch runtime uCode, which will send us another "Alive"
 	 * notification. */
-	printf("Initialization Alive received.\n");
+	IWL_DEBUG_INFO("Initialization Alive received.\n");
 	if (iwl3945_set_ucode_ptrs(priv)) {
 		/* Runtime instruction load won't happen;
 		 * take it all the way back down so we can try again */
-		printf("Couldn't set up uCode pointers.\n");
+		IWL_DEBUG_INFO("Couldn't set up uCode pointers.\n");
 		goto restart;
 	}
 	return;
 
  restart:
-	//queue_work(priv->workqueue, &priv->restart);
-	printf("restart\n");
+	queue_work(priv->workqueue, &priv->restart);
 }
 
 
@@ -6290,7 +6293,7 @@ static void __iwl3945_down(struct iwl3945_priv *priv)
 	int exit_pending = test_bit(STATUS_EXIT_PENDING, &priv->status);
 	struct ieee80211_conf *conf = NULL;
 
-	printf(DRV_NAME " is going down\n");
+	IWL_DEBUG_INFO(DRV_NAME " is going down\n");
 
 	conf = ieee80211_get_hw_conf(priv->hw);
 
@@ -6478,10 +6481,11 @@ static int __iwl3945_up(struct iwl3945_priv *priv)
  *
  *****************************************************************************/
 
-static void iwl3945_bg_init_alive_start(struct work_struct *data)
+static void iwl3945_bg_init_alive_start(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv = 
-		container_of(data, struct iwl3945_priv, init_alive_start.work);
+	//struct iwl3945_priv *priv =
+	//    container_of(data, struct iwl3945_priv, init_alive_start.work);
+
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
 
@@ -6490,10 +6494,10 @@ static void iwl3945_bg_init_alive_start(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl3945_bg_alive_start(struct work_struct *data)
+static void iwl3945_bg_alive_start(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv =
-	    container_of(data, struct iwl3945_priv, alive_start.work);
+	//struct iwl3945_priv *priv =
+	//    container_of(data, struct iwl3945_priv, alive_start.work);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
@@ -6503,9 +6507,9 @@ static void iwl3945_bg_alive_start(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl3945_bg_rf_kill(struct work_struct *work)
+static void iwl3945_bg_rf_kill(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv = container_of(work, struct iwl3945_priv, rf_kill);
+	//struct iwl3945_priv *priv = container_of(work, struct iwl3945_priv, rf_kill);
 
 	wake_up_interruptible(&priv->wait_command_queue);
 
@@ -6535,10 +6539,10 @@ static void iwl3945_bg_rf_kill(struct work_struct *work)
 
 #define IWL_SCAN_CHECK_WATCHDOG (7 * HZ)
 
-static void iwl3945_bg_scan_check(struct work_struct *data)
+static void iwl3945_bg_scan_check(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv =
-	    container_of(data, struct iwl3945_priv, scan_check.work);
+	//struct iwl3945_priv *priv =
+	//    container_of(data, struct iwl3945_priv, scan_check.work);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
@@ -6556,10 +6560,10 @@ static void iwl3945_bg_scan_check(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl3945_bg_request_scan(struct work_struct *data)
+static void iwl3945_bg_request_scan(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv =
-	    container_of(data, struct iwl3945_priv, request_scan);
+	//struct iwl3945_priv *priv =
+	//    container_of(data, struct iwl3945_priv, request_scan);
 	struct iwl3945_host_cmd cmd = {
 		.id = REPLY_SCAN_CMD,
 		.len = sizeof(struct iwl3945_scan_cmd),
@@ -6756,9 +6760,9 @@ static void iwl3945_bg_request_scan(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl3945_bg_up(struct work_struct *data)
+static void iwl3945_bg_up(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv, up);
+	//struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv, up);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
@@ -6768,21 +6772,21 @@ static void iwl3945_bg_up(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl3945_bg_restart(struct work_struct *data)
+static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv, restart);
+	//struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv, restart);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
 
-	iwl3945_down(priv);
-	queue_work(priv->workqueue, &priv->up);
+	//iwl3945_down(priv);
+	//queue_work(priv->workqueue, &priv->up);
 }
 
-static void iwl3945_bg_rx_replenish(struct work_struct *data)
+static void iwl3945_bg_rx_replenish(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv =
-	    container_of(data, struct iwl3945_priv, rx_replenish);
+	//struct iwl3945_priv *priv =
+	//    container_of(data, struct iwl3945_priv, rx_replenish);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
@@ -6794,10 +6798,10 @@ static void iwl3945_bg_rx_replenish(struct work_struct *data)
 
 #define IWL_DELAY_NEXT_SCAN (HZ*2)
 
-static void iwl3945_bg_post_associate(struct work_struct *data)
+static void iwl3945_bg_post_associate(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv,
-					     post_associate.work);
+	//struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv,
+	//				     post_associate.work);
 
 	int rc = 0;
 	struct ieee80211_conf *conf = NULL;
@@ -6897,9 +6901,9 @@ static void iwl3945_bg_post_associate(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl3945_bg_abort_scan(struct work_struct *work)
+static void iwl3945_bg_abort_scan(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv = container_of(work, struct iwl3945_priv, abort_scan);
+	//struct iwl3945_priv *priv = container_of(work, struct iwl3945_priv, abort_scan);
 
 	if (!iwl3945_is_ready(priv))
 		return;
@@ -6914,10 +6918,10 @@ static void iwl3945_bg_abort_scan(struct work_struct *work)
 
 static int iwl3945_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf);
 
-static void iwl3945_bg_scan_completed(struct work_struct *work)
+static void iwl3945_bg_scan_completed(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv =
-	    container_of(work, struct iwl3945_priv, scan_completed);
+	//struct iwl3945_priv *priv =
+	 //struct iwl3945_priv *priv   container_of(work, struct iwl3945_priv, scan_completed);
 
 	IWL_DEBUG(IWL_DL_INFO | IWL_DL_SCAN, "SCAN complete scan\n");
 
@@ -8714,12 +8718,10 @@ static void iwl3945_pci_remove(struct pci_dev *pdev)
 	struct list_head *p, *q;
 	int i;
 
-	if (!priv){
-		printf("no priv def");
+	if (!priv)
 		return;
-	}
 
-	printf("*** UNLOAD DRIVER ***\n");
+	IWL_DEBUG_INFO("*** UNLOAD DRIVER ***\n");
 
 	set_bit(STATUS_EXIT_PENDING, &priv->status);
 
@@ -8772,7 +8774,6 @@ static void iwl3945_pci_remove(struct pci_dev *pdev)
 		dev_kfree_skb(priv->ibss_beacon);
 
 	ieee80211_free_hw(priv->hw);
-	printf("UNLOAD OK\n");
 }
 
 #ifdef CONFIG_PM
