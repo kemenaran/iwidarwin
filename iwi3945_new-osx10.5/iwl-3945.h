@@ -34,7 +34,7 @@
 
 //#include <linux/pci.h> /* for struct pci_device_id */
 //#include <linux/kernel.h>
-#include <net/ieee80211_radiotap.h>
+//#include <net/ieee80211_radiotap.h>
 
 /* Hardware specific file defines the PCI IDs table for that hardware module */
 //extern struct pci_device_id iwl3945_hw_card_ids[];

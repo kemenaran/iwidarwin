@@ -260,7 +260,7 @@ struct delayed_work {
 
 struct workqueue_struct {
     char data[4];
-	thread_call_t tlink[20];
+	thread_call_t tlink[256];
 };
 
 
@@ -1693,5 +1693,14 @@ int __x = (x);          \
 #undef mod_timer
 #undef add_timer
 #undef mod_timer
+/*#undef wait_queue
+typedef struct __wait_queue_head wait_queue_head_t;
+#undef init_waitqueue_head
+static inline void init_waitqueue_head(wait_queue_head_t *q)
+{
+		spin_lock_init(&q->lock);
+		INIT_LIST_HEAD(&q->task_list);
+}
+*/
 
 #endif //__DEFINES_H__

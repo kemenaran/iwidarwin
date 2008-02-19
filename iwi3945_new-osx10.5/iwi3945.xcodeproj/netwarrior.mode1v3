@@ -202,37 +202,37 @@
 			<key>Content</key>
 			<dict>
 				<key>PBXProjectModuleGUID</key>
-				<string>C09BC4F20D68C59D00925231</string>
+				<string>C0C6795E0D6A3DEB0022C08E</string>
 				<key>PBXProjectModuleLabel</key>
-				<string>iwl3945-base.c</string>
+				<string>compatibility.cpp</string>
 				<key>PBXSplitModuleInNavigatorKey</key>
 				<dict>
 					<key>Split0</key>
 					<dict>
 						<key>PBXProjectModuleGUID</key>
-						<string>C09BC4F50D68C64000925231</string>
+						<string>C0C679610D6A3EB20022C08E</string>
 						<key>PBXProjectModuleLabel</key>
-						<string>iwl3945-base.c</string>
+						<string>compatibility.cpp</string>
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>C09737CD0D68D48D0081C12A</string>
+						<string>C0B7E2480D6B09E5007F5795</string>
 						<key>history</key>
 						<array>
-							<string>C09D314F0D68C83000608374</string>
-							<string>C09D31650D68CF4600608374</string>
-							<string>C0A106B00D68D18F0008D998</string>
-							<string>C0A106B10D68D18F0008D998</string>
-							<string>C09737CB0D68D48D0081C12A</string>
-							<string>C09737C90D68D4230081C12A</string>
+							<string>C0989F890D6A42E200872987</string>
+							<string>C0989F930D6A476F00872987</string>
+							<string>C0BBD0240D6AE2E1007B9452</string>
+							<string>C0B91A520D6AEE8C00CA1D2C</string>
+							<string>C0B91A540D6AEE8C00CA1D2C</string>
+							<string>C0AAED630D6B00C10088F9A8</string>
+							<string>C0B7E2430D6B09E4007F5795</string>
+							<string>C0B7E2440D6B09E4007F5795</string>
+							<string>C0B7E2390D6B095D007F5795</string>
 						</array>
 						<key>nextStack</key>
 						<array>
-							<string>C09737CC0D68D48D0081C12A</string>
-						</array>
-						<key>prevStack</key>
-						<array>
-							<string>C09737BE0D68D2B10081C12A</string>
+							<string>C0B7E2450D6B09E4007F5795</string>
+							<string>C0B7E2460D6B09E4007F5795</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -248,7 +248,7 @@
 				<key>PBXModuleWindowStatusBarHidden2</key>
 				<false/>
 				<key>RubberWindowFrame</key>
-				<string>289 107 1053 671 0 0 1280 778 </string>
+				<string>87 107 1053 671 0 0 1280 778 </string>
 			</dict>
 		</dict>
 	</array>
@@ -285,6 +285,8 @@
 			<key>Layout</key>
 			<array>
 				<dict>
+					<key>BecomeActive</key>
+					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -330,7 +332,7 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>19</integer>
+									<integer>18</integer>
 									<integer>7</integer>
 									<integer>0</integer>
 								</array>
@@ -355,7 +357,7 @@
 							<real>186</real>
 						</array>
 						<key>RubberWindowFrame</key>
-						<string>534 345 984 427 0 0 1280 778 </string>
+						<string>465 351 984 427 0 0 1280 778 </string>
 					</dict>
 					<key>Module</key>
 					<string>PBXSmartGroupTreeModule</string>
@@ -392,7 +394,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {776, 0}}</string>
 								<key>RubberWindowFrame</key>
-								<string>534 345 984 427 0 0 1280 778 </string>
+								<string>465 351 984 427 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -400,8 +402,6 @@
 							<string>0pt</string>
 						</dict>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -414,7 +414,7 @@
 								<key>Frame</key>
 								<string>{{0, 5}, {776, 381}}</string>
 								<key>RubberWindowFrame</key>
-								<string>534 345 984 427 0 0 1280 778 </string>
+								<string>465 351 984 427 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
@@ -438,9 +438,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>C09737B80D68D2490081C12A</string>
+				<string>C0B7E2280D6B069F007F5795</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>C09737B90D68D2490081C12A</string>
+				<string>C0B7E2290D6B069F007F5795</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -553,7 +553,7 @@
 	<key>PerspectivesBarVisible</key>
 	<false/>
 	<key>PinnedNavigatorIdentifier</key>
-	<string>C09BC4F20D68C59D00925231</string>
+	<string>C0C6795E0D6A3DEB0022C08E</string>
 	<key>ShelfIsVisible</key>
 	<false/>
 	<key>SourceDescription</key>
@@ -578,10 +578,10 @@
 	<array>
 		<string>C00AE2C70D5F6257009D5222</string>
 		<string>/Users/netwarrior/Desktop/iwidarwin/iwi3945_new-osx10.5/iwi3945.xcodeproj</string>
-		<string>C09BC4F20D68C59D00925231</string>
+		<string>C0C6795E0D6A3DEB0022C08E</string>
 	</array>
 	<key>WindowString</key>
-	<string>534 345 984 427 0 0 1280 778 </string>
+	<string>465 351 984 427 0 0 1280 778 </string>
 	<key>WindowToolsV3</key>
 	<array>
 		<dict>
@@ -611,7 +611,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {1280, 389}}</string>
 								<key>RubberWindowFrame</key>
-								<string>399 107 1280 671 0 0 1280 778 </string>
+								<string>8 107 1280 671 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -635,7 +635,7 @@
 								<key>Frame</key>
 								<string>{{0, 394}, {1280, 236}}</string>
 								<key>RubberWindowFrame</key>
-								<string>399 107 1280 671 0 0 1280 778 </string>
+								<string>8 107 1280 671 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXBuildResultsModule</string>
@@ -658,14 +658,14 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>C00AE2C70D5F6257009D5222</string>
-				<string>C09737C20D68D2BC0081C12A</string>
+				<string>C0B7E22B0D6B069F007F5795</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.buildV3</string>
 			<key>WindowString</key>
-			<string>399 107 1280 671 0 0 1280 778 </string>
+			<string>8 107 1280 671 0 0 1280 778 </string>
 			<key>WindowToolGUID</key>
 			<string>C00AE2C70D5F6257009D5222</string>
 			<key>WindowToolIsVisible</key>
