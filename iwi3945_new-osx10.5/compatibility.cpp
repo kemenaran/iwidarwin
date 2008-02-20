@@ -7,8 +7,8 @@
  *
  */
 
-#define NO_SPIN_LOCKS 0
-#define NO_MUTEX_LOCKS 0
+//#define NO_SPIN_LOCKS 0
+//#define NO_MUTEX_LOCKS 0
 
 #include <sys/kernel_types.h>
 #include <mach/vm_types.h>
@@ -40,6 +40,12 @@ IOPCIDevice* my_pci_device;
 static int next_thread=0;
 static int thread_pos=0;
 static IOLock* thread_lock;
+
+
+#define MAX_MUTEXES 256
+static struct mutex *mutexes[MAX_MUTEXES];
+unsigned long current_mutex = 0;
+
 /*
 	Getters
 */
@@ -77,17 +83,22 @@ int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp)
 	device too
 	size error
 */
+
+
 int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device){
-	//struct class_device *class_dev;
 	struct firmware *firmware;
-	*firmware_p = firmware =(struct firmware*)IOMalloc(sizeof(struct firmware));
-	firmware->size=149652;//crappy
+	*firmware_p = firmware =(struct firmware*) IOMalloc(sizeof(struct firmware));
 	
-	firmware->data=(u8*)ipw3945_ucode_raw;
+	firmware->data = (u8*)ipw3945_ucode_raw;
+	firmware->size = sizeof(ipw3945_ucode_raw); //149652;//crappy
+
 	//load the file "name" in
 	return 0;
 }
+
 void release_firmware (	const struct firmware *  fw){
+    if( fw )
+        IOFree((void *)fw, sizeof(struct firmware));
 	return;
 }
 
@@ -242,6 +253,8 @@ int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned 
 void enable_int(){
 	if(fInterruptSrc)
 		fInterruptSrc->enable();
+    else
+        printf("Ignored enable_int(): no fInterruptSrc\n");
 }
 void disable_int(){
 	if(fInterruptSrc)
@@ -250,10 +263,110 @@ void disable_int(){
 
 
 
-void mutex_init(struct mutex *){
+#pragma mark -
+#pragma mark mutex and spinlock routines
+
+// Code taken almost verbatim from "Kernel Programming Guide: Locks"
+void mutex_init(struct mutex *new_mutex) {
+#ifndef NO_MUTEX_LOCKS
+    static int first_alloc = 1;
+    static lck_grp_attr_t *group_attributes;
+    static lck_grp_t *slock_group;
+    static lck_attr_t *lock_attributes;
+
+    /* allocate lock group attribute and group */
+    if( first_alloc ) {
+        /* allocate lock group attribute and group */
+        group_attributes = lck_grp_attr_alloc_init();
+        
+        lck_grp_attr_setstat(group_attributes);
+        
+        slock_group = lck_grp_alloc_init("80211_mutex_locks", group_attributes);
+        
+        /* Allocate lock attribute */
+        lock_attributes = lck_attr_alloc_init();
+        //lck_attr_setdebug(lock_attributes); // set the debug flag
+        //lck_attr_setdefault(lock_attributes); // clear the debug flag
+        first_alloc = 0;
+    }
+    
+    
+    /* Allocate the spin lock */
+    new_mutex->mlock = lck_mtx_alloc_init(slock_group, lock_attributes);
+#endif
 	return;
 }
-//end added
+
+void mutex_lock(struct mutex *new_mtx) {
+#ifndef NO_MUTEX_LOCKS
+    mutexes[current_mutex++] = new_mtx;
+	lck_mtx_lock(new_mtx->mlock);
+#endif
+    return;
+}
+
+void mutex_unlock(struct mutex *new_mtx) {
+#ifndef NO_MUTEX_LOCKS
+    mutexes[current_mutex--] = NULL;
+	lck_mtx_unlock(new_mtx->mlock);
+#endif
+    return;
+}
+
+
+
+void spin_lock_init(spinlock_t *new_lock) {
+#ifndef NO_SPIN_LOCKS
+    static int first_alloc = 1;
+    static lck_grp_attr_t *group_attributes;
+    static lck_grp_t *slock_group;
+    static lck_attr_t *lock_attributes;
+    
+    if( first_alloc ) {
+        /* allocate lock group attribute and group */
+        group_attributes = lck_grp_attr_alloc_init();
+        
+        lck_grp_attr_setstat(group_attributes);
+        
+        slock_group = lck_grp_alloc_init("80211_spin_locks", group_attributes);
+
+        /* Allocate lock attribute */
+        lock_attributes = lck_attr_alloc_init();
+        //lck_attr_setdebug(lock_attributes); // set the debug flag
+        //lck_attr_setdefault(lock_attributes); // clear the debug flag
+        first_alloc = 0;
+    }
+    
+    /* Allocate the spin lock */
+    new_lock->lock = lck_spin_alloc_init(slock_group, lock_attributes);
+    
+#endif //NO_SPIN_LOCKS
+    return;
+}
+
+
+
+
+void spin_lock(spinlock_t *lock) {
+#ifndef NO_SPIN_LOCKS
+    lck_spin_lock(lock->lock);
+#endif //NO_SPIN_LOCKS
+    return;
+}
+
+
+
+
+void spin_unlock(spinlock_t *lock) {
+#ifndef NO_SPIN_LOCKS
+    lck_spin_unlock(lock->lock);
+#endif //NO_SPIN_LOCKS
+    return;
+}
+
+
+
+
 #define local_irq_save(x)       __asm__ __volatile__("pushfl ; popl %0 ; cli":"=g" (x): /* no input */ :"memory")
 void spin_lock_irqsave(spinlock_t *lock, int fl) {
 	//local_irq_save(fl);
@@ -276,24 +389,6 @@ void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
 	return;
 }
 
-void spin_lock_init(spinlock_t *lock) {
-/*#define spin_lock_init(x) do { (x)->slock = 0; } while(0)*/
-   return;
-}
-
-void spin_lock(spinlock_t *lock) {
-#ifndef NO_SPIN_LOCKS
-    lck_spin_lock(lock->slock);
-#endif //NO_SPIN_LOCKS
-    return;
-}
-
-void spin_unlock(spinlock_t *lock) {
-#ifndef NO_SPIN_LOCKS
-    lck_spin_unlock(lock->slock);
-#endif //NO_SPIN_LOCKS
-    return;
-}
 
 //http://hira.main.jp/wiki/pukiwiki.php?spin_lock_bh()%2Flinux2.6
 void spin_lock_bh( spinlock_t *lock ) {
@@ -303,20 +398,6 @@ void spin_lock_bh( spinlock_t *lock ) {
 
 void spin_unlock_bh( spinlock_t *lock ) {
 	spin_unlock(lock);
-    return;
-}
-
-void mutex_lock(struct mutex *new_mtx) {
-#ifndef NO_MUTEX_LOCKS
-	lck_mtx_lock(new_mtx->lock);
-#endif
-    return;
-}
-
-void mutex_unlock(struct mutex *new_mtz) {
-#ifndef NO_MUTEX_LOCKS
-	lck_mtx_unlock(new_mtx->lock);
-#endif
     return;
 }
 
@@ -545,7 +626,11 @@ void ieee80211_unregister_hw(struct ieee80211_hw *  hw){
 	return;
 }
 void ieee80211_start_queues(struct ieee80211_hw *hw){
-	return;
+    struct ieee80211_local *local = hw_to_local(hw);
+    int i;
+    
+    for (i = 0; i < local->hw.queues; i++)
+        clear_bit(IEEE80211_LINK_STATE_XOFF, &local->state[i]);
 }
 void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	return;
@@ -911,7 +996,14 @@ void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,
 }
 
 addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction) {
+    unsigned int i;
+    if( current_mutex )
+        for(i=0; i<current_mutex; i++)
+            mutex_unlock(mutexes[i]);
     return cpu_to_le32( mbuf_data_to_physical( (u8*)ptr) );
+    if( current_mutex )
+        for(i=0; i<current_mutex; i++)
+            mutex_lock(mutexes[i]);
 }
 
 
@@ -985,9 +1077,16 @@ void dev_kfree_skb(struct sk_buff *skb) {
 
 struct sk_buff *__alloc_skb(unsigned int size,
                             gfp_t priority, int fclone, int node) {
+    unsigned int i;
+    if( current_mutex )
+        for(i=0; i<current_mutex; i++)
+            mutex_unlock(mutexes[i]);
     struct sk_buff *skb = (struct sk_buff *)IOMalloc(sizeof(struct sk_buff));
     skb->mac_data = currentController->allocatePacket(size);
     skb->intf = (void *)currentController;
+    if( current_mutex )
+        for(i=0; i<current_mutex; i++)
+            mutex_lock(mutexes[i]);
     return skb;
 }
 

@@ -23,6 +23,7 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *
  *****************************************************************************/
+#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 
 #ifdef LINUX
 #include <linux/kernel.h>
@@ -707,8 +708,8 @@ static int iwl3945_nic_set_pwr_src(struct iwl3945_priv *priv, int pwr_max)
 	int rc;
 	unsigned long flags;
 
-	spin_lock_irqsave(&priv->lock, flags);
-	rc = iwl3945_grab_nic_access(priv);
+	IM_HERE_NOW(); spin_lock_irqsave(&priv->lock, flags);
+	IM_HERE_NOW(); rc = iwl3945_grab_nic_access(priv);
 	if (rc) {
 		spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
@@ -717,7 +718,7 @@ static int iwl3945_nic_set_pwr_src(struct iwl3945_priv *priv, int pwr_max)
 	if (!pwr_max) {
 		u32 val;
 
-		rc = pci_read_config_dword(priv->pci_dev,
+		IM_HERE_NOW(); rc = pci_read_config_dword(priv->pci_dev,
 				PCI_POWER_SOURCE, &val);
 		if (val & PCI_CFG_PMC_PME_FROM_D3COLD_SUPPORT) {
 			iwl3945_set_bits_mask_prph(priv, APMG_PS_CTRL_REG,
@@ -739,9 +740,9 @@ static int iwl3945_nic_set_pwr_src(struct iwl3945_priv *priv, int pwr_max)
 		iwl3945_poll_bit(priv, CSR_GPIO_IN, CSR_GPIO_IN_VAL_VMAIN_PWR_SRC,
 			     CSR_GPIO_IN_BIT_AUX_POWER, 5000);	/* uS */
 	}
-	spin_unlock_irqrestore(&priv->lock, flags);
+	IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
 
-	return rc;
+	IM_HERE_NOW(); return rc;
 }
 
 static int iwl3945_rx_init(struct iwl3945_priv *priv, struct iwl3945_rx_queue *rxq)
@@ -867,10 +868,10 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 	unsigned long flags;
 	struct iwl3945_rx_queue *rxq = &priv->rxq;
 
-	iwl3945_power_init_handle(priv);
+	IM_HERE_NOW(); iwl3945_power_init_handle(priv);
 
-	spin_lock_irqsave(&priv->lock, flags);
-	iwl3945_set_bit(priv, CSR_ANA_PLL_CFG, (1 << 24));
+	IM_HERE_NOW(); spin_lock_irqsave(&priv->lock, flags);
+	IM_HERE_NOW(); iwl3945_set_bit(priv, CSR_ANA_PLL_CFG, (1 << 24));
 	iwl3945_set_bit(priv, CSR_GIO_CHICKEN_BITS,
 		    CSR_GIO_CHICKEN_BITS_REG_BIT_L1A_NO_L0S_RX);
 
@@ -884,30 +885,31 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 		return rc;
 	}
 
-	rc = iwl3945_grab_nic_access(priv);
+	IM_HERE_NOW(); rc = iwl3945_grab_nic_access(priv);
 	if (rc) {
 		spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
 	}
-	iwl3945_write_prph(priv, APMG_CLK_EN_REG,
+	IM_HERE_NOW(); iwl3945_write_prph(priv, APMG_CLK_EN_REG,
 				 APMG_CLK_VAL_DMA_CLK_RQT |
 				 APMG_CLK_VAL_BSM_CLK_RQT);
 	udelay(20);
 	iwl3945_set_bits_prph(priv, APMG_PCIDEV_STT_REG,
 				    APMG_PCIDEV_STT_VAL_L1_ACT_DIS);
 	iwl3945_release_nic_access(priv);
-	spin_unlock_irqrestore(&priv->lock, flags);
+	IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
 
 	/* Determine HW type */
-	rc = pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &rev_id);
+	IM_HERE_NOW(); rc = pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &rev_id);
 	if (rc)
 		return rc;
 	IWL_DEBUG_INFO("HW Revision ID = 0x%X\n", rev_id);
 
-	iwl3945_nic_set_pwr_src(priv, 1);
-	spin_lock_irqsave(&priv->lock, flags);
+	IM_HERE_NOW(); iwl3945_nic_set_pwr_src(priv, 1);
+    printf("Finished nic_set_pwr_src\n");
+	IM_HERE_NOW(); spin_lock_irqsave(&priv->lock, flags);
 
-	if (rev_id & PCI_CFG_REV_ID_BIT_RTP)
+	IM_HERE_NOW(); if (rev_id & PCI_CFG_REV_ID_BIT_RTP)
 		IWL_DEBUG_INFO("RTP type \n");
 	else if (rev_id & PCI_CFG_REV_ID_BIT_BASIC_SKU) {
 		IWL_DEBUG_INFO("ALM-MB type\n");
@@ -919,14 +921,14 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 			    CSR_HW_IF_CONFIG_REG_BIT_ALMAGOR_MM);
 	}
 
-	if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
+	IM_HERE_NOW(); if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
 		IWL_DEBUG_INFO("SKU OP mode is mrc\n");
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_SKU_MRC);
 	} else
 		IWL_DEBUG_INFO("SKU OP mode is basic\n");
 
-	if ((priv->eeprom.board_revision & 0xF0) == 0xD0) {
+	IM_HERE_NOW(); if ((priv->eeprom.board_revision & 0xF0) == 0xD0) {
 		IWL_DEBUG_INFO("3945ABG revision is 0x%X\n",
 			       priv->eeprom.board_revision);
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
@@ -938,7 +940,7 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 			      CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
 	}
 
-	if (priv->eeprom.almgor_m_version <= 1) {
+	IM_HERE_NOW(); if (priv->eeprom.almgor_m_version <= 1) {
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_A);
 		IWL_DEBUG_INFO("Card M type A version is 0x%X\n",
@@ -949,50 +951,51 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_B);
 	}
-	spin_unlock_irqrestore(&priv->lock, flags);
+	IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
 
-	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
+	IM_HERE_NOW(); if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
 		IWL_DEBUG_RF_KILL("SW RF KILL supported in EEPROM.\n");
 
-	if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
+	IM_HERE_NOW(); if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
 		IWL_DEBUG_RF_KILL("HW RF KILL supported in EEPROM.\n");
 
 	/* Allocate the RX queue, or reset if it is already allocated */
-	if (!rxq->bd) {
-		rc = iwl3945_rx_queue_alloc(priv);
+	IM_HERE_NOW(); if (!rxq->bd) {
+		IM_HERE_NOW(); rc = iwl3945_rx_queue_alloc(priv);
 		if (rc) {
 			IWL_ERROR("Unable to initialize Rx queue\n");
 			return -ENOMEM;
 		}
-	} else
-		iwl3945_rx_queue_reset(priv, rxq);
+	} else {
+		IM_HERE_NOW(); iwl3945_rx_queue_reset(priv, rxq);
+    }
 
-	iwl3945_rx_replenish(priv);
+	IM_HERE_NOW(); iwl3945_rx_replenish(priv);
 
-	iwl3945_rx_init(priv, rxq);
+	IM_HERE_NOW(); iwl3945_rx_init(priv, rxq);
 
-	spin_lock_irqsave(&priv->lock, flags);
+	IM_HERE_NOW(); spin_lock_irqsave(&priv->lock, flags);
 
 	/* Look at using this instead:
 	rxq->need_update = 1;
 	iwl3945_rx_queue_update_write_ptr(priv, rxq);
 	*/
 
-	rc = iwl3945_grab_nic_access(priv);
+	IM_HERE_NOW(); rc = iwl3945_grab_nic_access(priv);
 	if (rc) {
-		spin_unlock_irqrestore(&priv->lock, flags);
+		IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
 	}
-	iwl3945_write_direct32(priv, FH_RCSR_WPTR(0), rxq->write & ~7);
-	iwl3945_release_nic_access(priv);
+	IM_HERE_NOW(); iwl3945_write_direct32(priv, FH_RCSR_WPTR(0), rxq->write & ~7);
+	IM_HERE_NOW(); iwl3945_release_nic_access(priv);
 
-	spin_unlock_irqrestore(&priv->lock, flags);
+	IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
 
-	rc = iwl3945_txq_ctx_reset(priv);
+	IM_HERE_NOW(); rc = iwl3945_txq_ctx_reset(priv);
 	if (rc)
 		return rc;
 
-	set_bit(STATUS_INIT, &priv->status);
+	IM_HERE_NOW(); set_bit(STATUS_INIT, &priv->status);
 
 	return 0;
 }

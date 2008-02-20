@@ -47,6 +47,7 @@ typedef struct {
 #ifdef CONFIG_PREEMPT
 	unsigned int break_lock;
 #endif
+    lck_spin_t *lock;
 } spinlock_t;
 typedef unsigned short __le16;
 typedef unsigned short __u16;
