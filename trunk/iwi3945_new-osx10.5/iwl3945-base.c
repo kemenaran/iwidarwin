@@ -26,6 +26,7 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *
  *****************************************************************************/
+#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 
 #ifdef LINUX
 #include <linux/kernel.h>
@@ -727,6 +728,8 @@ static int iwl3945_enqueue_hcmd(struct iwl3945_priv *priv, struct iwl3945_host_c
 	phys_addr = txq->dma_addr_cmd + sizeof(txq->cmd[0]) * idx +
 			offsetof(struct iwl3945_cmd, hdr);
 	iwl3945_hw_txq_attach_buf_to_tfd(priv, tfd, phys_addr, fix_size);
+    
+    IWL_DEBUG_HC("Physical address: %08x\n", phys_addr);
 
 	pad = U32_PAD(cmd->len);
 	count = TFD_CTL_COUNT_GET(*control_flags);
@@ -4096,9 +4099,9 @@ static int iwl3945_rx_queue_restock(struct iwl3945_priv *priv)
 	unsigned long flags;
 	int write, rc;
 
-	spin_lock_irqsave(&rxq->lock, flags);
+	IM_HERE_NOW(); spin_lock_irqsave(&rxq->lock, flags);
 	write = rxq->write & ~0x7;
-	while ((iwl3945_rx_queue_space(rxq) > 0) && (rxq->free_count)) {
+	IM_HERE_NOW(); while ((iwl3945_rx_queue_space(rxq) > 0) && (rxq->free_count)) {
 		/* Get next free Rx buffer, remove from free list */
 		element = rxq->rx_free.next;
 		rxb = list_entry(element, struct iwl3945_rx_mem_buffer, list);
@@ -4110,16 +4113,19 @@ static int iwl3945_rx_queue_restock(struct iwl3945_priv *priv)
 		rxq->write = (rxq->write + 1) & RX_QUEUE_MASK;
 		rxq->free_count--;
 	}
-	spin_unlock_irqrestore(&rxq->lock, flags);
+	IM_HERE_NOW(); spin_unlock_irqrestore(&rxq->lock, flags);
+
 	/* If the pre-allocated buffer pool is dropping low, schedule to
 	 * refill it */
-	if (rxq->free_count <= RX_LOW_WATERMARK)
+	if (rxq->free_count <= RX_LOW_WATERMARK) {
+        IM_HERE_NOW();
 		queue_work(priv->workqueue, &priv->rx_replenish);
+    }
 
 
 	/* If we've added more space for the firmware to place data, tell it.
 	 * Increment device's write pointer in multiples of 8. */
-	if ((write != (rxq->write & ~0x7))
+	IM_HERE_NOW(); if ((write != (rxq->write & ~0x7))
 	    || (abs(rxq->write - rxq->read) > 7)) {
 		spin_lock_irqsave(&rxq->lock, flags);
 		rxq->need_update = 1;
@@ -4128,6 +4134,7 @@ static int iwl3945_rx_queue_restock(struct iwl3945_priv *priv)
 		if (rc)
 			return rc;
 	}
+    IM_HERE_NOW(); 
 
 	return 0;
 }
@@ -4146,8 +4153,8 @@ static void iwl3945_rx_allocate(struct iwl3945_priv *priv)
 	struct list_head *element;
 	struct iwl3945_rx_mem_buffer *rxb;
 	unsigned long flags;
-	spin_lock_irqsave(&rxq->lock, flags);
-	while (!list_empty(&rxq->rx_used)) {
+	IM_HERE_NOW(); spin_lock_irqsave(&rxq->lock, flags);
+	IM_HERE_NOW(); while (!list_empty(&rxq->rx_used)) {
 		element = rxq->rx_used.next;
 		rxb = list_entry(element, struct iwl3945_rx_mem_buffer, list);
 
@@ -4173,7 +4180,7 @@ static void iwl3945_rx_allocate(struct iwl3945_priv *priv)
 		list_add_tail(&rxb->list, &rxq->rx_free);
 		rxq->free_count++;
 	}
-	spin_unlock_irqrestore(&rxq->lock, flags);
+	IM_HERE_NOW(); spin_unlock_irqrestore(&rxq->lock, flags);
 }
 
 /*
@@ -4183,8 +4190,8 @@ static void __iwl3945_rx_replenish(void *data)
 {
 	struct iwl3945_priv *priv = data;
 
-	iwl3945_rx_allocate(priv);
-	iwl3945_rx_queue_restock(priv);
+	IM_HERE_NOW(); iwl3945_rx_allocate(priv);
+	IM_HERE_NOW(); iwl3945_rx_queue_restock(priv);
 }
 
 
@@ -5006,6 +5013,7 @@ static irqreturn_t iwl3945_isr(int irq, void *data)
 
  none:
 	/* re-enable interrupts here since we don't have anything to service. */
+    IWL_DEBUG_ISR("Suprrious interrupt; not calling irq tasklet\n");
 	iwl3945_enable_interrupts(priv);
 	spin_unlock(&priv->lock);
 	return IRQ_NONE;
@@ -5200,12 +5208,12 @@ static int iwl3945_init_channel_map(struct iwl3945_priv *priv)
 			ch_info->flags = eeprom_ch_info[ch].flags;
 
 			if (!(is_channel_valid(ch_info))) {
-				IWL_DEBUG_INFO("Ch. %d Flags %x [%sGHz] - "
-					       "No traffic\n",
-					       ch_info->channel,
-					       ch_info->flags,
-					       is_channel_a_band(ch_info) ?
-					       "5.2" : "2.4");
+//				IWL_DEBUG_INFO("Ch. %d Flags %x [%sGHz] - "
+//					       "No traffic\n",
+//					       ch_info->channel,
+//					       ch_info->flags,
+//					       is_channel_a_band(ch_info) ?
+//					       "5.2" : "2.4");
 				ch_info++;
 				continue;
 			}
@@ -5216,24 +5224,24 @@ static int iwl3945_init_channel_map(struct iwl3945_priv *priv)
 			ch_info->scan_power = eeprom_ch_info[ch].max_power_avg;
 			ch_info->min_power = 0;
 
-			IWL_DEBUG_INFO("Ch. %d [%sGHz] %s%s%s%s%s%s(0x%02x"
-				       " %ddBm): Ad-Hoc %ssupported\n",
-				       ch_info->channel,
-				       is_channel_a_band(ch_info) ?
-				       "5.2" : "2.4",
-				       CHECK_AND_PRINT(IBSS),
-				       CHECK_AND_PRINT(ACTIVE),
-				       CHECK_AND_PRINT(RADAR),
-				       CHECK_AND_PRINT(WIDE),
-				       CHECK_AND_PRINT(NARROW),
-				       CHECK_AND_PRINT(DFS),
-				       eeprom_ch_info[ch].flags,
-				       eeprom_ch_info[ch].max_power_avg,
-				       ((eeprom_ch_info[ch].
-					 flags & EEPROM_CHANNEL_IBSS)
-					&& !(eeprom_ch_info[ch].
-					     flags & EEPROM_CHANNEL_RADAR))
-				       ? "" : "not ");
+//			IWL_DEBUG_INFO("Ch. %d [%sGHz] %s%s%s%s%s%s(0x%02x"
+//				       " %ddBm): Ad-Hoc %ssupported\n",
+//				       ch_info->channel,
+//				       is_channel_a_band(ch_info) ?
+//				       "5.2" : "2.4",
+//				       CHECK_AND_PRINT(IBSS),
+//				       CHECK_AND_PRINT(ACTIVE),
+//				       CHECK_AND_PRINT(RADAR),
+//				       CHECK_AND_PRINT(WIDE),
+//				       CHECK_AND_PRINT(NARROW),
+//				       CHECK_AND_PRINT(DFS),
+//				       eeprom_ch_info[ch].flags,
+//				       eeprom_ch_info[ch].max_power_avg,
+//				       ((eeprom_ch_info[ch].
+//					 flags & EEPROM_CHANNEL_IBSS)
+//					&& !(eeprom_ch_info[ch].
+//					     flags & EEPROM_CHANNEL_RADAR))
+//				       ? "" : "not ");
 
 			/* Set the user_txpower_limit to the highest power
 			 * supported by any channel */
@@ -5507,10 +5515,10 @@ static int iwl3945_init_geos(struct iwl3945_priv *priv)
 		ch = &priv->channel_info[i];
 
 		if (!is_channel_valid(ch)) {
-			IWL_DEBUG_INFO("Channel %d [%sGHz] is restricted -- "
-				    "skipping.\n",
-				    ch->channel, is_channel_a_band(ch) ?
-				    "5.2" : "2.4");
+//			IWL_DEBUG_INFO("Channel %d [%sGHz] is restricted -- "
+//				    "skipping.\n",
+//				    ch->channel, is_channel_a_band(ch) ?
+//				    "5.2" : "2.4");
 			continue;
 		}
 
@@ -6956,6 +6964,7 @@ static void iwl3945_bg_scan_completed(struct iwl3945_priv *priv)
 
 #define UCODE_READY_TIMEOUT	(2 * HZ)
 
+
 static int iwl3945_mac_open(struct ieee80211_hw *hw)
 {
 	struct iwl3945_priv *priv = hw->priv;
@@ -6963,14 +6972,14 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 
 	IWL_DEBUG_MAC80211("enter\n");
 
-	if (pci_enable_device(priv->pci_dev)) {
+    IM_HERE_NOW(); if (pci_enable_device(priv->pci_dev)) {
 		IWL_ERROR("Fail to pci_enable_device\n");
 		return -ENODEV;
 	}
-	pci_restore_state(priv->pci_dev);
-	pci_enable_msi(priv->pci_dev);
+    IM_HERE_NOW(); pci_restore_state(priv->pci_dev);
+    IM_HERE_NOW(); pci_enable_msi(priv->pci_dev);
 
-	ret = request_irq(priv->pci_dev->irq, iwl3945_isr, IRQF_SHARED,
+    IM_HERE_NOW(); ret = request_irq(priv->pci_dev->irq, iwl3945_isr, IRQF_SHARED,
 			  DRV_NAME, priv);
 	if (ret) {
 		IWL_ERROR("Error allocating IRQ %d\n", priv->pci_dev->irq);
@@ -6978,14 +6987,14 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 	}
 
 	/* we should be verifying the device is ready to be opened */
-	mutex_lock(&priv->mutex);
+    IM_HERE_NOW(); mutex_lock(&priv->mutex);
 
-	memset(&priv->staging_rxon, 0, sizeof(struct iwl3945_rxon_cmd));
+    IM_HERE_NOW(); memset(&priv->staging_rxon, 0, sizeof(struct iwl3945_rxon_cmd));
 	/* fetch ucode file from disk, alloc and copy to bus-master buffers ...
 	 * ucode filename and max sizes are card-specific. */
 
-	if (!priv->ucode_code.len) {
-		ret = iwl3945_read_ucode(priv);
+    IM_HERE_NOW(); if (!priv->ucode_code.len) {
+        IM_HERE_NOW(); ret = iwl3945_read_ucode(priv);
 		if (ret) {
 			IWL_ERROR("Could not read microcode: %d\n", ret);
 			mutex_unlock(&priv->mutex);
@@ -6993,17 +7002,19 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 		}
 	}
 
-	ret = __iwl3945_up(priv);
+    IM_HERE_NOW(); ret = __iwl3945_up(priv);
 
-	mutex_unlock(&priv->mutex);
+    IM_HERE_NOW(); mutex_unlock(&priv->mutex);
 
 	if (ret)
 		goto out_release_irq;
 
 	IWL_DEBUG_INFO("Start UP work.\n");
 
-	if (test_bit(STATUS_IN_SUSPEND, &priv->status))
+    IM_HERE_NOW(); if (test_bit(STATUS_IN_SUSPEND, &priv->status)) {
+        IWL_DEBUG_INFO("Card is in suspend mode\n");
 		return 0;
+    }
 
 	/* Wait for START_ALIVE from ucode. Otherwise callbacks from
 	 * mac80211 will not be run successfully. */
@@ -7011,7 +7022,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	ret=200;
-	while(!test_bit(STATUS_READY, &priv->status)){
+    IM_HERE_NOW(); while(!test_bit(STATUS_READY, &priv->status)){
 		IOSleep(1);
 		ret--;
 		if(ret==0)
@@ -7019,7 +7030,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 	}
 	printf("Wait Condition: %d\n",ret);
 	if (!ret) {
-		if (!test_bit(STATUS_READY, &priv->status)) {
+        IM_HERE_NOW(); if (!test_bit(STATUS_READY, &priv->status)) {
 			IOLog("Wait for START_ALIVE timeout after %dms.\n",
 				  jiffies_to_msecs(UCODE_READY_TIMEOUT));
 			ret = -ETIMEDOUT;

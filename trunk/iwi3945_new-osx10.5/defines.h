@@ -53,6 +53,15 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 
 
 
+
+
+
+
+
+
+
+
+
 /*
 #include <IOKit/assert.h>
 #include <IOKit/IOTimerEventSource.h>
@@ -169,7 +178,10 @@ struct pci_dev {
 
 
 struct mutex {
-    lck_mtx_t *lock;
+    lck_grp_attr_t *slock_grp_attr;
+    lck_grp_t *slock_grp;
+    lck_attr_t *slock_attr;
+    lck_mtx_t *mlock;
 };
 
 
@@ -196,6 +208,12 @@ struct iw_request_info {
 typedef enum {
     SET_KEY, DISABLE_KEY, REMOVE_ALL_KEYS,
 } set_key_cmd;
+
+
+enum ieee80211_link_state_t {
+    IEEE80211_LINK_STATE_XOFF = 0,
+    IEEE80211_LINK_STATE_PENDING,
+};
 
 
 struct ieee80211_hw;
