@@ -2,6 +2,7 @@
 
 LOCPATH=`/usr/bin/dirname "$0"`
 cd "$LOCPATH"
+sudo sync
 sudo kextunload build/Debug/iwi3945-loadable.kext
 sudo rm -rf build/Debug/iwi3945-loadable.kext
 sudo chown -R root:wheel build/Debug/iwi3945.kext

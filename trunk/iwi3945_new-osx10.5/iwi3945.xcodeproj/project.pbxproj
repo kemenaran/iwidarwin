@@ -151,8 +151,8 @@
 			children = (
 				9BEDC4540D5B3A55002000EA /* compatibility.h */,
 				9BEDC4550D5B3A55002000EA /* compatibility.cpp */,
-				9BC2186E0D40F12C000BA789 /* iwi3945.h */,
 				9BC218760D40F275000BA789 /* defines.h */,
+				9BC2186E0D40F12C000BA789 /* iwi3945.h */,
 				9BC2186F0D40F12C000BA789 /* iwi3945.cpp */,
 			);
 			name = "Added code";

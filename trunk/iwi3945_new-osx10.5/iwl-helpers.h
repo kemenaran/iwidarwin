@@ -270,7 +270,7 @@ static inline void iwl_free_fw_desc(struct pci_dev *pci_dev,
 static inline int iwl_alloc_fw_desc(struct pci_dev *pci_dev,
 				    struct fw_desc *desc)
 {
-	desc->v_addr = pci_alloc_consistent(pci_dev, desc->len, &desc->p_addr);
+	desc->v_addr = pci_alloc_consistent(pci_dev, desc->len, &desc->p_addr,desc->len);
 	return (desc->v_addr != NULL) ? 0 : -ENOMEM;
 }
 

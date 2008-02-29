@@ -46,7 +46,17 @@ extern "C" {
 	extern int ieee80211_register_hwmode(struct ieee80211_hw *hw,struct ieee80211_hw_mode *mode);
 	extern void SET_IEEE80211_DEV(	struct ieee80211_hw *  	hw,struct device *  	dev);
 	extern void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr);
-
+    /* Function for net interface operation. IEEE 802.11 may use multiple kernel
+     * netdevices for each hardware device. The low-level driver does not "see"
+     * these interfaces, so it should use this function to perform netif
+     * operations on all interface. */
+    /* This function is deprecated. */
+    typedef enum {
+        NETIF_ATTACH, NETIF_DETACH, NETIF_START, NETIF_STOP, NETIF_WAKE,
+        NETIF_IS_STOPPED, NETIF_UPDATE_TX_START
+    } Netif_Oper;
+    extern int ieee80211_netif_oper(struct ieee80211_hw *hw, Netif_Oper op);
+    
 	
 			
 	extern int pci_enable_msi  (struct pci_dev * dev);
@@ -116,6 +126,14 @@ extern "C" {
     extern struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
                                          int if_id,
                                          struct ieee80211_tx_control *control);
+    static inline struct ieee80211_rate *
+    rate_control_get_rate(struct ieee80211_local *local, struct net_device *dev,
+                          struct sk_buff *skb, struct rate_control_extra *extra)
+    {
+        struct rate_control_ref *ref = local->rate_ctrl;
+        return ref->ops->get_rate(ref->priv, dev, skb, extra);
+    }
+#define net_random()        random()
     
     
     
@@ -123,7 +141,7 @@ extern "C" {
     extern void pci_free_consistent(struct pci_dev *hwdev, size_t size,
                                     void *vaddr, dma_addr_t dma_handle);
     extern void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
-                         dma_addr_t *dma_handle);
+                         dma_addr_t *dma_handle,int count);
     extern void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,
                             size_t size, int direction);
     extern int pci_read_config_byte(struct pci_dev *dev, int where, u8 *val);
@@ -145,7 +163,9 @@ extern "C" {
     {
         return __alloc_skb(size, priority, 0, -1);
     }
-    
+    extern struct sk_buff *skb_clone(const struct sk_buff *skb, unsigned int ignored);
+    extern int ieee80211_netif_oper(struct ieee80211_hw *hw, Netif_Oper op);
+
     
     
     extern int queue_work(struct workqueue_struct *wq, struct work_struct *work);
@@ -203,10 +223,35 @@ extern "C" {
         list->next = list;
         list->prev = list;
     }
+    /**
+     * list_for_each_entry  -   iterate over list of given type
+     * @pos:    the type * to use as a loop cursor.
+     * @head:   the head for your list.
+     * @member: the name of the list_struct within the struct.
+     */
+#define list_for_each_entry(pos, head, member)              \
+for (pos = list_entry((head)->next, typeof(*pos), member);  \
+prefetch(pos->member.next), &pos->member != (head);    \
+pos = list_entry(pos->member.next, typeof(*pos), member))
+    static inline void prefetch(const void *x) {;}
+
+    
+    
     
 	extern void enable_int();
 	extern void disable_int();
+	extern void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
+                         int rowsize, int groupsize,
+                         const void *buf, size_t len, bool ascii);
 
+ static inline int atomic_read(const atomic_t *v)
+{
+        return v->counter;
+}
+
+	extern void enable_tasklet();
+	extern void io_write32(u32 ofs, u32 val);
+	extern u32 io_read32(u32 ofs);
 #ifdef __cplusplus
 }
 #endif
