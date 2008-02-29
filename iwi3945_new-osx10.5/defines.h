@@ -1,6 +1,9 @@
 #ifndef __DEFINES_H__
 #define __DEFINES_H__
 
+//#define CONFIG_IWL3945_DEBUG 1
+#define DUMP_PREFIX_OFFSET 0
+#define DUMP_PREFIX_ADDRESS 1
 
 #define NUM_RX_DATA_QUEUES 17
 #define NUM_TX_DATA_QUEUES 6
@@ -266,6 +269,7 @@ exec */
 #define WORK_STRUCT_WQ_DATA_MASK (~WORK_STRUCT_FLAG_MASK)
     struct list_head entry;
     work_func_t func;
+	int number;
 };
 
 
@@ -1650,14 +1654,17 @@ struct ieee80211_sub_if_data {
 #endif
 };
 
-#define INIT_DELAYED_WORK(_work, _func)             \
+#define INIT_DELAYED_WORK(_work, _func, _number)             \
 do {                            \
-INIT_WORK(&(_work)->work, (_func));     \
+INIT_WORK(&(_work)->work, (_func), _number);     \
 } while (0)
-#define INIT_WORK(_work, _func)                 \
+
+#define INIT_WORK(_work, _func,p_number)                 \
 do {                            \
 PREPARE_WORK((_work), (_func));         \
+(_work)->number=p_number;\
 } while (0)
+
 #define PREPARE_WORK(_work, _func)              \
 do {                            \
 (_work)->func = (_func);            \
@@ -1699,6 +1706,38 @@ int __x = (x);          \
 // vesions of the Linux code.
 // #define skb->data   mbuf_data(skb->mac_data)
 // #define skb->len    mbuf_len(skb->mac_data)
+
+
+
+/**
+ * wait_event_interruptible_timeout - sleep until a condition gets true or a timeout elapses
+ * @wq: the waitqueue to wait on
+ * @condition: a C expression for the event to wait for
+ * @timeout: timeout, in jiffies
+ *
+ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
+ * @condition evaluates to true or a signal is received.
+ * The @condition is checked each time the waitqueue @wq is woken up.
+ *
+ * wake_up() has to be called after changing any variable that could
+ * change the result of the wait condition.
+ *
+ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
+ * was interrupted by a signal, and the remaining jiffies otherwise
+ * if the condition evaluated to true before the timeout elapsed.
+ */
+#define wait_event_interruptible_timeout(wq, condition, timeout)    \
+({                                      \
+long __ret = timeout;                 \
+while(!(condition)) {                   \
+    IOSleep(1);                    \
+    __ret--;                            \
+    if(ret==0)                          \
+        break;                          \
+}                                       \
+__ret;                                  \
+})
+
 
 
 // Fix up brokenness from k_compat.h

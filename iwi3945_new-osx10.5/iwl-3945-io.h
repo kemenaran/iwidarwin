@@ -61,12 +61,12 @@
  *
  */
 
-#define _iwl3945_write32(iwl, ofs, val) writel((val), (iwl)->hw_base + (ofs))
+#define _iwl3945_write32(iwl, ofs, val) OSWriteLittleInt32((iwl)->hw_base, ofs ,val)//writel((val), (iwl)->hw_base + (ofs))
 #ifdef CONFIG_IWL3945_DEBUG
 static inline void __iwl3945_write32(const char *f, u32 l, struct iwl3945_priv *iwl,
 				 u32 ofs, u32 val)
 {
-	IWL_DEBUG_IO("write32(0x%08X, 0x%08X) - %s %d\n", ofs, val, f, l);
+	IOLog("write32(0x%08X, 0x%08X) - %s %d\n", ofs, val, f, l);
 	_iwl3945_write32(iwl, ofs, val);
 }
 #define iwl3945_write32(iwl, ofs, val) \
@@ -79,7 +79,7 @@ static inline void __iwl3945_write32(const char *f, u32 l, struct iwl3945_priv *
 #ifdef CONFIG_IWL3945_DEBUG
 static inline u32 __iwl3945_read32(char *f, u32 l, struct iwl3945_priv *iwl, u32 ofs)
 {
-	IWL_DEBUG_IO("read_direct32(0x%08X) - %s %d\n", ofs, f, l);
+	IOLog("read_direct32(0x%08X) - %s %d\n", ofs, f, l);
 	return _iwl3945_read32(iwl, ofs);
 }
 #define iwl3945_read32(iwl, ofs) __iwl3945_read32(__FILE__, __LINE__, iwl, ofs)
@@ -194,7 +194,7 @@ static inline int _iwl3945_grab_nic_access(struct iwl3945_priv *priv)
 	}
 
 #ifdef CONFIG_IWL3945_DEBUG
-	atomic_inc(&priv->restrict_refcnt);
+	//atomic_inc(&priv->restrict_refcnt);
 #endif
 	return 0;
 }
@@ -220,7 +220,7 @@ static inline int __iwl3945_grab_nic_access(const char *f, u32 l,
 static inline void _iwl3945_release_nic_access(struct iwl3945_priv *priv)
 {
 #ifdef CONFIG_IWL3945_DEBUG
-	if (atomic_dec_and_test(&priv->restrict_refcnt))
+	//if (atomic_dec_and_test(&priv->restrict_refcnt))
 #endif
 		_iwl3945_clear_bit(priv, CSR_GP_CNTRL,
 			       CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);

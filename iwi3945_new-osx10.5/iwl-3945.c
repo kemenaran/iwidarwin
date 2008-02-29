@@ -708,8 +708,10 @@ static int iwl3945_nic_set_pwr_src(struct iwl3945_priv *priv, int pwr_max)
 	int rc;
 	unsigned long flags;
 
-	IM_HERE_NOW(); spin_lock_irqsave(&priv->lock, flags);
-	IM_HERE_NOW(); rc = iwl3945_grab_nic_access(priv);
+	//IM_HERE_NOW();
+	 spin_lock_irqsave(&priv->lock, flags);
+	//IM_HERE_NOW();
+	 rc = iwl3945_grab_nic_access(priv);
 	if (rc) {
 		spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
@@ -718,7 +720,8 @@ static int iwl3945_nic_set_pwr_src(struct iwl3945_priv *priv, int pwr_max)
 	if (!pwr_max) {
 		u32 val;
 
-		IM_HERE_NOW(); rc = pci_read_config_dword(priv->pci_dev,
+		//IM_HERE_NOW();
+		 rc = pci_read_config_dword(priv->pci_dev,
 				PCI_POWER_SOURCE, &val);
 		if (val & PCI_CFG_PMC_PME_FROM_D3COLD_SUPPORT) {
 			iwl3945_set_bits_mask_prph(priv, APMG_PS_CTRL_REG,
@@ -740,9 +743,11 @@ static int iwl3945_nic_set_pwr_src(struct iwl3945_priv *priv, int pwr_max)
 		iwl3945_poll_bit(priv, CSR_GPIO_IN, CSR_GPIO_IN_VAL_VMAIN_PWR_SRC,
 			     CSR_GPIO_IN_BIT_AUX_POWER, 5000);	/* uS */
 	}
-	IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
+	//IM_HERE_NOW();
+	 spin_unlock_irqrestore(&priv->lock, flags);
 
-	IM_HERE_NOW(); return rc;
+	//IM_HERE_NOW();
+	 return rc;
 }
 
 static int iwl3945_rx_init(struct iwl3945_priv *priv, struct iwl3945_rx_queue *rxq)
@@ -868,10 +873,13 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 	unsigned long flags;
 	struct iwl3945_rx_queue *rxq = &priv->rxq;
 
-	IM_HERE_NOW(); iwl3945_power_init_handle(priv);
+	//IM_HERE_NOW(); 
+	iwl3945_power_init_handle(priv);
 
-	IM_HERE_NOW(); spin_lock_irqsave(&priv->lock, flags);
-	IM_HERE_NOW(); iwl3945_set_bit(priv, CSR_ANA_PLL_CFG, (1 << 24));
+	//IM_HERE_NOW(); 
+	spin_lock_irqsave(&priv->lock, flags);
+	//IM_HERE_NOW(); 
+	iwl3945_set_bit(priv, CSR_ANA_PLL_CFG, (1 << 24));
 	iwl3945_set_bit(priv, CSR_GIO_CHICKEN_BITS,
 		    CSR_GIO_CHICKEN_BITS_REG_BIT_L1A_NO_L0S_RX);
 
@@ -885,31 +893,38 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 		return rc;
 	}
 
-	IM_HERE_NOW(); rc = iwl3945_grab_nic_access(priv);
+	//IM_HERE_NOW();
+	 rc = iwl3945_grab_nic_access(priv);
 	if (rc) {
 		spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
 	}
-	IM_HERE_NOW(); iwl3945_write_prph(priv, APMG_CLK_EN_REG,
+	//IM_HERE_NOW();
+	 iwl3945_write_prph(priv, APMG_CLK_EN_REG,
 				 APMG_CLK_VAL_DMA_CLK_RQT |
 				 APMG_CLK_VAL_BSM_CLK_RQT);
 	udelay(20);
 	iwl3945_set_bits_prph(priv, APMG_PCIDEV_STT_REG,
 				    APMG_PCIDEV_STT_VAL_L1_ACT_DIS);
 	iwl3945_release_nic_access(priv);
-	IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
+	//IM_HERE_NOW();
+	 spin_unlock_irqrestore(&priv->lock, flags);
 
 	/* Determine HW type */
-	IM_HERE_NOW(); rc = pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &rev_id);
+	//IM_HERE_NOW();
+	 rc = pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &rev_id);
 	if (rc)
 		return rc;
 	IWL_DEBUG_INFO("HW Revision ID = 0x%X\n", rev_id);
 
-	IM_HERE_NOW(); iwl3945_nic_set_pwr_src(priv, 1);
+	//IM_HERE_NOW();
+	 iwl3945_nic_set_pwr_src(priv, 1);
     printf("Finished nic_set_pwr_src\n");
-	IM_HERE_NOW(); spin_lock_irqsave(&priv->lock, flags);
+	//IM_HERE_NOW();
+	 spin_lock_irqsave(&priv->lock, flags);
 
-	IM_HERE_NOW(); if (rev_id & PCI_CFG_REV_ID_BIT_RTP)
+	//IM_HERE_NOW();
+	 if (rev_id & PCI_CFG_REV_ID_BIT_RTP)
 		IWL_DEBUG_INFO("RTP type \n");
 	else if (rev_id & PCI_CFG_REV_ID_BIT_BASIC_SKU) {
 		IWL_DEBUG_INFO("ALM-MB type\n");
@@ -921,14 +936,16 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 			    CSR_HW_IF_CONFIG_REG_BIT_ALMAGOR_MM);
 	}
 
-	IM_HERE_NOW(); if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
+	//IM_HERE_NOW();
+	 if (EEPROM_SKU_CAP_OP_MODE_MRC == priv->eeprom.sku_cap) {
 		IWL_DEBUG_INFO("SKU OP mode is mrc\n");
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BIT_SKU_MRC);
 	} else
 		IWL_DEBUG_INFO("SKU OP mode is basic\n");
 
-	IM_HERE_NOW(); if ((priv->eeprom.board_revision & 0xF0) == 0xD0) {
+	//IM_HERE_NOW();
+	 if ((priv->eeprom.board_revision & 0xF0) == 0xD0) {
 		IWL_DEBUG_INFO("3945ABG revision is 0x%X\n",
 			       priv->eeprom.board_revision);
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
@@ -940,7 +957,8 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 			      CSR_HW_IF_CONFIG_REG_BIT_BOARD_TYPE);
 	}
 
-	IM_HERE_NOW(); if (priv->eeprom.almgor_m_version <= 1) {
+	//IM_HERE_NOW();
+	 if (priv->eeprom.almgor_m_version <= 1) {
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_A);
 		IWL_DEBUG_INFO("Card M type A version is 0x%X\n",
@@ -951,51 +969,67 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 		iwl3945_set_bit(priv, CSR_HW_IF_CONFIG_REG,
 			    CSR_HW_IF_CONFIG_REG_BITS_SILICON_TYPE_B);
 	}
-	IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
+	//IM_HERE_NOW();
+	 spin_unlock_irqrestore(&priv->lock, flags);
 
-	IM_HERE_NOW(); if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
+	//IM_HERE_NOW();
+	 if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_SW_RF_KILL_ENABLE)
 		IWL_DEBUG_RF_KILL("SW RF KILL supported in EEPROM.\n");
 
-	IM_HERE_NOW(); if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
+	//IM_HERE_NOW();
+	 if (priv->eeprom.sku_cap & EEPROM_SKU_CAP_HW_RF_KILL_ENABLE)
 		IWL_DEBUG_RF_KILL("HW RF KILL supported in EEPROM.\n");
 
 	/* Allocate the RX queue, or reset if it is already allocated */
-	IM_HERE_NOW(); if (!rxq->bd) {
-		IM_HERE_NOW(); rc = iwl3945_rx_queue_alloc(priv);
+	//IM_HERE_NOW();
+	 if (!rxq->bd) {
+		//IM_HERE_NOW();
+		 rc = iwl3945_rx_queue_alloc(priv);
 		if (rc) {
 			IWL_ERROR("Unable to initialize Rx queue\n");
 			return -ENOMEM;
 		}
 	} else {
-		IM_HERE_NOW(); iwl3945_rx_queue_reset(priv, rxq);
+		//IM_HERE_NOW();
+		 iwl3945_rx_queue_reset(priv, rxq);
     }
 
-	IM_HERE_NOW(); iwl3945_rx_replenish(priv);
+	//IM_HERE_NOW();
+	 iwl3945_rx_replenish(priv);
 
-	IM_HERE_NOW(); iwl3945_rx_init(priv, rxq);
+	//IM_HERE_NOW();
+	 iwl3945_rx_init(priv, rxq);
 
-	IM_HERE_NOW(); spin_lock_irqsave(&priv->lock, flags);
+	//IM_HERE_NOW();
+	 spin_lock_irqsave(&priv->lock, flags);
 
 	/* Look at using this instead:
 	rxq->need_update = 1;
 	iwl3945_rx_queue_update_write_ptr(priv, rxq);
 	*/
 
-	IM_HERE_NOW(); rc = iwl3945_grab_nic_access(priv);
+	//IM_HERE_NOW();
+	 rc = iwl3945_grab_nic_access(priv);
 	if (rc) {
-		IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
+		//IM_HERE_NOW();
+		 spin_unlock_irqrestore(&priv->lock, flags);
 		return rc;
 	}
-	IM_HERE_NOW(); iwl3945_write_direct32(priv, FH_RCSR_WPTR(0), rxq->write & ~7);
-	IM_HERE_NOW(); iwl3945_release_nic_access(priv);
+	//IM_HERE_NOW();
+	 iwl3945_write_direct32(priv, FH_RCSR_WPTR(0), rxq->write & ~7);
+	//IM_HERE_NOW();
+	 iwl3945_release_nic_access(priv);
 
-	IM_HERE_NOW(); spin_unlock_irqrestore(&priv->lock, flags);
+	//IM_HERE_NOW();
+	 spin_unlock_irqrestore(&priv->lock, flags);
 
-	IM_HERE_NOW(); rc = iwl3945_txq_ctx_reset(priv);
+	//IM_HERE_NOW();
+	 rc = iwl3945_txq_ctx_reset(priv);
 	if (rc)
 		return rc;
 
-	IM_HERE_NOW(); set_bit(STATUS_INIT, &priv->status);
+	//IM_HERE_NOW();
+	 set_bit(STATUS_INIT, &priv->status);
 
 	return 0;
 }
@@ -1148,6 +1182,7 @@ static inline int iwl3945_hw_reg_temp_out_of_range(int temperature)
 int iwl3945_hw_get_temperature(struct iwl3945_priv *priv)
 {
 	return iwl3945_read32(priv, CSR_UCODE_DRV_GP2);
+	//return 10;
 }
 
 /**
@@ -1763,10 +1798,10 @@ void iwl3945_reg_txpower_periodic(struct iwl3945_priv *priv)
 			   &priv->thermal_periodic, REG_RECALIB_PERIOD * HZ);
 }
 
-static void iwl3945_bg_reg_txpower_periodic(struct work_struct *work)
+static void iwl3945_bg_reg_txpower_periodic(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv = container_of(work, struct iwl3945_priv,
-					     thermal_periodic.work);
+	//struct iwl3945_priv *priv = container_of(work, struct iwl3945_priv,
+	//				     thermal_periodic.work);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
@@ -2212,7 +2247,7 @@ int iwl3945_hw_set_hw_setting(struct iwl3945_priv *priv)
 	priv->hw_setting.shared_virt =
 	    pci_alloc_consistent(priv->pci_dev,
 				 sizeof(struct iwl3945_shared),
-				 &priv->hw_setting.shared_phys);
+				 &priv->hw_setting.shared_phys,4*1024);
 
 	if (!priv->hw_setting.shared_virt) {
 		IWL_ERROR("failed to allocate pci memory\n");
@@ -2272,7 +2307,7 @@ void iwl3945_hw_rx_handler_setup(struct iwl3945_priv *priv)
 void iwl3945_hw_setup_deferred_work(struct iwl3945_priv *priv)
 {
 	INIT_DELAYED_WORK(&priv->thermal_periodic,
-			  iwl3945_bg_reg_txpower_periodic);
+			  iwl3945_bg_reg_txpower_periodic,20);
 }
 
 void iwl3945_hw_cancel_deferred_work(struct iwl3945_priv *priv)

@@ -112,8 +112,9 @@ void darwin_iwi3945::free(void)
 			fPCIDevice->close(this);
 			fPCIDevice->release();
 		}
-		super::free();
+		
 	}
+	super::free();
 }
 
 
@@ -123,8 +124,11 @@ void darwin_iwi3945::stop(IOService *provider)
 	IOWorkLoop * workqueue = getWorkLoop();
 	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
 	if (fInterruptSrc && workqueue){
+		fInterruptSrc->disable();
+		fInterruptSrc->release();
 		printf("Stopping OK\n");
         workqueue->removeEventSource(fInterruptSrc);
-		super::stop(provider);
+
 	}
+	super::stop(provider);
 }
