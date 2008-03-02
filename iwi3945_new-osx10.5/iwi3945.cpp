@@ -34,14 +34,14 @@ extern IOWorkLoop * getWorkLoop();
 extern IOInterruptEventSource * getInterruptEventSource();
 extern int if_down();
 extern IOPCIDevice * getPCIDevice();
+extern IOMemoryMap * getMap();
+extern void setUnloaded();
 
 IOService * my_provider;
 #pragma mark -
 #pragma mark Overrides required for implementation
 
 IOService *darwin_iwi3945::getProvider() {
-/*	if(!provider)
-		return NULL;*/
     return my_provider;
 }
 
@@ -85,7 +85,6 @@ bool darwin_iwi3945::start(IOService *provider)
 		my_provider=provider;
 		if( init_routine() )
 			return false;
-        //currentController=this;
 
         return true;
     } while(false);
@@ -98,22 +97,34 @@ bool darwin_iwi3945::start(IOService *provider)
 
 void darwin_iwi3945::free(void)
 {
-	if_down();
+	
 	IOLog("iwi3945: Freeing\n");
-	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
-	if( fInterruptSrc ){
+	
+	//IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
+	//if( fInterruptSrc ){
 		//printf("INT OK\n");
-		fInterruptSrc->disable();
-		fInterruptSrc->release();
+	//	fInterruptSrc->disable();
+	//	fInterruptSrc->release();
+		//IOSleep(1000);
+		//if_down();
+		//fInterruptSrc->release();
 
 		IOPCIDevice *fPCIDevice = getPCIDevice();
 		if( fPCIDevice) {
-			printf("Stop PCI Device");
+			printf("Stop PCI Device\n");
+			fPCIDevice->setBusMasterEnable(false);
+			fPCIDevice->setMemoryEnable(false);
+			IOMemoryMap * map;
+			map = getMap();
+			if(map){
+				map->unmap();
+				map->release();
+			}
 			fPCIDevice->close(this);
-			fPCIDevice->release();
+			//fPCIDevice->release();
 		}
 		
-	}
+	//}
 	super::free();
 }
 
@@ -121,6 +132,8 @@ void darwin_iwi3945::free(void)
 void darwin_iwi3945::stop(IOService *provider)
 {
 	IOLog("iwi3945: Stopping\n");
+	setUnloaded();//Stop all the workqueue
+	IOSleep(1000);//wait for unfinished thread crappy oh Yeah!
 	IOWorkLoop * workqueue = getWorkLoop();
 	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
 	if (fInterruptSrc && workqueue){
@@ -130,5 +143,6 @@ void darwin_iwi3945::stop(IOService *provider)
         workqueue->removeEventSource(fInterruptSrc);
 
 	}
+	if_down();
 	super::stop(provider);
 }
