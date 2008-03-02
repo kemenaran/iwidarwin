@@ -2247,7 +2247,7 @@ int iwl3945_hw_set_hw_setting(struct iwl3945_priv *priv)
 	priv->hw_setting.shared_virt =
 	    pci_alloc_consistent(priv->pci_dev,
 				 sizeof(struct iwl3945_shared),
-				 &priv->hw_setting.shared_phys,4*1024);
+				 &priv->hw_setting.shared_phys,sizeof(struct iwl3945_shared));
 
 	if (!priv->hw_setting.shared_virt) {
 		IWL_ERROR("failed to allocate pci memory\n");

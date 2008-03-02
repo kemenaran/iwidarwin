@@ -324,7 +324,7 @@ static int iwl3945_tx_queue_alloc(struct iwl3945_priv *priv,
 	 * shared with device */
 	txq->bd = pci_alloc_consistent(dev,
 			sizeof(txq->bd[0]) * TFD_QUEUE_SIZE_MAX,
-			&txq->q.dma_addr,16*1024);
+			&txq->q.dma_addr,sizeof(txq->bd[0]));
 
 	if (!txq->bd) {
 		IWL_ERROR("pci_alloc_consistent(%zd) failed\n",
@@ -365,7 +365,7 @@ int iwl3945_tx_queue_init(struct iwl3945_priv *priv,
 	len = sizeof(struct iwl3945_cmd) * slots_num;
 	if (txq_id == IWL_CMD_QUEUE_NUM)
 		len +=  IWL_MAX_SCAN_SIZE;
-	txq->cmd = pci_alloc_consistent(dev, len, &txq->dma_addr_cmd, 16*1024);
+	txq->cmd = pci_alloc_consistent(dev, len, &txq->dma_addr_cmd, sizeof(struct iwl3945_cmd));
 	if (!txq->cmd)
 		return -ENOMEM;
 
@@ -4256,7 +4256,7 @@ int iwl3945_rx_queue_alloc(struct iwl3945_priv *priv)
 	INIT_LIST_HEAD(&rxq->rx_used);
 
 	/* Alloc the circular buffer of Read Buffer Descriptors (RBDs) */
-	rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr,16*1024);
+	rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr,PAGE_SIZE);
 	if (!rxq->bd)
 		return -ENOMEM;
 

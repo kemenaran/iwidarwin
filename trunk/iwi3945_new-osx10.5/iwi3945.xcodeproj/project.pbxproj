@@ -24,7 +24,7 @@
 		9BC218710D40F12C000BA789 /* iwi3945.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9BC2186F0D40F12C000BA789 /* iwi3945.cpp */; };
 		9BC218770D40F275000BA789 /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BC218760D40F275000BA789 /* defines.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9BEDC4560D5B3A55002000EA /* compatibility.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BEDC4540D5B3A55002000EA /* compatibility.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		9BEDC4570D5B3A55002000EA /* compatibility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9BEDC4550D5B3A55002000EA /* compatibility.cpp */; };
+		C0D2FE860D797B93009EB1D3 /* compatibility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C0D2FE850D797B93009EB1D3 /* compatibility.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,7 +54,7 @@
 		9BC2186F0D40F12C000BA789 /* iwi3945.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = iwi3945.cpp; sourceTree = "<group>"; };
 		9BC218760D40F275000BA789 /* defines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
 		9BEDC4540D5B3A55002000EA /* compatibility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compatibility.h; sourceTree = "<group>"; };
-		9BEDC4550D5B3A55002000EA /* compatibility.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compatibility.cpp; sourceTree = "<group>"; };
+		C0D2FE850D797B93009EB1D3 /* compatibility.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compatibility.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,7 +150,7 @@
 			isa = PBXGroup;
 			children = (
 				9BEDC4540D5B3A55002000EA /* compatibility.h */,
-				9BEDC4550D5B3A55002000EA /* compatibility.cpp */,
+				C0D2FE850D797B93009EB1D3 /* compatibility.cpp */,
 				9BC218760D40F275000BA789 /* defines.h */,
 				9BC2186E0D40F12C000BA789 /* iwi3945.h */,
 				9BC2186F0D40F12C000BA789 /* iwi3945.cpp */,
@@ -267,7 +267,7 @@
 				9BC2146C0D40F0BA000BA789 /* iwl-3945.c in Sources */,
 				9BC2146D0D40F0BA000BA789 /* iwl3945-base.c in Sources */,
 				9BC218710D40F12C000BA789 /* iwi3945.cpp in Sources */,
-				9BEDC4570D5B3A55002000EA /* compatibility.cpp in Sources */,
+				C0D2FE860D797B93009EB1D3 /* compatibility.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

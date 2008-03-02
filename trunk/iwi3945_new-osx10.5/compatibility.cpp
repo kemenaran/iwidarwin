@@ -68,7 +68,7 @@ IOMemoryMap	*				my_map;
 static int next_thread=0;
 static int thread_pos=0;
 static IOLock* thread_lock;
-
+static bool is_unloaded=false;
 
 #define MAX_MUTEXES 256
 static struct mutex *mutexes[MAX_MUTEXES];
@@ -101,6 +101,17 @@ IOPCIDevice * getPCIDevice(){
 	if(my_pci_device)
 		return my_pci_device;
 	return NULL;
+}
+IOMemoryMap * getMap(){
+	if(my_map)
+		return my_map;
+	return NULL;
+}
+/*
+	Setters
+*/
+void setUnloaded(){
+	is_unloaded=true;
 }
 //added
 int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
@@ -629,9 +640,43 @@ int ieee80211_get_morefrag(struct ieee80211_hdr *hdr) {
 }
 
 
-static void ieee80211_tasklet_handler(unsigned long data)
- {
+#define IEEE80211_RX_MSG 1
+#define IEEE80211_TX_STATUS_MSG 2
+static void ieee80211_tasklet_handler(void * data)
+{
+	IOLog("TODO ieee80211_tasklet_handler\n");
+	return ;
+	struct ieee80211_local *local = (struct ieee80211_local *) data;
+	struct sk_buff *skb;
+	struct ieee80211_rx_status rx_status;
+	struct ieee80211_tx_status *tx_status;
 
+	//get the last packet
+	//while ((skb = skb_dequeue(&local->skb_queue)) || (skb = skb_dequeue(&local->skb_queue_unreliable))) {
+	//	switch (skb->pkt_type) {
+	//	case IEEE80211_RX_MSG:
+			/* status is in skb->cb */
+	//		memcpy(&rx_status, skb->cb, sizeof(rx_status));
+			/* Clear skb->type in order to not confuse kernel
+			 * netstack. */
+	//		skb->pkt_type = 0;
+	//		__ieee80211_rx(local_to_hw(local), skb, &rx_status);
+	//		break;
+	//	case IEEE80211_TX_STATUS_MSG:
+			/* get pointer to saved status out of skb->cb */
+	//		memcpy(&tx_status, skb->cb, sizeof(tx_status));
+	//		skb->pkt_type = 0;
+	//		ieee80211_tx_status(local_to_hw(local),
+	//				    skb, tx_status);
+	//		kfree(tx_status);
+	//		break;
+	//	default: /* should never get here! */
+			//printk(KERN_ERR "%s: Unknown message type (%d)\n",
+			//       local->mdev->name, skb->pkt_type);
+	//		dev_kfree_skb(skb);
+	//		break;
+	//	}
+	//}
 }
 
 
@@ -647,24 +692,25 @@ void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct i
     
     BUILD_BUG_ON(sizeof(struct ieee80211_rx_status) > sizeof(skb->cb));
     
-    IOLog("todo ieee80211_rx_irqsafe\n");
+    //IOLog("todo ieee80211_rx_irqsafe\n");
 	
 	//PrintPacketHeader(skb->mac_data);
-	char    *frame;
-    frame = (char*)skb_data(skb);
-    for (int i = 0; i < mbuf_len(skb->mac_data); i++)
-    {
-      IOLog("%02X", (u_int8_t)frame[i]);
-    }
+	//char    *frame;
+    //frame = (char*)skb_data(skb);
+    //for (int i = 0; i < mbuf_len(skb->mac_data); i++)
+    //{
+    //  IOLog("%02X", (u_int8_t)frame[i]);
+    //}
 	
-	return;
-//    skb->dev = local->mdev;
+	//return;
+	//skb->dev = local->mdev;
     // copy status into skb->cb for use by tasklet
     memcpy(skb->cb, status, sizeof(*status));
     mbuf_settype(skb->mac_data, MBUF_TYPE_DATA);
-    //skb_queue_tail(&local->skb_queue, skb);
-    tasklet_schedule(&local->tasklet);
-	//IOCreateThread(&ieee80211_tasklet_handler, (long unsigned int)local);
+    //skb_queue_tail(&local->skb_queue, skb);//how ?
+	
+	//Start the tasklet
+	IOCreateThread(&ieee80211_tasklet_handler,local);
 
 }
 
@@ -980,7 +1026,7 @@ void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, s
 
 int pci_write_config_word(struct pci_dev *dev, int where, u16 val){
     IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-    fPCIDevice->extendedConfigWrite16(where,val);
+    fPCIDevice->configWrite16(where,val);
     return 0;
 }
 
@@ -993,8 +1039,8 @@ int pci_enable_msi  (struct pci_dev * dev){
 int pci_restore_state (	struct pci_dev *  	dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	int i;
-	for (i = 0; i < 16; i++)
-		fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
+	//for (i = 0; i < 16; i++)
+	//	fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
 	//printf("PCI restore state [OK]\n");
 	return 0;
 }
@@ -1195,7 +1241,7 @@ static void ieee80211_scan_start(struct ieee80211_local *local,
     local->scan.in_scan = 1;
     
     ieee80211_netif_oper(local_to_hw(local), NETIF_STOP);
-    
+#define IEEE80211_SCAN_START 1    
     ret = local->ops->passive_scan(local_to_hw(local),
                                    IEEE80211_SCAN_START, conf);
     
@@ -1244,7 +1290,7 @@ static void ieee80211_scan_stop(struct ieee80211_local *local,
         local->scan.chan_idx = 0;
     
     chan = &mode->channels[local->scan.chan_idx];
-    
+#define IEEE80211_SCAN_END 2     
     local->ops->passive_scan(local_to_hw(local), IEEE80211_SCAN_END,
                              conf);
     
@@ -1371,6 +1417,7 @@ void ieee80211_init_scan(struct ieee80211_local *local)
     memcpy(skb_put(local->scan.skb, len), &hdr, len);
     
     memset(&local->scan.tx_control, 0, sizeof(local->scan.tx_control));
+#define HW_KEY_IDX_INVALID -1
     local->scan.tx_control.key_idx = HW_KEY_IDX_INVALID;
     local->scan.tx_control.flags |= IEEE80211_TXCTL_DO_NOT_ENCRYPT;
     memset(&extra, 0, sizeof(extra));
@@ -1487,8 +1534,8 @@ void pci_disable_msi(struct pci_dev* dev){
 int pci_save_state (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	int i;
-	for (i = 0; i < 16; i++)
-		dev->saved_config_space[i]=fPCIDevice->configRead32(i * 4);
+	//for (i = 0; i < 16; i++)
+	//	dev->saved_config_space[i]=fPCIDevice->configRead32(i * 4);
 	//printf("PCI save state [OK]\n");
 	return 0;
 }
@@ -1507,7 +1554,7 @@ int pci_request_regions (struct pci_dev * pdev, char * res_name){
 //ok
 int pci_write_config_byte(struct pci_dev *dev, int where, u8 val){
     IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-    fPCIDevice->extendedConfigWrite8(where,val);
+    fPCIDevice->configWrite8(where,val);
     return 0;
 }
 
@@ -1536,76 +1583,48 @@ void pci_free_consistent(struct pci_dev *hwdev, size_t size,void *vaddr, dma_add
     return IOFreeContiguous(vaddr, size);
 }
 
-/*this::IOBufferMemoryDescriptor* MemoryDmaAlloc(UInt32 buf_size, dma_addr_t *phys_add, void *virt_add)
-{
-	IOBufferMemoryDescriptor *memBuffer;
-	void *virt_address;
-	dma_addr_t phys_address;
-	IOMemoryMap *memMap;
 
-	memBuffer = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 
-	kIODirectionOutIn | kIOMemoryPhysicallyContiguous | 
-	kIOMapInhibitCache | kIOMemoryAutoPrepare , buf_size, 
-	PAGE_SIZE); 
-
-
-
-	memMap = memBuffer->map();
-
-	if (memMap == NULL) {
-		IWI_DEBUG("mapping failed\n");
-		memBuffer->release();
-		memBuffer = NULL;
-
-		return NULL;	
-	}
-
-	if (phys_add!=NULL)
-		phys_address = memMap->getPhysicalAddress();
-
-	if (virt_add!=NULL)
-	{
-		virt_address = (void *)memMap->getVirtualAddress();
-
-		if (virt_address == NULL || phys_address == NULL) {
-			memMap->release();
-			memBuffer->release();
-			memBuffer = NULL;
-
-			return NULL;
-		}
-	}
-	if (phys_add!=NULL) *phys_add = phys_address;
-	if (virt_add!=NULL)	*(IOVirtualAddress*)virt_add = (IOVirtualAddress)virt_address;
-	memMap->release();
-
-	return memBuffer;
-}*/
 
 #include <IOKit/IOMapper.h>
+#define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
+#define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
 void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,dma_addr_t *dma_handle,int count) {
+	size = RT_ALIGN_Z(size, PAGE_SIZE);
+	return IOMallocContiguous(size,PAGE_SIZE, dma_handle);
 
-	
-	//2MB but now I'm sur ;)
-    return IOMallocContiguous(size,2*1024*1024, dma_handle);
-	/*IOBufferMemoryDescriptor *memBuffer;
-	memBuffer = IOBufferMemoryDescriptor::inTaskWithOptions(
-						kernel_task,
-                        kIOMemoryPhysicallyContiguous,
-                        size,
-						PAGE_SIZE );
-
-    if ( memBuffer == 0 ||memBuffer->prepare() != kIOReturnSuccess )
-    {
-        IOLog("pci_alloc_consistent\n");
-		void *virtual_ptr = memBuffer->getBytesNoCopy();
-		IOByteCount length;
-		*dma_handle = memBuffer->getPhysicalSegment( 0, &length );
-		return virtual_ptr;
-	}
-	IOLog("\nError !!!!!\n");
-	*dma_handle=NULL;
-	return NULL;*/
+	    /*void *pv = IOMallocContiguous(size, PAGE_SIZE, NULL);
+	    if (pv)
+	    {
+	        IOMemoryDescriptor *pMemDesc = IOMemoryDescriptor::withAddress((vm_address_t)pv, size, kIODirectionOutIn, kernel_task);
+	        if (pMemDesc)
+	        {
+				pMemDesc->prepare( kIODirectionOutIn );
+	            addr64_t PhysAddr = pMemDesc->getPhysicalSegment64(0, NULL);
+#define _4G 0x0000000100000000LL
+	            if (    PhysAddr > 0 &&  PhysAddr <= _4G &&  PhysAddr + size <= _4G)
+	            {
+					//OK
+					//pMemDesc->release();
+					*dma_handle = PhysAddr;
+					//IOByteCount * length;
+					//for(int i=0;i<=size;i++){
+						//IOLog("%d --> %llx\n",1,pMemDesc->getPhysicalSegment(1,length));
+						//IOSleep(2);
+					//}
+					bzero(pv,size);
+					return pv;
+	            }
+	            else
+	            {
+	                IOLog("Phy addr not good\n");
+	            }
+	            pMemDesc->release();
+	        }
+	        IOFreeContiguous(pv, size);
+	    }
+		IOLog("Error\n");
+		*dma_handle = NULL;
+		return NULL;*/
 
 }
 
@@ -1619,10 +1638,12 @@ void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxl
 	
   		map = fPCIDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0, kIOMapInhibitCache);
   		if (map == 0) {
+			
 			//IOLog("%s map is zero\n", getName());
 		//	break;
 			return NULL;
 		}
+		my_map=map;
 		uint16_t reg;
 		
 				/* We disable the RETRY_TIMEOUT register (0x41) to keep
@@ -1674,19 +1695,19 @@ if(tmp){
 
 int pci_read_config_byte(struct pci_dev *dev, int where, u8 *val) {
     IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-    *val = fPCIDevice->extendedConfigRead8(where);
+    *val = fPCIDevice->configRead8(where);
     return 0;
 }
 
 int pci_read_config_word(struct pci_dev *dev, int where, u16 *val) {
     IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-    *val = fPCIDevice->extendedConfigRead16(where);
+    *val = fPCIDevice->configRead16(where);
     return 0;
 }
 
 int pci_read_config_dword(struct pci_dev *dev, int where, u32 *val) {
     IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-    *val = fPCIDevice->extendedConfigRead32(where);
+    *val = fPCIDevice->configRead32(where);
     return 0;
 }
 
@@ -1765,42 +1786,11 @@ struct sk_buff *__alloc_skb(unsigned int size,
 
 #pragma mark -
 #pragma mark Adapt workqueue calls
-/*
-	Proposition : lauch a thread at the init of the driver who check every ms if a thread have to be lauch
-	
-	struct thread_struct{
-		...thread,
-		microtimestamp starttime,
-		boolean started
-	}
 
-//Thread lauch at the start of the driver
-void threadHandller(){
-	foreach ms{
-		foreachworkqueue{
-				if(thread_struct[0]->started){
-					//if finished
-						//clean
-						//and replace all the thread (1 goes to 0 , 2 goes to 1)
-						//start the next thread
-				}else{
-					if(starttime<=now_time){
-						//start
-						thrad_struct[0]->started=true;
-					}
-				}	
-		}
-	}
-}
-
-*/
 /*
 	wait for the end of all threads ?
 */
 void flush_workqueue(struct workqueue_struct *wq){
-	//int i
-	//for(;;)
-		//wq->tlink;
 	return;
 }
 /*
@@ -1909,7 +1899,8 @@ void start_thread(void* data){
 	if(data_thread->delay>0){
 		IOSleep(data_thread->delay);  
 	}
-	(data_thread->func)((work_struct*)my_hw->priv);
+	if(!is_unloaded)
+		(data_thread->func)((work_struct*)my_hw->priv);
 	//next_thread++;
 	//mutex
 	//IOLockUnlock(thread_lock);
