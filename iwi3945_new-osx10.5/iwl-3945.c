@@ -296,6 +296,9 @@ static void iwl3945_handle_data_packet(struct iwl3945_priv *priv, int is_data,
 static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 				struct iwl3945_rx_mem_buffer *rxb)
 {
+
+	IOLog("iwl3945_rx_reply_rx\n");
+
 	struct iwl3945_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl3945_rx_frame_stats *rx_stats = IWL_RX_STATS(pkt);
 	struct iwl3945_rx_frame_hdr *rx_hdr = IWL_RX_HDR(pkt);
@@ -318,7 +321,7 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 	int snr;
 
 	if ((unlikely(rx_stats->phy_count > 20))) {
-		IWL_DEBUG_DROP
+		IOLog
 		    ("dsp size out of range [0,20]: "
 		     "%d/n", rx_stats->phy_count);
 		return;
@@ -326,7 +329,7 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 
 	if (!(rx_end->status & RX_RES_STATUS_NO_CRC32_ERROR)
 	    || !(rx_end->status & RX_RES_STATUS_NO_RXE_OVERFLOW)) {
-		IWL_DEBUG_RX("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
+		IOLog("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
 		return;
 	}
 
@@ -334,7 +337,7 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 		iwl3945_handle_data_packet(priv, 1, rxb, &stats, phy_flags);
 		return;
 	}
-
+	
 	/* Convert 3945's rssi indicator to dBm */
 	stats.ssi = rx_stats->rssi - IWL_RSSI_OFFSET;
 
@@ -2247,7 +2250,7 @@ int iwl3945_hw_set_hw_setting(struct iwl3945_priv *priv)
 	priv->hw_setting.shared_virt =
 	    pci_alloc_consistent(priv->pci_dev,
 				 sizeof(struct iwl3945_shared),
-				 &priv->hw_setting.shared_phys,sizeof(struct iwl3945_shared));
+				 &priv->hw_setting.shared_phys,sizeof(struct iwl3945_shared*));
 
 	if (!priv->hw_setting.shared_virt) {
 		IWL_ERROR("failed to allocate pci memory\n");
