@@ -97,34 +97,21 @@ bool darwin_iwi3945::start(IOService *provider)
 
 void darwin_iwi3945::free(void)
 {
-	
 	IOLog("iwi3945: Freeing\n");
-	
-	//IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
-	//if( fInterruptSrc ){
-		//printf("INT OK\n");
-	//	fInterruptSrc->disable();
-	//	fInterruptSrc->release();
-		//IOSleep(1000);
-		//if_down();
-		//fInterruptSrc->release();
-
-		IOPCIDevice *fPCIDevice = getPCIDevice();
-		if( fPCIDevice) {
-			printf("Stop PCI Device\n");
-			fPCIDevice->setBusMasterEnable(false);
-			fPCIDevice->setMemoryEnable(false);
-			IOMemoryMap * map;
-			map = getMap();
-			if(map){
-				map->unmap();
-				map->release();
-			}
-			fPCIDevice->close(this);
-			//fPCIDevice->release();
+	IOPCIDevice *fPCIDevice = getPCIDevice();
+	if( fPCIDevice) {
+		printf("Stop PCI Device\n");
+		fPCIDevice->setBusMasterEnable(false);
+		fPCIDevice->setMemoryEnable(false);
+		IOMemoryMap * map;
+		map = getMap();
+		if(map){
+			map->unmap();
+			map->release();
 		}
-		
-	//}
+		fPCIDevice->close(this);
+		fPCIDevice->release();
+	}
 	super::free();
 }
 
@@ -137,11 +124,10 @@ void darwin_iwi3945::stop(IOService *provider)
 	IOWorkLoop * workqueue = getWorkLoop();
 	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
 	if (fInterruptSrc && workqueue){
+        workqueue->removeEventSource(fInterruptSrc);
 		fInterruptSrc->disable();
 		fInterruptSrc->release();
 		printf("Stopping OK\n");
-        workqueue->removeEventSource(fInterruptSrc);
-
 	}
 	if_down();
 	super::stop(provider);

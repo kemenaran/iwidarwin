@@ -324,7 +324,7 @@ static int iwl3945_tx_queue_alloc(struct iwl3945_priv *priv,
 	 * shared with device */
 	txq->bd = pci_alloc_consistent(dev,
 			sizeof(txq->bd[0]) * TFD_QUEUE_SIZE_MAX,
-			&txq->q.dma_addr,sizeof(txq->bd[0]));
+			&txq->q.dma_addr,sizeof(struct iwl3945_tfd_frame*));
 
 	if (!txq->bd) {
 		IWL_ERROR("pci_alloc_consistent(%zd) failed\n",
@@ -365,7 +365,7 @@ int iwl3945_tx_queue_init(struct iwl3945_priv *priv,
 	len = sizeof(struct iwl3945_cmd) * slots_num;
 	if (txq_id == IWL_CMD_QUEUE_NUM)
 		len +=  IWL_MAX_SCAN_SIZE;
-	txq->cmd = pci_alloc_consistent(dev, len, &txq->dma_addr_cmd, sizeof(struct iwl3945_cmd));
+	txq->cmd = pci_alloc_consistent(dev, len, &txq->dma_addr_cmd, sizeof(struct iwl3945_cmd*));
 	if (!txq->cmd)
 		return -ENOMEM;
 
@@ -2302,7 +2302,6 @@ static int iwl3945_scan_cancel(struct iwl3945_priv *priv)
 			IWL_DEBUG_SCAN("Queuing scan abort.\n");
 			set_bit(STATUS_SCAN_ABORTING, &priv->status);
 			queue_work(priv->workqueue, &priv->abort_scan);
-			//queue_te(5,iwl3945_bg_abort_scan,priv,NULL,true);
 		} else
 			IWL_DEBUG_SCAN("Scan abort already in progress.\n");
 
@@ -2453,7 +2452,6 @@ static int iwl3945_scan_initiate(struct iwl3945_priv *priv)
 	priv->scan_pass_start = priv->scan_start;
 
 	queue_work(priv->workqueue, &priv->request_scan);
-	//queue_te(4,iwl3945_bg_request_scan,priv,NULL,true);
 	return 0;
 }
 
@@ -3104,7 +3102,6 @@ static void iwl3945_radio_kill_sw(struct iwl3945_priv *priv, int disable_radio)
 	}
 
 	queue_work(priv->workqueue, &priv->restart);
-	//queue_te(1,iwl3945_bg_restart,priv,NULL,true);
 	return;
 }
 
@@ -3476,7 +3473,6 @@ static int iwl3945_tx_queue_reclaim(struct iwl3945_priv *priv, int txq_id, int i
 			IWL_ERROR("HCMD skipped: index (%d) %d %d\n", index,
 					q->write_ptr, q->read_ptr);
 			queue_work(priv->workqueue, &priv->restart);
-			//queue_te(1,iwl3945_bg_restart,priv,NULL,true);
 		}
 		nfreed++;
 	}
@@ -3811,7 +3807,6 @@ static void iwl3945_rx_scan_complete_notif(struct iwl3945_priv *priv,
 		jiffies_to_msecs(elapsed_jiffies(priv->scan_start, jiffies)));
 
 	queue_work(priv->workqueue, &priv->scan_completed);
-	//queue_te(3,iwl3945_bg_scan_completed,priv,NULL,true);
 
 
 	return;
@@ -3819,7 +3814,6 @@ static void iwl3945_rx_scan_complete_notif(struct iwl3945_priv *priv,
 reschedule:
 	priv->scan_pass_start = jiffies;
 	queue_work(priv->workqueue, &priv->request_scan);
-	//queue_te(4,iwl3945_bg_request_scan,priv,NULL,true);
 }
 
 /* Handle notification from uCode that card's power state is changing
@@ -3856,7 +3850,6 @@ static void iwl3945_rx_card_state_notif(struct iwl3945_priv *priv,
 	    (test_bit(STATUS_RF_KILL_SW, &status) !=
 	     test_bit(STATUS_RF_KILL_SW, &priv->status)))
 		queue_work(priv->workqueue, &priv->rf_kill);
-		//queue_te(6,iwl_bg_rf_kill,priv,NULL,true);
 	else
 		wake_up_interruptible(&priv->wait_command_queue);
 }
@@ -4045,7 +4038,6 @@ int iwl3945_rx_queue_update_write_ptr(struct iwl3945_priv *priv, struct iwl3945_
 		goto exit_unlock;
 
 	/* If power-saving is in use, make sure device is awake */
-	//if(TU){
 	if (test_bit(STATUS_POWER_PMI, &priv->status)) {
 		reg = iwl3945_read32(priv, CSR_UCODE_DRV_GP1);
 
@@ -4105,10 +4097,8 @@ static int iwl3945_rx_queue_restock(struct iwl3945_priv *priv)
 	unsigned long flags;
 	int write, rc;
 
-	//IM_HERE_NOW();
 	spin_lock_irqsave(&rxq->lock, flags);
 	write = rxq->write & ~0x7;
-	//IM_HERE_NOW();
 	while ((iwl3945_rx_queue_space(rxq) > 0) && (rxq->free_count)) {
 		/* Get next free Rx buffer, remove from free list */
 		element = rxq->rx_free.next;
@@ -4121,21 +4111,17 @@ static int iwl3945_rx_queue_restock(struct iwl3945_priv *priv)
 		rxq->write = (rxq->write + 1) & RX_QUEUE_MASK;
 		rxq->free_count--;
 	}
-	//IM_HERE_NOW();
 	spin_unlock_irqrestore(&rxq->lock, flags);
 
 	/* If the pre-allocated buffer pool is dropping low, schedule to
 	 * refill it */
 	if (rxq->free_count <= RX_LOW_WATERMARK) {
-        //IM_HERE_NOW();
-		//queue_te(2,iwl3945_bg_rx_replenish,priv,NULL,true);
 		queue_work(priv->workqueue, &priv->rx_replenish);
     }
 
 
 	/* If we've added more space for the firmware to place data, tell it.
 	 * Increment device's write pointer in multiples of 8. */
-	//IM_HERE_NOW();
 	 if ((write != (rxq->write & ~0x7))
 	    || (abs(rxq->write - rxq->read) > 7)) {
 		spin_lock_irqsave(&rxq->lock, flags);
@@ -4145,7 +4131,6 @@ static int iwl3945_rx_queue_restock(struct iwl3945_priv *priv)
 		if (rc)
 			return rc;
 	}
-    //IM_HERE_NOW(); 
 
 	return 0;
 }
@@ -4256,7 +4241,7 @@ int iwl3945_rx_queue_alloc(struct iwl3945_priv *priv)
 	INIT_LIST_HEAD(&rxq->rx_used);
 
 	/* Alloc the circular buffer of Read Buffer Descriptors (RBDs) */
-	rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr,PAGE_SIZE);
+	rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr,sizeof(__le32*));
 	if (!rxq->bd)
 		return -ENOMEM;
 
@@ -4437,9 +4422,9 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 		 *   handle those that need handling via function in
 		 *   rx_handlers table.  See iwl3945_setup_rx_handlers() */
 		if (priv->rx_handlers[pkt->hdr.cmd]) {
-			//IWL_DEBUG(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
-			//	"r = %d, i = %d, %s, 0x%02x\n", r, i,
-			//	get_cmd_string(pkt->hdr.cmd), pkt->hdr.cmd);
+			IWL_DEBUG(IWL_DL_HOST_COMMAND | IWL_DL_RX | IWL_DL_ISR,
+				"r = %d, i = %d, %s, 0x%02x\n", r, i,
+				get_cmd_string(pkt->hdr.cmd), pkt->hdr.cmd);
 			priv->rx_handlers[pkt->hdr.cmd] (priv, rxb);
 		} else {
 			/* No handling needed */
@@ -4564,7 +4549,6 @@ static void iwl3945_enable_interrupts(struct iwl3945_priv *priv)
 	set_bit(STATUS_INT_ENABLED, &priv->status);
 	iwl3945_write32(priv, CSR_INT_MASK, CSR_INI_SET_MASK);
 	enable_int();
-
 }
 
 static inline void iwl3945_disable_interrupts(struct iwl3945_priv *priv)
@@ -4795,7 +4779,6 @@ static void iwl3945_irq_handle_error(struct iwl3945_priv *priv)
 			priv->error_recovering = 1;
 		}
 		queue_work(priv->workqueue, &priv->restart);
-		//queue_te(1,iwl3945_bg_restart,priv,NULL,true);
 	}
 }
 
@@ -4842,9 +4825,9 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 //#ifdef CONFIG_IWL3945_DEBUG
 	//if (iwl3945_debug_level & IWL_DL_ISR) {
 		/* just for debug */
-		//u32 inta_mask = iwl3945_read32(priv, CSR_INT_MASK);
-		//IWL_DEBUG_ISR("TASKLET : inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
-		//	      inta, inta_mask, inta_fh);
+		u32 inta_mask = iwl3945_read32(priv, CSR_INT_MASK);
+		IWL_DEBUG_ISR("TASKLET : inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
+			      inta, inta_mask, inta_fh);
 	//}
 //#endif
 
@@ -4873,7 +4856,7 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 		return;
 	}
 
-//#ifdef CONFIG_IWL3945_DEBUG
+#ifdef CONFIG_IWL3945_DEBUG
 	if ((IWL_DL_ISR)) {
 		/* NIC fires this, but we don't use it, redundant with WAKEUP */
 		if (inta & CSR_INT_BIT_MAC_CLK_ACTV)
@@ -4883,7 +4866,7 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 		if (inta & CSR_INT_BIT_ALIVE)
 			IWL_DEBUG_ISR("Alive interrupt\n");
 	}
-//#endif
+#endif
 	/* Safely ignore these bits for debug checks below */
 	inta &= ~(CSR_INT_BIT_MAC_CLK_ACTV | CSR_INT_BIT_ALIVE);
 
@@ -4905,7 +4888,6 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 		if (!hw_rf_kill && !test_bit(STATUS_ALIVE, &priv->status)) {
 			clear_bit(STATUS_RF_KILL_HW, &priv->status);
 			queue_work(priv->workqueue, &priv->restart);
-			//queue_te(1,iwl3945_bg_restart,priv,NULL,true);
 		}
 
 		handled |= CSR_INT_BIT_RF_KILL;
@@ -4917,8 +4899,6 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 		handled |= CSR_INT_BIT_CT_KILL;
 	}
 
-//FIXME: Oh! Crappy! =p
-//	inta &= ~(CSR_INT_BIT_SW_ERR);
 	/* Error detected by uCode */
 	if (inta & CSR_INT_BIT_SW_ERR) {
 		IWL_ERROR("Microcode SW error detected.  Restarting 0x%X.\n",
@@ -5019,12 +4999,12 @@ static irqreturn_t iwl3945_isr(int irq, void *data)
 	if ((inta == 0xFFFFFFFF) || ((inta & 0xFFFFFFF0) == 0xa5a5a5a0)) {
 		/* Hardware disappeared. It might have already raised
 		 * an interrupt */
-		//IWL_WARNING("HARDWARE GONE?? INTA == 0x%080x\n", inta);
+		IWL_WARNING("HARDWARE GONE?? INTA == 0x%080x\n", inta);
 		goto unplugged;
 	}
 
-	//IWL_DEBUG_ISR("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
-	//	      inta, inta_mask, inta_fh);
+	IWL_DEBUG_ISR("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
+		      inta, inta_mask, inta_fh);
 
 	/* iwl3945_irq_tasklet() will service interrupts and re-enable them */
 	tasklet_schedule(&priv->irq_tasklet);
@@ -6201,7 +6181,6 @@ static void iwl3945_init_alive_start(struct iwl3945_priv *priv)
 
  restart:
 	queue_work(priv->workqueue, &priv->restart);
-	//queue_te(1,iwl3945_bg_restart,priv,NULL,true);
 }
 
 
@@ -6284,8 +6263,6 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 
 	priv->active_rate = priv->rates_mask;
 	priv->active_rate_basic = priv->rates_mask & IWL_BASIC_RATES_MASK;
-//FIXME: ACTIVATE THE TASKLET
-	enable_tasklet();
 
 	iwl3945_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode));
 
@@ -6324,7 +6301,6 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 
  restart:
 	queue_work(priv->workqueue, &priv->restart);
-	//queue_te(1,iwl3945_bg_restart,priv,NULL,true);
 }
 
 static void iwl3945_cancel_deferred_work(struct iwl3945_priv *priv);
@@ -6581,7 +6557,6 @@ static void iwl3945_bg_rf_kill(struct iwl3945_priv *priv)
 			  "HW and/or SW RF Kill no longer active, restarting "
 			  "device\n");
 		if (!test_bit(STATUS_EXIT_PENDING, &priv->status))
-			//queue_te(1,iwl3945_bg_restart,priv,NULL,true);
 			queue_work(priv->workqueue, &priv->restart);
 	} else {
 
@@ -6844,16 +6819,17 @@ static void iwl3945_bg_up(struct iwl3945_priv *priv)
 
 static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 {
-	//struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv, restart);
 	if(!priv){
 		IOLog("No Priv defined\n");
 		return;
 	}
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
-
 	iwl3945_down(priv);
-	//queue_work(priv->workqueue, &priv->up);
+//FIXME: HACK because therre is a bug when the driver restart
+	priv->iw_mode = IEEE80211_IF_TYPE_MNTR;
+	queue_work(priv->workqueue, &priv->up);
+
 }
 
 static void iwl3945_bg_rx_replenish(struct iwl3945_priv *priv)
@@ -7822,7 +7798,6 @@ static int iwl3945_mac_beacon_update(struct ieee80211_hw *hw, struct sk_buff *sk
 #endif
 
 	queue_work(priv->workqueue, &priv->post_associate.work);
-	//queue_te(7,iwl3945_bg_post_associate,priv,NULL,true);
 	mutex_unlock(&priv->mutex);
 
 	return 0;
@@ -8678,16 +8653,10 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 
 	priv->hw_base = pci_iomap(pdev, 0, 0);
 	if (!priv->hw_base) {
-		//err = -ENODEV;
-		//goto out_pci_release_regions;
-		printf("Error DMA\n");
-		return -16;
+		err = -ENODEV;
+		goto out_pci_release_regions;
 	}
 
-/*iwl3945_write32(priv, CSR_INT_MASK, 0x12345678);
-uint32_t test= iwl3945_read32(priv, CSR_INT_MASK);
-IOLog("TEST :%08x\n",test);
-return 1;*/
 	IWL_DEBUG_INFO("pci_resource_len = 0x%08llx\n",
 			(unsigned long long) pci_resource_len(pdev, 0));
 	IWL_DEBUG_INFO("pci_resource_base = %p\n", priv->hw_base);
@@ -8960,7 +8929,7 @@ static int __init iwl3945_init(void)
 static void __exit iwl3945_exit(void)
 {
 #ifdef CONFIG_IWL3945_DEBUG
-	//driver_remove_file(&iwl3945_driver.driver, &driver_attr_debug_level);
+	driver_remove_file(&iwl3945_driver.driver, &driver_attr_debug_level);
 #endif
 	pci_unregister_driver(&iwl3945_driver);
 }

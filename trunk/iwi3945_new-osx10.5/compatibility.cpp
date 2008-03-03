@@ -309,14 +309,12 @@ typedef bool ( *Filter)(
 	not finish parameter of handler and workqueue
 */
 int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id) {
+	if(fInterruptSrc)
+		return 0;
 	if(!workqueue){
 		workqueue = IOWorkLoop::workLoop();
-		/*if(workqueue)
-			IOLog("Workloop creation successful!\n");
-		else
-			IOLog("FAILED!  Couldn't create workloop\n");*/
 		if( workqueue )
-        workqueue->init();
+			workqueue->init();
         if (!workqueue) {
             IOLog(" ERR: start - getWorkLoop failed\n");
 			return -1;
@@ -325,35 +323,15 @@ int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned 
 	/*
 		set the handler for intterupts
 	*/
-		realHandler=handler;
-
-
-	
-	
-	
-		fInterruptSrc = IOInterruptEventSource::interruptEventSource(
-							currentController, (IOInterruptEventAction)&interuptsHandler,currentController->getProvider()
-							);
-		if(!fInterruptSrc || (workqueue->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
-			IOLog(" fInterruptSrc error\n");
-            //break;
-		}
+	realHandler=handler;
+	fInterruptSrc = IOInterruptEventSource::interruptEventSource(
+						currentController, (IOInterruptEventAction)&interuptsHandler,currentController->getProvider()
+						);
+	if(!fInterruptSrc || (workqueue->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
+		IOLog(" fInterruptSrc error\n");
+	}
 		
-		/*DMAInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(
-								currentController, 
-								(IOInterruptEventAction)&interuptsHandler,
-								(IOFilterInterruptAction)&DMAFilter,
-								currentController->getProvider(),
-								(int)1 );*/
-			
-		// This is important. If the interrupt line is shared with other devices,
-		// then the interrupt vector will be enabled only if all corresponding
-		// interrupt event sources are enabled. To avoid masking interrupts for
-		// other devices that are sharing the interrupt line, the event source
-		// is enabled immediately.
-		//DMAInterruptSource->enable();
-		fInterruptSrc->enable();
-	//printf("request_irq [OK]\n");
+	fInterruptSrc->enable();
 	return 0;
 }
 
@@ -361,8 +339,6 @@ int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned 
 void enable_int(){
 	if(fInterruptSrc)
 		fInterruptSrc->enable();
-    /*else
-        printf("Ignored enable_int(): no fInterruptSrc\n");*/
 }
 void disable_int(){
 	if(fInterruptSrc)
@@ -408,7 +384,8 @@ void mutex_init(struct mutex *new_mutex) {
 void mutex_lock(struct mutex *new_mtx) {
 //#ifndef NO_MUTEX_LOCKS
     //mutexes[current_mutex++] = new_mtx;
-	//lck_mtx_lock(new_mtx->mlock);
+	if(new_mtx)
+		lck_mtx_lock(new_mtx->mlock);
 //#endif
     return;
 }
@@ -416,7 +393,8 @@ void mutex_lock(struct mutex *new_mtx) {
 void mutex_unlock(struct mutex *new_mtx) {
 //#ifndef NO_MUTEX_LOCKS
     //mutexes[current_mutex--] = NULL;
-	//lck_mtx_unlock(new_mtx->mlock);
+	if(new_mtx)
+		lck_mtx_unlock(new_mtx->mlock);
 //#endif
     return;
 }
@@ -640,6 +618,21 @@ int ieee80211_get_morefrag(struct ieee80211_hdr *hdr) {
 }
 
 
+/*
+ * This is the receive path handler. It is called by a low level driver when an
+ * 802.11 MPDU is received from the hardware.
+ */
+void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
+		    struct ieee80211_rx_status *status)
+{
+	IOLog("__ieee80211_rx");
+	return;
+}		
+	
+
+
+
+
 #define IEEE80211_RX_MSG 1
 #define IEEE80211_TX_STATUS_MSG 2
 static void ieee80211_tasklet_handler(void * data)
@@ -692,15 +685,15 @@ void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct i
     
     BUILD_BUG_ON(sizeof(struct ieee80211_rx_status) > sizeof(skb->cb));
     
-    //IOLog("todo ieee80211_rx_irqsafe\n");
+    IOLog("todo ieee80211_rx_irqsafe\n");
 	
 	//PrintPacketHeader(skb->mac_data);
-	//char    *frame;
-    //frame = (char*)skb_data(skb);
-    //for (int i = 0; i < mbuf_len(skb->mac_data); i++)
-    //{
-    //  IOLog("%02X", (u_int8_t)frame[i]);
-    //}
+	char    *frame;
+    frame = (char*)skb_data(skb);
+    for (int i = 0; i < mbuf_len(skb->mac_data); i++)
+    {
+      IOLog("%02X", (u_int8_t)frame[i]);
+    }
 	
 	//return;
 	//skb->dev = local->mdev;
@@ -711,6 +704,7 @@ void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct i
 	
 	//Start the tasklet
 	IOCreateThread(&ieee80211_tasklet_handler,local);
+	
 
 }
 
@@ -1019,8 +1013,9 @@ void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr){
 #pragma mark -
 #pragma mark Kernel PCI fiddler adapters
 
-//http://www.promethos.org/lxr/http/source/arch/sparc64/kernel/pci_iommu.c#L698
+
 void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, size_t size, int direction){
+	IOMemoryDescriptor::withPhysicalAddress(dma_handle,size,kIODirectionOutIn)->complete();
 	return;
 }
 
@@ -1035,19 +1030,6 @@ int pci_enable_msi  (struct pci_dev * dev){
 	return 0;
 }
 
-//ok
-int pci_restore_state (	struct pci_dev *  	dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	int i;
-	//for (i = 0; i < 16; i++)
-	//	fPCIDevice->configWrite32(i * 4, dev->saved_config_space[i]);
-	//printf("PCI restore state [OK]\n");
-	return 0;
-}
-/*
- IO and memory
- */
- //ok
 int pci_enable_device (struct pci_dev * dev){
 	if(!dev){
 		printf("No pci_dev defined\n");
@@ -1072,7 +1054,6 @@ int if_down(){
 		return -6;
 	if(!my_pci_dev)
 		return -5;
-	//printf("if_down\n");
 	(my_drv->remove) (my_pci_dev);
 	return 0;
 }
@@ -1441,7 +1422,7 @@ int run_add_interface( struct ieee80211_local *local ) {
     
     conf.if_id = IEEE80211_IF_TYPE_IBSS;
     conf.type = 2;
-    conf.mac_addr = (void *)"121212"; //dev->dev_addr;
+    conf.mac_addr = (void *)"211212"; //dev->dev_addr;
     res = local->ops->add_interface(local_to_hw(local), &conf);
     if (res) {
         if (conf.type == IEEE80211_IF_TYPE_MNTR)
@@ -1481,10 +1462,24 @@ int pci_register_driver(struct pci_driver * drv){
 	test_pci->dev.kobj.ptr=OSDynamicCast(IOPCIDevice, currentController->getProvider());
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)test_pci->dev.kobj.ptr;
 	my_pci_device=fPCIDevice;
+	fPCIDevice->retain();
+	fPCIDevice->open(currentController);
+	fPCIDevice->requestPowerDomainState(kIOPMPowerOn, (IOPowerConnection *) currentController->getParentEntry(gIOPowerPlane),IOPMLowestState );
+	UInt16 reg16;
+	reg16 = fPCIDevice->configRead16(kIOPCIConfigCommand);
+	reg16 |= (kIOPCICommandBusMaster      |kIOPCICommandMemorySpace    |kIOPCICommandMemWrInvalidate);
 
+	reg16 &= ~kIOPCICommandIOSpace;  // disable I/O space
+	fPCIDevice->configWrite16(kIOPCIConfigCommand,reg16);
+		fPCIDevice->configWrite8(kIOPCIConfigLatencyTimer,0x64);
+	
+	/* We disable the RETRY_TIMEOUT register (0x41) to keep
+	 * PCI Tx retries from interfering with C3 CPU state */
+	UInt16 reg = fPCIDevice->configRead16(0x40);
+	if((reg & 0x0000ff00) != 0)
+		fPCIDevice->configWrite16(0x40, reg & 0xffff00ff);
 
 	fPCIDevice->setBusMasterEnable(true);
-
 	fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
     
@@ -1492,15 +1487,15 @@ int pci_register_driver(struct pci_driver * drv){
 	//Start ...
 #warning This assumes the "happy path" and fails miserably when things don't go well
 	struct ieee80211_local *local = hw_to_local(my_hw);
-
+	int result3 = run_add_interface( local );
+	if(result3)
+		IOLog("Error add_interface\n");
+	IOSleep(300);
+	//Start mac_open
 	result2 = (local->ops->open) (&local->hw);
+	
 
-    int result3 = run_add_interface( local );
-
-    
-    
-    ieee80211_init_scan(local);
-
+    /*ieee80211_init_scan(local);*/
     local->open_count++;
     
 	return 0;
@@ -1518,8 +1513,6 @@ void pci_unregister_driver (struct pci_driver * drv){
 void pci_set_master (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 	fPCIDevice->setBusMasterEnable(true);
-	fPCIDevice->setMemoryEnable(true);
-	//printf("PCI setMaster [OK]\n");
 	return;
 }
 
@@ -1530,13 +1523,15 @@ void pci_disable_msi(struct pci_dev* dev){
 	return;
 }
 
+int pci_restore_state (	struct pci_dev *  	dev){
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	fPCIDevice->restoreDeviceState();
+	return 0;
+}
 //ok but no saved_config_space in pci_dev struct
 int pci_save_state (struct pci_dev * dev){
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	int i;
-	//for (i = 0; i < 16; i++)
-	//	dev->saved_config_space[i]=fPCIDevice->configRead32(i * 4);
-	//printf("PCI save state [OK]\n");
+	fPCIDevice->saveDeviceState();
 	return 0;
 }
 int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
@@ -1573,6 +1568,10 @@ void pci_set_drvdata (struct pci_dev *pdev, void *data){
 	return;
 }
 //ok
+#include <IOKit/IOMapper.h>
+#define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
+#define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
+#define _4G 0x0000000100000000LL
 int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask){
 	//test if dma supported (ok 3945)
 	//dev->dev.coherent_dma_mask = mask;
@@ -1580,19 +1579,22 @@ int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask){
 }
 
 void pci_free_consistent(struct pci_dev *hwdev, size_t size,void *vaddr, dma_addr_t dma_handle) {
+	size = RT_ALIGN_Z(size, PAGE_SIZE);
     return IOFreeContiguous(vaddr, size);
 }
 
 
 
-#include <IOKit/IOMapper.h>
-#define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
-#define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
+
 void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,dma_addr_t *dma_handle,int count) {
 	size = RT_ALIGN_Z(size, PAGE_SIZE);
 	return IOMallocContiguous(size,PAGE_SIZE, dma_handle);
 
-	    /*void *pv = IOMallocContiguous(size, PAGE_SIZE, NULL);
+	    void *pv = IOMallocContiguous(size, PAGE_SIZE, dma_handle);
+		memset(pv,0, size);
+		//IOLog("CHECK CONTIGUOUS VIRT@: 0x%08x PHYS@: 0x%08x \n",pv,*dma_handle);
+		//IOSleep(500);
+		return pv;
 	    if (pv)
 	    {
 	        IOMemoryDescriptor *pMemDesc = IOMemoryDescriptor::withAddress((vm_address_t)pv, size, kIODirectionOutIn, kernel_task);
@@ -1600,18 +1602,27 @@ void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,dma_addr_t *dma_ha
 	        {
 				pMemDesc->prepare( kIODirectionOutIn );
 	            addr64_t PhysAddr = pMemDesc->getPhysicalSegment64(0, NULL);
-#define _4G 0x0000000100000000LL
+				IOByteCount length;
+				IOPhysicalAddress pp = pMemDesc->getPhysicalSegment(0,&length);
+				//bzero(pv,size);
+				//memset(pv, 1, size);
+				IOLog("CHECK CONTIGUOUS VIRT@: 0x%08x PHYS@: 0x%08x VIRT_SIZE:%d PHYS_SIZE:%d \n",pv,pp,size,length);
+				/*for(int i=0;i<=size-10;i++){
+					UInt8 tmp = IOMappedRead8(pp+i);
+					if(tmp != 1 ){
+						IOLog("NON CONTIGUOUS @ 0x%08x\n",pp+i);
+						break;
+					}
+				}*/
+				IOSleep(500);
+
 	            if (    PhysAddr > 0 &&  PhysAddr <= _4G &&  PhysAddr + size <= _4G)
 	            {
 					//OK
 					//pMemDesc->release();
 					*dma_handle = PhysAddr;
-					//IOByteCount * length;
-					//for(int i=0;i<=size;i++){
-						//IOLog("%d --> %llx\n",1,pMemDesc->getPhysicalSegment(1,length));
-						//IOSleep(2);
-					//}
 					bzero(pv,size);
+					memset(pv, 0, size);
 					return pv;
 	            }
 	            else
@@ -1624,36 +1635,21 @@ void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,dma_addr_t *dma_ha
 	    }
 		IOLog("Error\n");
 		*dma_handle = NULL;
-		return NULL;*/
+		return NULL;
 
 }
 
 void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen){
 	IOMemoryMap	*				map;
-	//my_map=map;
 	IOPhysicalAddress			phys_add;
 	UInt16 *					virt_add;
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-
-	
-  		map = fPCIDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0, kIOMapInhibitCache);
-  		if (map == 0) {
-			
-			//IOLog("%s map is zero\n", getName());
-		//	break;
+	map = fPCIDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0, kIOMapInhibitCache);
+	if (map == 0) {
 			return NULL;
-		}
-		my_map=map;
-		uint16_t reg;
-		
-				/* We disable the RETRY_TIMEOUT register (0x41) to keep
-		 * PCI Tx retries from interfering with C3 CPU state */
-		reg = fPCIDevice->configRead16(0x40);
-		if((reg & 0x0000ff00) != 0)
-			fPCIDevice->configWrite16(0x40, reg & 0xffff00ff);
-			
-		return (void*)map->getVirtualAddress();
-
+	}
+	my_map=map;
+	return (void*)map->getVirtualAddress();
 }
 
 
@@ -1662,13 +1658,10 @@ void pci_iounmap(struct pci_dev *dev, void __iomem * addr){
 }
 
 
-void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,
-                      size_t size, int direction) {
+void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,size_t size, int direction) {
     IODirection mydir = (IODirection) direction;
-    IOMemoryDescriptor::withPhysicalAddress(dma_addr,
-                                            size, mydir)->complete(mydir);
-    IOMemoryDescriptor::withPhysicalAddress(dma_addr,
-                                            size, mydir)->release();
+    IOMemoryDescriptor::withPhysicalAddress(dma_addr, size, mydir)->complete(mydir);
+    IOMemoryDescriptor::withPhysicalAddress(dma_addr,size, mydir)->release();
 }
 
 addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction) {
@@ -1676,17 +1669,8 @@ addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direc
     if( current_mutex )
         for(i=0; i<current_mutex; i++)
             mutex_unlock(mutexes[i]);*/
-		addr64_t tmp = mbuf_data_to_physical( (u8*)ptr);
-if(tmp){
-    //IOLog("\n\n\n------------------------------------>M_BUF ADDR: %llx\n\n\n",tmp);
-	//IOSleep(5000);
-	return tmp;
-}else{
-	//IOLog("\n\n\n---------------------->NULLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\n\n\n");
-	//IOSleep(5000);
-	return NULL;
-}
-	//addr64_t tmp = cpu_to_le32( mbuf_data_to_physical( (u8*)ptr) );
+		IOMemoryDescriptor::withAddress(ptr,size,kIODirectionOutIn)->complete(kIODirectionOutIn);
+		addr64_t tmp = cpu_to_le32(mbuf_data_to_physical( (u8*)ptr));
     /*if( current_mutex )
         for(i=0; i<current_mutex; i++)
             mutex_lock(mutexes[i]);*/
@@ -1736,8 +1720,11 @@ int skb_len(const struct sk_buff *skb) {
 }
 
 void skb_reserve(struct sk_buff *skb, int len) {
-    mbuf_setlen(skb->mac_data, len);
+	void *data = (UInt8*)mbuf_data(skb->mac_data) + len;
+	mbuf_setdata(skb->mac_data,data, mbuf_len(skb->mac_data));// m_len is not changed.
 }
+
+//void skb_queue_tail(&local->skb_queue, skb);
 
 void *skb_put(struct sk_buff *skb, unsigned int len) {
     /*unsigned char *tmp = skb->tail;
@@ -1768,18 +1755,12 @@ void dev_kfree_skb(struct sk_buff *skb) {
         intf->freePacket(skb->mac_data);
 }
 
-struct sk_buff *__alloc_skb(unsigned int size,
-                            gfp_t priority, int fclone, int node) {
-    /*unsigned int i;
-    if( current_mutex )
-        for(i=0; i<current_mutex; i++)
-            mutex_unlock(mutexes[i]);*/
+struct sk_buff *__alloc_skb(unsigned int size,gfp_t priority, int fclone, int node) {
     struct sk_buff *skb = (struct sk_buff *)IOMalloc(sizeof(struct sk_buff));
     skb->mac_data = currentController->allocatePacket(size);
     skb->intf = (void *)currentController;
-    /*if( current_mutex )
-        for(i=0; i<current_mutex; i++)
-            mutex_lock(mutexes[i]);*/
+	mbuf_setlen(skb->mac_data, 0);
+	mbuf_pkthdr_setlen(skb->mac_data,0);
     return skb;
 }
 
@@ -1802,41 +1783,21 @@ struct workqueue_struct *__create_workqueue(const char *name,int singlethread){
 		return NULL;
 	return tmp_workqueue;
 }
-/*
-	Unalloc? 
-*/
-void destroy_workqueue (	struct workqueue_struct *  	wq){
-	//for ...x in
-	//wq->tlink[x]=NULL;
-	return;
-}
-//?
-int cancel_work_sync(struct work_struct *work){
-	return 1;
-}
-
 
 static thread_call_t tlink[256];//for the queue work...
-//static int thread_pos=0;
+
 /*
 	Cancel a work queue
 */
 void queue_td(int num , thread_call_func_t func)
 {
-	IOLog("queue_td0 %d\n",tlink[num]);
 	if (tlink[num])
 	{
 		thread_call_cancel(tlink[num]);
-		//if (thread_call_cancel(tlink[num])==0)
-		//	thread_call_free(tlink[num]);
-		//tlink[num]=NULL;
 	}
-	//IOLog("queue_td1-%d , %d %d\n",num,r,r1);
 }
 
 void test_function(work_func_t param0,thread_call_param_t param1){
-	//IOLog("Real par0 : %08x\n",param0);
-	//IOLog("Real par1 : %08x\n",param1);
 	if(param0 && param1)
 		(param0)((work_struct*)param1);
 	else
@@ -1849,21 +1810,16 @@ void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 
 {
 	par=my_hw->priv;
 	thread_call_func_t my_func;
-	//my_func=(thread_call_func_t)test_function;
 	if (tlink[num])
 		queue_td(num,NULL);
-	//IOLog("queue_te0 %d\n",tlink[num]);
 	if (!tlink[num])
 		tlink[num]=thread_call_allocate((thread_call_func_t)test_function,(void*)func);
-	//IOLog("queue_te1 %d\n",tlink[num]);
 	uint64_t timei2;
 	if (timei)
 		clock_interval_to_deadline(timei,kMillisecondScale,&timei2);
-	//IOLog("queue_te time %d %d\n",timei,timei2);
 	int r;
 	if (start==true && tlink[num])
 	{
-		//IOLog("Normal par : %08x\n",par);
 		if (!par && !timei)	
 			r=thread_call_enter(tlink[num]);
 		if (!par && timei)
@@ -1873,7 +1829,6 @@ void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 
 		if (par && timei)
 			r=thread_call_enter1_delayed(tlink[num],par,timei2);
 	}
-	//IWI_DEBUG("queue_te result %d\n",r);
 }
 
 
@@ -1887,85 +1842,36 @@ struct thread_data{
 	int thread_number;
 };
 
-void start_thread(void* data){
 
-	struct thread_data* data_thread=(struct thread_data *)data;
-//	if(!thread_lock)
-//		thread_lock = IOLockAlloc();
-	//do{
-		//mutex
-	//	IOLockLock(thread_lock);
-	//}while(data_thread->thread_number!=next_thread);
-	if(data_thread->delay>0){
-		IOSleep(data_thread->delay);  
-	}
-	if(!is_unloaded)
-		(data_thread->func)((work_struct*)my_hw->priv);
-	//next_thread++;
-	//mutex
-	//IOLockUnlock(thread_lock);
-	IOExitThread();
-}
 
-static bool tasklet_enable;
-
-void enable_tasklet(){
-	tasklet_enable=true;
-	//IOLog("Enabling tasklet............................................\n");
-}
 /*
 	FIXME: Finish IT ;)
 	Used only once
 	Have be finished...
 */
 void tasklet_schedule(struct tasklet_struct *t){
-	//if(tasklet_enable){
-		IOThread mythread;
-		struct thread_data *md = (struct thread_data *)IOMalloc(sizeof(*md));
-		md->func =  (void (*)(work_struct*))t->func;
-		md->delay = 0;
-		//md->thread_number = thread_pos++;
-		mythread = IOCreateThread(&start_thread, (void *)md);
-	//}else
-	//	IOLog("Tasklet not enable");
-	//queue_te(13,(thread_call_func_t)t->func,my_hw->priv,NULL,true);
+	queue_te(13,(thread_call_func_t)t->func,my_hw->priv,NULL,true);
 	return;
 }
 /*
 	Used only once ,
 */
 void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data){
-	tasklet_enable=false;
 	t->func=func;
 	t->data=data;
 	return;
 }
 
-//FIXME: thread change param adresse
 int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
 #warning Get this to run in a gated manner//
-	//queue_te(work->number,(thread_call_func_t)work->func,my_hw->priv,NULL,true);
-	IOThread mythread;
-    struct thread_data *md = (struct thread_data *)IOMalloc(sizeof(*md));
-    md->func = work->func;
-	md->delay = 0;
-	md->thread_number = thread_pos++;
-    mythread = IOCreateThread(&start_thread, (void *)md);
+	queue_te(work->number,(thread_call_func_t)work->func,my_hw->priv,NULL,true);
     return 0;
 }
-//FIXME: thread change param adresse
+
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay) {
-	struct work_struct tmp;
-	tmp=work->work;
-	struct work_struct *tmp2;
-	tmp2=&tmp;
-	//queue_te(tmp2->number,(thread_call_func_t)tmp2->func,my_hw->priv,delay,true);
-	IOThread mythread;
-    struct thread_data *md = (struct thread_data *)IOMalloc(sizeof(*md));
-    md->func = tmp2->func;
-	md->delay = delay;
-	md->thread_number = thread_pos++;
-    mythread = IOCreateThread(&start_thread, (void *)md);
+	struct work_struct tmp = work->work;
+	struct work_struct *tmp2 = &tmp;
+	queue_te(tmp2->number,(thread_call_func_t)tmp2->func,my_hw->priv,delay,true);
     return 0;
 }
 /**
@@ -1982,11 +1888,26 @@ void __wake_up(wait_queue_head_t *q, unsigned int mode, int nr, void *key) {
 }
 
 int cancel_delayed_work(struct delayed_work *work) {
-	//?
+	struct work_struct tmp = work->work;
+	struct work_struct *tmp2 = &tmp;
+	queue_td(tmp2->number,NULL);
     return 0;
 }
 
+//?
+int cancel_work_sync(struct work_struct *work){
+	queue_td(work->number,NULL);
+	return 0;
+}
 
+/*
+	Unalloc? 
+*/
+void destroy_workqueue (	struct workqueue_struct *  	wq){
+	for(int i=0;i<256;i++)
+		queue_td(i,NULL);
+	return;
+}
 
 
 
