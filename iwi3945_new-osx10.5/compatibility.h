@@ -252,6 +252,7 @@ pos = list_entry(pos->member.next, typeof(*pos), member))
 	extern void enable_tasklet();
 	extern void io_write32(u32 ofs, u32 val);
 	extern u32 io_read32(u32 ofs);
+	
 #ifdef __cplusplus
 }
 #endif

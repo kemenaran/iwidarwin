@@ -297,7 +297,6 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 				struct iwl3945_rx_mem_buffer *rxb)
 {
 
-	IOLog("iwl3945_rx_reply_rx\n");
 
 	struct iwl3945_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl3945_rx_frame_stats *rx_stats = IWL_RX_STATS(pkt);
@@ -329,7 +328,8 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 
 	if (!(rx_end->status & RX_RES_STATUS_NO_CRC32_ERROR)
 	    || !(rx_end->status & RX_RES_STATUS_NO_RXE_OVERFLOW)) {
-		IOLog("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
+		//IOLog("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
+		IOLog(".");
 		return;
 	}
 

@@ -57,13 +57,13 @@ static IONetworkController *currentController;
 static ieee80211_hw * my_hw;
 static IOWorkLoop * workqueue;
 static IOInterruptEventSource *	fInterruptSrc;
-//static IOFilterInterruptEventSource * DMAInterruptSource;
 static IOInterruptEventSource *	DMAInterruptSource;
 static irqreturn_t (*realHandler)(int, void *);
 static pci_driver * my_drv;
 struct pci_dev* my_pci_dev;
 IOPCIDevice* my_pci_device;
 IOMemoryMap	*				my_map;
+u8 my_mac_addr[6];
 
 static int next_thread=0;
 static int thread_pos=0;
@@ -77,6 +77,7 @@ unsigned long current_mutex = 0;
 /*
 	Getters
 */
+
 void setCurController(IONetworkController *tmp){
 	currentController=tmp;
 	printf("settCurController [OK]\n");
@@ -477,14 +478,12 @@ void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
 
 //http://hira.main.jp/wiki/pukiwiki.php?spin_lock_bh()%2Flinux2.6
 void spin_lock_bh( spinlock_t *lock ) {
-	//disable_int();
 	spin_lock(lock);
     return;
 }
 
 void spin_unlock_bh( spinlock_t *lock ) {
 	spin_unlock(lock);
-	//enable_int();
     return;
 }
 
@@ -854,9 +853,55 @@ void ieee80211_start_queues(struct ieee80211_hw *hw){
     for (i = 0; i < local->hw.queues; i++)
         clear_bit(IEEE80211_LINK_STATE_XOFF, &local->state[i]);
 }
+
 void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
-	return;
+	IOLog("ieee80211_scan_completed\n");
+	return ;
+	/*struct ieee80211_local *local = hw_to_local(hw);
+	struct net_device *dev = local->scan_dev;
+	struct ieee80211_sub_if_data *sdata;
+	union iwreq_data wrqu;
+
+	local->last_scan_completed = jiffies;
+	wmb();
+	local->sta_scanning = 0;
+
+	if (ieee80211_hw_config(local))
+		printk(KERN_DEBUG "%s: failed to restore operational"
+		       "channel after scan\n", dev->name);
+
+
+	netif_tx_lock_bh(local->mdev);
+	local->filter_flags &= ~FIF_BCN_PRBRESP_PROMISC;
+	local->ops->configure_filter(local_to_hw(local),
+				     FIF_BCN_PRBRESP_PROMISC,
+				     &local->filter_flags,
+				     local->mdev->mc_count,
+				     local->mdev->mc_list);
+
+	netif_tx_unlock_bh(local->mdev);
+
+	memset(&wrqu, 0, sizeof(wrqu));
+	wireless_send_event(dev, SIOCGIWSCAN, &wrqu, NULL);
+
+	rcu_read_lock();
+	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
+
+		if (sdata->dev == local->mdev)
+			continue;
+
+		if (sdata->type == IEEE80211_IF_TYPE_STA) {
+			if (sdata->u.sta.flags & IEEE80211_STA_ASSOCIATED)
+				ieee80211_send_nullfunc(local, sdata, 0);
+			ieee80211_sta_timer((unsigned long)sdata);
+		}
+
+		netif_wake_queue(sdata->dev);
+	}
+	rcu_read_unlock();*/
 }
+
+
 static void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
 {
 	int i;
@@ -1482,8 +1527,7 @@ int pci_register_driver(struct pci_driver * drv){
 	fPCIDevice->setBusMasterEnable(true);
 	fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
-    
-    
+        
 	//Start ...
 #warning This assumes the "happy path" and fails miserably when things don't go well
 	struct ieee80211_local *local = hw_to_local(my_hw);
@@ -1495,7 +1539,7 @@ int pci_register_driver(struct pci_driver * drv){
 	result2 = (local->ops->open) (&local->hw);
 	
 
-    /*ieee80211_init_scan(local);*/
+    ieee80211_init_scan(local);
     local->open_count++;
     
 	return 0;
@@ -1716,7 +1760,7 @@ void *skb_data(const struct sk_buff *skb) {
 }
 
 int skb_len(const struct sk_buff *skb) {
-    return mbuf_len(skb->mac_data);
+	return mbuf_pkthdr_len(skb->mac_data);
 }
 
 void skb_reserve(struct sk_buff *skb, int len) {
@@ -1910,6 +1954,13 @@ void destroy_workqueue (	struct workqueue_struct *  	wq){
 }
 
 
+
+
+void start_undirect_scan(){
+	struct ieee80211_local *local;
+	local=hw_to_local(my_hw);
+	local->ops->hw_scan(my_hw, NULL, 0);
+}
 
 void io_write32(u32 ofs, u32 val){
 	if(my_pci_device)

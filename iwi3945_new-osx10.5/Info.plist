@@ -35,7 +35,7 @@
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
 			<key>p_disable</key>
-			<integer>0</integer>
+			<integer>1</integer>
 			<key>p_led</key>
 			<integer>1</integer>
 			<key>p_mode</key>
