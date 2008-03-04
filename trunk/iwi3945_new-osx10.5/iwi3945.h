@@ -13,8 +13,8 @@
 #include <IOKit/IOInterruptEventSource.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>
 #include <IOKit/pci/IOPCIDevice.h>
-//#include <IOKit/network/IONetworkController.h>
-//#include <IOKit/network/IONetworkInterface.h>
+#include <IOKit/network/IONetworkController.h>
+#include <IOKit/network/IONetworkInterface.h>
 #include <IOKit/network/IOEthernetController.h>
 #include <IOKit/network/IOEthernetInterface.h>
 #include <IOKit/network/IOGatedOutputQueue.h>
@@ -36,7 +36,16 @@
 
 
 
-
+typedef enum {
+	MEDIUM_TYPE_NONE = 0,
+	MEDIUM_TYPE_AUTO,
+	MEDIUM_TYPE_1MBIT,
+	MEDIUM_TYPE_2MBIT,
+	MEDIUM_TYPE_5MBIT,
+	MEDIUM_TYPE_11MBIT,
+	MEDIUM_TYPE_54MBIT,
+	MEDIUM_TYPE_INVALID
+} mediumType_t;
 
 class darwin_iwi3945 : public IO80211Controller
     {
@@ -202,11 +211,22 @@ class darwin_iwi3945 : public IO80211Controller
         
         virtual IOReturn enable( IONetworkInterface* netif );
         virtual IOReturn disable( IONetworkInterface* /*netif*/ );
-        
-        
+                
         virtual int outputRaw80211Packet( IO80211Interface * interface, mbuf_t m );
+										
+		virtual IOOutputQueue * getOutputQueue() const;
+		virtual int up(void);
+		virtual void down(void);
+		
+		static IOReturn powerChangeHandler(void *target, void *refCon, UInt32
+            messageType, IOService *service, void *messageArgument,
+            vm_size_t argSize );
 
-
+		static IOReturn powerDownHandler(void *target, void *refCon, UInt32
+            messageType, IOService *service, void *messageArgument,
+            vm_size_t argSize );
+		
+		
         // statistics
         IONetworkStats		*netStats;
         IOEthernetStats		*etherStats;
@@ -225,6 +245,7 @@ class darwin_iwi3945 : public IO80211Controller
         IOOutputQueue *				fTransmitQueue;	// ???
         UInt16 *					memBase;
         UInt32						event;
+		IONetworkMedium	*			mediumTable[MEDIUM_TYPE_INVALID];
         
         
         IOMemoryMap	*				map;			// io memory map
@@ -234,6 +255,7 @@ class darwin_iwi3945 : public IO80211Controller
         UInt16						pciReg;			// revision
         IOPhysicalAddress			ioBase;			// map->getPhysicalAddress();
         OSDictionary *				mediumDict;
-//        IONetworkMedium	*			mediumTable[MEDIUM_TYPE_INVALID];
+#define ETH_ALEN 6
+		u8 mac_addr[ETH_ALEN];						//MAC_ADRESS
         
     };

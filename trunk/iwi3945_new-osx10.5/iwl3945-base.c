@@ -4822,14 +4822,14 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 	inta_fh = iwl3945_read32(priv, CSR_FH_INT_STATUS);
 	iwl3945_write32(priv, CSR_FH_INT_STATUS, inta_fh);
 	
-//#ifdef CONFIG_IWL3945_DEBUG
+#ifdef CONFIG_IWL3945_DEBUG
 	//if (iwl3945_debug_level & IWL_DL_ISR) {
 		/* just for debug */
 		u32 inta_mask = iwl3945_read32(priv, CSR_INT_MASK);
 		IWL_DEBUG_ISR("TASKLET : inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
 			      inta, inta_mask, inta_fh);
 	//}
-//#endif
+#endif
 
 	/* Since CSR_INT and CSR_FH_INT_STATUS reads and clears are not
 	 * atomic, make sure that inta covers all the interrupts that
@@ -5003,8 +5003,8 @@ static irqreturn_t iwl3945_isr(int irq, void *data)
 		goto unplugged;
 	}
 
-	IWL_DEBUG_ISR("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
-		      inta, inta_mask, inta_fh);
+	//IWL_DEBUG_ISR("ISR inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
+	//	      inta, inta_mask, inta_fh);
 
 	/* iwl3945_irq_tasklet() will service interrupts and re-enable them */
 	tasklet_schedule(&priv->irq_tasklet);
@@ -6539,6 +6539,7 @@ static void iwl3945_bg_alive_start(struct iwl3945_priv *priv)
 
 static void iwl3945_bg_rf_kill(struct iwl3945_priv *priv)
 {
+	return ;
 	if(!priv){
 		IOLog("No Priv defined\n");
 		return;
