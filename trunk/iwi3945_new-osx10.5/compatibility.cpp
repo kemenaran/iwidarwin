@@ -50,7 +50,6 @@
 #include "firmware/ipw3945.ucode.h"
 
 
-
 // Note: This, in itself, makes this very much non-reentrant.  It's used
 // primarily when allocating sk_buff entries.
 static IONetworkController *currentController;
@@ -77,6 +76,10 @@ unsigned long current_mutex = 0;
 /*
 	Getters
 */
+
+u8 * getMyMacAddr(){
+	return my_mac_addr;
+}
 
 void setCurController(IONetworkController *tmp){
 	currentController=tmp;
@@ -855,7 +858,7 @@ void ieee80211_start_queues(struct ieee80211_hw *hw){
 }
 
 void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
-	IOLog("ieee80211_scan_completed\n");
+	IOLog("TODO ieee80211_scan_completed\n");
 	return ;
 	/*struct ieee80211_local *local = hw_to_local(hw);
 	struct net_device *dev = local->scan_dev;
@@ -1050,7 +1053,14 @@ int ieee80211_register_hwmode(struct ieee80211_hw *hw,struct ieee80211_hw_mode *
 void SET_IEEE80211_DEV(	struct ieee80211_hw *  	hw,struct device *  	dev){
 	return;
 }
+//Define the addr 
 void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr){
+	my_mac_addr[0] = addr[0];
+	my_mac_addr[1] = addr[1];
+	my_mac_addr[2] = addr[2];
+	my_mac_addr[3] = addr[3];
+	my_mac_addr[4] = addr[4];
+	my_mac_addr[5] = addr[5];
 	return;
 }
 
@@ -1461,13 +1471,14 @@ void ieee80211_init_scan(struct ieee80211_local *local)
 
 
 
-int run_add_interface( struct ieee80211_local *local ) {
+int run_add_interface() {
+	struct ieee80211_local *local = hw_to_local(my_hw); 
     struct ieee80211_if_init_conf conf;
     int res;
     
     conf.if_id = IEEE80211_IF_TYPE_IBSS;
     conf.type = 2;
-    conf.mac_addr = (void *)"211212"; //dev->dev_addr;
+    conf.mac_addr = my_mac_addr;
     res = local->ops->add_interface(local_to_hw(local), &conf);
     if (res) {
         if (conf.type == IEEE80211_IF_TYPE_MNTR)
@@ -1527,11 +1538,12 @@ int pci_register_driver(struct pci_driver * drv){
 	fPCIDevice->setBusMasterEnable(true);
 	fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
-        
+	
+	//get_eeprom_mac(my_hw->priv,my_mac_addr);
 	//Start ...
 #warning This assumes the "happy path" and fails miserably when things don't go well
 	struct ieee80211_local *local = hw_to_local(my_hw);
-	int result3 = run_add_interface( local );
+	int result3 = run_add_interface();
 	if(result3)
 		IOLog("Error add_interface\n");
 	IOSleep(300);
@@ -1633,54 +1645,6 @@ void pci_free_consistent(struct pci_dev *hwdev, size_t size,void *vaddr, dma_add
 void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,dma_addr_t *dma_handle,int count) {
 	size = RT_ALIGN_Z(size, PAGE_SIZE);
 	return IOMallocContiguous(size,PAGE_SIZE, dma_handle);
-
-	    void *pv = IOMallocContiguous(size, PAGE_SIZE, dma_handle);
-		memset(pv,0, size);
-		//IOLog("CHECK CONTIGUOUS VIRT@: 0x%08x PHYS@: 0x%08x \n",pv,*dma_handle);
-		//IOSleep(500);
-		return pv;
-	    if (pv)
-	    {
-	        IOMemoryDescriptor *pMemDesc = IOMemoryDescriptor::withAddress((vm_address_t)pv, size, kIODirectionOutIn, kernel_task);
-	        if (pMemDesc)
-	        {
-				pMemDesc->prepare( kIODirectionOutIn );
-	            addr64_t PhysAddr = pMemDesc->getPhysicalSegment64(0, NULL);
-				IOByteCount length;
-				IOPhysicalAddress pp = pMemDesc->getPhysicalSegment(0,&length);
-				//bzero(pv,size);
-				//memset(pv, 1, size);
-				IOLog("CHECK CONTIGUOUS VIRT@: 0x%08x PHYS@: 0x%08x VIRT_SIZE:%d PHYS_SIZE:%d \n",pv,pp,size,length);
-				/*for(int i=0;i<=size-10;i++){
-					UInt8 tmp = IOMappedRead8(pp+i);
-					if(tmp != 1 ){
-						IOLog("NON CONTIGUOUS @ 0x%08x\n",pp+i);
-						break;
-					}
-				}*/
-				IOSleep(500);
-
-	            if (    PhysAddr > 0 &&  PhysAddr <= _4G &&  PhysAddr + size <= _4G)
-	            {
-					//OK
-					//pMemDesc->release();
-					*dma_handle = PhysAddr;
-					bzero(pv,size);
-					memset(pv, 0, size);
-					return pv;
-	            }
-	            else
-	            {
-	                IOLog("Phy addr not good\n");
-	            }
-	            pMemDesc->release();
-	        }
-	        IOFreeContiguous(pv, size);
-	    }
-		IOLog("Error\n");
-		*dma_handle = NULL;
-		return NULL;
-
 }
 
 void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen){
@@ -1709,15 +1673,8 @@ void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,size_t size, in
 }
 
 addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction) {
-    /*unsigned int i;
-    if( current_mutex )
-        for(i=0; i<current_mutex; i++)
-            mutex_unlock(mutexes[i]);*/
-		IOMemoryDescriptor::withAddress(ptr,size,kIODirectionOutIn)->complete(kIODirectionOutIn);
-		addr64_t tmp = cpu_to_le32(mbuf_data_to_physical( (u8*)ptr));
-    /*if( current_mutex )
-        for(i=0; i<current_mutex; i++)
-            mutex_lock(mutexes[i]);*/
+	IOMemoryDescriptor::withAddress(ptr,size,kIODirectionOutIn)->complete(kIODirectionOutIn);
+	addr64_t tmp = cpu_to_le32(mbuf_data_to_physical( (u8*)ptr));
 }
 
 

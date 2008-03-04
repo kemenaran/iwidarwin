@@ -6827,8 +6827,9 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
 	iwl3945_down(priv);
-//FIXME: HACK because therre is a bug when the driver restart
-	priv->iw_mode = IEEE80211_IF_TYPE_MNTR;
+//FIXME: Hack for restart
+	run_add_interface();
+//FIXME: End hack
 	queue_work(priv->workqueue, &priv->up);
 
 }
@@ -8916,12 +8917,12 @@ static int __init iwl3945_init(void)
 		return ret;
 	}
 #ifdef CONFIG_IWL3945_DEBUG
-	/*ret = driver_create_file(&iwl3945_driver.driver, &driver_attr_debug_level);
+	ret = driver_create_file(&iwl3945_driver.driver, &driver_attr_debug_level);
 	if (ret) {
 		IWL_ERROR("Unable to create driver sysfs file\n");
 		pci_unregister_driver(&iwl3945_driver);
 		return ret;
-	}*/
+	}
 #endif
 
 	return ret;
