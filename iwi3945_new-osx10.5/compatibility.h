@@ -14,10 +14,8 @@
 extern "C" {
 #endif
 
-//added
 	extern int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device);
 	extern void release_firmware (	const struct firmware *  	fw);
-	
 	extern void flush_workqueue(struct workqueue_struct *wq);
 	extern struct workqueue_struct *__create_workqueue(const char *name,int singlethread);
 #define create_workqueue(name) __create_workqueue((name), 0)
@@ -25,10 +23,7 @@ extern "C" {
 	extern int cancel_work_sync(struct work_struct *work);
 	extern void tasklet_schedule(struct tasklet_struct *t);
 	extern void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data);
-	
 	extern void sysfs_remove_group(struct kobject * kobj,  const struct attribute_group * grp);
-	
-
 	extern void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, char *linebuf, size_t linebuflen, bool ascii);
  
 		
@@ -56,9 +51,6 @@ extern "C" {
         NETIF_IS_STOPPED, NETIF_UPDATE_TX_START
     } Netif_Oper;
     extern int ieee80211_netif_oper(struct ieee80211_hw *hw, Netif_Oper op);
-    
-	
-			
 	extern int pci_enable_msi  (struct pci_dev * dev);
 	extern int pci_restore_state (	struct pci_dev *  	dev);
 	extern int pci_enable_device (struct pci_dev * dev);
@@ -68,7 +60,6 @@ extern "C" {
 	extern void free_irq (unsigned int irq, void *dev_id);
 	extern void pci_disable_msi(struct pci_dev* dev);
 	extern void pci_disable_device (struct pci_dev * dev);
-	//extern int pci_save_state (struct pci_dev * dev, u32 * buffer);
 	extern int pci_save_state (struct pci_dev * dev);
 	extern int pci_set_dma_mask(struct pci_dev *dev, u64 mask);
 	extern int pci_request_regions (struct pci_dev * pdev, char * res_name);
@@ -82,11 +73,8 @@ extern "C" {
 	extern void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, size_t size, int direction);
 	extern int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask);
 #define pci_resource_len(dev,bar) 8
-	
 	extern void mutex_init(struct mutex *);
-    extern int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id);
-//end added	
-	
+    extern int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id);	
     extern void spin_lock_irqsave(spinlock_t *a, int b);
     extern void spin_unlock_irqrestore(spinlock_t *lock, int fl);
     extern void spin_lock_init(spinlock_t *lock);
@@ -134,10 +122,6 @@ extern "C" {
         return ref->ops->get_rate(ref->priv, dev, skb, extra);
     }
 #define net_random()        random()
-    
-    
-    
-    
     extern void pci_free_consistent(struct pci_dev *hwdev, size_t size,
                                     void *vaddr, dma_addr_t dma_handle);
     extern void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
@@ -148,7 +132,6 @@ extern "C" {
     extern int pci_read_config_word(struct pci_dev *dev, int where, u16 *val);
     extern int pci_read_config_dword(struct pci_dev *dev, int where, u32 *val);
     extern addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction);
-    
     extern int skb_tailroom(const struct sk_buff *skb);
     extern void *skb_data(const struct sk_buff *skb);
     extern int skb_len(const struct sk_buff *skb);
@@ -165,9 +148,6 @@ extern "C" {
     }
     extern struct sk_buff *skb_clone(const struct sk_buff *skb, unsigned int ignored);
     extern int ieee80211_netif_oper(struct ieee80211_hw *hw, Netif_Oper op);
-
-    
-    
     extern int queue_work(struct workqueue_struct *wq, struct work_struct *work);
     extern int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay);
 #define TASK_RUNNING        0
@@ -180,17 +160,12 @@ extern "C" {
     extern void __wake_up(wait_queue_head_t *q, unsigned int mode, int nr, void *key);
     extern int cancel_delayed_work(struct delayed_work *work);
     extern long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout);
-    
-    
     // This has to be one of the most beautiful algorithms I've seen:
     static inline __attribute__((const))
     bool is_power_of_2(unsigned long n)
     {
         return (n != 0 && ((n & (n - 1)) == 0));
     }
-    
-    
-    
     // List-handling routines, from linux/list.h
     static inline void __list_add(struct list_head *new_el,
                                   struct list_head *prev,
@@ -234,10 +209,6 @@ for (pos = list_entry((head)->next, typeof(*pos), member);  \
 prefetch(pos->member.next), &pos->member != (head);    \
 pos = list_entry(pos->member.next, typeof(*pos), member))
     static inline void prefetch(const void *x) {;}
-
-    
-    
-    
 	extern void enable_int();
 	extern void disable_int();
 	extern void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
@@ -253,6 +224,7 @@ pos = list_entry(pos->member.next, typeof(*pos), member))
 	extern void io_write32(u32 ofs, u32 val);
 	extern u32 io_read32(u32 ofs);
 	
+	extern int run_add_interface();
 #ifdef __cplusplus
 }
 #endif

@@ -19,15 +19,10 @@
 // second parameter. You must use the literal name of the superclass.
 OSDefineMetaClassAndStructors(darwin_iwi3945, IO80211Controller);
 
-
-
-
 // Magic to make the init/exit routines public.
 extern "C" {
     extern int (*init_routine)();
     extern void (*exit_routine)();
-	
-	
 }
 extern void setCurController(IONetworkController * tmp);
 extern IOWorkLoop * getWorkLoop();
@@ -37,6 +32,7 @@ extern IOPCIDevice * getPCIDevice();
 extern IOMemoryMap * getMap();
 extern void setUnloaded();
 extern void start_undirect_scan();
+extern u8 * getMyMacAddr();
 
 IOService * my_provider;
 #pragma mark -
@@ -290,10 +286,7 @@ SInt32 darwin_iwi3945::apple80211Request( UInt32 req, int type, IO80211Interface
                 IOLog("Don't know how to SET IOC state\n");
             }
             else {
-                apple80211_state_data *state = (apple80211_state_data *)data;
-                state->version = APPLE80211_VERSION;
-                state->state = 0x04;
-                ret = kIOReturnSuccess;
+				ret = getSTATE(intf,(apple80211_state_data *)data);
             }
             break;
             
@@ -343,7 +336,7 @@ SInt32 darwin_iwi3945::apple80211Request( UInt32 req, int type, IO80211Interface
             //2:
         case APPLE80211_IOC_AUTH_TYPE:
             if( SIOCGA80211 == req ) {
-                IOLog("Don't know how to GET auth type\n");
+                ret = getAUTH_TYPE(intf, (apple80211_authtype_data *)data);
             }
             else {
                 ret = setAUTH_TYPE(intf, (apple80211_authtype_data *)data);
@@ -354,7 +347,8 @@ SInt32 darwin_iwi3945::apple80211Request( UInt32 req, int type, IO80211Interface
             //6:
         case APPLE80211_IOC_PROTMODE:
             if( SIOCGA80211 == req ) {
-                IOLog("Don't know how to GET protmode\n");
+                //IOLog("Don't know how to GET protmode\n");
+				ret = getPROTMODE(intf, (apple80211_protmode_data *)data);
             }
             else {
                 ret = setPROTMODE(intf, (apple80211_protmode_data *)data);
@@ -467,6 +461,8 @@ bool darwin_iwi3945::init(OSDictionary *dict)
 bool darwin_iwi3945::start(IOService *provider)
 {
 	UInt16	reg;
+	//Define the init state
+	myState = APPLE80211_S_INIT;
     IOLog("iwi3945: Starting\n");
     int err = 0;
     
@@ -492,14 +488,10 @@ bool darwin_iwi3945::start(IOService *provider)
 		fTransmitQueue->setCapacity(1024);
 		
 		
-		mac_addr[0]=0x00;
-		mac_addr[1]=0x13;
-		mac_addr[2]=0xAB;
-		mac_addr[3]=0xBC;
-		mac_addr[4]=0xCD;
-		mac_addr[5]=0x01;
+		mac_addr = getMyMacAddr();
+		
 		        // Publish the MAC address
-        if ( (setProperty(kIOMACAddress,  (void *) mac_addr, kIOEthernetAddressSize) == false) )
+        if ( (setProperty(kIOMACAddress, mac_addr, kIOEthernetAddressSize) == false) )
         {
             IOLog("Couldn't set the kIOMACAddress property\n");
         }
@@ -544,6 +536,7 @@ bool darwin_iwi3945::start(IOService *provider)
 void darwin_iwi3945::free(void)
 {
 	IOLog("iwi3945: Freeing\n");
+	if( fTransmitQueue ) fTransmitQueue->release();
 	IOPCIDevice *fPCIDevice = getPCIDevice();
 	if( fPCIDevice) {
 		printf("Stop PCI Device\n");
@@ -576,6 +569,10 @@ void darwin_iwi3945::stop(IOService *provider)
 		printf("Stopping OK\n");
 	}
 	if_down();
+	if( fNetif ) {
+        detachInterface( fNetif );
+        fNetif->release();
+    }
 	super::stop(provider);
 }
 
@@ -703,8 +700,6 @@ darwin_iwi3945::getCARD_CAPABILITIES(IO80211Interface *interface,
     cd->version = APPLE80211_VERSION;
     cd->capabilities[0] = 0xab; // Values taken directly from AirPort_Brcm43xx
     cd->capabilities[1] = 0x7e; // I would guess they define settings for the various radios.
-//	IOLog("getCARD_CAPABILITIES %x %d\n", interface, sizeof(cd->capabilities));
-	//publishProperties();
 	return 0;
 }
 
@@ -716,10 +711,14 @@ darwin_iwi3945::getSTATE(IO80211Interface *interface,
         IOLog("Quit calling getSTATE without specifying *sd!\n");
         return 0;
     }
+	
     sd->version = APPLE80211_VERSION;
-    sd->state = kIO80211NetworkLinkUp;
-    
-//	IOLog("getSTATE %d\n",sd->state);
+    sd->state = myState;
+	/*APPLE80211_S_INIT	= 0,			// default state
+	APPLE80211_S_SCAN	= 1,			// scanning
+	APPLE80211_S_AUTH	= 2,			// try to authenticate
+	APPLE80211_S_ASSOC	= 3,			// try to assoc
+	APPLE80211_S_RUN	= 4,			// associated*/
 	return 0;
 }
 
@@ -919,6 +918,27 @@ darwin_iwi3945::getSCAN_RESULT(IO80211Interface *interface, apple80211_scan_resu
 {
     IOLog("Someone wanted a scan result.\n");
     IOLog("Scan result *sr: 0x%08x\n", sr);
+	myState = APPLE80211_S_INIT;
+	
+	
+	/*sr->version = APPLE80211_VERSION;
+	sr->asr_noise = 60; //oh good AP XD
+	sr->asr_cap = 0xab;		// Same as us ;)
+	sr->asr_bssid.octet[0] = 0xFE;
+    sr->asr_bssid.octet[1] = 0xDC;
+    sr->asr_bssid.octet[2] = 0xBA;
+    sr->asr_bssid.octet[3] = 0x98;
+    sr->asr_bssid.octet[4] = 0x76;
+    sr->asr_bssid.octet[5] = 0x54;
+	
+	
+	strncpy((char*)sr->asr_ssid, "anetwork", sizeof(sr->asr_ssid));
+    sr->asr_ssid_len = strlen("anetwork");
+	
+	sr->asr_age = 1;	// (ms) non-zero for cached scan result
+	sr->asr_ie_len = 0;
+	sr->asr_ie_data = NULL; */
+	
     return kIOReturnSuccess;
 }
 
@@ -927,13 +947,6 @@ darwin_iwi3945::getSCAN_RESULT(IO80211Interface *interface, apple80211_scan_resu
 SInt32 
 darwin_iwi3945::setRATE(IO80211Interface *interface, apple80211_rate_data *rd)
 {
-    /*
-    rd->version = APPLE80211_VERSION;
-    rd->num_radios = 3;
-    rd->rate[0] = 11;
-    rd->rate[1] = 54;
-    rd->rate[2] = 54;
-    */
     IOLog("Warning: ignored setRATE\n");
     return kIOReturnSuccess;
 }
@@ -1027,6 +1040,16 @@ darwin_iwi3945::setINT_MIT(IO80211Interface *interface, apple80211_intmit_data *
 }
 
 SInt32 
+darwin_iwi3945::getPROTMODE(IO80211Interface *interface, apple80211_protmode_data *pd)
+{
+	pd->version = APPLE80211_VERSION;
+	pd->protmode = APPLE80211_PROTMODE_OFF; //no prot at this moment
+	pd->threshold = 8;		// number of bytes
+    return kIOReturnSuccess;
+}
+
+
+SInt32 
 darwin_iwi3945::setPROTMODE(IO80211Interface *interface, apple80211_protmode_data *pd)
 {
     IOLog("Warning: Ignored setPROTMODE\n");
@@ -1061,20 +1084,23 @@ darwin_iwi3945::setSCAN_REQ(IO80211Interface *interface,
     }
     
     IOLog("Scan requested.  Type: %d\n", sd->scan_type);
-    
+    myState = APPLE80211_S_SCAN;
     //if( sd->scan_type == APPLE80211_SCAN_TYPE_ACTIVE ) {
     //    memcpy(sd->bssid.octet, "DACAFEBABE", sizeof(sd->bssid.octet));
     //}
+	
+	//hw scan
 	start_undirect_scan();
-    
+	IOSleep(1000);
+    myState = APPLE80211_S_INIT;
+	
     postMessage(APPLE80211_IOC_SCAN_REQ);
     
 	return kIOReturnSuccess;
 }
 
 SInt32
-darwin_iwi3945::setASSOCIATE(IO80211Interface *interface,
-							struct apple80211_assoc_data *ad)
+darwin_iwi3945::setASSOCIATE(IO80211Interface *interface,struct apple80211_assoc_data *ad)
 {
 	IOLog("setASSOCIATE \n");
     
@@ -1112,6 +1138,17 @@ darwin_iwi3945::setCIPHER_KEY(IO80211Interface *interface,
 							 struct apple80211_key *key)
 {
 	IOLog("setCIPHER_KEY \n");
+	return 0;
+}
+
+SInt32
+darwin_iwi3945::getAUTH_TYPE(IO80211Interface *interface,
+							struct apple80211_authtype_data *ad)
+{
+
+	ad->version = APPLE80211_VERSION;
+	ad->authtype_lower = APPLE80211_AUTHTYPE_OPEN;	//	open at this moment
+	ad->authtype_upper = APPLE80211_AUTHTYPE_NONE;	//	NO upper AUTHTYPE
 	return 0;
 }
 
@@ -1166,17 +1203,16 @@ void darwin_iwi3945::dataLinkLayerAttachComplete( IO80211Interface * interface )
 #pragma mark -
 #pragma mark System entry points
 
-#define MAX_HW_RESTARTS 5
-
 int darwin_iwi3945::up()
 {
+	//if_up()
 }
 
 
 
 void darwin_iwi3945::down()
 {
-
+	//if_down();
 }
 
 
@@ -1270,22 +1306,20 @@ bool darwin_iwi3945::configureInterface( IONetworkInterface *netif )
 //FIXME: Mac from iwl3945
 IOReturn darwin_iwi3945::getHardwareAddress(IOEthernetAddress *addr)
 {
-    IOLog("darwin_iwi3945::getHardwareAddress() entering\n");
-	//bcopy(eeprom.mac_address, addr->bytes, sizeof(addr->bytes));
-    IOLog("darwin_iwi3945::getHardwareAddress() leaving\n");
+	addr = (IOEthernetAddress*)getMyMacAddr();
     return kIOReturnSuccess;
 }
 
 IO80211Interface *darwin_iwi3945::getNetworkInterface()
 {
-    IOLog("darwin_iwi3945::getNetworkInterface()\n");
+    //IOLog("darwin_iwi3945::getNetworkInterface()\n");
     return super::getNetworkInterface();
 }
 
 
 
 IOOutputQueue *darwin_iwi3945::getOutputQueue() const {
-    IOLog("Getting output queue\n");
+    //IOLog("Getting output queue\n");
     return fTransmitQueue;
 }
 

@@ -184,6 +184,12 @@ class darwin_iwi3945 : public IO80211Controller
         
         SInt32 setCHANNEL(IO80211Interface *interface,
                           struct apple80211_channel_data *cd);
+						  
+		SInt32 getPROTMODE(IO80211Interface *interface, apple80211_protmode_data *pd);
+		
+		SInt32 getAUTH_TYPE(IO80211Interface *interface,
+							struct apple80211_authtype_data *ad);
+		
         
         virtual bool attachInterfaceWithMacAddress( void * macAddr, 
                                                    UInt32 macLen, 
@@ -256,6 +262,10 @@ class darwin_iwi3945 : public IO80211Controller
         IOPhysicalAddress			ioBase;			// map->getPhysicalAddress();
         OSDictionary *				mediumDict;
 #define ETH_ALEN 6
-		u8 mac_addr[ETH_ALEN];						//MAC_ADRESS
-        
+		u8 *						mac_addr;		//MAC_ADRESS
+        /**
+			my state very important
+		*/
+		u32							myState;		//information of the state of the card
+		
     };
