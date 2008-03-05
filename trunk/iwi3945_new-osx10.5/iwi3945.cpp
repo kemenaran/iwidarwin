@@ -112,8 +112,8 @@ SInt32 darwin_iwi3945::apple80211Request( UInt32 req, int type, IO80211Interface
             
             // 12:
         case APPLE80211_IOC_CARD_CAPABILITIES: //req_type
-            IOLog("APPLE80211_IOC_CARD_CAPABILITIES:"
-                    " 0x%08x [%d]\n", data, data);
+            //IOLog("APPLE80211_IOC_CARD_CAPABILITIES:"
+            //        " 0x%08x [%d]\n", data, data);
             if( SIOCSA80211 == req ) {
                 IOLog("Don't know how to SET Capabilities!\n");
             }
@@ -713,7 +713,7 @@ darwin_iwi3945::getSTATE(IO80211Interface *interface,
     }
 	
     sd->version = APPLE80211_VERSION;
-    sd->state = myState;
+    sd->state = APPLE80211_S_RUN;//= myState;
 	/*APPLE80211_S_INIT	= 0,			// default state
 	APPLE80211_S_SCAN	= 1,			// scanning
 	APPLE80211_S_AUTH	= 2,			// try to authenticate

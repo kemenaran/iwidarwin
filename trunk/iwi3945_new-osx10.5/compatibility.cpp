@@ -619,17 +619,259 @@ int ieee80211_get_morefrag(struct ieee80211_hdr *hdr) {
             IEEE80211_FCTL_MOREFRAGS) != 0;
 }
 
+#pragma mark Rx
+typedef enum {
+	TXRX_CONTINUE,
+	TXRX_DROP,
+	TXRX_QUEUED 
+};
+
+struct ieee80211_txrx_data {
+         struct sk_buff *skb;
+         struct net_device *dev;
+         struct ieee80211_local *local;
+         struct ieee80211_sub_if_data *sdata;
+         struct sta_info *sta;
+         u16 fc, ethertype;
+         struct ieee80211_key *key;
+         unsigned int flags;
+         union {
+                 struct {
+                         struct ieee80211_tx_control *control;
+                         struct ieee80211_hw_mode *mode;
+                         struct ieee80211_rate *rate;
+                         /* use this rate (if set) for last fragment; rate can
+                          * be set to lower rate for the first fragments, e.g.,
+                          * when using CTS protection with IEEE 802.11g. */
+                         struct ieee80211_rate *last_frag_rate;
+                         int last_frag_hwrate;
+ 
+                         /* Extra fragments (in addition to the first fragment
+                          * in skb) */
+                         int num_extra_frag;
+                         struct sk_buff **extra_frag;
+                 } tx;
+                 struct {
+                         struct ieee80211_rx_status *status;
+                         int sent_ps_buffered;
+                         int queue;
+                         int load;
+                         u32 tkip_iv32;
+                         u16 tkip_iv16;
+                 } rx;
+         } u;
+ };
+ 
+//static inline ieee80211_txrx_result __ieee80211_invoke_rx_handlers(
+static inline int __ieee80211_invoke_rx_handlers(
+                                 struct ieee80211_local *local,
+                                 void *handlers,
+                                 struct ieee80211_txrx_data *rx,
+                                 struct sta_info *sta){
+		IOLog("TODO __ieee80211_invoke_rx_handlers\n");
+		return TXRX_CONTINUE;
+}
+
+static inline void ieee80211_invoke_rx_handlers(struct ieee80211_local *local,
+                                                 //ieee80211_rx_handler *handlers,
+												 void *handlers,
+                                                 struct ieee80211_txrx_data *rx,
+                                                 struct sta_info *sta)
+{
+         if (__ieee80211_invoke_rx_handlers(local, handlers, rx, sta) ==
+             TXRX_CONTINUE)
+                 dev_kfree_skb(rx->skb);
+}
+
+
+
+static inline void *netdev_priv(const struct net_device *dev)
+ {
+         return dev->priv;
+ }
+#define IEEE80211_DEV_TO_SUB_IF(dev) netdev_priv(dev)
+
+u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
+ {
+         u16 fc;
+ 
+         if (len < 24)
+                 return NULL;
+ 
+         fc = le16_to_cpu(hdr->frame_control);
+ 
+         switch (fc & IEEE80211_FCTL_FTYPE) {
+         case IEEE80211_FTYPE_DATA:
+                 switch (fc & (IEEE80211_FCTL_TODS | IEEE80211_FCTL_FROMDS)) {
+                 case IEEE80211_FCTL_TODS:
+                         return hdr->addr1;
+                 case (IEEE80211_FCTL_TODS | IEEE80211_FCTL_FROMDS):
+                         return NULL;
+                 case IEEE80211_FCTL_FROMDS:
+                         return hdr->addr2;
+                 case 0:
+                         return hdr->addr3;
+                 }
+                 break;
+         case IEEE80211_FTYPE_MGMT:
+                 return hdr->addr3;
+         case IEEE80211_FTYPE_CTL:
+                 if ((fc & IEEE80211_FCTL_STYPE) == IEEE80211_STYPE_PSPOLL)
+                         return hdr->addr1;
+                 else
+                         return NULL;
+         }
+ 
+         return NULL;
+ }
+
 
 /*
- * This is the receive path handler. It is called by a low level driver when an
- * 802.11 MPDU is received from the hardware.
- */
-void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
-		    struct ieee80211_rx_status *status)
-{
-	IOLog("__ieee80211_rx");
-	return;
-}		
+  * This is the receive path handler. It is called by a low level driver when an
+  * 802.11 MPDU is received from the hardware.
+  */
+ void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
+                     struct ieee80211_rx_status *status)
+ {
+         struct ieee80211_local *local = hw_to_local(hw);
+         struct ieee80211_sub_if_data *sdata;
+         struct sta_info *sta;
+         struct ieee80211_hdr *hdr;
+         struct ieee80211_txrx_data rx;
+         u16 type;
+         int prepres;
+         struct ieee80211_sub_if_data *prev = NULL;
+         struct sk_buff *skb_new;
+         u8 *bssid;
+ 
+         /*
+          * key references and virtual interfaces are protected using RCU
+          * and this requires that we are in a read-side RCU section during
+          * receive processing
+          */
+         //rcu_read_lock();
+ 
+         /*
+          * Frames with failed FCS/PLCP checksum are not returned,
+          * all other frames are returned without radiotap header
+          * if it was previously present.
+          * Also, frames with less than 16 bytes are dropped.
+          */
+         /*skb = ieee80211_rx_monitor(local, skb, status);
+         if (!skb) {
+                 rcu_read_unlock();
+                 return;
+         }*/
+ 
+         hdr = (struct ieee80211_hdr *) skb_data(skb);
+         memset(&rx, 0, sizeof(rx));
+         rx.skb = skb;
+         rx.local = local;
+ 
+         rx.u.rx.status = status;
+         rx.fc = le16_to_cpu(hdr->frame_control);
+         type = rx.fc & IEEE80211_FCTL_FTYPE;
+ 
+         if (type == IEEE80211_FTYPE_DATA || type == IEEE80211_FTYPE_MGMT)
+                 local->dot11ReceivedFragmentCount++;
+ 
+         sta = rx.sta = sta_info_get(local, hdr->addr2);
+         if (sta) {
+                 rx.dev = rx.sta->dev;
+                 rx.sdata = ( ieee80211_sub_if_data *) IEEE80211_DEV_TO_SUB_IF(rx.dev);
+         }
+ 
+        /* if ((status->flag & RX_FLAG_MMIC_ERROR)) {
+                 ieee80211_rx_michael_mic_report(local->mdev, hdr, sta, &rx);
+                 goto end;
+         }*/
+#define BIT(nr)                 (1UL << (nr))
+#define IEEE80211_TXRXD_RXIN_SCAN BIT(4) 
+         if (unlikely(local->sta_scanning))
+                 rx.flags |= IEEE80211_TXRXD_RXIN_SCAN;
+ 
+        // if (__ieee80211_invoke_rx_handlers(local, local->rx_pre_handlers, &rx,sta) != TXRX_CONTINUE)
+		if (__ieee80211_invoke_rx_handlers(local, NULL, &rx,sta) != TXRX_CONTINUE)
+                 goto end;
+         skb = rx.skb;
+#define WLAN_STA_WDS BIT(27)
+#define WLAN_STA_ASSOC_AP BIT(8)
+         if (sta && !(sta->flags & (WLAN_STA_WDS | WLAN_STA_ASSOC_AP)) &&
+             //!atomic_read(&local->iff_promiscs) &&
+             !is_multicast_ether_addr(hdr->addr1)) {
+#define IEEE80211_TXRXD_RXRA_MATCH              BIT(5)
+                 rx.flags |= IEEE80211_TXRXD_RXRA_MATCH;
+                 //ieee80211_invoke_rx_handlers(local, local->rx_handlers, &rx, rx.sta);
+					ieee80211_invoke_rx_handlers(local, NULL, &rx,rx.sta);
+                 sta_info_put(sta);
+                 //rcu_read_unlock();
+                 return;
+         }
+ 
+         bssid = ieee80211_get_bssid(hdr, skb_len(skb));
+#if 0
+         list_for_each_entry_rcu(sdata, &local->interfaces, list) {
+                 if (!netif_running(sdata->dev))
+                         continue;
+ 
+                 if (sdata->type == IEEE80211_IF_TYPE_MNTR)
+                         continue;
+ 
+                 rx.flags |= IEEE80211_TXRXD_RXRA_MATCH;
+                 prepres = prepare_for_handlers(sdata, bssid, &rx, hdr);
+                 /* prepare_for_handlers can change sta */
+                 sta = rx.sta;
+ 
+                 if (!prepres)
+                         continue;
+ 
+                 /*
+                  * frame is destined for this interface, but if it's not
+                  * also for the previous one we handle that after the
+                  * loop to avoid copying the SKB once too much
+                  */
+ 
+                 if (!prev) {
+                         prev = sdata;
+                         continue;
+                 }
+ 
+                 /*
+                  * frame was destined for the previous interface
+                  * so invoke RX handlers for it
+                  */
+ 
+                 skb_new = skb_copy(skb, GFP_ATOMIC);
+                 if (!skb_new) {
+                         if (net_ratelimit())
+                                 printk(KERN_DEBUG "%s: failed to copy "
+                                        "multicast frame for %s",
+                                        wiphy_name(local->hw.wiphy),
+                                        prev->dev->name);
+                         continue;
+                 }
+                 rx.skb = skb_new;
+                 rx.dev = prev->dev;
+                 rx.sdata = prev;
+                 ieee80211_invoke_rx_handlers(local, local->rx_handlers,
+                                              &rx, sta);
+                 prev = sdata;
+         }
+         if (prev) {
+                 rx.skb = skb;
+                 rx.dev = prev->dev;
+                 rx.sdata = prev;
+                 ieee80211_invoke_rx_handlers(local, local->rx_handlers,
+                                              &rx, sta);
+         } else
+                 dev_kfree_skb(skb);
+ #endif
+  end:
+         //rcu_read_unlock();
+ 
+         if (sta)
+                 sta_info_put(sta);
+ }
 	
 
 
@@ -682,7 +924,7 @@ static void ieee80211_tasklet_handler(void * data)
  * context. Post the skb on the queue and schedule the tasklet */
 void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct ieee80211_rx_status *status)
 {
-	//ieee80211_rx(skb,status);
+	
     struct ieee80211_local *local = hw_to_local(hw);
     
     BUILD_BUG_ON(sizeof(struct ieee80211_rx_status) > sizeof(skb->cb));
@@ -705,7 +947,12 @@ void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct i
     //skb_queue_tail(&local->skb_queue, skb);//how ?
 	
 	//Start the tasklet
-	IOCreateThread(&ieee80211_tasklet_handler,local);
+	//IOCreateThread(&ieee80211_tasklet_handler,local);
+	
+	/*
+		RX implementation must be moved after
+	*/
+	__ieee80211_rx(hw,skb,status);
 	
 
 }
