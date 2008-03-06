@@ -47,7 +47,7 @@ typedef enum {
 	MEDIUM_TYPE_INVALID
 } mediumType_t;
 
-class darwin_iwi3945 : public IO80211Controller
+class darwin_iwi3945 : public IOEthernetController
     {
         OSDeclareDefaultStructors(darwin_iwi3945)
         
@@ -232,7 +232,26 @@ class darwin_iwi3945 : public IO80211Controller
             messageType, IOService *service, void *messageArgument,
             vm_size_t argSize );
 		
+		virtual IOOptionBits getState( void ) const;
 		
+		virtual IOReturn getMaxPacketSize(UInt32 * maxSize) const;
+		virtual IOReturn getMinPacketSize(UInt32 * minSize) const;
+		
+		
+		virtual IOReturn getPacketFilters(const OSSymbol * group,
+                                      UInt32 *         filters) const;
+									  
+		virtual IOReturn enablePacketFilter(const OSSymbol * group,
+                                        UInt32           aFilter,
+                                        UInt32           enabledFilters,
+                                        IOOptionBits     options);
+		virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
+		
+		virtual IOReturn registerWithPolicyMaker(IOService * policyMaker);
+		virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
+		virtual IOReturn setMulticastMode(bool active);
+		virtual IOReturn setMulticastList(IOEthernetAddress * addrs, UInt32 count);
+		//static void			interruptOccurred(OSObject * owner, void * src, IOService *nub, int count);
         // statistics
         IONetworkStats		*netStats;
         IOEthernetStats		*etherStats;
@@ -267,5 +286,7 @@ class darwin_iwi3945 : public IO80211Controller
 			my state very important
 		*/
 		u32							myState;		//information of the state of the card
+		
+		ifnet_t						fifnet;
 		
     };
