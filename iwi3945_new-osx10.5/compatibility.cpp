@@ -63,6 +63,7 @@ struct pci_dev* my_pci_dev;
 IOPCIDevice* my_pci_device;
 IOMemoryMap	*				my_map;
 u8 my_mac_addr[6];
+ifnet_t						my_fifnet;
 
 static int next_thread=0;
 static int thread_pos=0;
@@ -110,6 +111,10 @@ IOMemoryMap * getMap(){
 	if(my_map)
 		return my_map;
 	return NULL;
+}
+
+void setMyfifnet(ifnet_t fifnet){
+	my_fifnet = fifnet;
 }
 /*
 	Setters
@@ -733,7 +738,7 @@ u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
  void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
                      struct ieee80211_rx_status *status)
  {
-         struct ieee80211_local *local = hw_to_local(hw);
+        struct ieee80211_local *local = hw_to_local(hw);
          struct ieee80211_sub_if_data *sdata;
          struct sta_info *sta;
          struct ieee80211_hdr *hdr;
@@ -791,7 +796,7 @@ u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
                  rx.flags |= IEEE80211_TXRXD_RXIN_SCAN;
  
         // if (__ieee80211_invoke_rx_handlers(local, local->rx_pre_handlers, &rx,sta) != TXRX_CONTINUE)
-		if (__ieee80211_invoke_rx_handlers(local, NULL, &rx,sta) != TXRX_CONTINUE)
+                if (__ieee80211_invoke_rx_handlers(local, NULL, &rx,sta) != TXRX_CONTINUE)
                  goto end;
          skb = rx.skb;
 #define WLAN_STA_WDS BIT(27)
@@ -802,7 +807,7 @@ u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
 #define IEEE80211_TXRXD_RXRA_MATCH              BIT(5)
                  rx.flags |= IEEE80211_TXRXD_RXRA_MATCH;
                  //ieee80211_invoke_rx_handlers(local, local->rx_handlers, &rx, rx.sta);
-					ieee80211_invoke_rx_handlers(local, NULL, &rx,rx.sta);
+                                        ieee80211_invoke_rx_handlers(local, NULL, &rx,rx.sta);
                  sta_info_put(sta);
                  //rcu_read_unlock();
                  return;
@@ -871,7 +876,7 @@ u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
  
          if (sta)
                  sta_info_put(sta);
- }
+}
 	
 
 

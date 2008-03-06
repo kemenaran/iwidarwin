@@ -12,12 +12,12 @@
 #include "compatibility.h"
 
 // Define my superclass
-#define super IO80211Controller
-//IO80211Controller
+#define super IOEthernetController//IO80211Controller
+
 // REQUIRED! This macro defines the class's constructors, destructors,
 // and several other methods I/O Kit requires. Do NOT use super as the
 // second parameter. You must use the literal name of the superclass.
-OSDefineMetaClassAndStructors(darwin_iwi3945, IO80211Controller);
+OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);
 
 // Magic to make the init/exit routines public.
 extern "C" {
@@ -33,6 +33,7 @@ extern IOMemoryMap * getMap();
 extern void setUnloaded();
 extern void start_undirect_scan();
 extern u8 * getMyMacAddr();
+extern void setMyfifnet(ifnet_t fifnet);
 
 IOService * my_provider;
 #pragma mark -
@@ -63,10 +64,11 @@ IOOutputQueue * darwin_iwi3945::createOutputQueue( void )
 
 int darwin_iwi3945::outputRaw80211Packet( IO80211Interface * interface, mbuf_t m )
 {
-    IOLog("Someone called outputRaw80211Packet\n");
+	return -1;
+    /*IOLog("Someone called outputRaw80211Packet\n");
     int ret = super::outputRaw80211Packet(interface, m);
     IOLog("outputRaw80211Packet: Okay, returning %d\n", ret);
-    return ret;
+    return ret;*/
 }
 
 UInt32 darwin_iwi3945::getFeatures() const {
@@ -506,7 +508,12 @@ bool darwin_iwi3945::start(IOService *provider)
 		}
 
 				
-		mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
+
+		
+        IOLog("registerService()\n");
+		registerService();
+		
+		/*mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
 		addMediumType(kIOMediumIEEE80211None,  0,  MEDIUM_TYPE_NONE);
 		addMediumType(kIOMediumIEEE80211Auto,  0,  MEDIUM_TYPE_AUTO);
 		addMediumType(kIOMediumIEEE80211DS1,   1000000, MEDIUM_TYPE_1MBIT);
@@ -514,15 +521,24 @@ bool darwin_iwi3945::start(IOService *provider)
 		addMediumType(kIOMediumIEEE80211DS5,   5500000, MEDIUM_TYPE_5MBIT);
 		addMediumType(kIOMediumIEEE80211DS11, 11000000, MEDIUM_TYPE_11MBIT);
 		addMediumType(kIOMediumIEEE80211,     54000000, MEDIUM_TYPE_54MBIT, "OFDM54");
-		//addMediumType(kIOMediumIEEE80211OptionAdhoc, 0, MEDIUM_TYPE_ADHOC,"ADHOC");
+		addMediumType(kIOMediumIEEE80211OptionAdhoc, 0, MEDIUM_TYPE_ADHOC,"ADHOC");
         
+		publishMediumDictionary(mediumDict);
+		setCurrentMedium(mediumTable[MEDIUM_TYPE_AUTO]);
+		setSelectedMedium(mediumTable[MEDIUM_TYPE_AUTO]);
+		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);*/
+		
+		
+		mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
+		addMediumType( kIOMediumEthernetAuto, 0, MEDIUM_TYPE_AUTO);
+		//addMediumType(kIOMediumEthernetNone,  0,  MEDIUM_TYPE_NONE);
+	
+
 		publishMediumDictionary(mediumDict);
 		setCurrentMedium(mediumTable[MEDIUM_TYPE_AUTO]);
 		setSelectedMedium(mediumTable[MEDIUM_TYPE_AUTO]);
 		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
 		
-        IOLog("registerService()\n");
-		registerService();
 
         return true;
     } while(false);
@@ -1189,19 +1205,35 @@ bool darwin_iwi3945::attachInterfaceWithMacAddress( void * macAddr,
 												bool doRegister ,
 												UInt32 timeout  )
 {
-	IOLog("attachInterfaceWithMacAddress \n");
-	return super::attachInterfaceWithMacAddress(macAddr,macLen,interface,doRegister,timeout);
+	//IOLog("attachInterfaceWithMacAddress \n");
+	//return super::attachInterfaceWithMacAddress(macAddr,macLen,interface,doRegister,timeout);
+	return true;
 }												
 												
 void darwin_iwi3945::dataLinkLayerAttachComplete( IO80211Interface * interface )											
 {
-	IOLog("dataLinkLayerAttachComplete \n");
-	super::dataLinkLayerAttachComplete(interface);
+	//IOLog("dataLinkLayerAttachComplete \n");
+	//super::dataLinkLayerAttachComplete(interface);
+	return;
 }
 
 
 #pragma mark -
 #pragma mark System entry points
+
+IOOptionBits darwin_iwi3945::getState( void ) const
+{
+	IOOptionBits r=super::getState();
+	//IWI_DEBUG_FN("getState = %x\n",r);
+	return r;
+}
+
+
+IOReturn setWakeOnMagicPacket( bool active )
+{
+    //magicPacketEnabled = active;
+    return kIOReturnSuccess;
+}
 
 int darwin_iwi3945::up()
 {
@@ -1227,28 +1259,21 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 {
 	IOLog("darwin_iwi3945::enable()\n");
     
-    /* If an interface client has previously enabled us,	*/
-    /* and we know there can only be one interface client	*/
-    /* for this driver, then simply return true.			*/
-    
-    /*
-    if ( netifEnabled )
-    {
-        IOLog( "EtherNet(UniN): already enabled\n" );
-        return kIOReturnSuccess;
-    }
-    
-    if ( (fReady == false) && !wakeUp( false ) )
-        return kIOReturnIOError;
-    
-    netifEnabled = true;	// Mark the controller as enabled by the interface.
-    */
-    
+	if (!fifnet)
+	{
+		char ii[4];
+		sprintf(ii,"%s%d" ,netif->getNamePrefix(), netif->getUnitNumber());
+		ifnet_find_by_name(ii,&fifnet);
+		setMyfifnet(fifnet);
+	}
     
     /* Start our IOOutputQueue object:	*/
     fTransmitQueue->setCapacity( 1024 );
+	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
     fTransmitQueue->start();
     
+	ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
+	
     return kIOReturnSuccess;
 }/* end enable netif */
 
@@ -1294,7 +1319,58 @@ IOReturn darwin_iwi3945::disable( IONetworkInterface* /*netif*/ )
     return super::apple80211_ioctl(interface, ifn, cmd, data);
 }*/
 
+void darwin_iwi3945::interruptOccurred(OSObject * owner, 
+	void		*src,  IOService *nub, int source)
+{
+}
+IOReturn darwin_iwi3945::setMulticastMode(bool active) {
 
+	return kIOReturnSuccess;
+}
+
+IOReturn darwin_iwi3945::setMulticastList(IOEthernetAddress * addrs, UInt32 count) {
+	 return kIOReturnSuccess;
+}
+
+IOReturn darwin_iwi3945::getPacketFilters(const OSSymbol * group, UInt32 *         filters) const
+{
+	 if ( ( group == gIOEthernetWakeOnLANFilterGroup ) )//&& ( magicPacketSupported ) )
+	{
+		*filters = kIOEthernetWakeOnMagicPacket;
+		return kIOReturnSuccess;
+	}
+
+    // For any other filter groups, return the default set of filters
+    // reported by IOEthernetController.
+
+	return super::getPacketFilters( group, filters );
+}
+
+void darwin_iwi3945::getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const {
+	assert(constraintsP);
+    constraints->alignStart  = kIOPacketBufferAlign1;	
+    constraints->alignLength = kIOPacketBufferAlign1;	
+}
+
+IOReturn darwin_iwi3945::enablePacketFilter(const OSSymbol * group,
+                                        UInt32           aFilter,
+                                        UInt32           enabledFilters,
+                                        IOOptionBits     options)
+{
+	return super::enablePacketFilter(group,aFilter,enabledFilters,options);
+}
+
+IOReturn darwin_iwi3945::getMaxPacketSize(UInt32 * maxSize) const
+{
+    *maxSize = 1600;//kIOEthernetMaxPacketSize;//;//IPW_RX_BUF_SIZE;
+    return kIOReturnSuccess;
+}
+
+IOReturn darwin_iwi3945::getMinPacketSize(UInt32 * minSize) const
+{
+    *minSize = 32;//kIOEthernetMinPacketSize;//;
+    return kIOReturnSuccess;
+}
 
 bool darwin_iwi3945::configureInterface( IONetworkInterface *netif )
 {
@@ -1313,7 +1389,8 @@ IOReturn darwin_iwi3945::getHardwareAddress(IOEthernetAddress *addr)
 IO80211Interface *darwin_iwi3945::getNetworkInterface()
 {
     //IOLog("darwin_iwi3945::getNetworkInterface()\n");
-    return super::getNetworkInterface();
+    //return super::getNetworkInterface();
+	return NULL;
 }
 
 
