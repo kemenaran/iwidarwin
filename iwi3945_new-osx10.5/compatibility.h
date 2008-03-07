@@ -219,7 +219,20 @@ pos = list_entry(pos->member.next, typeof(*pos), member))
 {
         return v->counter;
 }
-
+//FIXME:
+static inline void atomic_inc(const atomic_t *v)
+{
+        //v->counter++;
+		return;
+}
+//FIXME:
+static inline bool atomic_dec_and_test(const atomic_t *v)
+{
+        //v->counter--;
+		if(v->counter <= 0)
+			return false;
+		return true;
+}
 	extern void enable_tasklet();
 	extern void io_write32(u32 ofs, u32 val);
 	extern u32 io_read32(u32 ofs);

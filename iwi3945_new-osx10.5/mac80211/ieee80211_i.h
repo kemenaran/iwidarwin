@@ -177,11 +177,9 @@ struct ieee80211_tx_stored_packet {
 	unsigned int last_frag_rate_ctrl_probe:1;
 };
 
-typedef ieee80211_txrx_result (*ieee80211_tx_handler)
-(struct ieee80211_txrx_data *tx);
+typedef ieee80211_txrx_result (*ieee80211_tx_handler)(struct ieee80211_txrx_data *tx);
 
-typedef ieee80211_txrx_result (*ieee80211_rx_handler)
-(struct ieee80211_txrx_data *rx);
+typedef ieee80211_txrx_result (*ieee80211_rx_handler)(struct ieee80211_txrx_data *rx);
 
 struct ieee80211_if_ap {
 	u8 *beacon_head, *beacon_tail;
