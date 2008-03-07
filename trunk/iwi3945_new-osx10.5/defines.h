@@ -395,8 +395,57 @@ struct ieee80211_passive_scan {
     
 	unsigned int num_scans;
 };
+typedef enum {
+	TXRX_CONTINUE, TXRX_DROP, TXRX_QUEUED
+} ieee80211_txrx_result;
 
 
+struct ieee80211_txrx_data {
+	struct sk_buff *skb;
+	struct net_device *dev;
+	struct ieee80211_local *local;
+	struct ieee80211_sub_if_data *sdata;
+	struct sta_info *sta;
+	u16 fc, ethertype;
+	struct ieee80211_key *key;
+	unsigned int fragmented:1; /* whether the MSDU was fragmented */
+	union {
+		struct {
+			struct ieee80211_tx_control *control;
+			unsigned int unicast:1;
+			unsigned int ps_buffered:1;
+			unsigned int short_preamble:1;
+			unsigned int probe_last_frag:1;
+			struct ieee80211_hw_mode *mode;
+			struct ieee80211_rate *rate;
+			/* use this rate (if set) for last fragment; rate can
+			 * be set to lower rate for the first fragments, e.g.,
+			 * when using CTS protection with IEEE 802.11g. */
+			struct ieee80211_rate *last_frag_rate;
+			int last_frag_hwrate;
+			int mgmt_interface;
+
+			/* Extra fragments (in addition to the first fragment
+			 * in skb) */
+			int num_extra_frag;
+			struct sk_buff **extra_frag;
+		} tx;
+		struct {
+			struct ieee80211_rx_status *status;
+			int sent_ps_buffered;
+			int queue;
+			int load;
+			unsigned int in_scan:1;
+			/* frame is destined to interface currently processed
+			 * (including multicast frames) */
+			unsigned int ra_match:1;
+		} rx;
+	} u;
+};
+
+
+typedef ieee80211_txrx_result (*ieee80211_tx_handler)(struct ieee80211_txrx_data *tx);
+typedef ieee80211_txrx_result (*ieee80211_rx_handler)(struct ieee80211_txrx_data *rx);
 
 struct ieee80211_local {
 	/* embed the driver visible part.
@@ -489,9 +538,9 @@ struct ieee80211_local {
 	struct ieee80211_passive_scan scan;
     
     
-//	ieee80211_rx_handler *rx_pre_handlers;
-//	ieee80211_rx_handler *rx_handlers;
-//	ieee80211_tx_handler *tx_handlers;
+	ieee80211_rx_handler *rx_pre_handlers;
+	ieee80211_rx_handler *rx_handlers;
+	ieee80211_tx_handler *tx_handlers;
     
 	spinlock_t sub_if_lock; /* mutex for STA data structures */
 	struct list_head sub_if_list;
@@ -621,6 +670,76 @@ struct sk_buff {
 };
 
 
+/* Parsed Information Elements */
+struct ieee802_11_elems {
+	/* pointers to IEs */
+	u8 *ssid;
+	u8 *supp_rates;
+	u8 *fh_params;
+	u8 *ds_params;
+	u8 *cf_params;
+	u8 *tim;
+	u8 *ibss_params;
+	u8 *challenge;
+	u8 *wpa;
+	u8 *rsn;
+	u8 *erp_info;
+	u8 *ext_supp_rates;
+	u8 *wmm_info;
+	u8 *wmm_param;
+
+	/* length of them, respectively */
+	u8 ssid_len;
+	u8 supp_rates_len;
+	u8 fh_params_len;
+	u8 ds_params_len;
+	u8 cf_params_len;
+	u8 tim_len;
+	u8 ibss_params_len;
+	u8 challenge_len;
+	u8 wpa_len;
+	u8 rsn_len;
+	u8 erp_info_len;
+	u8 ext_supp_rates_len;
+	u8 wmm_info_len;
+	u8 wmm_param_len;
+};
+
+struct ieee80211_sta_bss {
+	struct list_head list;
+	struct ieee80211_sta_bss *hnext;
+	atomic_t users;
+
+	u8 bssid[ETH_ALEN];
+	u8 ssid[IEEE80211_MAX_SSID_LEN];
+	size_t ssid_len;
+	u16 capability; /* host byte order */
+	int hw_mode;
+	int channel;
+	int freq;
+	int rssi, signal, noise;
+	u8 *wpa_ie;
+	size_t wpa_ie_len;
+	u8 *rsn_ie;
+	size_t rsn_ie_len;
+	u8 *wmm_ie;
+	size_t wmm_ie_len;
+#define IEEE80211_MAX_SUPP_RATES 32
+	u8 supp_rates[IEEE80211_MAX_SUPP_RATES];
+	size_t supp_rates_len;
+	int beacon_int;
+	u64 timestamp;
+
+	int probe_resp;
+	unsigned long last_update;
+
+	/* during assocation, we save an ERP value from a probe response so
+	 * that we can feed ERP info to the driver when handling the
+	 * association completes. these fields probably won't be up-to-date
+	 * otherwise, you probably don't want to use them. */
+	int has_erp_value;
+	u8 erp_value;
+};
 
 
 
@@ -1750,6 +1869,7 @@ __ret;                                  \
 #undef mod_timer
 #undef add_timer
 #undef mod_timer
+#define BIT(x) (1UL << (x))
 /*#undef wait_queue
 typedef struct __wait_queue_head wait_queue_head_t;
 #undef init_waitqueue_head
