@@ -7,6 +7,8 @@
  *
  */
 
+//#define IO80211_VERSION 1
+
 #include <IOKit/assert.h>
 #include <IOKit/IOTimerEventSource.h>
 #include <IOKit/IODeviceMemory.h>
@@ -47,7 +49,11 @@ typedef enum {
 	MEDIUM_TYPE_INVALID
 } mediumType_t;
 
+#ifdef IO80211_VERSION
+class darwin_iwi3945 : public IO80211Controller
+#else
 class darwin_iwi3945 : public IOEthernetController
+#endif
     {
         OSDeclareDefaultStructors(darwin_iwi3945)
         
@@ -251,7 +257,9 @@ class darwin_iwi3945 : public IOEthernetController
 		virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
 		virtual IOReturn setMulticastMode(bool active);
 		virtual IOReturn setMulticastList(IOEthernetAddress * addrs, UInt32 count);
-		//static void			interruptOccurred(OSObject * owner, void * src, IOService *nub, int count);
+		virtual UInt32	 outputPacket(mbuf_t m, void * param);
+		virtual UInt32	 outputPacket2(mbuf_t m, void * param);
+		
         // statistics
         IONetworkStats		*netStats;
         IOEthernetStats		*etherStats;

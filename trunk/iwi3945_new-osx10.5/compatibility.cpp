@@ -673,8 +673,28 @@ static inline int __ieee80211_invoke_rx_handlers(
                                  void *handlers,
                                  struct ieee80211_txrx_data *rx,
                                  struct sta_info *sta){
-		IOLog("TODO __ieee80211_invoke_rx_handlers\n");
-		return TXRX_CONTINUE;
+	/*ieee80211_rx_handler *handler;
+	ieee80211_txrx_result res = TXRX_DROP;
+
+	for (handler = handlers; *handler != NULL; handler++) {
+		res = (*handler)(rx);
+		if (res != TXRX_CONTINUE) {
+			if (res == TXRX_DROP) {
+				I802_DEBUG_INC(local->rx_handlers_drop);
+				if (sta)
+					sta->rx_dropped++;
+			}
+			if (res == TXRX_QUEUED)
+				I802_DEBUG_INC(local->rx_handlers_queued);
+			break;
+		}
+	}
+
+	if (res == TXRX_DROP) {
+		dev_kfree_skb(rx->skb);
+	}
+	return res;*/
+	return TXRX_CONTINUE;
 }
 
 static inline void ieee80211_invoke_rx_handlers(struct ieee80211_local *local,

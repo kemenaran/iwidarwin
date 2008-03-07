@@ -12,12 +12,13 @@
 #include "compatibility.h"
 
 // Define my superclass
+#ifdef IO80211_VERSION
+#define super IO80211Controller
+OSDefineMetaClassAndStructors(darwin_iwi3945, IO80211Controller);
+#else
 #define super IOEthernetController//IO80211Controller
-
-// REQUIRED! This macro defines the class's constructors, destructors,
-// and several other methods I/O Kit requires. Do NOT use super as the
-// second parameter. You must use the literal name of the superclass.
 OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);
+#endif
 
 // Magic to make the init/exit routines public.
 extern "C" {
@@ -54,12 +55,12 @@ UInt32 darwin_iwi3945::handleInterrupt() {
 IOOutputQueue * darwin_iwi3945::createOutputQueue( void )
 {
 	// An IOGatedOutputQueue will serialize all calls to the driver's
-    // outputPacket() function with its work loop. This essentially
+    // x() function with its work loop. This essentially
     // serializes all access to the driver and the hardware through
     // the driver's work loop, which simplifies the driver but also
     // carries a small performance cost (relatively for 10/100 Mb).
     IOLog("Someone called createOutputQueue()\n");
-    return IOGatedOutputQueue::withTarget( this, getWorkLoop() );
+    return IOBasicOutputQueue::withTarget(this,(IOOutputAction)&darwin_iwi3945::outputPacket2,0);
 }
 
 int darwin_iwi3945::outputRaw80211Packet( IO80211Interface * interface, mbuf_t m )
@@ -491,7 +492,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		
 		
 		mac_addr = getMyMacAddr();
-		
+		//getHardwareAddress(mac_addr);
 		        // Publish the MAC address
         if ( (setProperty(kIOMACAddress, mac_addr, kIOEthernetAddressSize) == false) )
         {
@@ -502,18 +503,18 @@ bool darwin_iwi3945::start(IOService *provider)
         
         // Attach the IO80211Interface to this card.  This also creates a
         // new IO80211Interface, and stores the resulting object in fNetif.
-		if (attachInterface((IONetworkInterface **) &fNetif, true) == false) {
+		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
 			IOLog("%s attach failed\n", getName());
 			break;
 		}
 
 				
-
-		
-        IOLog("registerService()\n");
+		fNetif->registerOutputHandler(this,getOutputHandler());
+		fNetif->registerService();
 		registerService();
-		
-		/*mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
+
+#ifdef IO80211_VERSION
+		mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
 		addMediumType(kIOMediumIEEE80211None,  0,  MEDIUM_TYPE_NONE);
 		addMediumType(kIOMediumIEEE80211Auto,  0,  MEDIUM_TYPE_AUTO);
 		addMediumType(kIOMediumIEEE80211DS1,   1000000, MEDIUM_TYPE_1MBIT);
@@ -521,13 +522,13 @@ bool darwin_iwi3945::start(IOService *provider)
 		addMediumType(kIOMediumIEEE80211DS5,   5500000, MEDIUM_TYPE_5MBIT);
 		addMediumType(kIOMediumIEEE80211DS11, 11000000, MEDIUM_TYPE_11MBIT);
 		addMediumType(kIOMediumIEEE80211,     54000000, MEDIUM_TYPE_54MBIT, "OFDM54");
-		addMediumType(kIOMediumIEEE80211OptionAdhoc, 0, MEDIUM_TYPE_ADHOC,"ADHOC");
+		//addMediumType(kIOMediumIEEE80211OptionAdhoc, 0, MEDIUM_TYPE_ADHOC,"ADHOC");
         
 		publishMediumDictionary(mediumDict);
 		setCurrentMedium(mediumTable[MEDIUM_TYPE_AUTO]);
 		setSelectedMedium(mediumTable[MEDIUM_TYPE_AUTO]);
-		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);*/
-		
+		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
+#else
 		
 		mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
 		addMediumType( kIOMediumEthernetAuto, 0, MEDIUM_TYPE_AUTO);
@@ -538,6 +539,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		setCurrentMedium(mediumTable[MEDIUM_TYPE_AUTO]);
 		setSelectedMedium(mediumTable[MEDIUM_TYPE_AUTO]);
 		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
+#endif
 		
 
         return true;
@@ -1267,12 +1269,22 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		setMyfifnet(fifnet);
 	}
     
-    /* Start our IOOutputQueue object:	*/
-    fTransmitQueue->setCapacity( 1024 );
-	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-    fTransmitQueue->start();
-    
-	ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
+	if ((fNetif->getFlags() & IFF_RUNNING)==0)
+	{
+		IOLog("ifconfig going up\n ");
+		//FIXME: if associated set IFF_RUNNING
+		//if (priv->status & STATUS_ASSOCIATED) ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
+		fTransmitQueue->setCapacity(1024);
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		fTransmitQueue->start();
+		return kIOReturnSuccess;
+	}
+	else
+	{
+		IOLog("ifconfig already up\n");
+		return kIOReturnExclusiveAccess;
+
+	}
 	
     return kIOReturnSuccess;
 }/* end enable netif */
@@ -1283,28 +1295,94 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
  * This method is always called while running on the default workloop
  * thread.
  *-------------------------------------------------------------------------*/
+ UInt32 darwin_iwi3945::outputPacket2(mbuf_t m, void * param)
+{
+	IOLog("outputPaccket2 called\n");
+	IOInterruptState flags;
+	//spin_lock_irqsave(spin, flags);
+	if(m==NULL){
+		IOLog("null pkt \n");
+		netStats->outputErrors++;
+		//goto finish;
+		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
+	}
+	
+	if(((fNetif->getFlags() & IFF_RUNNING)==0) )//|| !(priv->status & STATUS_ASSOCIATED))
+	{
+		netStats->outputPackets++;
+		IOLog("tx pkt with net down\n");
+		//goto finish;
+		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
+	}
+
+	mbuf_t nm;
+	
+	IOLog("outputPacket t: %d f:%04x\n",mbuf_type(m),mbuf_flags(m));
+	
+	//drop mbuf is not PKTHDR
+	if (!(mbuf_flags(m) & MBUF_PKTHDR) ){
+		IOLog("BUG: dont support mbuf without pkthdr and dropped \n");
+		netStats->outputErrors++;
+		//goto finish;
+		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
+	}
+	
+	if(m==NULL || mbuf_type(m) == MBUF_TYPE_FREE){
+		IOLog("BUG: this is freed packet and dropped \n");
+		netStats->outputErrors++;
+		//goto finish;
+		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
+	}
+
+	IOLog("call ieee80211_xmit\n");
+	//int ret  = ieee80211_xmit(m);
+	//if (ret==kIOReturnOutputSuccess) txpkt=true;
+	//return ret;
+	
+finish:	
+	//spin_unlock_irqrestore(spin, flags);
+
+	return kIOReturnOutputSuccess;
+}
+
+
+UInt32 darwin_iwi3945::outputPacket(mbuf_t m, void * param)
+{
+	IOLog("outputPacket called by someone\n");
+	//if (!(fTransmitQueue->getState() & 0x1))
+	//{
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		fTransmitQueue->start();
+		return kIOReturnOutputSuccess;//kIOReturnOutputStall; 
+//	}
+	
+
+	fTransmitQueue->enqueue(m, 0);
+	
+	return kIOReturnOutputSuccess;
+}
+
 
 IOReturn darwin_iwi3945::disable( IONetworkInterface* /*netif*/ )
 {
     IOLog("darwin_iwi3945::disable()\n");
-    
-    /* Disable our IOOutputQueue object. This will prevent the
-     * outputPacket() method from being called.
-     */
-    
-    fTransmitQueue->stop();
-    
-    fTransmitQueue->setCapacity( 0 );
-    fTransmitQueue->flush();	/* Flush all packets currently in the output queue.	*/
-    
-    /* If we have no active clients, then disable the controller.	*/
-    /*
-	if ( debugEnabled == false )
-		putToSleep( false );
-    
-    netifEnabled = false;
-    */
-    return kIOReturnSuccess;
+	if ((fNetif->getFlags() & IFF_RUNNING)!=0)
+	{
+		IOLog("ifconfig going down\n");
+		setLinkStatus(kIONetworkLinkValid);
+		fTransmitQueue->stop();
+		fTransmitQueue->setCapacity(0);
+		fTransmitQueue->flush();
+		ifnet_set_flags(fifnet, 0 , IFF_RUNNING);
+					
+		return kIOReturnSuccess;
+		
+	}
+	else
+	{
+		IOLog("ifconfig already down\n");
+		return -1;
+	}
 }/* end disable netif */
 
 
@@ -1382,7 +1460,14 @@ bool darwin_iwi3945::configureInterface( IONetworkInterface *netif )
 //FIXME: Mac from iwl3945
 IOReturn darwin_iwi3945::getHardwareAddress(IOEthernetAddress *addr)
 {
-	addr = (IOEthernetAddress*)getMyMacAddr();
+	u8 *tmp = getMyMacAddr();
+	//addr = (IOEthernetAddress *)IOMalloc(sizeof(IOEthernetAddress));
+	addr->bytes[0] = tmp[0];
+	addr->bytes[1] = tmp[1];
+	addr->bytes[2] = tmp[2];
+	addr->bytes[3] = tmp[3];
+	addr->bytes[4] = tmp[4];
+	addr->bytes[5] = tmp[5];
     return kIOReturnSuccess;
 }
 
