@@ -6539,7 +6539,6 @@ static void iwl3945_bg_alive_start(struct iwl3945_priv *priv)
 
 static void iwl3945_bg_rf_kill(struct iwl3945_priv *priv)
 {
-	return ;
 	if(!priv){
 		IOLog("No Priv defined\n");
 		return;
