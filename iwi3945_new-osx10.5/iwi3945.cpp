@@ -45,10 +45,6 @@ IOService *darwin_iwi3945::getProvider() {
 }
 
 
-UInt32 darwin_iwi3945::handleInterrupt() {
-    return 0;
-}
-
 #pragma mark -
 #pragma mark IONetworkController overrides
 
@@ -460,6 +456,28 @@ bool darwin_iwi3945::init(OSDictionary *dict)
 	return super::init(dict);
 }
 
+bool darwin_iwi3945::createWorkLoop( void )
+{
+    workqueue = IOWorkLoop::workLoop();
+	
+    return ( workqueue != 0 );
+}
+
+const OSString * darwin_iwi3945::newVendorString( void ) const
+{
+    return OSString::withCString("Intel");
+}
+
+const OSString * darwin_iwi3945::newModelString( void ) const
+{
+    const char * model = "3945 ABG";
+	/*if ((fPCIDevice->configRead16(kIOPCIConfigDeviceID) == 0x4223) ||
+	    (fPCIDevice->configRead16(kIOPCIConfigDeviceID) == 0x4224)) 
+	{
+		model = "2915 ABG";
+	};*/
+    return OSString::withCString(model);
+}
 
 bool darwin_iwi3945::start(IOService *provider)
 {
@@ -601,7 +619,7 @@ void darwin_iwi3945::stop(IOService *provider)
 #pragma mark -
 #pragma mark IO80211Controller entry points
 
-
+#ifdef IO80211_VERSION
 SInt32
 darwin_iwi3945::getSSID(IO80211Interface *interface,
 						struct apple80211_ssid_data *sd)
@@ -1207,18 +1225,18 @@ bool darwin_iwi3945::attachInterfaceWithMacAddress( void * macAddr,
 												bool doRegister ,
 												UInt32 timeout  )
 {
-	//IOLog("attachInterfaceWithMacAddress \n");
-	//return super::attachInterfaceWithMacAddress(macAddr,macLen,interface,doRegister,timeout);
+	IOLog("attachInterfaceWithMacAddress \n");
+	return super::attachInterfaceWithMacAddress(macAddr,macLen,interface,doRegister,timeout);
 	return true;
 }												
 												
 void darwin_iwi3945::dataLinkLayerAttachComplete( IO80211Interface * interface )											
 {
-	//IOLog("dataLinkLayerAttachComplete \n");
-	//super::dataLinkLayerAttachComplete(interface);
+	IOLog("dataLinkLayerAttachComplete \n");
+	super::dataLinkLayerAttachComplete(interface);
 	return;
 }
-
+#endif
 
 #pragma mark -
 #pragma mark System entry points
@@ -1273,7 +1291,8 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 	{
 		IOLog("ifconfig going up\n ");
 		//FIXME: if associated set IFF_RUNNING
-		//if (priv->status & STATUS_ASSOCIATED) ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
+		//if (priv->status & STATUS_ASSOCIATED) 
+		if (iwl3945_is_associated(priv)) ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
@@ -1289,6 +1308,69 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
     return kIOReturnSuccess;
 }/* end enable netif */
 
+
+mbuf_t darwin_iwi3945::mergePacket(mbuf_t m)
+{
+	mbuf_t nm,nm2;
+	int offset;
+	if(!mbuf_next(m))
+	{
+		//offset = (4 - ((int)(mbuf_data(m)) & 3)) % 4;    //packet needs to be 4 byte aligned
+		offset = (1 - ((int)(mbuf_data(m)) & 3)) % 1;   
+		if (offset==0) return m;
+		IOLog("this packet dont have mbuf_next, merge  is not required\n");
+		goto copy_packet;
+	}
+
+	/* allocate and Initialize New mbuf */
+	nm = allocatePacket(mbuf_pkthdr_len(m));
+	if (nm==0) return NULL;
+	//if (mbuf_getpacket(MBUF_WAITOK, &nm)!=0) return NULL;
+	mbuf_setlen(nm,0);
+	mbuf_pkthdr_setlen(nm,0);
+	if( mbuf_next(nm)) IOLog("merged mbuf_next\n");
+	
+	/* merging chains to single mbuf */
+	for (nm2 = m; nm2;  nm2 = mbuf_next(nm2)) {
+		bcopy (mbuf_data(nm2), skb_put (nm, mbuf_len(nm2)), mbuf_len(nm2));
+		//skb_put (nm, mbuf_len(nm2));
+		//mbuf_copyback(nm, mbuf_len(nm), mbuf_len(nm2), mbuf_data(nm2), MBUF_WAITOK);
+	}
+	/* checking if merged or not. */
+	if( mbuf_len(nm) == mbuf_pkthdr_len(m) ) 
+	{
+		if (m!=NULL)
+		if (!(mbuf_type(m) == MBUF_TYPE_FREE)) freePacket(m);
+		m=NULL;
+		return nm;
+	}
+	/* merging is not completed. */
+	IOLog("mergePacket is failed: data copy dont work collectly\n");
+	IOLog("orig_len %d orig_pktlen %d new_len  %d new_pktlen  %d\n",
+					mbuf_len(m),mbuf_pkthdr_len(m),
+					mbuf_len(nm),mbuf_pkthdr_len(nm) );
+	if (m!=NULL)
+	if (!(mbuf_type(m) == MBUF_TYPE_FREE)) freePacket(m);
+	m=NULL;
+	if (nm!=NULL)
+	if (!(mbuf_type(nm) == MBUF_TYPE_FREE) ) freePacket(nm);
+	nm=NULL;
+	return NULL;
+
+copy_packet: 
+		if (mbuf_dup(m, MBUF_WAITOK , &nm)!=0)
+		{
+			if (m!=NULL)
+			if (!(mbuf_type(m) == MBUF_TYPE_FREE)) freePacket(m);
+			m=NULL;
+			return NULL;
+		}
+		if (m!=NULL)
+		if (!(mbuf_type(m) == MBUF_TYPE_FREE) ) freePacket(m);
+		m=NULL;
+		return nm;
+		//return copyPacket(m, 0); 
+}
 
 /*-------------------------------------------------------------------------
  * Called by IOEthernetInterface client to disable the controller.
@@ -1307,7 +1389,7 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
 	
-	if(((fNetif->getFlags() & IFF_RUNNING)==0) )//|| !(priv->status & STATUS_ASSOCIATED))
+	if(((fNetif->getFlags() & IFF_RUNNING)==0) ) || !(iwl3945_is_associated(priv)))
 	{
 		netStats->outputPackets++;
 		IOLog("tx pkt with net down\n");
@@ -1333,7 +1415,23 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		//goto finish;
 		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
-
+	if(mbuf_next(m)){
+		nm = mergePacket(m);
+		if (nm==NULL) 
+		{
+			netStats->outputErrors++;
+			IOLog("merger pkt failed\n");
+			goto finish;
+		}
+		m=nm;
+	}
+	if(mbuf_next(m)){
+		IOLog("BUG: dont support chains mbuf\n");
+		//IWI_ERR("BUG: tx packet is not single mbuf mbuf_len(%d) mbuf_pkthdr_len(%d)\n",mbuf_len(m) , mbuf_pkthdr_len(m) );
+		//IWI_ERR("BUG: next mbuf size %d\n",mbuf_len(mbuf_next(m)));
+		netStats->outputErrors++;
+		goto finish;
+	}
 	IOLog("call ieee80211_xmit\n");
 	//int ret  = ieee80211_xmit(m);
 	//if (ret==kIOReturnOutputSuccess) txpkt=true;
@@ -1349,12 +1447,12 @@ finish:
 UInt32 darwin_iwi3945::outputPacket(mbuf_t m, void * param)
 {
 	IOLog("outputPacket called by someone\n");
-	//if (!(fTransmitQueue->getState() & 0x1))
-	//{
+	if (!(fTransmitQueue->getState() & 0x1))
+	{
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
 		return kIOReturnOutputSuccess;//kIOReturnOutputStall; 
-//	}
+	}
 	
 
 	fTransmitQueue->enqueue(m, 0);
@@ -1397,10 +1495,6 @@ IOReturn darwin_iwi3945::disable( IONetworkInterface* /*netif*/ )
     return super::apple80211_ioctl(interface, ifn, cmd, data);
 }*/
 
-void darwin_iwi3945::interruptOccurred(OSObject * owner, 
-	void		*src,  IOService *nub, int source)
-{
-}
 IOReturn darwin_iwi3945::setMulticastMode(bool active) {
 
 	return kIOReturnSuccess;
@@ -1453,8 +1547,26 @@ IOReturn darwin_iwi3945::getMinPacketSize(UInt32 * minSize) const
 bool darwin_iwi3945::configureInterface( IONetworkInterface *netif )
 {
     IOLog("darwin_iwi3945::configureInterface()\n");
-    return super::configureInterface(netif);
+    IONetworkData * data;
+    if (super::configureInterface(netif) == false)
+            return false;
+    
+    // Get the generic network statistics structure.
+
+   data = netif->getParameter(kIONetworkStatsKey);
+    if (!data || !(netStats = (IONetworkStats *)data->getBuffer())) {
+            return false;
+    }
+
+    // Get the Ethernet statistics structure.
+
+   /* data = netif->getParameter(kIOEthernetStatsKey);
+    if (!data || !(etherStats = (IOEthernetStats *)data->getBuffer())) {
+            return false;
+    }*/
+    return true;
 }
+
 
 
 //FIXME: Mac from iwl3945
@@ -1474,17 +1586,9 @@ IOReturn darwin_iwi3945::getHardwareAddress(IOEthernetAddress *addr)
 IO80211Interface *darwin_iwi3945::getNetworkInterface()
 {
     //IOLog("darwin_iwi3945::getNetworkInterface()\n");
-    //return super::getNetworkInterface();
+    return super::getNetworkInterface();
 	return NULL;
 }
-
-
-
-IOOutputQueue *darwin_iwi3945::getOutputQueue() const {
-    //IOLog("Getting output queue\n");
-    return fTransmitQueue;
-}
-
 
 
 bool darwin_iwi3945::addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name) {    
