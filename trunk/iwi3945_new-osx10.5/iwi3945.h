@@ -69,10 +69,9 @@ class darwin_iwi3945 : public IOEthernetController
         virtual bool		createWorkLoop( void );
         virtual IOWorkLoop * getWorkLoop( void ) const;
         virtual IOOutputQueue * createOutputQueue( void );
-        
-        static void			interruptOccurred(OSObject * owner, void * src, IOService *nub, int count);
-        virtual UInt32		handleInterrupt(void);
-        
+		virtual const OSString * newModelString( void ) const;
+		virtual const OSString * newVendorString( void ) const;
+	       
         virtual bool		addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name = 0);
 
         
@@ -226,7 +225,6 @@ class darwin_iwi3945 : public IOEthernetController
                 
         virtual int outputRaw80211Packet( IO80211Interface * interface, mbuf_t m );
 										
-		virtual IOOutputQueue * getOutputQueue() const;
 		virtual int up(void);
 		virtual void down(void);
 		
@@ -259,6 +257,7 @@ class darwin_iwi3945 : public IOEthernetController
 		virtual IOReturn setMulticastList(IOEthernetAddress * addrs, UInt32 count);
 		virtual UInt32	 outputPacket(mbuf_t m, void * param);
 		virtual UInt32	 outputPacket2(mbuf_t m, void * param);
+		virtual mbuf_t mergePacket(mbuf_t m);
 		
         // statistics
         IONetworkStats		*netStats;
