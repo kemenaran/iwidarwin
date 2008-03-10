@@ -122,6 +122,266 @@ void setMyfifnet(ifnet_t fifnet){
 void setUnloaded(){
 	is_unloaded=true;
 }
+
+
+
+#pragma mark -
+#pragma mark Adapt sk_buff functions to mbuf for OS X
+
+//FIXME: !!
+static inline void __skb_queue_tail(struct sk_buff_head *list,struct sk_buff *newsk)
+{
+	struct sk_buff *prev, *next;
+
+	list->qlen++;
+	next = (struct sk_buff *)list;
+	/*prev = next->prev;
+	newsk->next = next;
+	newsk->prev = prev;
+	next->prev  = prev->next = newsk;*/
+}
+
+ /**
+1470  *      skb_queue_tail - queue a buffer at the list tail
+1471  *      @list: list to use
+1472  *      @newsk: buffer to queue
+1473  *
+1474  *      Queue a buffer at the tail of the list. This function takes the
+1475  *      list lock and can be used safely with other locking &sk_buff functions
+1476  *      safely.
+1477  *
+1478  *      A buffer cannot be placed on two lists at the same time.
+1479  */
+ void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk)
+ {
+         unsigned long flags;
+ 
+         spin_lock_irqsave(&list->lock, flags);
+         __skb_queue_tail(list, newsk);
+         spin_unlock_irqrestore(&list->lock, flags);
+ }
+  
+//FIXME: !!
+static inline struct sk_buff *__skb_dequeue(struct sk_buff_head *list)
+{
+	struct sk_buff *next, *prev, *result;
+
+	prev = (struct sk_buff *) list;
+	//next = prev->next;
+	result = NULL;
+	/*if(next != prev) {
+		result       = next;
+		next         = next->next;
+		list->qlen--;
+		next->prev   = prev;
+		prev->next   = next;
+		result->next = result->prev = NULL;
+	}
+	return result;*/
+}
+struct sk_buff *skb_dequeue(struct sk_buff_head *list)
+{
+         unsigned long flags;
+         struct sk_buff *result;
+ 
+         spin_lock_irqsave(&list->lock, flags);
+         result = __skb_dequeue(list);
+         spin_unlock_irqrestore(&list->lock, flags);
+         return result;
+}
+
+
+
+//FIXME: !!!!
+struct sk_buff * __skb_dequeue_tail (struct sk_buff_head * list){
+	return NULL;
+}
+
+struct sk_buff *skb_dequeue_tail(struct sk_buff_head *list)
+{
+	unsigned long flags;
+	struct sk_buff *result;
+	
+	spin_lock_irqsave(&list->lock, flags);
+	result = __skb_dequeue_tail(list);
+	spin_unlock_irqrestore(&list->lock, flags);
+	return result;
+}
+
+ 
+//FIXME: !!!
+struct sk_buff *skb_copy( struct sk_buff *skb, gfp_t gfp_mask)
+{
+	return skb;
+}
+
+/**
+  *      skb_queue_empty - check if a queue is empty
+  *      @list: queue head
+  *
+  *      Returns true if the queue is empty, false otherwise.
+  */
+static inline int skb_queue_empty(const struct sk_buff_head *list)
+{
+	return list->next == (struct sk_buff *)list;
+}
+
+ /**FIXME: !!!!!
+  *      skb_trim - remove end from a buffer
+  *      @skb: buffer to alter
+  *      @len: new length
+  *
+  *      Cut the length of a buffer down by removing data from the tail. If
+  *      the buffer is already under the length specified it is not modified.
+  *      The skb must be linear.
+  */
+static inline void skb_trim(struct sk_buff *skb, unsigned int len)
+{
+        //cut from the end of mbuf
+	if (len>0)
+		mbuf_adj(skb->mac_data, len);
+	else
+		mbuf_adj(skb->mac_data, len);
+}
+
+
+static inline void skb_queue_head_init(struct sk_buff_head *list)
+{
+        spin_lock_init(&list->lock);
+        list->prev = list->next = (struct sk_buff *)list;
+        list->qlen = 0;
+}
+
+static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
+{
+	//need to change skb->mac_data
+	//skb_reset_mac_header(skb);
+        //skb->mac_header += offset;
+}
+
+static inline void skb_set_network_header(struct sk_buff *skb, const int offset)
+{
+        //need to change skb->mac_data
+	//skb->network_header = skb->data + offset;
+}
+
+
+//FIXME: !!
+void *skb_push(const struct sk_buff *skb, unsigned int len) {
+    return mbuf_data(skb->mac_data);
+}
+
+
+int skb_tailroom(const struct sk_buff *skb) {
+    return mbuf_trailingspace(skb->mac_data);
+}
+
+int skb_headroom(const struct sk_buff *skb){
+	return mbuf_leadingspace(skb->mac_data);
+}
+
+struct sk_buff *skb_clone(const struct sk_buff *skb, unsigned int ignored) {
+    struct sk_buff *skb_copy = (struct sk_buff *)IOMalloc(sizeof(struct sk_buff));
+    mbuf_copym(skb->mac_data, 0, mbuf_len(skb->mac_data), 1, &skb_copy->mac_data);
+    skb_copy->intf = skb->intf;
+    return skb_copy;
+}
+
+void *skb_data(const struct sk_buff *skb) {
+    return mbuf_data(skb->mac_data);
+}
+
+int skb_len(const struct sk_buff *skb) {
+	return mbuf_pkthdr_len(skb->mac_data);
+}
+
+void skb_reserve(struct sk_buff *skb, int len) {
+	void *data = (UInt8*)mbuf_data(skb->mac_data) + len;
+	mbuf_setdata(skb->mac_data,data, mbuf_len(skb->mac_data));// m_len is not changed.
+}
+
+
+void *skb_put(struct sk_buff *skb, unsigned int len) {
+    /*unsigned char *tmp = skb->tail;
+     SKB_LINEAR_ASSERT(skb);
+     skb->tail += len;
+     skb->len  += len;
+     return tmp;*/
+    void *data = (UInt8*)mbuf_data(skb->mac_data) + mbuf_len(skb->mac_data);
+    //mbuf_prepend(&skb,len,1); /* no prepend work */
+    //IWI_DUMP_MBUF(1,skb,len);  
+    if(mbuf_trailingspace(skb->mac_data) > len ){
+        mbuf_setlen(skb->mac_data, mbuf_len(skb->mac_data)+len);
+        if(mbuf_flags(skb->mac_data) & MBUF_PKTHDR)
+            mbuf_pkthdr_setlen(skb->mac_data, mbuf_pkthdr_len(skb->mac_data)+len);
+    }
+    //IWI_DUMP_MBUF(2,skb,len);  
+    return data;
+}
+//FIXME: not finish
+static inline unsigned char *__skb_pull(struct sk_buff *skb, unsigned int len)
+{
+         //skb->len -= len;
+         //return skb->data += len;
+		 return (unsigned char*)skb_data(skb);//added
+}
+
+/**
+953  *      skb_pull - remove data from the start of a buffer
+954  *      @skb: buffer to use
+955  *      @len: amount of data to remove
+956  *
+957  *      This function removes data from the start of a buffer, returning
+958  *      the memory to the headroom. A pointer to the next data in the buffer
+959  *      is returned. Once the data has been pulled future pushes will overwrite
+960  *      the old data.
+961  */
+ static inline unsigned char *skb_pull(struct sk_buff *skb, unsigned int len)
+ {
+         return unlikely(len > skb_len(skb)) ? NULL : __skb_pull(skb, len);
+ }
+
+void dev_kfree_skb_any(struct sk_buff *skb) {
+    dev_kfree_skb(skb);
+}
+
+void kfree_skb(struct sk_buff *skb){
+    IONetworkController *intf = (IONetworkController *)skb->intf;
+    if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
+        intf->freePacket(skb->mac_data);
+}
+
+void dev_kfree_skb(struct sk_buff *skb) {
+    IONetworkController *intf = (IONetworkController *)skb->intf;
+    if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
+        intf->freePacket(skb->mac_data);
+}
+
+struct sk_buff *__alloc_skb(unsigned int size,gfp_t priority, int fclone, int node) {
+    struct sk_buff *skb = (struct sk_buff *)IOMalloc(sizeof(struct sk_buff));
+    skb->mac_data = currentController->allocatePacket(size);
+    skb->intf = (void *)currentController;
+	mbuf_setlen(skb->mac_data, 0);
+	mbuf_pkthdr_setlen(skb->mac_data,0);
+    return skb;
+}
+
+#define NET_SKB_PAD     16
+
+static inline struct sk_buff *__dev_alloc_skb(unsigned int length,
+                                               gfp_t gfp_mask)
+ {
+         struct sk_buff *skb = alloc_skb(length + NET_SKB_PAD, 1);
+         if (likely(skb))
+                 skb_reserve(skb, NET_SKB_PAD);
+         return skb;
+ }
+
+static inline struct sk_buff *dev_alloc_skb(unsigned int length)
+ {
+         return __dev_alloc_skb(length, GFP_ATOMIC);
+ }
+
 //added
 int sysfs_create_group(struct kobject * kobj,const struct attribute_group * grp){
 	return 0;
@@ -625,8 +885,7 @@ int ieee80211_get_morefrag(struct ieee80211_hdr *hdr) {
 }
 
 #pragma mark Rx
- 
-//static inline ieee80211_txrx_result __ieee80211_invoke_rx_handlers(
+
 static inline int __ieee80211_invoke_rx_handlers(
                                  struct ieee80211_local *local,
                                  void *handlers,
@@ -726,42 +985,42 @@ u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
 
 #define IEEE80211_RX_MSG 1
 #define IEEE80211_TX_STATUS_MSG 2
-static void ieee80211_tasklet_handler(void * data)
+static void ieee80211_tasklet_handler(unsigned long data)
 {
-	IOLog("TODO ieee80211_tasklet_handler\n");
-	return ;
 	struct ieee80211_local *local = (struct ieee80211_local *) data;
 	struct sk_buff *skb;
 	struct ieee80211_rx_status rx_status;
 	struct ieee80211_tx_status *tx_status;
-
-	//get the last packet
-	//while ((skb = skb_dequeue(&local->skb_queue)) || (skb = skb_dequeue(&local->skb_queue_unreliable))) {
-	//	switch (skb->pkt_type) {
-	//	case IEEE80211_RX_MSG:
+#if 0 //FIXME: if0
+	while ((skb = skb_dequeue(&local->skb_queue)) ||
+	       (skb = skb_dequeue(&local->skb_queue_unreliable))) {
+		switch (skb->pkt_type) {
+		case IEEE80211_RX_MSG:
 			/* status is in skb->cb */
-	//		memcpy(&rx_status, skb->cb, sizeof(rx_status));
+			memcpy(&rx_status, skb->cb, sizeof(rx_status));
 			/* Clear skb->type in order to not confuse kernel
 			 * netstack. */
-	//		skb->pkt_type = 0;
-	//		__ieee80211_rx(local_to_hw(local), skb, &rx_status);
-	//		break;
-	//	case IEEE80211_TX_STATUS_MSG:
+			skb->pkt_type = 0;
+			__ieee80211_rx(local_to_hw(local), skb, &rx_status);
+			break;
+		case IEEE80211_TX_STATUS_MSG:
 			/* get pointer to saved status out of skb->cb */
-	//		memcpy(&tx_status, skb->cb, sizeof(tx_status));
-	//		skb->pkt_type = 0;
-	//		ieee80211_tx_status(local_to_hw(local),
-	//				    skb, tx_status);
-	//		kfree(tx_status);
-	//		break;
-	//	default: /* should never get here! */
-			//printk(KERN_ERR "%s: Unknown message type (%d)\n",
-			//       local->mdev->name, skb->pkt_type);
-	//		dev_kfree_skb(skb);
-	//		break;
-	//	}
-	//}
+			memcpy(&tx_status, skb->cb, sizeof(tx_status));
+			skb->pkt_type = 0;
+			ieee80211_tx_status(local_to_hw(local),
+					    skb, tx_status);
+			kfree(tx_status);
+			break;
+		default: /* should never get here! */
+			printk(KERN_ERR "%s: Unknown message type (%d)\n",
+			       local->mdev->name, skb->pkt_type);
+			dev_kfree_skb(skb);
+			break;
+		}
+	}
+#endif
 }
+
 
 
 
@@ -1722,6 +1981,128 @@ ieee80211_rx_h_passive_scan(struct ieee80211_txrx_data *rx)
 	return TXRX_CONTINUE;
 }
 
+//FIXME: !
+void jiffies_to_timespec(unsigned long jiffiess, struct timespec *value)
+{
+	return;
+}
+
+#define cpu_to_be64(x) OSSwapHostToBigInt64(x)
+#define cpu_to_be32(x) OSSwapHostToBigInt32(x)
+
+enum ieee80211_phytype {
+	ieee80211_phytype_fhss_dot11_97  = 1,
+	ieee80211_phytype_dsss_dot11_97  = 2,
+	ieee80211_phytype_irbaseband     = 3,
+	ieee80211_phytype_dsss_dot11_b   = 4,
+	ieee80211_phytype_pbcc_dot11_b   = 5,
+	ieee80211_phytype_ofdm_dot11_g   = 6,
+	ieee80211_phytype_pbcc_dot11_g   = 7,
+	ieee80211_phytype_ofdm_dot11_a   = 8,
+	ieee80211_phytype_dsss_dot11_turbog = 255,
+	ieee80211_phytype_dsss_dot11_turbo = 256,
+};
+
+static struct ieee80211_rate *
+ieee80211_get_rate(struct ieee80211_local *local, int phymode, int hw_rate)
+{
+	struct ieee80211_hw_mode *mode;
+	int r;
+
+	list_for_each_entry(mode, &local->modes_list, list) {
+		if (mode->mode != phymode)
+			continue;
+		for (r = 0; r < mode->num_rates; r++) {
+			struct ieee80211_rate *rate = &mode->rates[r];
+			if (rate->val == hw_rate ||
+			    (rate->flags & IEEE80211_RATE_PREAMBLE2 &&
+			     rate->val2 == hw_rate))
+				return rate;
+		}
+	}
+
+	return NULL;
+}
+
+enum ieee80211_ssi_type {
+	ieee80211_ssi_none = 0,
+	ieee80211_ssi_norm = 1, /* normalized, 0-1000 */
+	ieee80211_ssi_dbm = 2,
+	ieee80211_ssi_raw = 3, /* raw SSI */
+};
+
+#define IEEE80211_FI_VERSION 0x80211001
+
+static void
+ieee80211_fill_frame_info(struct ieee80211_local *local,
+			  struct ieee80211_frame_info *fi,
+			  struct ieee80211_rx_status *status)
+{
+	if (status) {
+		struct timespec ts;
+		struct ieee80211_rate *rate;
+
+		jiffies_to_timespec(jiffies, &ts);
+		fi->hosttime = cpu_to_be64((u64) ts.tv_sec * 1000000 +
+					   ts.tv_nsec / 1000);
+		fi->mactime = cpu_to_be64(status->mactime);
+		switch (status->phymode) {
+		case MODE_IEEE80211A:
+			fi->phytype = htonl(ieee80211_phytype_ofdm_dot11_a);
+			break;
+		case MODE_IEEE80211B:
+			fi->phytype = htonl(ieee80211_phytype_dsss_dot11_b);
+			break;
+		case MODE_IEEE80211G:
+			fi->phytype = htonl(ieee80211_phytype_pbcc_dot11_g);
+			break;
+		case MODE_ATHEROS_TURBO:
+			fi->phytype =
+				htonl(ieee80211_phytype_dsss_dot11_turbo);
+			break;
+		default:
+			fi->phytype = htonl(0xAAAAAAAA);
+			break;
+		}
+		fi->channel = htonl(status->channel);
+		rate = ieee80211_get_rate(local, status->phymode,
+					  status->rate);
+		if (rate) {
+			fi->datarate = htonl(rate->rate);
+			if (rate->flags & IEEE80211_RATE_PREAMBLE2) {
+				if (status->rate == rate->val)
+					fi->preamble = htonl(2); /* long */
+				else if (status->rate == rate->val2)
+					fi->preamble = htonl(1); /* short */
+			} else
+				fi->preamble = htonl(0);
+		} else {
+			fi->datarate = htonl(0);
+			fi->preamble = htonl(0);
+		}
+
+		fi->antenna = htonl(status->antenna);
+		fi->priority = htonl(0xffffffff); /* no clue */
+		fi->ssi_type = htonl(ieee80211_ssi_raw);
+		fi->ssi_signal = htonl(status->ssi);
+		fi->ssi_noise = 0x00000000;
+		fi->encoding = 0;
+	} else {
+		/* clear everything because we really don't know.
+		 * the msg_type field isn't present on monitor frames
+		 * so we don't know whether it will be present or not,
+		 * but it's ok to not clear it since it'll be assigned
+		 * anyway */
+		memset(fi, 0, sizeof(*fi) - sizeof(fi->msg_type));
+
+		fi->ssi_type = htonl(ieee80211_ssi_none);
+	}
+	fi->version = htonl(IEEE80211_FI_VERSION);
+	fi->length = cpu_to_be32(sizeof(*fi) - sizeof(fi->msg_type));
+}
+
+
+
 /* this routine is actually not just for this, but also
  * for pushing fake 'management' frames into userspace.
  * it shall be replaced by a netlink-based system. */
@@ -1732,17 +2113,18 @@ ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
 	struct ieee80211_frame_info *fi;
 	const size_t hlen = sizeof(struct ieee80211_frame_info);
 	struct ieee80211_sub_if_data *sdata;
+	//FIXME: !
+	//skb->dev = local->apdev;
 
-	skb->dev = local->apdev;
-
-	sdata = IEEE80211_DEV_TO_SUB_IF(local->apdev);
+	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(local->apdev);
 
 	if (skb_headroom(skb) < hlen) {
 		I802_DEBUG_INC(local->rx_expand_skb_head);
-		if (pskb_expand_head(skb, hlen, 0, GFP_ATOMIC)) {
+		//FIXME: !!
+		/*if (pskb_expand_head(skb, hlen, 0, GFP_ATOMIC)) {
 			dev_kfree_skb(skb);
 			return;
-		}
+		}*/
 	}
 
 	fi = (struct ieee80211_frame_info *) skb_push(skb, hlen);
@@ -1751,14 +2133,157 @@ ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
 	fi->msg_type = htonl(msg_type);
 
 	sdata->stats.rx_packets++;
-	sdata->stats.rx_bytes += skb->len;
+	sdata->stats.rx_bytes += skb_len(skb);
 
-	skb_set_mac_header(skb, 0);
-	skb->ip_summed = CHECKSUM_UNNECESSARY;
-	skb->pkt_type = PACKET_OTHERHOST;
-	skb->protocol = htons(ETH_P_802_2);
-	memset(skb->cb, 0, sizeof(skb->cb));
-	netif_rx(skb);
+	//FIXME: Preparation of the mac header and send the packet
+	//skb_set_mac_header(skb, 0);
+	//skb->ip_summed = CHECKSUM_UNNECESSARY;
+	//skb->pkt_type = PACKET_OTHERHOST;
+	//skb->protocol = htons(ETH_P_802_2);
+	//memset(skb->cb, 0, sizeof(skb->cb));
+	//netif_rx(skb);
+}
+
+#define FCS_LEN 4
+#define WLAN_STA_ASSOC BIT(1)
+enum ieee80211_msg_type {
+	ieee80211_msg_normal = 0,
+	ieee80211_msg_tx_callback_ack = 1,
+	ieee80211_msg_tx_callback_fail = 2,
+	/* hole at 3, was ieee80211_msg_passive_scan but unused */
+	ieee80211_msg_wep_frame_unknown_key = 4,
+	ieee80211_msg_michael_mic_failure = 5,
+	/* hole at 6, was monitor but never sent to userspace */
+	ieee80211_msg_sta_not_assoc = 7,
+	/* 8 was ieee80211_msg_set_aid_for_sta */
+	ieee80211_msg_key_threshold_notification = 9,
+	ieee80211_msg_radar = 11,
+};
+
+
+int ieee80211_wep_get_keyidx(struct sk_buff *skb)
+{
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
+	u16 fc;
+	int hdrlen;
+
+	fc = le16_to_cpu(hdr->frame_control);
+	if (!(fc & IEEE80211_FCTL_PROTECTED))
+		return -1;
+
+	hdrlen = ieee80211_get_hdrlen(fc);
+
+	if (skb_len(skb) < 8 + hdrlen)
+		return -1;
+	//FIXME: skb->data[m]
+	//return skb->data[hdrlen + 3] >> 6;
+	return NULL;
+}
+
+struct ieee80211_msg_key_notification {
+	int tx_rx_count;
+	char ifname[IFNAMSIZ];
+	u8 addr[ETH_ALEN]; /* ff:ff:ff:ff:ff:ff for broadcast keys */
+};
+
+#define NUM_RX_DATA_QUEUES 17
+
+struct ieee80211_key {
+	//struct kref kref;
+
+	int hw_key_idx; /* filled and used by low-level driver */
+	ieee80211_key_alg alg;
+	union {
+		struct {
+			/* last used TSC */
+			u32 iv32;
+			u16 iv16;
+			u16 p1k[5];
+			int tx_initialized;
+
+			/* last received RSC */
+			u32 iv32_rx[NUM_RX_DATA_QUEUES];
+			u16 iv16_rx[NUM_RX_DATA_QUEUES];
+			u16 p1k_rx[NUM_RX_DATA_QUEUES][5];
+			int rx_initialized[NUM_RX_DATA_QUEUES];
+		} tkip;
+		struct {
+			u8 tx_pn[6];
+			u8 rx_pn[NUM_RX_DATA_QUEUES][6];
+			struct crypto_cipher *tfm;
+			u32 replays; /* dot11RSNAStatsCCMPReplays */
+			/* scratch buffers for virt_to_page() (crypto API) */
+#ifndef AES_BLOCK_LEN
+#define AES_BLOCK_LEN 16
+#endif
+			u8 tx_crypto_buf[6 * AES_BLOCK_LEN];
+			u8 rx_crypto_buf[6 * AES_BLOCK_LEN];
+		} ccmp;
+	} u;
+	int tx_rx_count; /* number of times this key has been used */
+	int keylen;
+
+	/* if the low level driver can provide hardware acceleration it should
+	 * clear this flag */
+	unsigned int force_sw_encrypt:1;
+	unsigned int default_tx_key:1; /* This key is the new default TX key
+					* (used only for broadcast keys). */
+	s8 keyidx; /* WEP key index */
+
+#ifdef CONFIG_MAC80211_DEBUGFS
+	struct {
+		struct dentry *stalink;
+		struct dentry *dir;
+		struct dentry *keylen;
+		struct dentry *force_sw_encrypt;
+		struct dentry *keyidx;
+		struct dentry *hw_key_idx;
+		struct dentry *tx_rx_count;
+		struct dentry *algorithm;
+		struct dentry *tx_spec;
+		struct dentry *rx_spec;
+		struct dentry *replays;
+		struct dentry *key;
+	} debugfs;
+#endif
+
+	u8 key[0];
+};
+
+
+static void ieee80211_key_threshold_notify(struct net_device *dev,
+					   struct ieee80211_key *key,
+					   struct sta_info *sta)
+{
+	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct sk_buff *skb;
+	struct ieee80211_msg_key_notification *msg;
+
+	/* if no one will get it anyway, don't even allocate it.
+	 * unlikely because this is only relevant for APs
+	 * where the device must be open... */
+	if (unlikely(!local->apdev))
+		return;
+
+	skb = dev_alloc_skb(sizeof(struct ieee80211_frame_info) +
+			    sizeof(struct ieee80211_msg_key_notification));
+	if (!skb)
+		return;
+
+	skb_reserve(skb, sizeof(struct ieee80211_frame_info));
+	msg = (struct ieee80211_msg_key_notification *)
+		skb_put(skb, sizeof(struct ieee80211_msg_key_notification));
+	msg->tx_rx_count = key->tx_rx_count;
+	memcpy(msg->ifname, dev->name, IFNAMSIZ);
+	if (sta)
+		memcpy(msg->addr, sta->addr, ETH_ALEN);
+	else
+		memset(msg->addr, 0xff, ETH_ALEN);
+
+	key->tx_rx_count = 0;
+
+	ieee80211_rx_mgmt(local, skb, NULL,
+			  ieee80211_msg_key_threshold_notification);
 }
 
 static ieee80211_txrx_result
@@ -1790,8 +2315,8 @@ ieee80211_rx_h_check(struct ieee80211_txrx_data *rx)
 		I802_DEBUG_INC(rx->local->rx_handlers_drop_short);
 		return TXRX_DROP;
 	}
-
-	if (!rx->u.rx.ra_match)
+	//FIXME: pkt_type
+	/*if (!rx->u.rx.ra_match)
 		rx->skb->pkt_type = PACKET_OTHERHOST;
 	else if (compare_ether_addr(rx->dev->dev_addr, hdr->addr1) == 0)
 		rx->skb->pkt_type = PACKET_HOST;
@@ -1801,7 +2326,7 @@ ieee80211_rx_h_check(struct ieee80211_txrx_data *rx)
 		else
 			rx->skb->pkt_type = PACKET_MULTICAST;
 	} else
-		rx->skb->pkt_type = PACKET_OTHERHOST;
+		rx->skb->pkt_type = PACKET_OTHERHOST;*/
 
 	/* Drop disallowed frame classes based on STA auth/assoc state;
 	 * IEEE 802.11, Chap 5.5.
@@ -1893,13 +2418,106 @@ ieee80211_rx_h_ccmp_decrypt(struct ieee80211_txrx_data *rx)
 	return TXRX_CONTINUE;
 }
 
+#define WLAN_STA_PS BIT(2)
+
+/* Stored in sk_buff->cb */
+struct ieee80211_tx_packet_data {
+	int ifindex;
+	//unsigned long jiffies;
+	unsigned int req_tx_status:1;
+	unsigned int do_not_encrypt:1;
+	unsigned int requeue:1;
+	unsigned int mgmt_iface:1;
+	unsigned int queue:4;
+};
+
+						  
+static inline void __bss_tim_clear(struct ieee80211_if_ap *bss, int aid)
+{
+	/*
+	 * This format has ben mandated by the IEEE specifications,
+	 * so this line may not be changed to use the __clear_bit() format.
+	 */
+	bss->tim[(aid)/8] &= !(1<<((aid) % 8));
+}
+
+static inline void bss_tim_clear(struct ieee80211_local *local, struct ieee80211_if_ap *bss, u16 aid)
+{
+	__bss_tim_clear(bss, aid);
+}
+		
+		
+#define WLAN_STA_TIM BIT(3) /* TIM bit is on for PS stations */
+
+static int ap_sta_ps_end(struct net_device *dev, struct sta_info *sta)
+{
+	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct sk_buff *skb;
+	int sent = 0;
+	struct ieee80211_sub_if_data *sdata;
+	struct ieee80211_tx_packet_data *pkt_data;
+
+	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(sta->dev);
+	if (sdata->bss)
+		atomic_dec((atomic_t *)&sdata->bss->num_sta_ps);
+	sta->flags &= ~(WLAN_STA_PS | WLAN_STA_TIM);
+	sta->pspoll = 0;
+	if (!skb_queue_empty(&sta->ps_tx_buf)) {
+		if (local->ops->set_tim)
+			local->ops->set_tim(local_to_hw(local), sta->aid, 0);
+		if (sdata->bss)
+			bss_tim_clear(local, sdata->bss, sta->aid);
+	}
+#ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
+	printk(KERN_DEBUG "%s: STA " MAC_FMT " aid %d exits power "
+	       "save mode\n", dev->name, MAC_ARG(sta->addr), sta->aid);
+#endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
+	/* Send all buffered frames to the station */
+	while ((skb = skb_dequeue(&sta->tx_filtered)) != NULL) {
+		pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
+		sent++;
+		pkt_data->requeue = 1;
+		//FIXME: Have to be done by the interface
+		//dev_queue_xmit(skb);
+	}
+	while ((skb = skb_dequeue(&sta->ps_tx_buf)) != NULL) {
+		pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
+		local->total_ps_buffered--;
+		sent++;
+#ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
+		printk(KERN_DEBUG "%s: STA " MAC_FMT " aid %d send PS frame "
+		       "since STA not sleeping anymore\n", dev->name,
+		       MAC_ARG(sta->addr), sta->aid);
+#endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
+		pkt_data->requeue = 1;
+		//FIXME: idem
+		//dev_queue_xmit(skb);
+	}
+
+	return sent;
+}
+
+static void ap_sta_ps_start(struct net_device *dev, struct sta_info *sta)
+{
+	struct ieee80211_sub_if_data *sdata;
+	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(sta->dev);
+
+	if (sdata->bss)
+		atomic_inc((atomic_t*)&sdata->bss->num_sta_ps);
+	sta->flags |= WLAN_STA_PS;
+	sta->pspoll = 0;
+#ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
+	printk(KERN_DEBUG "%s: STA " MAC_FMT " aid %d enters power "
+	       "save mode\n", dev->name, MAC_ARG(sta->addr), sta->aid);
+#endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
+}
 
 static ieee80211_txrx_result
 ieee80211_rx_h_sta_process(struct ieee80211_txrx_data *rx)
 {
 	struct sta_info *sta = rx->sta;
 	struct net_device *dev = rx->dev;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) rx->skb->data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(rx->skb);
 
 	if (!sta)
 		return TXRX_CONTINUE;
@@ -1908,7 +2526,7 @@ ieee80211_rx_h_sta_process(struct ieee80211_txrx_data *rx)
 	 * BSSID to avoid keeping the current IBSS network alive in cases where
 	 * other STAs are using different BSSID. */
 	if (rx->sdata->type == IEEE80211_IF_TYPE_IBSS) {
-		u8 *bssid = ieee80211_get_bssid(hdr, rx->skb->len);
+		u8 *bssid = ieee80211_get_bssid(hdr, skb_len(rx->skb));
 		if (compare_ether_addr(bssid, rx->sdata->u.sta.bssid) == 0)
 			sta->last_rx = jiffies;
 	} else
@@ -1925,7 +2543,7 @@ ieee80211_rx_h_sta_process(struct ieee80211_txrx_data *rx)
 		return TXRX_CONTINUE;
 
 	sta->rx_fragments++;
-	sta->rx_bytes += rx->skb->len;
+	sta->rx_bytes += skb_len(rx->skb);
 	sta->last_rssi = (sta->last_rssi * 15 +
 			  rx->u.rx.status->ssi) / 16;
 	sta->last_signal = (sta->last_signal * 15 +
@@ -1958,6 +2576,49 @@ ieee80211_rx_h_sta_process(struct ieee80211_txrx_data *rx)
 	return TXRX_CONTINUE;
 } /* ieee80211_rx_h_sta_process */
 
+void ieee80211_sta_rx_mgmt(struct net_device *dev, struct sk_buff *skb,
+			   struct ieee80211_rx_status *rx_status)
+{
+	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_sub_if_data *sdata;
+	struct ieee80211_if_sta *ifsta;
+	struct ieee80211_mgmt *mgmt;
+	u16 fc;
+
+	if (skb_len(skb) < 24)
+		goto fail;
+
+	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
+	ifsta = &sdata->u.sta;
+
+	mgmt = (struct ieee80211_mgmt *) skb_data(skb);
+	fc = le16_to_cpu(mgmt->frame_control);
+
+	switch (fc & IEEE80211_FCTL_STYPE) {
+	case IEEE80211_STYPE_PROBE_REQ:
+	case IEEE80211_STYPE_PROBE_RESP:
+	case IEEE80211_STYPE_BEACON:
+		memcpy(skb->cb, rx_status, sizeof(*rx_status));
+	case IEEE80211_STYPE_AUTH:
+	case IEEE80211_STYPE_ASSOC_RESP:
+	case IEEE80211_STYPE_REASSOC_RESP:
+	case IEEE80211_STYPE_DEAUTH:
+	case IEEE80211_STYPE_DISASSOC:
+		//FIXME: Modify list_head
+		//skb_queue_tail(&ifsta->skb_queue, skb);
+		//queue_work(local->hw.workqueue, &ifsta->work);
+		return;
+	default:
+		printk(KERN_DEBUG "%s: received unknown management frame - "
+		       "stype=%d\n", dev->name,
+		       (fc & IEEE80211_FCTL_STYPE) >> 4);
+		break;
+	}
+
+ fail:
+	kfree_skb(skb);
+}
+
 
 static ieee80211_txrx_result
 ieee80211_rx_h_mgmt(struct ieee80211_txrx_data *rx)
@@ -1967,7 +2628,7 @@ ieee80211_rx_h_mgmt(struct ieee80211_txrx_data *rx)
 	if (!rx->u.rx.ra_match)
 		return TXRX_DROP;
 
-	sdata = IEEE80211_DEV_TO_SUB_IF(rx->dev);
+	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx->dev);
 	if ((sdata->type == IEEE80211_IF_TYPE_STA ||
 	     sdata->type == IEEE80211_IF_TYPE_IBSS) &&
 	    !rx->local->user_space_mlme) {
@@ -1982,18 +2643,37 @@ ieee80211_rx_h_mgmt(struct ieee80211_txrx_data *rx)
 	return TXRX_QUEUED;
 }
 
+/* See IEEE 802.1H for LLC/SNAP encapsulation/decapsulation */
+/* Ethernet-II snap header (RFC1042 for most EtherTypes) */
+static const unsigned char rfc1042_header[] =
+	{ 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
+	/* Bridge-Tunnel header (for EtherTypes ETH_P_AARP and ETH_P_IPX) */
+static const unsigned char bridge_tunnel_header[] =
+	{ 0xaa, 0xaa, 0x03, 0x00, 0x00, 0xf8 };
+	
+#define WLAN_FC_DATA_PRESENT(fc) (((fc) & 0x4c) == 0x08)
+
+/*
+ *      This is an Ethernet frame header.
+ */
+struct ethhdr {
+         unsigned char   h_dest[ETH_ALEN];       /* destination eth addr */
+         unsigned char   h_source[ETH_ALEN];     /* source ether addr    */
+         __be16          h_proto;                /* packet type ID field */
+} __attribute__((packed));
+
 static ieee80211_txrx_result
 ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 {
 	struct net_device *dev = rx->dev;
 	struct ieee80211_local *local = rx->local;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) rx->skb->data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(rx->skb);
 	u16 fc, hdrlen, ethertype;
 	u8 *payload;
 	u8 dst[ETH_ALEN];
 	u8 src[ETH_ALEN];
 	struct sk_buff *skb = rx->skb, *skb2;
-	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
 
 	fc = rx->fc;
 	if (unlikely((fc & IEEE80211_FCTL_FTYPE) != IEEE80211_FTYPE_DATA))
@@ -2072,9 +2752,10 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 		break;
 	}
 
-	payload = skb->data + hdrlen;
-
-	if (unlikely(skb->len - hdrlen < 8)) {
+	UInt32 tmp = (UInt32) skb_data(skb);
+	payload = (u8*)(tmp + hdrlen);
+	//payload = skb->data + hdrlen;
+	if (unlikely(skb_len(skb) - hdrlen < 8)) {
 		if (net_ratelimit()) {
 			printk(KERN_DEBUG "%s: RX too short data frame "
 			       "payload\n", dev->name);
@@ -2083,6 +2764,8 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 	}
 
 	ethertype = (payload[6] << 8) | payload[7];
+#define ETH_P_AARP	0x80F3
+#define ETH_P_IPX	0x8137		/* IPX over DIX			*/
 
 	if (likely((compare_ether_addr(payload, rfc1042_header) == 0 &&
 		    ethertype != ETH_P_AARP && ethertype != ETH_P_IPX) ||
@@ -2096,22 +2779,23 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 		struct ethhdr *ehdr;
 		__be16 len;
 		skb_pull(skb, hdrlen);
-		len = htons(skb->len);
+		len = htons(skb_len(skb));
 		ehdr = (struct ethhdr *) skb_push(skb, sizeof(struct ethhdr));
 		memcpy(ehdr->h_dest, dst, ETH_ALEN);
 		memcpy(ehdr->h_source, src, ETH_ALEN);
 		ehdr->h_proto = len;
 	}
-	skb->dev = dev;
+	//FIXME: dev in skb
+	//skb->dev = dev;
 
 	skb2 = NULL;
 
 	sdata->stats.rx_packets++;
-	sdata->stats.rx_bytes += skb->len;
+	sdata->stats.rx_bytes += skb_len(skb);
 
 	if (local->bridge_packets && (sdata->type == IEEE80211_IF_TYPE_AP
 	    || sdata->type == IEEE80211_IF_TYPE_VLAN) && rx->u.rx.ra_match) {
-		if (is_multicast_ether_addr(skb->data)) {
+		if (is_multicast_ether_addr((u8*)skb_data(skb))) {
 			/* send multicast frames both to higher layers in
 			 * local net stack and back to the wireless media */
 			skb2 = skb_copy(skb, GFP_ATOMIC);
@@ -2120,7 +2804,7 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 				       "multicast frame\n", dev->name);
 		} else {
 			struct sta_info *dsta;
-			dsta = sta_info_get(local, skb->data);
+			dsta = sta_info_get(local, (u8*)skb_data(skb));
 			if (dsta && !dsta->dev) {
 				printk(KERN_DEBUG "Station with null dev "
 				       "structure!\n");
@@ -2139,21 +2823,55 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 
 	if (skb) {
 		/* deliver to local stack */
-		skb->protocol = eth_type_trans(skb, dev);
-		memset(skb->cb, 0, sizeof(skb->cb));
-		netif_rx(skb);
+		//FIXME : SEND
+		//skb->protocol = eth_type_trans(skb, dev);
+		//memset(skb->cb, 0, sizeof(skb->cb));
+		//netif_rx(skb);
 	}
 
 	if (skb2) {
 		/* send to wireless media */
-		skb2->protocol = __constant_htons(ETH_P_802_3);
-		skb_set_network_header(skb2, 0);
-		skb_set_mac_header(skb2, 0);
-		dev_queue_xmit(skb2);
+		//FIXME: SEND
+		//skb2->protocol = __constant_htons(ETH_P_802_3);
+		//skb_set_network_header(skb2, 0);
+		//skb_set_mac_header(skb2, 0);
+		//dev_queue_xmit(skb2);
 	}
 
 	return TXRX_QUEUED;
 }
+
+/* No encapsulation header if EtherType < 0x600 (=length) */
+static const unsigned char eapol_header[] =
+	{ 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00, 0x88, 0x8e };
+	
+static int ieee80211_is_eapol(const struct sk_buff *skb)
+{
+	const struct ieee80211_hdr *hdr;
+	u16 fc;
+	int hdrlen;
+
+	if (unlikely(skb_len(skb) < 10))
+		return 0;
+
+	hdr = (const struct ieee80211_hdr *) skb_data(skb);
+	fc = le16_to_cpu(hdr->frame_control);
+
+	if (unlikely(!WLAN_FC_DATA_PRESENT(fc)))
+		return 0;
+
+	hdrlen = ieee80211_get_hdrlen(fc);
+	
+	UInt32 data_skb = (UInt32) skb_data(skb);
+	if (unlikely(skb_len(skb) >= hdrlen + sizeof(eapol_header) &&
+		     //memcmp(skb_data(skb) + hdrlen, eapol_header,
+			 memcmp((void*)(data_skb + hdrlen), eapol_header,
+			    sizeof(eapol_header)) == 0))
+		return 1;
+
+	return 0;
+}
+
 
 static ieee80211_txrx_result
 ieee80211_rx_h_drop_unencrypted(struct ieee80211_txrx_data *rx)
@@ -2268,6 +2986,286 @@ static ieee80211_tx_handler ieee80211_tx_handlers[] =
 	NULL
 };
 
+int ieee80211_hw_config(struct ieee80211_local *local)
+{
+	struct ieee80211_hw_mode *mode;
+	struct ieee80211_channel *chan;
+	int ret = 0;
+
+	if (local->sta_scanning) {
+		chan = local->scan_channel;
+		mode = local->scan_hw_mode;
+	} else {
+		chan = local->oper_channel;
+		mode = local->oper_hw_mode;
+	}
+
+	local->hw.conf.channel = chan->chan;
+	local->hw.conf.channel_val = chan->val;
+	local->hw.conf.power_level = chan->power_level;
+	local->hw.conf.freq = chan->freq;
+	local->hw.conf.phymode = mode->mode;
+	local->hw.conf.antenna_max = chan->antenna_max;
+	//FIXME: chan and mode un ieee80211_conf
+	//local->hw.conf.chan = chan;
+	//local->hw.conf.mode = mode;
+
+#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+	printk(KERN_DEBUG "HW CONFIG: channel=%d freq=%d "
+	       "phymode=%d\n", local->hw.conf.channel, local->hw.conf.freq,
+	       local->hw.conf.phymode);
+#endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
+
+	if (local->ops->config)
+		ret = local->ops->config(local_to_hw(local), &local->hw.conf);
+
+	return ret;
+}
+
+//FIXME: finish it
+unsigned long usecs_to_jiffies(const unsigned int u){
+	return 0;
+}
+
+static void ieee80211_sta_tx(struct net_device *dev, struct sk_buff *skb,
+			     int encrypt)
+{
+	//FIXME: lot of skb_function
+	/*struct ieee80211_sub_if_data *sdata;
+	struct ieee80211_tx_packet_data *pkt_data;
+
+	sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	skb->dev = sdata->local->mdev;
+	skb_set_mac_header(skb, 0);
+	skb_set_network_header(skb, 0);
+	skb_set_transport_header(skb, 0);
+
+	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
+	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	pkt_data->ifindex = sdata->dev->ifindex;
+	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
+	pkt_data->do_not_encrypt = !encrypt;
+
+	dev_queue_xmit(skb);*/
+}
+
+#define IEEE80211_PROBE_DELAY (HZ / 33)
+#define IEEE80211_FC(type, stype) cpu_to_le16(type | stype)
+
+static void ieee80211_send_probe_req(struct net_device *dev, u8 *dst,
+				     u8 *ssid, size_t ssid_len)
+{
+	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_hw_mode *mode;
+	struct sk_buff *skb;
+	struct ieee80211_mgmt *mgmt;
+	u8 *pos, *supp_rates, *esupp_rates = NULL;
+	int i;
+
+	skb = dev_alloc_skb(local->hw.extra_tx_headroom + sizeof(*mgmt) + 200);
+	if (!skb) {
+		printk(KERN_DEBUG "%s: failed to allocate buffer for probe "
+		       "request\n", dev->name);
+		return;
+	}
+	skb_reserve(skb, local->hw.extra_tx_headroom);
+
+	mgmt = (struct ieee80211_mgmt *) skb_put(skb, 24);
+	memset(mgmt, 0, 24);
+	mgmt->frame_control = IEEE80211_FC(IEEE80211_FTYPE_MGMT,
+					   IEEE80211_STYPE_PROBE_REQ);
+	memcpy(mgmt->sa, dev->dev_addr, ETH_ALEN);
+	if (dst) {
+		memcpy(mgmt->da, dst, ETH_ALEN);
+		memcpy(mgmt->bssid, dst, ETH_ALEN);
+	} else {
+		memset(mgmt->da, 0xff, ETH_ALEN);
+		memset(mgmt->bssid, 0xff, ETH_ALEN);
+	}
+	pos = (u8*)skb_put(skb, 2 + ssid_len);
+	*pos++ = WLAN_EID_SSID;
+	*pos++ = ssid_len;
+	memcpy(pos, ssid, ssid_len);
+
+	supp_rates = (u8*)skb_put(skb, 2);
+	supp_rates[0] = WLAN_EID_SUPP_RATES;
+	supp_rates[1] = 0;
+	mode = local->oper_hw_mode;
+	for (i = 0; i < mode->num_rates; i++) {
+		struct ieee80211_rate *rate = &mode->rates[i];
+		if (!(rate->flags & IEEE80211_RATE_SUPPORTED))
+			continue;
+		if (esupp_rates) {
+			pos = (u8*)skb_put(skb, 1);
+			esupp_rates[1]++;
+		} else if (supp_rates[1] == 8) {
+			esupp_rates = (u8*)skb_put(skb, 3);
+			esupp_rates[0] = WLAN_EID_EXT_SUPP_RATES;
+			esupp_rates[1] = 1;
+			pos = &esupp_rates[2];
+		} else {
+			pos = (u8*)skb_put(skb, 1);
+			supp_rates[1]++;
+		}
+		if (mode->mode == MODE_ATHEROS_TURBO)
+			*pos = rate->rate / 10;
+		else
+			*pos = rate->rate / 5;
+	}
+
+	ieee80211_sta_tx(dev, skb, 0);
+}
+
+#define IEEE80211_CHANNEL_TIME (HZ / 33)
+#define IEEE80211_PASSIVE_CHANNEL_TIME (HZ / 5)
+
+
+void ieee80211_sta_scan_work(struct work_struct *work)
+{
+	//FIXME: error in SCAN_SEND_PROBE
+	/*struct ieee80211_local *local =
+		container_of(work, struct ieee80211_local, scan_work.work);
+	struct net_device *dev = local->scan_dev;
+	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_hw_mode *mode;
+	struct ieee80211_channel *chan;
+	int skip;
+	unsigned long next_delay = 0;
+
+	if (!local->sta_scanning)
+		return;
+
+	switch (local->scan_state) {
+	case SCAN_SET_CHANNEL:
+		mode = local->scan_hw_mode;
+		if (local->scan_hw_mode->list.next == &local->modes_list &&
+		    local->scan_channel_idx >= mode->num_channels) {
+			ieee80211_scan_completed(local_to_hw(local));
+			return;
+		}
+		skip = !(local->enabled_modes & (1 << mode->mode));
+		chan = &mode->channels[local->scan_channel_idx];
+		if (!(chan->flag & IEEE80211_CHAN_W_SCAN) ||
+		    (sdata->type == IEEE80211_IF_TYPE_IBSS &&
+		     !(chan->flag & IEEE80211_CHAN_W_IBSS)) ||
+		    (local->hw_modes & local->enabled_modes &
+		     (1 << MODE_IEEE80211G) && mode->mode == MODE_IEEE80211B))
+			skip = 1;
+
+		if (!skip) {
+#if 0
+			printk(KERN_DEBUG "%s: scan channel %d (%d MHz)\n",
+			       dev->name, chan->chan, chan->freq);
+#endif
+
+			local->scan_channel = chan;
+			if (ieee80211_hw_config(local)) {
+				printk(KERN_DEBUG "%s: failed to set channel "
+				       "%d (%d MHz) for scan\n", dev->name,
+				       chan->chan, chan->freq);
+				skip = 1;
+			}
+		}
+
+		local->scan_channel_idx++;
+		if (local->scan_channel_idx >= local->scan_hw_mode->num_channels) {
+			if (local->scan_hw_mode->list.next != &local->modes_list) {
+				local->scan_hw_mode = list_entry(local->scan_hw_mode->list.next,
+								 struct ieee80211_hw_mode,
+								 list);
+				local->scan_channel_idx = 0;
+			}
+		}
+
+		if (skip)
+			break;
+
+		next_delay = IEEE80211_PROBE_DELAY +
+			     usecs_to_jiffies(local->hw.channel_change_time);
+		local->scan_state = SCAN_SEND_PROBE;
+		break;
+	case SCAN_SEND_PROBE:
+		if (local->scan_channel->flag & IEEE80211_CHAN_W_ACTIVE_SCAN) {
+			ieee80211_send_probe_req(dev, NULL, local->scan_ssid,
+						 local->scan_ssid_len);
+			next_delay = IEEE80211_CHANNEL_TIME;
+		} else
+			next_delay = IEEE80211_PASSIVE_CHANNEL_TIME;
+		local->scan_state = SCAN_SET_CHANNEL;
+		break;
+	}*/
+	//FIXME: workqueue
+	//if (local->sta_scanning)
+	//	queue_delayed_work(local->hw.workqueue, &local->scan_work,
+	//			   next_delay);
+}
+
+/* How often station data is cleaned up (e.g., expiration of buffered frames)
+ */
+#define STA_INFO_CLEANUP_INTERVAL (10 * HZ)
+
+void sta_info_init(struct ieee80211_local *local)
+{
+	spin_lock_init(&local->sta_lock);
+	INIT_LIST_HEAD(&local->sta_list);
+	INIT_LIST_HEAD(&local->deleted_sta_list);
+
+	init_timer(&local->sta_cleanup);
+	local->sta_cleanup.expires = jiffies + STA_INFO_CLEANUP_INTERVAL;
+	local->sta_cleanup.data = (unsigned long) local;
+	//FIXME: sta_info_cleanup
+	//local->sta_cleanup.function = sta_info_cleanup;
+
+#ifdef CONFIG_MAC80211_DEBUGFS
+	INIT_WORK(&local->sta_debugfs_add, sta_info_debugfs_add_task);
+#endif
+}
+
+//FIXME: !!
+static void ieee80211_tx_pending(unsigned long data)
+{
+	/*struct ieee80211_local *local = (struct ieee80211_local *)data;
+	struct net_device *dev = local->mdev;
+	struct ieee80211_tx_stored_packet *store;
+	struct ieee80211_txrx_data tx;
+	int i, ret, reschedule = 0;
+
+	netif_tx_lock_bh(dev);
+	for (i = 0; i < local->hw.queues; i++) {
+		if (__ieee80211_queue_stopped(local, i))
+			continue;
+		if (!__ieee80211_queue_pending(local, i)) {
+			reschedule = 1;
+			continue;
+		}
+		store = &local->pending_packet[i];
+		tx.u.tx.control = &store->control;
+		tx.u.tx.extra_frag = store->extra_frag;
+		tx.u.tx.num_extra_frag = store->num_extra_frag;
+		tx.u.tx.last_frag_hwrate = store->last_frag_hwrate;
+		tx.u.tx.last_frag_rate = store->last_frag_rate;
+		tx.u.tx.probe_last_frag = store->last_frag_rate_ctrl_probe;
+		ret = __ieee80211_tx(local, store->skb, &tx);
+		if (ret) {
+			if (ret == IEEE80211_TX_FRAG_AGAIN)
+				store->skb = NULL;
+		} else {
+			clear_bit(IEEE80211_LINK_STATE_PENDING,
+				  &local->state[i]);
+			reschedule = 1;
+		}
+	}
+	netif_tx_unlock_bh(dev);
+	if (reschedule) {
+		if (!ieee80211_qdisc_installed(dev)) {
+			if (!__ieee80211_queue_stopped(local, 0))
+				netif_wake_queue(dev);
+		} else
+			netif_schedule(dev);
+	}*/
+}
+
+
 struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee80211_ops *  ops){
 	struct net_device *mdev;
 	struct ieee80211_local *local;
@@ -2368,18 +3366,22 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	list_add_tail(&sdata->list, &local->sub_if_list);
 	tasklet_init(&local->tx_pending_tasklet, ieee80211_tx_pending,
 		     (unsigned long)local);
-	tasklet_disable(&local->tx_pending_tasklet);
+	//FIXME: taskle_disable		 
+	//tasklet_disable(&local->tx_pending_tasklet);
 
 	tasklet_init(&local->tasklet,
 		     ieee80211_tasklet_handler,
 		     (unsigned long) local);
-	tasklet_disable(&local->tasklet);
+	//FIXME: idem
+	//tasklet_disable(&local->tasklet);
 
-	skb_queue_head_init(&local->skb_queue);
-	skb_queue_head_init(&local->skb_queue_unreliable);
+	//FIXME: skb_queue_head_init
+	//skb_queue_head_init(&local->skb_queue);
+	//skb_queue_head_init(&local->skb_queue_unreliable);
 
-	INIT_LIST_HEAD(&local->skb_queue);
-	INIT_LIST_HEAD(&local->skb_queue_unreliable);
+	//FIXME: sk_buf_head
+	//INIT_LIST_HEAD(&local->skb_queue);
+	//INIT_LIST_HEAD(&local->skb_queue_unreliable);
 	
 	printf("ieee80211_alloc_hw [OK]\n");
 	my_hw=local_to_hw(local);
@@ -3041,73 +4043,7 @@ int pci_read_config_dword(struct pci_dev *dev, int where, u32 *val) {
 }
 
 
-#pragma mark -
-#pragma mark Adapt sk_buff functions to mbuf for OS X
 
-
-int skb_tailroom(const struct sk_buff *skb) {
-    return mbuf_trailingspace(skb->mac_data);
-}
-
-struct sk_buff *skb_clone(const struct sk_buff *skb, unsigned int ignored) {
-    struct sk_buff *skb_copy = (struct sk_buff *)IOMalloc(sizeof(struct sk_buff));
-    mbuf_copym(skb->mac_data, 0, mbuf_len(skb->mac_data), 1, &skb_copy->mac_data);
-    skb_copy->intf = skb->intf;
-    return skb_copy;
-}
-
-void *skb_data(const struct sk_buff *skb) {
-    return mbuf_data(skb->mac_data);
-}
-
-int skb_len(const struct sk_buff *skb) {
-	return mbuf_pkthdr_len(skb->mac_data);
-}
-
-void skb_reserve(struct sk_buff *skb, int len) {
-	void *data = (UInt8*)mbuf_data(skb->mac_data) + len;
-	mbuf_setdata(skb->mac_data,data, mbuf_len(skb->mac_data));// m_len is not changed.
-}
-
-//void skb_queue_tail(&local->skb_queue, skb);
-
-void *skb_put(struct sk_buff *skb, unsigned int len) {
-    /*unsigned char *tmp = skb->tail;
-     SKB_LINEAR_ASSERT(skb);
-     skb->tail += len;
-     skb->len  += len;
-     return tmp;*/
-    void *data = (UInt8*)mbuf_data(skb->mac_data) + mbuf_len(skb->mac_data);
-    //mbuf_prepend(&skb,len,1); /* no prepend work */
-    //IWI_DUMP_MBUF(1,skb,len);  
-    if(mbuf_trailingspace(skb->mac_data) > len ){
-        mbuf_setlen(skb->mac_data, mbuf_len(skb->mac_data)+len);
-        if(mbuf_flags(skb->mac_data) & MBUF_PKTHDR)
-            mbuf_pkthdr_setlen(skb->mac_data, mbuf_pkthdr_len(skb->mac_data)+len);
-    }
-    //IWI_DUMP_MBUF(2,skb,len);  
-    return data;
-}
-
-
-void dev_kfree_skb_any(struct sk_buff *skb) {
-    dev_kfree_skb(skb);
-}
-
-void dev_kfree_skb(struct sk_buff *skb) {
-    IONetworkController *intf = (IONetworkController *)skb->intf;
-    if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
-        intf->freePacket(skb->mac_data);
-}
-
-struct sk_buff *__alloc_skb(unsigned int size,gfp_t priority, int fclone, int node) {
-    struct sk_buff *skb = (struct sk_buff *)IOMalloc(sizeof(struct sk_buff));
-    skb->mac_data = currentController->allocatePacket(size);
-    skb->intf = (void *)currentController;
-	mbuf_setlen(skb->mac_data, 0);
-	mbuf_pkthdr_setlen(skb->mac_data,0);
-    return skb;
-}
 
 
 #pragma mark -
@@ -3188,12 +4124,6 @@ struct thread_data{
 };
 
 
-
-/*
-	FIXME: Finish IT ;)
-	Used only once
-	Have be finished...
-*/
 void tasklet_schedule(struct tasklet_struct *t){
 	queue_te(13,(thread_call_func_t)t->func,my_hw->priv,NULL,true);
 	return;

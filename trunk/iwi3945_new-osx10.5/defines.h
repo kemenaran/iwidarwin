@@ -249,7 +249,34 @@ struct ieee80211_tx_stored_packet;
 
 
 
+//FIXME: change bitwise
+typedef __u32  __be32;
+typedef __u16 __be16;
+typedef uint64_t __be64;
 
+
+struct ieee80211_frame_info {
+	__be32 version;
+	__be32 length;
+	__be64 mactime;
+	__be64 hosttime;
+	__be32 phytype;
+	__be32 channel;
+	__be32 datarate;
+	__be32 antenna;
+	__be32 priority;
+	__be32 ssi_type;
+	__be32 ssi_signal;
+	__be32 ssi_noise;
+	__be32 preamble;
+	__be32 encoding;
+
+	/* Note: this structure is otherwise identical to capture format used
+	 * in linux-wlan-ng, but this additional field is used to provide meta
+	 * data about the frame to hostapd. This was the easiest method for
+	 * providing this information, but this might change in the future. */
+	__be32 msg_type;
+} __attribute__ ((packed));
 
 
 
@@ -447,6 +474,16 @@ struct ieee80211_txrx_data {
 typedef ieee80211_txrx_result (*ieee80211_tx_handler)(struct ieee80211_txrx_data *tx);
 typedef ieee80211_txrx_result (*ieee80211_rx_handler)(struct ieee80211_txrx_data *rx);
 
+//SKB
+struct sk_buff_head {
+         /* These two members must be first. */
+         struct sk_buff  *next;
+         struct sk_buff  *prev;
+ 
+         __u32           qlen;
+         spinlock_t      lock;
+};
+
 struct ieee80211_local {
 	/* embed the driver visible part.
 	 * don't cast (use the static inlines below), but we keep
@@ -477,8 +514,8 @@ struct ieee80211_local {
 	 * queues increases over the limit. */
 #define IEEE80211_IRQSAFE_QUEUE_LIMIT 128
 	struct tasklet_struct tasklet;
-//	struct sk_buff_head skb_queue;
-//	struct sk_buff_head skb_queue_unreliable;
+	struct sk_buff_head skb_queue;
+	struct sk_buff_head skb_queue_unreliable;
 	enum {
 		ieee80211_rx_msg = 1,
 		ieee80211_tx_status_msg = 2
@@ -744,57 +781,57 @@ struct ieee80211_sta_bss {
 
 
 struct sta_info {
+	//struct kref kref;
 	struct list_head list;
-//	struct kobject kobj;
 	struct sta_info *hnext; /* next entry in hash table list */
-    
+
 	struct ieee80211_local *local;
-    
+
 	u8 addr[ETH_ALEN];
 	u16 aid; /* STA's unique AID (1..2007), 0 = not yet assigned */
 	u32 flags; /* WLAN_STA_ */
-    
-/*	struct sk_buff_head ps_tx_buf; // buffer of TX frames for station in
-     * power saving state */
+
+	struct sk_buff_head ps_tx_buf; /* buffer of TX frames for station in
+					* power saving state */
 	int pspoll; /* whether STA has send a PS Poll frame */
-/*	struct sk_buff_head tx_filtered; // buffer of TX frames that were
-     * already given to low-level driver,
-     * but were filtered */
+	struct sk_buff_head tx_filtered; /* buffer of TX frames that were
+					  * already given to low-level driver,
+					  * but were filtered */
 	int clear_dst_mask;
-    
+
 	unsigned long rx_packets, tx_packets; /* number of RX/TX MSDUs */
 	unsigned long rx_bytes, tx_bytes;
 	unsigned long tx_retry_failed, tx_retry_count;
 	unsigned long tx_filtered_count;
-    
+
 	unsigned int wep_weak_iv_count; /* number of RX frames with weak IV */
-    
+
 	unsigned long last_rx;
 	u32 supp_rates; /* bitmap of supported rates in local->curr_rates */
 	int txrate; /* index in local->curr_rates */
 	int last_txrate; /* last rate used to send a frame to this STA */
 	int last_nonerp_idx;
-    
+
 	struct net_device *dev; /* which net device is this station associated
-     * to */
-    
+				 * to */
+
 	struct ieee80211_key *key;
-    
+
 	u32 tx_num_consecutive_failures;
 	u32 tx_num_mpdu_ok;
 	u32 tx_num_mpdu_fail;
-    
+
 	struct rate_control_ref *rate_ctrl;
 	void *rate_ctrl_priv;
-    
+
 	/* last received seq/frag number from this STA (per RX queue) */
 	__le16 last_seq_ctrl[NUM_RX_DATA_QUEUES];
 	unsigned long num_duplicates; /* number of duplicate frames received
-     * from this STA */
+				       * from this STA */
 	unsigned long tx_fragments; /* number of transmitted MPDUs */
 	unsigned long rx_fragments; /* number of received MPDUs */
 	unsigned long rx_dropped; /* number of dropped MPDUs from this STA */
-    
+
 	int last_rssi; /* RSSI of last received frame from this STA */
 	int last_signal; /* signal of last received frame from this STA */
 	int last_noise; /* noise of last received frame from this STA */
@@ -802,33 +839,46 @@ struct sta_info {
 	unsigned long last_ack;
 	int channel_use;
 	int channel_use_raw;
-    
+
 	u8 antenna_sel_tx;
 	u8 antenna_sel_rx;
-    
-    
+
+
 	int key_idx_compression; /* key table index for compression and TX
-     * filtering; used only if sta->key is not
-     * set */
-    
-	unsigned int sysfs_registered:1;
-	unsigned int assoc_ap:1; /* whether this is an AP that we are
-     * associated with as a client */
-    
-#ifdef CONFIG_HOSTAPD_WPA_TESTING
-	u32 wpa_trigger;
-#endif /* CONFIG_HOSTAPD_WPA_TESTING */
-    
+				  * filtering; used only if sta->key is not
+				  * set */
+
+#ifdef CONFIG_MAC80211_DEBUGFS
+	int debugfs_registered;
+#endif
+	int assoc_ap; /* whether this is an AP that we are
+		       * associated with as a client */
+
 #ifdef CONFIG_MAC80211_DEBUG_COUNTERS
 	unsigned int wme_rx_queue[NUM_RX_DATA_QUEUES];
 	unsigned int wme_tx_queue[NUM_RX_DATA_QUEUES];
 #endif /* CONFIG_MAC80211_DEBUG_COUNTERS */
-    
-	int vlan_id;
-    
-	u16 listen_interval;
-};
 
+	int vlan_id;
+
+	u16 listen_interval;
+
+#ifdef CONFIG_MAC80211_DEBUGFS
+	struct sta_info_debugfsdentries {
+		struct dentry *dir;
+		struct dentry *flags;
+		struct dentry *num_ps_buf_frames;
+		struct dentry *last_ack_rssi;
+		struct dentry *last_ack_ms;
+		struct dentry *inactive_ms;
+		struct dentry *last_seq_ctrl;
+#ifdef CONFIG_MAC80211_DEBUG_COUNTERS
+		struct dentry *wme_rx_queue;
+		struct dentry *wme_tx_queue;
+#endif
+	} debugfs;
+#endif
+};
 
 
 
@@ -1484,15 +1534,7 @@ struct pci_driver {
     int multithread_probe;
 };
 
-//SKB
-struct sk_buff_head {
-         /* These two members must be first. */
-         struct sk_buff  *next;
-         struct sk_buff  *prev;
- 
-         __u32           qlen;
-         spinlock_t      lock;
-};
+
 
 
 
