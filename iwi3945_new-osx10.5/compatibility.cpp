@@ -116,6 +116,13 @@ IOMemoryMap * getMap(){
 void setMyfifnet(ifnet_t fifnet){
 	my_fifnet = fifnet;
 }
+
+//FIXME:
+bool is_associated(){
+	//if(my_hw)
+	//	return iwl3945_is_associated(my_hw->priv);
+	return false;
+}
 /*
 	Setters
 */
@@ -241,7 +248,7 @@ static inline void skb_trim(struct sk_buff *skb, unsigned int len)
 	if (len>0)
 		mbuf_adj(skb->mac_data, len);
 	else
-		mbuf_adj(skb->mac_data, len);
+		mbuf_adj(skb->mac_data, -len);
 }
 
 
@@ -318,6 +325,10 @@ void *skb_put(struct sk_buff *skb, unsigned int len) {
     //IWI_DUMP_MBUF(2,skb,len);  
     return data;
 }
+
+
+
+//
 //FIXME: not finish
 static inline unsigned char *__skb_pull(struct sk_buff *skb, unsigned int len)
 {
