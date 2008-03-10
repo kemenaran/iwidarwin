@@ -59,7 +59,6 @@ class darwin_iwi3945 : public IOEthernetController
         
     public:
         //virtual const char * getNamePrefix() const;
-        virtual SInt32		apple80211Request( UInt32 req, int type, IO80211Interface * intf, void * data );
         virtual bool		init(OSDictionary *dictionary = 0);
         virtual void		free(void);
         
@@ -74,7 +73,9 @@ class darwin_iwi3945 : public IOEthernetController
 	       
         virtual bool		addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* name = 0);
 
-        
+#ifdef IO80211_VERSION
+		virtual SInt32		apple80211Request( UInt32 req, int type, IO80211Interface * intf, void * data );
+
         SInt32	getSSID(IO80211Interface *interface,
                         struct apple80211_ssid_data *sd);
         
@@ -195,14 +196,16 @@ class darwin_iwi3945 : public IOEthernetController
 		SInt32 getAUTH_TYPE(IO80211Interface *interface,
 							struct apple80211_authtype_data *ad);
 		
-        
-        virtual bool attachInterfaceWithMacAddress( void * macAddr, 
+		virtual bool attachInterfaceWithMacAddress( void * macAddr, 
                                                    UInt32 macLen, 
                                                    IONetworkInterface ** interface, 
                                                    bool doRegister ,
                                                    UInt32 timeout  );
         
         virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );
+		
+#endif        
+
         
         
         void postMessage(UInt32 message);
@@ -212,8 +215,10 @@ class darwin_iwi3945 : public IOEthernetController
         //                                    ifnet_t ifn,
         //                                    u_int32_t cmd,
         //                                    void *data);
-        virtual IOReturn getHardwareAddress(IOEthernetAddress *addr); 
+        virtual IOReturn getHardwareAddress(IOEthernetAddress *addr);
+		#ifdef IO80211_VERSION
         virtual IO80211Interface *getNetworkInterface();
+		#endif
         virtual IOService * getProvider();
         
         
@@ -274,7 +279,7 @@ class darwin_iwi3945 : public IOEthernetController
         IO80211Interface*			fNetif;			// ???
         IOInterruptEventSource *	fInterruptSrc;	// ???
         IOTimerEventSource *		fWatchdogTimer;	// ???
-        IOOutputQueue *				fTransmitQueue;	// ???
+        IOBasicOutputQueue *				fTransmitQueue;	// ???
         UInt16 *					memBase;
         UInt32						event;
 		IONetworkMedium	*			mediumTable[MEDIUM_TYPE_INVALID];
