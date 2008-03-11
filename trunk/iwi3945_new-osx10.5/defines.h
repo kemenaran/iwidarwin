@@ -1912,6 +1912,37 @@ __ret;                                  \
 #undef add_timer
 #undef mod_timer
 #define BIT(x) (1UL << (x))
+
+
+
+#define cpu_to_be64(x) OSSwapHostToBigInt64(x)
+#define cpu_to_be32(x) OSSwapHostToBigInt32(x)
+
+enum ieee80211_phytype {
+	ieee80211_phytype_fhss_dot11_97  = 1,
+	ieee80211_phytype_dsss_dot11_97  = 2,
+	ieee80211_phytype_irbaseband     = 3,
+	ieee80211_phytype_dsss_dot11_b   = 4,
+	ieee80211_phytype_pbcc_dot11_b   = 5,
+	ieee80211_phytype_ofdm_dot11_g   = 6,
+	ieee80211_phytype_pbcc_dot11_g   = 7,
+	ieee80211_phytype_ofdm_dot11_a   = 8,
+	ieee80211_phytype_dsss_dot11_turbog = 255,
+	ieee80211_phytype_dsss_dot11_turbo = 256,
+};
+
+
+enum ieee80211_ssi_type {
+	ieee80211_ssi_none = 0,
+	ieee80211_ssi_norm = 1, /* normalized, 0-1000 */
+	ieee80211_ssi_dbm = 2,
+	ieee80211_ssi_raw = 3, /* raw SSI */
+};
+
+#define IEEE80211_FI_VERSION 0x80211001
+
+#define HW_KEY_IDX_INVALID -1
+
 /*#undef wait_queue
 typedef struct __wait_queue_head wait_queue_head_t;
 #undef init_waitqueue_head

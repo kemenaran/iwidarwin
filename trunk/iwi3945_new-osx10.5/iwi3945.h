@@ -36,8 +36,6 @@
 #pragma mark -
 #pragma mark Class definition
 
-
-
 typedef enum {
 	MEDIUM_TYPE_NONE = 0,
 	MEDIUM_TYPE_AUTO,
