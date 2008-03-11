@@ -130,7 +130,13 @@ void setUnloaded(){
 	is_unloaded=true;
 }
 
+#pragma mark Various
 
+//FIXME: !
+void jiffies_to_timespec(unsigned long jiffiess, struct timespec *value)
+{
+	return;
+}
 
 #pragma mark -
 #pragma mark Adapt sk_buff functions to mbuf for OS X
@@ -233,7 +239,7 @@ static inline int skb_queue_empty(const struct sk_buff_head *list)
 	return list->next == (struct sk_buff *)list;
 }
 
- /**FIXME: !!!!!
+/**
   *      skb_trim - remove end from a buffer
   *      @skb: buffer to alter
   *      @len: new length
@@ -789,6 +795,10 @@ void *dev_get_drvdata(void *p) {
 
 #pragma mark -
 #pragma mark Adapt 80211 functions to OS X
+static struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
+{
+	return &local->hw;
+}
 
 static inline struct sta_info *__sta_info_get(struct sta_info *sta)
 {
@@ -979,17 +989,585 @@ u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
          return NULL;
  }
 
+static int ieee80211_get_radiotap_len(struct sk_buff *skb)
+{
+	struct ieee80211_radiotap_header *hdr =
+		(struct ieee80211_radiotap_header *) skb_data(skb);
+
+	return le16_to_cpu(hdr->it_len);
+}
+
+
+#define WLAN_STA_WDS BIT(27)
+
+int ieee80211_get_hdrlen_from_skb(const struct sk_buff *skb)
+{
+	const struct ieee80211_hdr *hdr = (const struct ieee80211_hdr *) skb_data(skb);
+	int hdrlen;
+
+	if (unlikely(skb_len(skb) < 10))
+		return 0;
+	hdrlen = ieee80211_get_hdrlen(le16_to_cpu(hdr->frame_control));
+	if (unlikely(hdrlen > skb_len(skb)))
+		return 0;
+	return hdrlen;
+}
+
+int ieee80211_wep_get_keyidx(struct sk_buff *skb)
+{
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
+	u16 fc;
+	int hdrlen;
+
+	fc = le16_to_cpu(hdr->frame_control);
+	if (!(fc & IEEE80211_FCTL_PROTECTED))
+		return -1;
+
+	hdrlen = ieee80211_get_hdrlen(fc);
+
+	if (skb_len(skb) < 8 + hdrlen)
+		return -1;
+	//FIXME: skb->data[m]
+	//return skb->data[hdrlen + 3] >> 6;
+	return NULL;
+}
+
+#define FCS_LEN 4
+#define WLAN_STA_ASSOC BIT(1)
+enum ieee80211_msg_type {
+	ieee80211_msg_normal = 0,
+	ieee80211_msg_tx_callback_ack = 1,
+	ieee80211_msg_tx_callback_fail = 2,
+	/* hole at 3, was ieee80211_msg_passive_scan but unused */
+	ieee80211_msg_wep_frame_unknown_key = 4,
+	ieee80211_msg_michael_mic_failure = 5,
+	/* hole at 6, was monitor but never sent to userspace */
+	ieee80211_msg_sta_not_assoc = 7,
+	/* 8 was ieee80211_msg_set_aid_for_sta */
+	ieee80211_msg_key_threshold_notification = 9,
+	ieee80211_msg_radar = 11,
+};
+
+static struct ieee80211_rate *
+ieee80211_get_rate(struct ieee80211_local *local, int phymode, int hw_rate)
+{
+	struct ieee80211_hw_mode *mode;
+	int r;
+
+	list_for_each_entry(mode, &local->modes_list, list) {
+		if (mode->mode != phymode)
+			continue;
+		for (r = 0; r < mode->num_rates; r++) {
+			struct ieee80211_rate *rate = &mode->rates[r];
+			if (rate->val == hw_rate ||
+			    (rate->flags & IEEE80211_RATE_PREAMBLE2 &&
+			     rate->val2 == hw_rate))
+				return rate;
+		}
+	}
+
+	return NULL;
+}
+
+static void
+ieee80211_fill_frame_info(struct ieee80211_local *local,
+			  struct ieee80211_frame_info *fi,
+			  struct ieee80211_rx_status *status)
+{
+	if (status) {
+		struct timespec ts;
+		struct ieee80211_rate *rate;
+
+		jiffies_to_timespec(jiffies, &ts);
+		fi->hosttime = cpu_to_be64((u64) ts.tv_sec * 1000000 +
+					   ts.tv_nsec / 1000);
+		fi->mactime = cpu_to_be64(status->mactime);
+		switch (status->phymode) {
+		case MODE_IEEE80211A:
+			fi->phytype = htonl(ieee80211_phytype_ofdm_dot11_a);
+			break;
+		case MODE_IEEE80211B:
+			fi->phytype = htonl(ieee80211_phytype_dsss_dot11_b);
+			break;
+		case MODE_IEEE80211G:
+			fi->phytype = htonl(ieee80211_phytype_pbcc_dot11_g);
+			break;
+		case MODE_ATHEROS_TURBO:
+			fi->phytype =
+				htonl(ieee80211_phytype_dsss_dot11_turbo);
+			break;
+		default:
+			fi->phytype = htonl(0xAAAAAAAA);
+			break;
+		}
+		fi->channel = htonl(status->channel);
+		rate = ieee80211_get_rate(local, status->phymode,
+					  status->rate);
+		if (rate) {
+			fi->datarate = htonl(rate->rate);
+			if (rate->flags & IEEE80211_RATE_PREAMBLE2) {
+				if (status->rate == rate->val)
+					fi->preamble = htonl(2); /* long */
+				else if (status->rate == rate->val2)
+					fi->preamble = htonl(1); /* short */
+			} else
+				fi->preamble = htonl(0);
+		} else {
+			fi->datarate = htonl(0);
+			fi->preamble = htonl(0);
+		}
+
+		fi->antenna = htonl(status->antenna);
+		fi->priority = htonl(0xffffffff); /* no clue */
+		fi->ssi_type = htonl(ieee80211_ssi_raw);
+		fi->ssi_signal = htonl(status->ssi);
+		fi->ssi_noise = 0x00000000;
+		fi->encoding = 0;
+	} else {
+		/* clear everything because we really don't know.
+		 * the msg_type field isn't present on monitor frames
+		 * so we don't know whether it will be present or not,
+		 * but it's ok to not clear it since it'll be assigned
+		 * anyway */
+		memset(fi, 0, sizeof(*fi) - sizeof(fi->msg_type));
+
+		fi->ssi_type = htonl(ieee80211_ssi_none);
+	}
+	fi->version = htonl(IEEE80211_FI_VERSION);
+	fi->length = cpu_to_be32(sizeof(*fi) - sizeof(fi->msg_type));
+}
+
+
+/* this routine is actually not just for this, but also
+ * for pushing fake 'management' frames into userspace.
+ * it shall be replaced by a netlink-based system. */
+void
+ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
+		  struct ieee80211_rx_status *status, u32 msg_type)
+{
+	struct ieee80211_frame_info *fi;
+	const size_t hlen = sizeof(struct ieee80211_frame_info);
+	struct ieee80211_sub_if_data *sdata;
+	//FIXME: !
+	//skb->dev = local->apdev;
+
+	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(local->apdev);
+
+	if (skb_headroom(skb) < hlen) {
+		I802_DEBUG_INC(local->rx_expand_skb_head);
+		//FIXME: !!
+		/*if (pskb_expand_head(skb, hlen, 0, GFP_ATOMIC)) {
+			dev_kfree_skb(skb);
+			return;
+		}*/
+	}
+
+	fi = (struct ieee80211_frame_info *) skb_push(skb, hlen);
+
+	ieee80211_fill_frame_info(local, fi, status);
+	fi->msg_type = htonl(msg_type);
+
+	sdata->stats.rx_packets++;
+	sdata->stats.rx_bytes += skb_len(skb);
+
+	//FIXME: Preparation of the mac header and send the packet
+	//skb_set_mac_header(skb, 0);
+	//skb->ip_summed = CHECKSUM_UNNECESSARY;
+	//skb->pkt_type = PACKET_OTHERHOST;
+	//skb->protocol = htons(ETH_P_802_2);
+	//memset(skb->cb, 0, sizeof(skb->cb));
+	//netif_rx(skb);
+}
+
+
+
+
+
+
+
+static void ieee80211_rx_michael_mic_report(struct net_device *dev,
+					    struct ieee80211_hdr *hdr,
+					    struct sta_info *sta,
+					    struct ieee80211_txrx_data *rx)
+{
+	int keyidx, hdrlen;
+
+	hdrlen = ieee80211_get_hdrlen_from_skb(rx->skb);
+	if (skb_len(rx->skb) >= hdrlen + 4){
+		//keyidx = rx->skb->data[hdrlen + 3] >> 6;
+		u8 * tmp = (u8 *)skb_data(rx->skb);
+		keyidx = tmp[hdrlen + 3] >> 6;
+	}else
+		keyidx = -1;
+
+	/* TODO: verify that this is not triggered by fragmented
+	 * frames (hw does not verify MIC for them). */
+	printk(KERN_DEBUG "%s: TKIP hwaccel reported Michael MIC "
+	       "failure from " MAC_FMT " to " MAC_FMT " keyidx=%d\n",
+	       dev->name, MAC_ARG(hdr->addr2), MAC_ARG(hdr->addr1), keyidx);
+
+	if (!sta) {
+		/* Some hardware versions seem to generate incorrect
+		 * Michael MIC reports; ignore them to avoid triggering
+		 * countermeasures. */
+		printk(KERN_DEBUG "%s: ignored spurious Michael MIC "
+		       "error for unknown address " MAC_FMT "\n",
+		       dev->name, MAC_ARG(hdr->addr2));
+		goto ignore;
+	}
+
+	if (!(rx->fc & IEEE80211_FCTL_PROTECTED)) {
+		printk(KERN_DEBUG "%s: ignored spurious Michael MIC "
+		       "error for a frame with no ISWEP flag (src "
+		       MAC_FMT ")\n", dev->name, MAC_ARG(hdr->addr2));
+		goto ignore;
+	}
+
+	if ((rx->local->hw.flags & IEEE80211_HW_WEP_INCLUDE_IV) &&
+	    rx->sdata->type == IEEE80211_IF_TYPE_AP) {
+		keyidx = ieee80211_wep_get_keyidx(rx->skb);
+		/* AP with Pairwise keys support should never receive Michael
+		 * MIC errors for non-zero keyidx because these are reserved
+		 * for group keys and only the AP is sending real multicast
+		 * frames in BSS. */
+		if (keyidx) {
+			printk(KERN_DEBUG "%s: ignored Michael MIC error for "
+			       "a frame with non-zero keyidx (%d) (src " MAC_FMT
+			       ")\n", dev->name, keyidx, MAC_ARG(hdr->addr2));
+			goto ignore;
+		}
+	}
+
+	if ((rx->fc & IEEE80211_FCTL_FTYPE) != IEEE80211_FTYPE_DATA &&
+	    ((rx->fc & IEEE80211_FCTL_FTYPE) != IEEE80211_FTYPE_MGMT ||
+	     (rx->fc & IEEE80211_FCTL_STYPE) != IEEE80211_STYPE_AUTH)) {
+		printk(KERN_DEBUG "%s: ignored spurious Michael MIC "
+		       "error for a frame that cannot be encrypted "
+		       "(fc=0x%04x) (src " MAC_FMT ")\n",
+		       dev->name, rx->fc, MAC_ARG(hdr->addr2));
+		goto ignore;
+	}
+
+	do {
+		union iwreq_data wrqu;
+		char *buf = (char *)kmalloc(128, GFP_ATOMIC);
+		if (!buf)
+			break;
+
+		/* TODO: needed parameters: count, key type, TSC */
+		sprintf(buf, "MLME-MICHAELMICFAILURE.indication("
+			"keyid=%d %scast addr=" MAC_FMT ")",
+			keyidx, hdr->addr1[0] & 0x01 ? "broad" : "uni",
+			MAC_ARG(hdr->addr2));
+		memset(&wrqu, 0, sizeof(wrqu));
+		//wrqu.data.length = strlen(buf);
+		//FIXME: wireless send eve,t!
+		//wireless_send_event(rx->dev, IWEVCUSTOM, &wrqu, buf);
+		kfree(buf);
+	} while (0);
+
+	/* TODO: consider verifying the MIC error report with software
+	 * implementation if we get too many spurious reports from the
+	 * hardware. */
+	if (!rx->local->apdev)
+		goto ignore;
+	ieee80211_rx_mgmt(rx->local, rx->skb, rx->u.rx.status,
+			  ieee80211_msg_michael_mic_failure);
+	return;
+
+ ignore:
+	dev_kfree_skb(rx->skb);
+	rx->skb = NULL;
+}
+
+static inline int ieee80211_bssid_match(const u8 *raddr, const u8 *addr)
+{
+	return compare_ether_addr(raddr, addr) == 0 ||
+	       is_broadcast_ether_addr(raddr);
+}
+
+static inline void rate_control_rate_init(struct sta_info *sta,
+					  struct ieee80211_local *local)
+{
+	struct rate_control_ref *ref = sta->rate_ctrl;
+	ref->ops->rate_init(ref->priv, sta->rate_ctrl_priv, local, sta);
+}
+
+
+/* Caller must hold local->sta_lock */
+static void sta_info_hash_add(struct ieee80211_local *local,
+			      struct sta_info *sta)
+{
+	sta->hnext = local->sta_hash[STA_HASH(sta->addr)];
+	local->sta_hash[STA_HASH(sta->addr)] = sta;
+}
+
+
+struct sta_info * sta_info_add(struct ieee80211_local *local,
+			       struct net_device *dev, u8 *addr, gfp_t gfp)
+{
+	struct sta_info *sta;
+
+	sta = (sta_info*)kzalloc(sizeof(*sta), gfp);
+	if (!sta)
+		return NULL;
+
+	//FIXME: kref
+	/*kref_init(&sta->kref);
+
+	sta->rate_ctrl = rate_control_get(local->rate_ctrl);
+	sta->rate_ctrl_priv = rate_control_alloc_sta(sta->rate_ctrl, gfp);
+	if (!sta->rate_ctrl_priv) {
+		rate_control_put(sta->rate_ctrl);
+		kref_put(&sta->kref, sta_info_release);
+		kfree(sta);
+		return NULL;
+	}*/
+
+	memcpy(sta->addr, addr, ETH_ALEN);
+	sta->local = local;
+	sta->dev = dev;
+	skb_queue_head_init(&sta->ps_tx_buf);
+	skb_queue_head_init(&sta->tx_filtered);
+	__sta_info_get(sta);	/* sta used by caller, decremented by
+				 * sta_info_put() */
+	spin_lock_bh(&local->sta_lock);
+	list_add(&sta->list, &local->sta_list);
+	local->num_sta++;
+	sta_info_hash_add(local, sta);
+	spin_unlock_bh(&local->sta_lock);
+	if (local->ops->sta_table_notification)
+		local->ops->sta_table_notification(local_to_hw(local),
+						  local->num_sta);
+	sta->key_idx_compression = HW_KEY_IDX_INVALID;
+
+#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+	printk(KERN_DEBUG "%s: Added STA " MAC_FMT "\n",
+	       local->mdev->name, MAC_ARG(addr));
+#endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
+
+#ifdef CONFIG_MAC80211_DEBUGFS
+	if (!in_interrupt()) {
+		sta->debugfs_registered = 1;
+		ieee80211_sta_debugfs_add(sta);
+		rate_control_add_sta_debugfs(sta);
+	} else {
+		/* debugfs entry adding might sleep, so schedule process
+		 * context task for adding entry for STAs that do not yet
+		 * have one. */
+		queue_work(local->hw.workqueue, &local->sta_debugfs_add);
+	}
+#endif
+
+	return sta;
+}
+
+
+
+#define IEEE80211_IBSS_MAX_STA_ENTRIES 128
+
+struct sta_info * ieee80211_ibss_add_sta(struct net_device *dev,
+					 struct sk_buff *skb, u8 *bssid,
+					 u8 *addr)
+{
+	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct sta_info *sta;
+	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
+
+	/* TODO: Could consider removing the least recently used entry and
+	 * allow new one to be added. */
+	if (local->num_sta >= IEEE80211_IBSS_MAX_STA_ENTRIES) {
+		if (net_ratelimit()) {
+			printk(KERN_DEBUG "%s: No room for a new IBSS STA "
+			       "entry " MAC_FMT "\n", dev->name, MAC_ARG(addr));
+		}
+		return NULL;
+	}
+
+	printk(KERN_DEBUG "%s: Adding new IBSS station " MAC_FMT " (dev=%s)\n",
+	       local->mdev->name, MAC_ARG(addr), dev->name);
+
+	sta = sta_info_add(local, dev, addr, GFP_ATOMIC);
+	if (!sta)
+		return NULL;
+
+	sta->supp_rates = sdata->u.sta.supp_rates_bits;
+
+	rate_control_rate_init(sta, local);
+
+	return sta; /* caller will call sta_info_put() */
+}
+
 
 /*
-  * This is the receive path handler. It is called by a low level driver when an
-  * 802.11 MPDU is received from the hardware.
-  */
- void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
-                     struct ieee80211_rx_status *status)
- {
- 
+ * This is the receive path handler. It is called by a low level driver when an
+ * 802.11 MPDU is received from the hardware.
+ */
+void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
+		    struct ieee80211_rx_status *status)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	struct ieee80211_sub_if_data *sdata;
+	struct sta_info *sta;
+	struct ieee80211_hdr *hdr;
+	struct ieee80211_txrx_data rx;
+	u16 type;
+	int multicast;
+	int radiotap_len = 0;
+
+	if (status->flag & RX_FLAG_RADIOTAP) {
+		radiotap_len = ieee80211_get_radiotap_len(skb);
+		skb_pull(skb, radiotap_len);
+	}
+
+	hdr = (struct ieee80211_hdr *) skb_data(skb);
+	memset(&rx, 0, sizeof(rx));
+	rx.skb = skb;
+	rx.local = local;
+
+	rx.u.rx.status = status;
+	rx.fc = skb_len(skb) >= 2 ? le16_to_cpu(hdr->frame_control) : 0;
+	type = rx.fc & IEEE80211_FCTL_FTYPE;
+	if (type == IEEE80211_FTYPE_DATA || type == IEEE80211_FTYPE_MGMT)
+		local->dot11ReceivedFragmentCount++;
+	multicast = is_multicast_ether_addr(hdr->addr1);
+
+	if (skb_len(skb) >= 16)
+		sta = rx.sta = sta_info_get(local, hdr->addr2);
+	else
+		sta = rx.sta = NULL;
+
+	if (sta) {
+		rx.dev = sta->dev;
+		rx.sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx.dev);
+	}
+
+	if ((status->flag & RX_FLAG_MMIC_ERROR)) {
+		ieee80211_rx_michael_mic_report(local->mdev, hdr, sta, &rx);
+		goto end;
+	}
+
+	if (unlikely(local->sta_scanning))
+		rx.u.rx.in_scan = 1;
+
+	if (__ieee80211_invoke_rx_handlers(local, local->rx_pre_handlers, &rx,
+					   sta) != TXRX_CONTINUE)
+		goto end;
+	skb = rx.skb;
+
+	skb_push(skb, radiotap_len);
+	if (sta && !sta->assoc_ap && !(sta->flags & WLAN_STA_WDS) &&
+	    !local->iff_promiscs && !multicast) {
+		rx.u.rx.ra_match = 1;
+		ieee80211_invoke_rx_handlers(local, local->rx_handlers, &rx,
+					     sta);
+	} else {
+		struct ieee80211_sub_if_data *prev = NULL;
+		struct sk_buff *skb_new;
+		u8 *bssid = ieee80211_get_bssid(hdr, skb_len(skb) - radiotap_len);
+		//FIXME: read_lock
+		//read_lock(&local->sub_if_lock);
+		list_for_each_entry(sdata, &local->sub_if_list, list) {
+			rx.u.rx.ra_match = 1;
+			switch (sdata->type) {
+			case IEEE80211_IF_TYPE_STA:
+				if (!bssid)
+					continue;
+				if (!ieee80211_bssid_match(bssid,
+							sdata->u.sta.bssid)) {
+					if (!rx.u.rx.in_scan)
+						continue;
+					rx.u.rx.ra_match = 0;
+				} else if (!multicast &&
+					   compare_ether_addr(sdata->dev->dev_addr,
+							      hdr->addr1) != 0) {
+					if (!sdata->promisc)
+						continue;
+					rx.u.rx.ra_match = 0;
+				}
+				break;
+			case IEEE80211_IF_TYPE_IBSS:
+				if (!bssid)
+					continue;
+				if (!ieee80211_bssid_match(bssid,
+							sdata->u.sta.bssid)) {
+					if (!rx.u.rx.in_scan)
+						continue;
+					rx.u.rx.ra_match = 0;
+				} else if (!multicast &&
+					   compare_ether_addr(sdata->dev->dev_addr,
+							      hdr->addr1) != 0) {
+					if (!sdata->promisc)
+						continue;
+					rx.u.rx.ra_match = 0;
+				} else if (!sta)
+					sta = rx.sta =
+						ieee80211_ibss_add_sta(sdata->dev,
+								       skb, bssid,
+								       hdr->addr2);
+				break;
+			case IEEE80211_IF_TYPE_AP:
+				if (!bssid) {
+					if (compare_ether_addr(sdata->dev->dev_addr,
+							       hdr->addr1) != 0)
+						continue;
+				} else if (!ieee80211_bssid_match(bssid,
+							sdata->dev->dev_addr)) {
+					if (!rx.u.rx.in_scan)
+						continue;
+					rx.u.rx.ra_match = 0;
+				}
+				if (sdata->dev == local->mdev &&
+				    !rx.u.rx.in_scan)
+					/* do not receive anything via
+					 * master device when not scanning */
+					continue;
+				break;
+			case IEEE80211_IF_TYPE_WDS:
+				if (bssid ||
+				    (rx.fc & IEEE80211_FCTL_FTYPE) != IEEE80211_FTYPE_DATA)
+					continue;
+				if (compare_ether_addr(sdata->u.wds.remote_addr,
+						       hdr->addr2) != 0)
+					continue;
+				break;
+			}
+
+			if (prev) {
+				skb_new = skb_copy(skb, GFP_ATOMIC);
+				if (!skb_new) {
+					if (net_ratelimit())
+						printk(KERN_DEBUG "%s: failed to copy "
+						       "multicast frame for %s",
+						       local->mdev->name, prev->dev->name);
+					continue;
+				}
+				rx.skb = skb_new;
+				rx.dev = prev->dev;
+				rx.sdata = prev;
+				ieee80211_invoke_rx_handlers(local,
+							     local->rx_handlers,
+							     &rx, sta);
+			}
+			prev = sdata;
+		}
+		if (prev) {
+			rx.skb = skb;
+			rx.dev = prev->dev;
+			rx.sdata = prev;
+			ieee80211_invoke_rx_handlers(local, local->rx_handlers,
+						     &rx, sta);
+		} else
+			dev_kfree_skb(skb);
+		//FIXME: read_unlock
+		//read_unlock(&local->sub_if_lock);
+	}
+
+  end:
+	if (sta)
+		sta_info_put(sta);
 }
-	
+
 
 
 
@@ -1284,10 +1862,7 @@ static void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
 	}
 }
 
-static struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
-{
-	return &local->hw;
-}
+
 
 typedef enum { ParseOK = 0, ParseUnknown = 1, ParseFailed = -1 } ParseRes;
 
@@ -1992,204 +2567,18 @@ ieee80211_rx_h_passive_scan(struct ieee80211_txrx_data *rx)
 	return TXRX_CONTINUE;
 }
 
-//FIXME: !
-void jiffies_to_timespec(unsigned long jiffiess, struct timespec *value)
-{
-	return;
-}
-
-#define cpu_to_be64(x) OSSwapHostToBigInt64(x)
-#define cpu_to_be32(x) OSSwapHostToBigInt32(x)
-
-enum ieee80211_phytype {
-	ieee80211_phytype_fhss_dot11_97  = 1,
-	ieee80211_phytype_dsss_dot11_97  = 2,
-	ieee80211_phytype_irbaseband     = 3,
-	ieee80211_phytype_dsss_dot11_b   = 4,
-	ieee80211_phytype_pbcc_dot11_b   = 5,
-	ieee80211_phytype_ofdm_dot11_g   = 6,
-	ieee80211_phytype_pbcc_dot11_g   = 7,
-	ieee80211_phytype_ofdm_dot11_a   = 8,
-	ieee80211_phytype_dsss_dot11_turbog = 255,
-	ieee80211_phytype_dsss_dot11_turbo = 256,
-};
-
-static struct ieee80211_rate *
-ieee80211_get_rate(struct ieee80211_local *local, int phymode, int hw_rate)
-{
-	struct ieee80211_hw_mode *mode;
-	int r;
-
-	list_for_each_entry(mode, &local->modes_list, list) {
-		if (mode->mode != phymode)
-			continue;
-		for (r = 0; r < mode->num_rates; r++) {
-			struct ieee80211_rate *rate = &mode->rates[r];
-			if (rate->val == hw_rate ||
-			    (rate->flags & IEEE80211_RATE_PREAMBLE2 &&
-			     rate->val2 == hw_rate))
-				return rate;
-		}
-	}
-
-	return NULL;
-}
-
-enum ieee80211_ssi_type {
-	ieee80211_ssi_none = 0,
-	ieee80211_ssi_norm = 1, /* normalized, 0-1000 */
-	ieee80211_ssi_dbm = 2,
-	ieee80211_ssi_raw = 3, /* raw SSI */
-};
-
-#define IEEE80211_FI_VERSION 0x80211001
-
-static void
-ieee80211_fill_frame_info(struct ieee80211_local *local,
-			  struct ieee80211_frame_info *fi,
-			  struct ieee80211_rx_status *status)
-{
-	if (status) {
-		struct timespec ts;
-		struct ieee80211_rate *rate;
-
-		jiffies_to_timespec(jiffies, &ts);
-		fi->hosttime = cpu_to_be64((u64) ts.tv_sec * 1000000 +
-					   ts.tv_nsec / 1000);
-		fi->mactime = cpu_to_be64(status->mactime);
-		switch (status->phymode) {
-		case MODE_IEEE80211A:
-			fi->phytype = htonl(ieee80211_phytype_ofdm_dot11_a);
-			break;
-		case MODE_IEEE80211B:
-			fi->phytype = htonl(ieee80211_phytype_dsss_dot11_b);
-			break;
-		case MODE_IEEE80211G:
-			fi->phytype = htonl(ieee80211_phytype_pbcc_dot11_g);
-			break;
-		case MODE_ATHEROS_TURBO:
-			fi->phytype =
-				htonl(ieee80211_phytype_dsss_dot11_turbo);
-			break;
-		default:
-			fi->phytype = htonl(0xAAAAAAAA);
-			break;
-		}
-		fi->channel = htonl(status->channel);
-		rate = ieee80211_get_rate(local, status->phymode,
-					  status->rate);
-		if (rate) {
-			fi->datarate = htonl(rate->rate);
-			if (rate->flags & IEEE80211_RATE_PREAMBLE2) {
-				if (status->rate == rate->val)
-					fi->preamble = htonl(2); /* long */
-				else if (status->rate == rate->val2)
-					fi->preamble = htonl(1); /* short */
-			} else
-				fi->preamble = htonl(0);
-		} else {
-			fi->datarate = htonl(0);
-			fi->preamble = htonl(0);
-		}
-
-		fi->antenna = htonl(status->antenna);
-		fi->priority = htonl(0xffffffff); /* no clue */
-		fi->ssi_type = htonl(ieee80211_ssi_raw);
-		fi->ssi_signal = htonl(status->ssi);
-		fi->ssi_noise = 0x00000000;
-		fi->encoding = 0;
-	} else {
-		/* clear everything because we really don't know.
-		 * the msg_type field isn't present on monitor frames
-		 * so we don't know whether it will be present or not,
-		 * but it's ok to not clear it since it'll be assigned
-		 * anyway */
-		memset(fi, 0, sizeof(*fi) - sizeof(fi->msg_type));
-
-		fi->ssi_type = htonl(ieee80211_ssi_none);
-	}
-	fi->version = htonl(IEEE80211_FI_VERSION);
-	fi->length = cpu_to_be32(sizeof(*fi) - sizeof(fi->msg_type));
-}
 
 
 
-/* this routine is actually not just for this, but also
- * for pushing fake 'management' frames into userspace.
- * it shall be replaced by a netlink-based system. */
-void
-ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
-		  struct ieee80211_rx_status *status, u32 msg_type)
-{
-	struct ieee80211_frame_info *fi;
-	const size_t hlen = sizeof(struct ieee80211_frame_info);
-	struct ieee80211_sub_if_data *sdata;
-	//FIXME: !
-	//skb->dev = local->apdev;
-
-	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(local->apdev);
-
-	if (skb_headroom(skb) < hlen) {
-		I802_DEBUG_INC(local->rx_expand_skb_head);
-		//FIXME: !!
-		/*if (pskb_expand_head(skb, hlen, 0, GFP_ATOMIC)) {
-			dev_kfree_skb(skb);
-			return;
-		}*/
-	}
-
-	fi = (struct ieee80211_frame_info *) skb_push(skb, hlen);
-
-	ieee80211_fill_frame_info(local, fi, status);
-	fi->msg_type = htonl(msg_type);
-
-	sdata->stats.rx_packets++;
-	sdata->stats.rx_bytes += skb_len(skb);
-
-	//FIXME: Preparation of the mac header and send the packet
-	//skb_set_mac_header(skb, 0);
-	//skb->ip_summed = CHECKSUM_UNNECESSARY;
-	//skb->pkt_type = PACKET_OTHERHOST;
-	//skb->protocol = htons(ETH_P_802_2);
-	//memset(skb->cb, 0, sizeof(skb->cb));
-	//netif_rx(skb);
-}
-
-#define FCS_LEN 4
-#define WLAN_STA_ASSOC BIT(1)
-enum ieee80211_msg_type {
-	ieee80211_msg_normal = 0,
-	ieee80211_msg_tx_callback_ack = 1,
-	ieee80211_msg_tx_callback_fail = 2,
-	/* hole at 3, was ieee80211_msg_passive_scan but unused */
-	ieee80211_msg_wep_frame_unknown_key = 4,
-	ieee80211_msg_michael_mic_failure = 5,
-	/* hole at 6, was monitor but never sent to userspace */
-	ieee80211_msg_sta_not_assoc = 7,
-	/* 8 was ieee80211_msg_set_aid_for_sta */
-	ieee80211_msg_key_threshold_notification = 9,
-	ieee80211_msg_radar = 11,
-};
 
 
-int ieee80211_wep_get_keyidx(struct sk_buff *skb)
-{
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
-	u16 fc;
-	int hdrlen;
 
-	fc = le16_to_cpu(hdr->frame_control);
-	if (!(fc & IEEE80211_FCTL_PROTECTED))
-		return -1;
 
-	hdrlen = ieee80211_get_hdrlen(fc);
 
-	if (skb_len(skb) < 8 + hdrlen)
-		return -1;
-	//FIXME: skb->data[m]
-	//return skb->data[hdrlen + 3] >> 6;
-	return NULL;
-}
+
+
+
+
 
 struct ieee80211_msg_key_notification {
 	int tx_rx_count;
