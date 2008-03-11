@@ -12,8 +12,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
+#endif		
 	extern int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device);
 	extern void release_firmware (	const struct firmware *  	fw);
 	extern void flush_workqueue(struct workqueue_struct *wq);

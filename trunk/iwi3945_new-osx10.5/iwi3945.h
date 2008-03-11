@@ -274,7 +274,11 @@ class darwin_iwi3945 : public IOEthernetController
         IOPCIDevice *				fPCIDevice;		// PCI nub
         IOEthernetAddress			fEnetAddr;		// holds the mac address currently hardcoded
         IOWorkLoop *				workqueue;		// the workloop
-        IO80211Interface*			fNetif;			// ???
+        #ifdef IO80211_VERSION
+		IO80211Interface*			fNetif;	
+		#else
+		IOEthernetInterface*			fNetif;
+		#endif		
         IOInterruptEventSource *	fInterruptSrc;	// ???
         IOTimerEventSource *		fWatchdogTimer;	// ???
         IOBasicOutputQueue *				fTransmitQueue;	// ???
