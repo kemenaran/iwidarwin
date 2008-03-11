@@ -8,7 +8,7 @@
  */
 
 #define NO_SPIN_LOCKS 0
-//#define NO_MUTEX_LOCKS 0
+#define NO_MUTEX_LOCKS 0
 
 #include <sys/kernel_types.h>
 #include <mach/vm_types.h>
@@ -53,6 +53,11 @@
 // Note: This, in itself, makes this very much non-reentrant.  It's used
 // primarily when allocating sk_buff entries.
 static IONetworkController *currentController;
+#ifdef IO80211_VERSION
+extern IO80211Interface*			fNetif;	
+#else
+extern IOEthernetInterface*			fNetif;
+#endif	
 static ieee80211_hw * my_hw;
 static IOWorkLoop * workqueue;
 static IOInterruptEventSource *	fInterruptSrc;
@@ -117,12 +122,6 @@ void setMyfifnet(ifnet_t fifnet){
 	my_fifnet = fifnet;
 }
 
-//FIXME:
-bool is_associated(){
-	//if(my_hw)
-	//	return iwl3945_is_associated(my_hw->priv);
-	return false;
-}
 /*
 	Setters
 */
@@ -132,26 +131,19 @@ void setUnloaded(){
 
 #pragma mark Various
 
-//FIXME: !
-void jiffies_to_timespec(unsigned long jiffiess, struct timespec *value)
-{
-	return;
-}
-
 #pragma mark -
 #pragma mark Adapt sk_buff functions to mbuf for OS X
 
-//FIXME: !!
 static inline void __skb_queue_tail(struct sk_buff_head *list,struct sk_buff *newsk)
 {
 	struct sk_buff *prev, *next;
 
 	list->qlen++;
 	next = (struct sk_buff *)list;
-	/*prev = next->prev;
+	prev = next->prev;
 	newsk->next = next;
 	newsk->prev = prev;
-	next->prev  = prev->next = newsk;*/
+	next->prev  = prev->next = newsk;
 }
 
  /**
@@ -174,15 +166,14 @@ static inline void __skb_queue_tail(struct sk_buff_head *list,struct sk_buff *ne
          spin_unlock_irqrestore(&list->lock, flags);
  }
   
-//FIXME: !!
 static inline struct sk_buff *__skb_dequeue(struct sk_buff_head *list)
 {
 	struct sk_buff *next, *prev, *result;
 
 	prev = (struct sk_buff *) list;
-	//next = prev->next;
+	next = prev->next;
 	result = NULL;
-	/*if(next != prev) {
+	if(next != prev) {
 		result       = next;
 		next         = next->next;
 		list->qlen--;
@@ -190,7 +181,7 @@ static inline struct sk_buff *__skb_dequeue(struct sk_buff_head *list)
 		prev->next   = next;
 		result->next = result->prev = NULL;
 	}
-	return result;*/
+	return result;
 }
 struct sk_buff *skb_dequeue(struct sk_buff_head *list)
 {
@@ -203,29 +194,13 @@ struct sk_buff *skb_dequeue(struct sk_buff_head *list)
          return result;
 }
 
-
-
-//FIXME: !!!!
-struct sk_buff * __skb_dequeue_tail (struct sk_buff_head * list){
-	return NULL;
-}
-
-struct sk_buff *skb_dequeue_tail(struct sk_buff_head *list)
-{
-	unsigned long flags;
-	struct sk_buff *result;
-	
-	spin_lock_irqsave(&list->lock, flags);
-	result = __skb_dequeue_tail(list);
-	spin_unlock_irqrestore(&list->lock, flags);
-	return result;
-}
-
  
-//FIXME: !!!
 struct sk_buff *skb_copy( struct sk_buff *skb, gfp_t gfp_mask)
 {
-	return skb;
+	struct sk_buff *skb_copy = (struct sk_buff *)IOMalloc(sizeof(struct sk_buff));
+    mbuf_copym(skb->mac_data, 0, mbuf_len(skb->mac_data), 1, &skb_copy->mac_data);
+    skb_copy->intf = skb->intf;
+    return skb_copy;//need to check for prev, next
 }
 
 /**
@@ -279,9 +254,9 @@ static inline void skb_set_network_header(struct sk_buff *skb, const int offset)
 }
 
 
-//FIXME: !!
 void *skb_push(const struct sk_buff *skb, unsigned int len) {
-    return mbuf_data(skb->mac_data);
+	mbuf_prepend(&(((struct sk_buff*)skb)->mac_data),len,MBUF_WAITOK);
+	return mbuf_data(skb->mac_data);
 }
 
 
@@ -328,18 +303,19 @@ void *skb_put(struct sk_buff *skb, unsigned int len) {
         if(mbuf_flags(skb->mac_data) & MBUF_PKTHDR)
             mbuf_pkthdr_setlen(skb->mac_data, mbuf_pkthdr_len(skb->mac_data)+len);
     }
+	else
+	IOLog("skb_put failded\n");
     //IWI_DUMP_MBUF(2,skb,len);  
     return data;
 }
 
 
 
-//
-//FIXME: not finish
 static inline unsigned char *__skb_pull(struct sk_buff *skb, unsigned int len)
 {
          //skb->len -= len;
          //return skb->data += len;
+		 mbuf_adj(skb->mac_data,len);
 		 return (unsigned char*)skb_data(skb);//added
 }
 
@@ -364,13 +340,15 @@ void dev_kfree_skb_any(struct sk_buff *skb) {
 
 void kfree_skb(struct sk_buff *skb){
     IONetworkController *intf = (IONetworkController *)skb->intf;
-    if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
+    if (skb->mac_data)
+	if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
         intf->freePacket(skb->mac_data);
 }
 
 void dev_kfree_skb(struct sk_buff *skb) {
     IONetworkController *intf = (IONetworkController *)skb->intf;
-    if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
+    if (skb->mac_data)
+	if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
         intf->freePacket(skb->mac_data);
 }
 
@@ -388,9 +366,10 @@ struct sk_buff *__alloc_skb(unsigned int size,gfp_t priority, int fclone, int no
 static inline struct sk_buff *__dev_alloc_skb(unsigned int length,
                                                gfp_t gfp_mask)
  {
-         struct sk_buff *skb = alloc_skb(length + NET_SKB_PAD, 1);
-         if (likely(skb))
-                 skb_reserve(skb, NET_SKB_PAD);
+        //check if work
+		  struct sk_buff *skb = alloc_skb(length,1);// + NET_SKB_PAD, 1);
+        // if (likely(skb))
+          //       skb_reserve(skb, NET_SKB_PAD);
          return skb;
  }
 
@@ -800,33 +779,9 @@ static struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
 	return &local->hw;
 }
 
-static inline struct sta_info *__sta_info_get(struct sta_info *sta)
-{
-    return /*kobject_get(&sta->kobj)*/ sta ? sta : NULL;
-}
 
-struct sta_info * sta_info_get(struct ieee80211_local *local, u8 *addr)
-{
-    struct sta_info *sta;
-    
-    spin_lock_bh(&local->sta_lock);
-    sta = local->sta_hash[STA_HASH(addr)];
-    while (sta) {
-        if (memcmp(sta->addr, addr, ETH_ALEN) == 0) {
-            __sta_info_get(sta);
-            break;
-        }
-        sta = sta->hnext;
-    }
-    spin_unlock_bh(&local->sta_lock);
-    
-    return sta;
-}
 
-void sta_info_put(struct sta_info *sta)
-{
-//    kobject_put(&sta->kobj);
-}
+
 
 void netif_device_attach(struct net_device *dev) {
 #warning Begin network device here
@@ -909,22 +864,22 @@ int ieee80211_get_morefrag(struct ieee80211_hdr *hdr) {
 
 static inline int __ieee80211_invoke_rx_handlers(
                                  struct ieee80211_local *local,
-                                 void *handlers,
+                                 ieee80211_rx_handler *handlers,
                                  struct ieee80211_txrx_data *rx,
                                  struct sta_info *sta){
-	/*ieee80211_rx_handler *handler;
+	ieee80211_rx_handler *handler;
 	ieee80211_txrx_result res = TXRX_DROP;
 
 	for (handler = handlers; *handler != NULL; handler++) {
 		res = (*handler)(rx);
 		if (res != TXRX_CONTINUE) {
 			if (res == TXRX_DROP) {
-				I802_DEBUG_INC(local->rx_handlers_drop);
+				//I802_DEBUG_INC(local->rx_handlers_drop);
 				if (sta)
 					sta->rx_dropped++;
 			}
-			if (res == TXRX_QUEUED)
-				I802_DEBUG_INC(local->rx_handlers_queued);
+			//if (res == TXRX_QUEUED)
+			//	I802_DEBUG_INC(local->rx_handlers_queued);
 			break;
 		}
 	}
@@ -932,13 +887,12 @@ static inline int __ieee80211_invoke_rx_handlers(
 	if (res == TXRX_DROP) {
 		dev_kfree_skb(rx->skb);
 	}
-	return res;*/
-	return TXRX_CONTINUE;
+	return res;
+	//return TXRX_CONTINUE;
 }
 
 static inline void ieee80211_invoke_rx_handlers(struct ieee80211_local *local,
-                                                 //ieee80211_rx_handler *handlers,
-												 void *handlers,
+                                                ieee80211_rx_handler *handlers,
                                                  struct ieee80211_txrx_data *rx,
                                                  struct sta_info *sta)
 {
@@ -1027,9 +981,8 @@ int ieee80211_wep_get_keyidx(struct sk_buff *skb)
 
 	if (skb_len(skb) < 8 + hdrlen)
 		return -1;
-	//FIXME: skb->data[m]
-	//return skb->data[hdrlen + 3] >> 6;
-	return NULL;
+
+	return ((u8*)(skb_data(skb)))[hdrlen + 3] >> 6;
 }
 
 #define FCS_LEN 4
@@ -1148,7 +1101,7 @@ ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
 	struct ieee80211_frame_info *fi;
 	const size_t hlen = sizeof(struct ieee80211_frame_info);
 	struct ieee80211_sub_if_data *sdata;
-	//FIXME: !
+
 	//skb->dev = local->apdev;
 
 	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(local->apdev);
@@ -1156,6 +1109,7 @@ ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
 	if (skb_headroom(skb) < hlen) {
 		I802_DEBUG_INC(local->rx_expand_skb_head);
 		//FIXME: !!
+		IOLog("todo pskb_expand_head\n");
 		/*if (pskb_expand_head(skb, hlen, 0, GFP_ATOMIC)) {
 			dev_kfree_skb(skb);
 			return;
@@ -1171,12 +1125,13 @@ ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
 	sdata->stats.rx_bytes += skb_len(skb);
 
 	//FIXME: Preparation of the mac header and send the packet
-	//skb_set_mac_header(skb, 0);
+	skb_set_mac_header(skb, 0);
 	//skb->ip_summed = CHECKSUM_UNNECESSARY;
 	//skb->pkt_type = PACKET_OTHERHOST;
 	//skb->protocol = htons(ETH_P_802_2);
-	//memset(skb->cb, 0, sizeof(skb->cb));
+	memset(skb->cb, 0, sizeof(skb->cb));
 	//netif_rx(skb);
+	fNetif->inputPacket(skb->mac_data,mbuf_len(skb->mac_data));
 }
 
 
@@ -1302,6 +1257,80 @@ static void sta_info_hash_add(struct ieee80211_local *local,
 	local->sta_hash[STA_HASH(sta->addr)] = sta;
 }
 
+static void kref_init(struct kref *kref, void (*release)(struct kref *kref))
+  {
+          //WARN_ON(release == NULL);
+          atomic_set(&kref->refcount,1);
+          kref->release = release;
+  }
+
+static  struct kref *kref_get(struct kref *kref)
+  {
+          //WARN_ON(!atomic_read(&kref->refcount));
+          atomic_inc(&kref->refcount);
+          return kref;
+  }
+ 
+  static inline struct sta_info *__sta_info_get(struct sta_info *sta)
+{
+    kref_get(&sta->kref);
+}
+ 
+struct sta_info * sta_info_get(struct ieee80211_local *local, u8 *addr)
+{
+    struct sta_info *sta;
+    
+    spin_lock_bh(&local->sta_lock);
+    sta = local->sta_hash[STA_HASH(addr)];
+    while (sta) {
+        if (memcmp(sta->addr, addr, ETH_ALEN) == 0) {
+            __sta_info_get(sta);
+            break;
+        }
+        sta = sta->hnext;
+    }
+    spin_unlock_bh(&local->sta_lock);
+    
+    return sta;
+}
+
+
+
+  /**
+   * kref_put - decrement refcount for object.
+   * @kref: object.
+   *
+   * Decrement the refcount, and if 0, call kref->release().
+   */
+static  void kref_put(struct kref *kref)
+  {
+          if (atomic_dec_and_test(&kref->refcount)) {
+                  IOLog("kref cleaning up\n");
+                  kref->release(kref);
+ }  
+ } 
+ 
+void sta_info_put(struct sta_info *sta)
+{
+    kref_put(&sta->kref);
+}
+
+static struct rate_control_ref *rate_control_get(struct rate_control_ref *ref)
+{
+	kref_get(&ref->kref);
+	return ref;
+}
+
+static void rate_control_put(struct rate_control_ref *ref)
+{
+	kref_put(&ref->kref);//, rate_control_release);
+}
+
+static inline void *rate_control_alloc_sta(struct rate_control_ref *ref,
+					   gfp_t gfp)
+{
+	return ref->ops->alloc_sta(ref->priv, gfp);
+}
 
 struct sta_info * sta_info_add(struct ieee80211_local *local,
 			       struct net_device *dev, u8 *addr, gfp_t gfp)
@@ -1312,17 +1341,16 @@ struct sta_info * sta_info_add(struct ieee80211_local *local,
 	if (!sta)
 		return NULL;
 
-	//FIXME: kref
-	/*kref_init(&sta->kref);
+	kref_init(&sta->kref,NULL);
 
 	sta->rate_ctrl = rate_control_get(local->rate_ctrl);
 	sta->rate_ctrl_priv = rate_control_alloc_sta(sta->rate_ctrl, gfp);
 	if (!sta->rate_ctrl_priv) {
 		rate_control_put(sta->rate_ctrl);
-		kref_put(&sta->kref, sta_info_release);
+		kref_put(&sta->kref);//, sta_info_release);
 		kfree(sta);
 		return NULL;
-	}*/
+	}
 
 	memcpy(sta->addr, addr, ETH_ALEN);
 	sta->local = local;
@@ -1580,7 +1608,6 @@ static void ieee80211_tasklet_handler(unsigned long data)
 	struct sk_buff *skb;
 	struct ieee80211_rx_status rx_status;
 	struct ieee80211_tx_status *tx_status;
-#if 0 //FIXME: if0
 	while ((skb = skb_dequeue(&local->skb_queue)) ||
 	       (skb = skb_dequeue(&local->skb_queue_unreliable))) {
 		switch (skb->pkt_type) {
@@ -1607,7 +1634,6 @@ static void ieee80211_tasklet_handler(unsigned long data)
 			break;
 		}
 	}
-#endif
 }
 
 
@@ -1627,19 +1653,17 @@ void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct i
     IOLog("todo ieee80211_rx_irqsafe\n");
 	
 	//PrintPacketHeader(skb->mac_data);
-	char    *frame;
+	/*char    *frame;
     frame = (char*)skb_data(skb);
     for (int i = 0; i < mbuf_len(skb->mac_data); i++)
     {
       IOLog("%02X", (u_int8_t)frame[i]);
-    }
+    }*/
 	
-	//return;
-	//skb->dev = local->mdev;
-    // copy status into skb->cb for use by tasklet
-    memcpy(skb->cb, status, sizeof(*status));
-    mbuf_settype(skb->mac_data, MBUF_TYPE_DATA);
-    //skb_queue_tail(&local->skb_queue, skb);//how ?
+	memcpy(skb->cb, status, sizeof(*status));
+	skb->pkt_type = IEEE80211_RX_MSG;
+	skb_queue_tail(&local->skb_queue, skb);
+	tasklet_schedule(&local->tasklet);
 	
 	//Start the tasklet
 	//IOCreateThread(&ieee80211_tasklet_handler,local);
@@ -1647,7 +1671,7 @@ void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct i
 	/*
 		RX implementation must be moved after
 	*/
-	__ieee80211_rx(hw,skb,status);
+	//__ieee80211_rx(hw,skb,status);
 	
 
 }
@@ -1681,6 +1705,13 @@ struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,int if_id,struct ie
 
 void ieee80211_stop_queues(struct ieee80211_hw *hw) {
     return;
+}
+
+int sta_info_start(struct ieee80211_local *local)
+{
+	//check this
+	//add_timer(&local->sta_cleanup);
+	return 0;
 }
 
 #define max_t(type,x,y) \
@@ -1722,9 +1753,9 @@ int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
 	if (local->hw.max_rssi < 0 || local->hw.max_noise < 0)
 		local->wstats_flags |= IW_QUAL_DBM;
 
-	/*result = sta_info_start(local);
-	if (result < 0)
-		goto fail_sta_info;*/
+	result = sta_info_start(local);
+	//if (result < 0)
+	//	goto fail_sta_info;
 
 	/*rtnl_lock();
 	result = dev_alloc_name(local->mdev, local->mdev->name);
@@ -1849,17 +1880,11 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 
 static void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
 {
-	int i;
-
 	/* Default values for sub-interface parameters */
 	sdata->drop_unencrypted = 0;
 	sdata->eapol = 1;
-	for (i = 0; i < IEEE80211_FRAGMENT_MAX; i++)
-	{
-#warning error herre
-		//INIT_LIST_HEAD(&sdata->fragments[i].skb_list);
-	//	skb_queue_head_init(&sdata->fragments[i].skb_list);
-	}
+	for (int i = 0; i < IEEE80211_FRAGMENT_MAX; i++)
+		skb_queue_head_init(&sdata->fragments[i].skb_list);
 }
 
 
@@ -2567,19 +2592,6 @@ ieee80211_rx_h_passive_scan(struct ieee80211_txrx_data *rx)
 	return TXRX_CONTINUE;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 struct ieee80211_msg_key_notification {
 	int tx_rx_count;
 	char ifname[IFNAMSIZ];
@@ -2589,7 +2601,7 @@ struct ieee80211_msg_key_notification {
 #define NUM_RX_DATA_QUEUES 17
 
 struct ieee80211_key {
-	//struct kref kref;
+	struct kref kref;
 
 	int hw_key_idx; /* filled and used by low-level driver */
 	ieee80211_key_alg alg;
@@ -2715,8 +2727,8 @@ ieee80211_rx_h_check(struct ieee80211_txrx_data *rx)
 		I802_DEBUG_INC(rx->local->rx_handlers_drop_short);
 		return TXRX_DROP;
 	}
-	//FIXME: pkt_type
-	/*if (!rx->u.rx.ra_match)
+
+	if (!rx->u.rx.ra_match)
 		rx->skb->pkt_type = PACKET_OTHERHOST;
 	else if (compare_ether_addr(rx->dev->dev_addr, hdr->addr1) == 0)
 		rx->skb->pkt_type = PACKET_HOST;
@@ -2726,7 +2738,7 @@ ieee80211_rx_h_check(struct ieee80211_txrx_data *rx)
 		else
 			rx->skb->pkt_type = PACKET_MULTICAST;
 	} else
-		rx->skb->pkt_type = PACKET_OTHERHOST;*/
+		rx->skb->pkt_type = PACKET_OTHERHOST;
 
 	/* Drop disallowed frame classes based on STA auth/assoc state;
 	 * IEEE 802.11, Chap 5.5.
@@ -2877,8 +2889,8 @@ static int ap_sta_ps_end(struct net_device *dev, struct sta_info *sta)
 		pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 		sent++;
 		pkt_data->requeue = 1;
-		//FIXME: Have to be done by the interface
 		//dev_queue_xmit(skb);
+		currentController->outputPacket(skb->mac_data,NULL);
 	}
 	while ((skb = skb_dequeue(&sta->ps_tx_buf)) != NULL) {
 		pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
@@ -2890,8 +2902,8 @@ static int ap_sta_ps_end(struct net_device *dev, struct sta_info *sta)
 		       MAC_ARG(sta->addr), sta->aid);
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 		pkt_data->requeue = 1;
-		//FIXME: idem
 		//dev_queue_xmit(skb);
+		currentController->outputPacket(skb->mac_data,NULL);
 	}
 
 	return sent;
@@ -3185,7 +3197,7 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 		memcpy(ehdr->h_source, src, ETH_ALEN);
 		ehdr->h_proto = len;
 	}
-	//FIXME: dev in skb
+
 	//skb->dev = dev;
 
 	skb2 = NULL;
@@ -3223,10 +3235,10 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 
 	if (skb) {
 		/* deliver to local stack */
-		//FIXME : SEND
 		//skb->protocol = eth_type_trans(skb, dev);
-		//memset(skb->cb, 0, sizeof(skb->cb));
+		memset(skb->cb, 0, sizeof(skb->cb));
 		//netif_rx(skb);
+		fNetif->inputPacket(skb->mac_data,mbuf_len(skb->mac_data));
 	}
 
 	if (skb2) {
@@ -3236,6 +3248,7 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 		//skb_set_network_header(skb2, 0);
 		//skb_set_mac_header(skb2, 0);
 		//dev_queue_xmit(skb2);
+		currentController->outputPacket(skb2->mac_data,NULL);
 	}
 
 	return TXRX_QUEUED;
@@ -3422,23 +3435,19 @@ int ieee80211_hw_config(struct ieee80211_local *local)
 	return ret;
 }
 
-//FIXME: finish it
-unsigned long usecs_to_jiffies(const unsigned int u){
-	return 0;
-}
 
 static void ieee80211_sta_tx(struct net_device *dev, struct sk_buff *skb,
 			     int encrypt)
 {
 	//FIXME: lot of skb_function
-	/*struct ieee80211_sub_if_data *sdata;
+	struct ieee80211_sub_if_data *sdata;
 	struct ieee80211_tx_packet_data *pkt_data;
 
-	sdata = IEEE80211_DEV_TO_SUB_IF(dev);
-	skb->dev = sdata->local->mdev;
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	//skb->dev = sdata->local->mdev;
 	skb_set_mac_header(skb, 0);
 	skb_set_network_header(skb, 0);
-	skb_set_transport_header(skb, 0);
+	//skb_set_transport_header(skb, 0);
 
 	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
@@ -3446,7 +3455,8 @@ static void ieee80211_sta_tx(struct net_device *dev, struct sk_buff *skb,
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 	pkt_data->do_not_encrypt = !encrypt;
 
-	dev_queue_xmit(skb);*/
+	//dev_queue_xmit(skb);
+	currentController->outputPacket(skb->mac_data,NULL);
 }
 
 #define IEEE80211_PROBE_DELAY (HZ / 33)
@@ -3744,13 +3754,10 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 //	init_timer(&local->stat_timer);
 //	local->stat_timer.function = ieee80211_stat_refresh;
 	//local->stat_timer.data = (unsigned long) local;
-//	ieee80211_rx_bss_list_init(mdev);
-
+	//ieee80211_rx_bss_list_init(mdev);
+	INIT_LIST_HEAD(&local->sta_bss_list);
+	
 	sta_info_init(local);
-	//INIT_LIST_HEAD(&local->sta_list);
-	//INIT_LIST_HEAD(&local->deleted_sta_list);
-	//local->sta_cleanup.expires = jiffies + STA_INFO_CLEANUP_INTERVAL;
-	//local->sta_cleanup.data = (unsigned long) local;
 	
 /*	mdev->hard_start_xmit = ieee80211_master_start_xmit;
 	mdev->open = ieee80211_master_open;
@@ -3764,8 +3771,8 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	sdata->u.ap.max_ratectrl_rateidx = -1;
 	ieee80211_if_sdata_init(sdata);
 	list_add_tail(&sdata->list, &local->sub_if_list);
-	tasklet_init(&local->tx_pending_tasklet, ieee80211_tx_pending,
-		     (unsigned long)local);
+	tasklet_init(&local->tx_pending_tasklet, ieee80211_tx_pending,  (unsigned long)local);
+	//maybe same as queue_work
 	//FIXME: taskle_disable		 
 	//tasklet_disable(&local->tx_pending_tasklet);
 
@@ -3775,18 +3782,13 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	//FIXME: idem
 	//tasklet_disable(&local->tasklet);
 
-	//FIXME: skb_queue_head_init
-	//skb_queue_head_init(&local->skb_queue);
-	//skb_queue_head_init(&local->skb_queue_unreliable);
-
-	//FIXME: sk_buf_head
-	//INIT_LIST_HEAD(&local->skb_queue);
-	//INIT_LIST_HEAD(&local->skb_queue_unreliable);
+	skb_queue_head_init(&local->skb_queue);
+	skb_queue_head_init(&local->skb_queue_unreliable);
 	
 	printf("ieee80211_alloc_hw [OK]\n");
 	my_hw=local_to_hw(local);
 	return my_hw;
-	//return NULL;
+
 }
 
 void ieee80211_free_hw (	struct ieee80211_hw *  	hw){
@@ -4297,7 +4299,7 @@ int pci_register_driver(struct pci_driver * drv){
 	result2 = (local->ops->open) (&local->hw);
 	
 
-    ieee80211_init_scan(local);
+    ieee80211_init_scan(local);//is this in the right place??
     local->open_count++;
     
 	return 0;

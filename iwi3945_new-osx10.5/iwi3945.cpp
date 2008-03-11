@@ -35,8 +35,12 @@ extern void setUnloaded();
 extern void start_undirect_scan();
 extern u8 * getMyMacAddr();
 extern void setMyfifnet(ifnet_t fifnet);
-extern bool is_associated();
+extern struct ieee80211_hw * get_my_hw();
+extern int iwl3945_mac_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+		      struct ieee80211_tx_control *ctl);
+extern int iwl3945_is_associated(struct iwl3945_priv *priv);
 
+struct ieee80211_tx_control tx_ctrl;			  
 IOService * my_provider;
 #pragma mark -
 #pragma mark Overrides required for implementation
@@ -74,12 +78,14 @@ UInt32 darwin_iwi3945::getFeatures() const {
 }
 
 
-
+#ifdef IO80211_VERSION
 void darwin_iwi3945::postMessage(UInt32 message) {
-    if( fNetif )
+    
+	if( fNetif )
         fNetif->postMessage(message, NULL, 0);
+	
 }
-
+#endif
 
 
 #pragma mark -
@@ -1298,7 +1304,7 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		IOLog("ifconfig going up\n ");
 		//FIXME: if associated set IFF_RUNNING
 		//if (priv->status & STATUS_ASSOCIATED) 
-		if (is_associated()) ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
+		if (iwl3945_is_associated((struct iwl3945_priv*)get_my_hw()->priv)) ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
@@ -1399,6 +1405,7 @@ copy_packet:
 	IOLog("outputPaccket2 called\n");
 	IOInterruptState flags;
 	//spin_lock_irqsave(spin, flags);
+	
 	if(m==NULL){
 		IOLog("null pkt \n");
 		netStats->outputErrors++;
@@ -1407,7 +1414,7 @@ copy_packet:
 	}
 	
 	if((fNetif->getFlags() & IFF_RUNNING)==0
-		 || !is_associated())
+		 || !iwl3945_is_associated((struct iwl3945_priv*)get_my_hw()->priv))
 	{
 		netStats->outputPackets++;
 		IOLog("tx pkt with net down\n");
@@ -1439,7 +1446,7 @@ copy_packet:
 		{
 			netStats->outputErrors++;
 			IOLog("merger pkt failed\n");
-			goto finish;
+			return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 		}
 		m=nm;
 	}
@@ -1448,11 +1455,14 @@ copy_packet:
 		//IWI_ERR("BUG: tx packet is not single mbuf mbuf_len(%d) mbuf_pkthdr_len(%d)\n",mbuf_len(m) , mbuf_pkthdr_len(m) );
 		//IWI_ERR("BUG: next mbuf size %d\n",mbuf_len(mbuf_next(m)));
 		netStats->outputErrors++;
-		goto finish;
+		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
-	IOLog("call ieee80211_xmit\n");
-	//int ret  = ieee80211_xmit(m);
-	//if (ret==kIOReturnOutputSuccess) txpkt=true;
+	
+	struct sk_buff skb;//need to free skb?
+	skb.mac_data=m;
+	int ret  = iwl3945_mac_tx(get_my_hw(),&skb,&tx_ctrl);//check tx_ctrl setup
+	IOLog("iwl3945_mac_tx result %d\n",ret);
+	if (ret==0) netStats->outputPackets++;
 	//return ret;
 	
 finish:	

@@ -232,9 +232,77 @@ struct ieee80211_hw;
 
 //#define spin_lock_irqsave(lock, fl) //lck_spin_lock((lock)->slock+flags-flags)
 //#define spin_unlock_irqrestore(lock, fl) //lck_spin_unlock(((lock)->slock)+flags-flags)
-#define time_after(x, y) 1
-#define jiffies_to_msecs(x) x
-#define msecs_to_jiffies(x) x
+#undef MSEC_PER_SEC		
+#undef USEC_PER_SEC		
+#undef NSEC_PER_SEC		
+#undef NSEC_PER_USEC		
+
+#define MSEC_PER_SEC		1000L
+#define USEC_PER_SEC		1000000L
+#define NSEC_PER_SEC		1000000000L
+#define NSEC_PER_USEC		1000L
+
+static inline unsigned int
+__div(unsigned long long n, unsigned int base)
+{
+	return n / base;
+}
+#undef jiffies
+#define jiffies		\
+({		\
+	uint64_t m,f;		\
+	clock_get_uptime(&m);		\
+	absolutetime_to_nanoseconds(m,&f);		\
+	((f * HZ) / 1000000000);		\
+})
+
+static unsigned long usecs_to_jiffies(const unsigned int u)
+ {
+         //if (u > jiffies_to_usecs(MAX_JIFFY_OFFSET))
+           //      return MAX_JIFFY_OFFSET;
+ #if HZ <= USEC_PER_SEC && !(USEC_PER_SEC % HZ)
+         return (u + (USEC_PER_SEC / HZ) - 1) / (USEC_PER_SEC / HZ);
+ #elif HZ > USEC_PER_SEC && !(HZ % USEC_PER_SEC)
+         return u * (HZ / USEC_PER_SEC);
+ #else
+         return (u * HZ + USEC_PER_SEC - 1) / USEC_PER_SEC;
+ #endif
+ }
+
+static inline void jiffies_to_timespec(unsigned long jiffiess, struct timespec *value)
+{
+	uint64_t nsec = (uint64_t)jiffies * NSEC_PER_SEC;//TICK_NSEC;
+	//value->tv_sec = div_long_long_rem(nsec, NSEC_PER_SEC, &value->tv_nsec);
+	// this is wrong
+	value->tv_nsec = nsec;
+	value->tv_sec = __div(nsec, NSEC_PER_SEC);
+}
+
+static inline unsigned int jiffies_to_msecs(const unsigned long j)
+{
+#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
+	return (MSEC_PER_SEC / HZ) * j;
+#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
+	return (j + (HZ / MSEC_PER_SEC) - 1)/(HZ / MSEC_PER_SEC);
+#else
+	return (j * MSEC_PER_SEC) / HZ;
+#endif
+}
+
+static inline unsigned long msecs_to_jiffies(const unsigned int m)
+{
+         //if (m > jiffies_to_msecs(MAX_JIFFY_OFFSET)) return MAX_JIFFY_OFFSET;
+#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
+         return (m + (MSEC_PER_SEC / HZ) - 1) / (MSEC_PER_SEC / HZ);
+#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
+         return m * (HZ / MSEC_PER_SEC);
+#else
+         return (m * HZ + MSEC_PER_SEC - 1) / MSEC_PER_SEC;
+#endif
+}
+
+#define time_after(a,b)	((long)(b) - (long)(a) < 0)
+
 #define wdev_priv(x) x
 
 //#include "iwi3945.h"
@@ -690,6 +758,10 @@ struct ieee80211_local {
 
 
 struct sk_buff {
+
+	struct sk_buff          *next;
+	struct sk_buff          *prev;
+	int pkt_type;
 //    void *data;
 //    unsigned int len;
     mbuf_t mac_data;
@@ -779,9 +851,13 @@ struct ieee80211_sta_bss {
 };
 
 
-
+struct kref {
+         atomic_t refcount;
+          void (*release)(struct kref *kref);
+  };
+ 
 struct sta_info {
-	//struct kref kref;
+	struct kref kref;
 	struct list_head list;
 	struct sta_info *hnext; /* next entry in hash table list */
 
@@ -928,7 +1004,7 @@ struct rate_control_ops {
 struct rate_control_ref {
     struct rate_control_ops *ops;
     void *priv;
-//    struct kref kref;
+    struct kref kref;
 };
 
 
@@ -1953,4 +2029,13 @@ static inline void init_waitqueue_head(wait_queue_head_t *q)
 }
 */
 
+ #define PACKET_HOST             0               /* To us                */
+  #define PACKET_BROADCAST        1               /* To all               */
+  #define PACKET_MULTICAST        2               /* To group             */
+  #define PACKET_OTHERHOST        3               /* To someone else      */
+  #define PACKET_OUTGOING         4               /* Outgoing of any type */
+  /* These ones are invisible by user level */
+  #define PACKET_LOOPBACK         5               /* MC/BRD frame looped back */
+  #define PACKET_FASTROUTE        6               /* Fastrouted frame     */
+ 
 #endif //__DEFINES_H__
