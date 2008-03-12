@@ -96,6 +96,9 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 
 //#include <i386/locks.h>
 #include <IOKit/pccard/k_compat.h>
+#undef add_timer
+#undef del_timer
+#undef mod_timer	
 #include <IOKit/IOLocks.h>
 
 
@@ -1983,11 +1986,11 @@ __ret;                                  \
 #undef writel
 #define readl(addr) OSReadLittleInt32(addr, 0)
 #define writel(value, addr) OSWriteLittleInt32(addr, 0, value)
-#define IOPCCardAddTimer(x) q
+//#define IOPCCardAddTimer(x) q
 #define DEBUG(level,...) IOLog(__VA_ARGS__)
-#undef mod_timer
 #undef add_timer
-#undef mod_timer
+#undef del_timer
+#undef mod_timer	
 #define BIT(x) (1UL << (x))
 
 
