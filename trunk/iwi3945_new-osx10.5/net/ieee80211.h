@@ -1169,6 +1169,7 @@ struct ieee80211_hw {
 	/* Number of available hardware TX queues for data packets.
 	 * WMM requires at least four queues. */
 	int queues;
+	struct workqueue_struct* workqueue;
 };
 
 struct ieee80211_channel {

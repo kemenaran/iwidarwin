@@ -9,4 +9,5 @@ sudo chown -R root:wheel build/Debug/iwi3945.kext
 sudo chmod -R 755 build/Debug/iwi3945.kext
 sudo mv build/Debug/iwi3945.kext build/Debug/iwi3945-loadable.kext
 sudo sync
-sudo kextload -t build/Debug/iwi3945-loadable.kext
+cp build/Debug/iwi3945-loadable.kext/Contents/MacOS/iwi3945 /Users/netwarrior/Desktop/iwi_bin
+sudo kextload -i build/Debug/iwi3945-loadable.kext 
