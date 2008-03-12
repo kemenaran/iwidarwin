@@ -54,9 +54,9 @@
 // primarily when allocating sk_buff entries.
 static IONetworkController *currentController;
 #ifdef IO80211_VERSION
-extern IO80211Interface*			fNetif;	
+static IO80211Interface*			my_fNetif;	
 #else
-extern IOEthernetInterface*			fNetif;
+static IOEthernetInterface*			my_fNetif;
 #endif	
 static ieee80211_hw * my_hw;
 static IOWorkLoop * workqueue;
@@ -93,7 +93,9 @@ void setCurController(IONetworkController *tmp){
 }
 
 struct ieee80211_hw * get_my_hw(){
-	return my_hw;
+	if(my_hw)
+		return my_hw;
+	return NULL;
 }
 
 IOWorkLoop * getWorkLoop(){
@@ -118,17 +120,22 @@ IOMemoryMap * getMap(){
 	return NULL;
 }
 
-void setMyfifnet(ifnet_t fifnet){
-	my_fifnet = fifnet;
-}
+
 
 /*
 	Setters
 */
+void setMyfifnet(ifnet_t fifnet){
+	my_fifnet = fifnet;
+}
+
 void setUnloaded(){
 	is_unloaded=true;
 }
 
+void setfNetif(IOEthernetInterface*	Intf){
+	my_fNetif=Intf;
+}
 #pragma mark Various
 
 #pragma mark -
@@ -1131,7 +1138,7 @@ ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
 	//skb->protocol = htons(ETH_P_802_2);
 	memset(skb->cb, 0, sizeof(skb->cb));
 	//netif_rx(skb);
-	fNetif->inputPacket(skb->mac_data,mbuf_len(skb->mac_data));
+	my_fNetif->inputPacket(skb->mac_data,mbuf_len(skb->mac_data));
 }
 
 
@@ -3238,7 +3245,7 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 		//skb->protocol = eth_type_trans(skb, dev);
 		memset(skb->cb, 0, sizeof(skb->cb));
 		//netif_rx(skb);
-		fNetif->inputPacket(skb->mac_data,mbuf_len(skb->mac_data));
+		my_fNetif->inputPacket(skb->mac_data,mbuf_len(skb->mac_data));
 	}
 
 	if (skb2) {

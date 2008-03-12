@@ -8956,3 +8956,7 @@ MODULE_PARM_DESC(qos_enable, "enable all QoS functionality");
 
 module_exit(iwl3945_exit);
 module_init(iwl3945_init);
+
+//Hack
+module_associated(iwl3945_is_associated);
+module_mac_tx(iwl3945_mac_tx);

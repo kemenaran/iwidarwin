@@ -1931,7 +1931,8 @@ int __x = (x);          \
 // This magic allows us to call init() and exit(), despite them being declared static
 #define module_init(func) int (*init_routine)(void) = func
 #define module_exit(func) void (*exit_routine)(void) = func
-
+#define module_associated(func) int (*is_associated)(void *) = func
+#define module_mac_tx(func) int (*mac_tx)(struct ieee80211_hw *, struct sk_buff *,struct ieee80211_tx_control *) = func
 
 
 #include "compatibility.h"
