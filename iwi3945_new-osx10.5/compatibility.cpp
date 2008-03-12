@@ -9,6 +9,7 @@
 
 #define NO_SPIN_LOCKS 0
 #define NO_MUTEX_LOCKS 0
+#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 
 #include <sys/kernel_types.h>
 #include <mach/vm_types.h>
@@ -142,6 +143,7 @@ void setfNetif(IOEthernetInterface*	Intf){
 	my_fNetif=Intf;
 }
 #pragma mark Various
+
 
 #pragma mark -
 #pragma mark Adapt sk_buff functions to mbuf for OS X
@@ -765,16 +767,48 @@ void spin_unlock_bh( spinlock_t *lock ) {
     return;
 }
 
+#pragma mark -
+#pragma mark timer adaptation
+
+void
+IOPCCardAddTimer(struct timer_list * timer)
+{
+    uint64_t                    deadline;
+
+    clock_interval_to_deadline(timer->expires, NSEC_PER_SEC / HZ, &deadline);
+    //thread_call_func_delayed(timer->function, (void *)timer, deadline);
+	thread_call_enter1_delayed((thread_call_t)timer->function,(void*)timer->data,deadline);
+}
+
+int
+IOPCCardDeleteTimer(struct timer_list * timer)
+{
+    //return (int)thread_call_func_cancel(timerFunnel, (void *)timer, FALSE);
+	return thread_call_cancel((thread_call_t)timer->function);
+}
+
+
+int add_timer(struct timer_list *timer) {
+	IOPCCardAddTimer(timer);
+	return 0;
+}
+
+int del_timer(struct timer_list *timer) {
+	return IOPCCardDeleteTimer(timer);
+}
+
 void init_timer(struct timer_list *timer) {
-//(Doesn't actually work)    return IOPCCardAddTimer(timer);
+	timer=(struct timer_list*)IOMalloc(sizeof(struct timer_list*));
 }
 
 int mod_timer(struct timer_list *timer, int length) {
-    return 0;
+	del_timer(timer);
+	timer->expires = length; 
+	add_timer(timer);
 }
 
 int del_timer_sync(struct timer_list *timer) {
-//(Doesn't actually work)    return IOPCCardDeleteTimer(timer);
+	del_timer(timer);
 }
 
 int in_interrupt() {
@@ -863,14 +897,17 @@ IM_HERE_NOW();
 
 
 int ieee80211_rate_control_register(struct rate_control_ops *ops) {
+IM_HERE_NOW();
     return 0;
 }
 
 void ieee80211_rate_control_unregister(struct rate_control_ops *ops) {
+IM_HERE_NOW();
     return;
 }
 
 int ieee80211_get_morefrag(struct ieee80211_hdr *hdr) {
+IM_HERE_NOW();
     return (le16_to_cpu(hdr->frame_control) &
             IEEE80211_FCTL_MOREFRAGS) != 0;
 }
@@ -922,6 +959,7 @@ IM_HERE_NOW();
 
 static inline void *netdev_priv(const struct net_device *dev)
  {
+ IM_HERE_NOW();
          return dev->priv;
  }
 #define IEEE80211_DEV_TO_SUB_IF(dev) netdev_priv(dev)
@@ -1262,6 +1300,7 @@ IM_HERE_NOW();
 
 static inline int ieee80211_bssid_match(const u8 *raddr, const u8 *addr)
 {
+IM_HERE_NOW();
 	return compare_ether_addr(raddr, addr) == 0 ||
 	       is_broadcast_ether_addr(raddr);
 }
@@ -1269,6 +1308,7 @@ static inline int ieee80211_bssid_match(const u8 *raddr, const u8 *addr)
 static inline void rate_control_rate_init(struct sta_info *sta,
 					  struct ieee80211_local *local)
 {
+IM_HERE_NOW();
 	struct rate_control_ref *ref = sta->rate_ctrl;
 	ref->ops->rate_init(ref->priv, sta->rate_ctrl_priv, local, sta);
 }
@@ -1278,6 +1318,7 @@ static inline void rate_control_rate_init(struct sta_info *sta,
 static void sta_info_hash_add(struct ieee80211_local *local,
 			      struct sta_info *sta)
 {
+IM_HERE_NOW();
 	sta->hnext = local->sta_hash[STA_HASH(sta->addr)];
 	local->sta_hash[STA_HASH(sta->addr)] = sta;
 }
@@ -1290,19 +1331,22 @@ static void kref_init(struct kref *kref, void (*release)(struct kref *kref))
   }
 
 static  struct kref *kref_get(struct kref *kref)
-  {
+{
+IM_HERE_NOW();
           //WARN_ON(!atomic_read(&kref->refcount));
           atomic_inc(&kref->refcount);
           return kref;
-  }
+}
  
-  static inline struct sta_info *__sta_info_get(struct sta_info *sta)
+static inline struct sta_info *__sta_info_get(struct sta_info *sta)
 {
+IM_HERE_NOW();
     kref_get(&sta->kref);
 }
  
 struct sta_info * sta_info_get(struct ieee80211_local *local, u8 *addr)
 {
+IM_HERE_NOW();
     struct sta_info *sta;
     
     spin_lock_bh(&local->sta_lock);
@@ -1328,32 +1372,37 @@ struct sta_info * sta_info_get(struct ieee80211_local *local, u8 *addr)
    * Decrement the refcount, and if 0, call kref->release().
    */
 static  void kref_put(struct kref *kref)
-  {
-          if (atomic_dec_and_test(&kref->refcount)) {
-                  IOLog("kref cleaning up\n");
-                  kref->release(kref);
- }  
- } 
+{
+  IM_HERE_NOW();
+		if (atomic_dec_and_test(&kref->refcount)) {
+			IOLog("kref cleaning up\n");
+			kref->release(kref);
+		} 
+} 
  
 void sta_info_put(struct sta_info *sta)
 {
+IM_HERE_NOW();
     kref_put(&sta->kref);
 }
 
 static struct rate_control_ref *rate_control_get(struct rate_control_ref *ref)
 {
+IM_HERE_NOW();
 	kref_get(&ref->kref);
 	return ref;
 }
 
 static void rate_control_put(struct rate_control_ref *ref)
 {
+IM_HERE_NOW();
 	kref_put(&ref->kref);//, rate_control_release);
 }
 
 static inline void *rate_control_alloc_sta(struct rate_control_ref *ref,
 					   gfp_t gfp)
 {
+IM_HERE_NOW();
 	return ref->ops->alloc_sta(ref->priv, gfp);
 }
 
@@ -1694,18 +1743,12 @@ void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct i
 	memcpy(skb->cb, status, sizeof(*status));
 	skb->pkt_type = IEEE80211_RX_MSG;
 	skb_queue_tail(&local->skb_queue, skb);
-	tasklet_schedule(&local->tasklet);
+	//tasklet_schedule(&local->tasklet);
 	
 	//Start the tasklet
-	//IOCreateThread(&ieee80211_tasklet_handler,local);
-	
-	/*
-		RX implementation must be moved after
-	*/
-	//__ieee80211_rx(hw,skb,status);
-	
-
+	IOCreateThread((void(*)(void*))&ieee80211_tasklet_handler,local);
 }
+
 
 
 
@@ -4124,8 +4167,6 @@ int if_down(){
 	return 0;
 }
 
-
-#define add_timer(x)
 
 /* Maximum number of seconds to wait for the traffic load to get below
  * threshold before forcing a passive scan. */

@@ -39,7 +39,7 @@
 			<key>p_led</key>
 			<integer>1</integer>
 			<key>p_mode</key>
-			<integer>0</integer>
+			<integer>1</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
