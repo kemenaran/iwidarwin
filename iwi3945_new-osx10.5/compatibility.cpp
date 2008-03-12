@@ -57,7 +57,8 @@ static IONetworkController *currentController;
 static IO80211Interface*			my_fNetif;	
 #else
 static IOEthernetInterface*			my_fNetif;
-#endif	
+#endif
+static IOBasicOutputQueue *				fTransmitQueue;	
 static ieee80211_hw * my_hw;
 static IOWorkLoop * workqueue;
 static IOInterruptEventSource *	fInterruptSrc;
@@ -230,7 +231,7 @@ static inline int skb_queue_empty(const struct sk_buff_head *list)
   *      the buffer is already under the length specified it is not modified.
   *      The skb must be linear.
   */
-static inline void skb_trim(struct sk_buff *skb, unsigned int len)
+static inline void skb_trim(struct sk_buff *skb, signed int len)
 {
         //cut from the end of mbuf
 	if (len>0)
@@ -342,7 +343,8 @@ static inline unsigned char *__skb_pull(struct sk_buff *skb, unsigned int len)
  }
 
 void dev_kfree_skb_any(struct sk_buff *skb) {
-    dev_kfree_skb(skb);
+    //need to free prev,next
+	dev_kfree_skb(skb);
 }
 
 void kfree_skb(struct sk_buff *skb){
@@ -357,6 +359,7 @@ void dev_kfree_skb(struct sk_buff *skb) {
     if (skb->mac_data)
 	if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
         intf->freePacket(skb->mac_data);
+	skb->mac_data=NULL;
 }
 
 struct sk_buff *__alloc_skb(unsigned int size,gfp_t priority, int fclone, int node) {
@@ -1134,7 +1137,7 @@ ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
 	//FIXME: Preparation of the mac header and send the packet
 	skb_set_mac_header(skb, 0);
 	//skb->ip_summed = CHECKSUM_UNNECESSARY;
-	//skb->pkt_type = PACKET_OTHERHOST;
+	skb->pkt_type = PACKET_OTHERHOST;
 	//skb->protocol = htons(ETH_P_802_2);
 	memset(skb->cb, 0, sizeof(skb->cb));
 	//netif_rx(skb);
@@ -1702,11 +1705,174 @@ void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw,
 }
 
 void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue) {
-    return;
+    fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	return;
+}
+
+
+
+ int __bitmap_empty(const unsigned long *bitmap, int bits)
+ {
+         int k, lim = bits/BITS_PER_LONG;
+         for (k = 0; k < lim; ++k)
+                 if (bitmap[k])
+                         return 0;
+ 
+         if (bits % BITS_PER_LONG)
+                 if (bitmap[k] & BITMAP_LAST_WORD_MASK(bits))
+                         return 0;
+ 
+         return 1;
+ }
+ 
+static inline int bitmap_empty(const unsigned long *src, int nbits)
+{
+         if (nbits <= BITS_PER_LONG)
+                 return ! (*src & BITMAP_LAST_WORD_MASK(nbits));
+         else
+                 return __bitmap_empty(src, nbits);
+}
+
+static void ieee80211_beacon_add_tim(struct ieee80211_local *local,
+				     struct ieee80211_if_ap *bss,
+				     struct sk_buff *skb)
+{
+	u8 *pos, *tim;
+	int aid0 = 0;
+	int i, have_bits = 0, n1, n2;
+
+	/* Generate bitmap for TIM only if there are any STAs in power save
+	 * mode. */
+	//spin_lock_bh(&local->sta_lock);
+	if (atomic_read(&bss->num_sta_ps) > 0)
+		/* in the hope that this is faster than
+		 * checking byte-for-byte */
+		have_bits = !bitmap_empty((unsigned long*)bss->tim,
+					  IEEE80211_MAX_AID+1);
+
+	if (bss->dtim_count == 0)
+		bss->dtim_count = bss->dtim_period - 1;
+	else
+		bss->dtim_count--;
+
+	tim = pos = (u8 *) skb_put(skb, 6);
+	*pos++ = WLAN_EID_TIM;
+	*pos++ = 4;
+	*pos++ = bss->dtim_count;
+	*pos++ = bss->dtim_period;
+
+	if (bss->dtim_count == 0 && !skb_queue_empty(&bss->ps_bc_buf))
+		aid0 = 1;
+
+	if (have_bits) {
+		/* Find largest even number N1 so that bits numbered 1 through
+		 * (N1 x 8) - 1 in the bitmap are 0 and number N2 so that bits
+		 * (N2 + 1) x 8 through 2007 are 0. */
+		n1 = 0;
+		for (i = 0; i < IEEE80211_MAX_TIM_LEN; i++) {
+			if (bss->tim[i]) {
+				n1 = i & 0xfe;
+				break;
+			}
+		}
+		n2 = n1;
+		for (i = IEEE80211_MAX_TIM_LEN - 1; i >= n1; i--) {
+			if (bss->tim[i]) {
+				n2 = i;
+				break;
+			}
+		}
+
+		/* Bitmap control */
+		*pos++ = n1 | aid0;
+		/* Part Virt Bitmap */
+		memcpy(pos, bss->tim + n1, n2 - n1 + 1);
+
+		tim[1] = n2 - n1 + 4;
+		skb_put(skb, n2 - n1);
+	} else {
+		*pos++ = aid0; /* Bitmap control */
+		*pos++ = 0; /* Part Virt Bitmap */
+	}
+	spin_unlock_bh(&local->sta_lock);
 }
 
 struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,int if_id,struct ieee80211_tx_control *control) {
-    return NULL;
+	struct ieee80211_local *local = hw_to_local(hw);
+	struct sk_buff *skb;
+	struct net_device *bdev;
+	struct ieee80211_sub_if_data *sdata = NULL;
+	struct ieee80211_if_ap *ap = NULL;
+	struct ieee80211_rate *rate;
+	struct rate_control_extra extra;
+	u8 *b_head, *b_tail;
+	int bh_len, bt_len;
+
+	bdev = local->mdev;//dev_get_by_index(if_id); //check if work
+	if (bdev) {
+		sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(bdev);
+		ap = &sdata->u.ap;
+		//dev_put(bdev);
+	}
+
+	if (!ap || sdata->type != IEEE80211_IF_TYPE_AP ||
+	    !ap->beacon_head) {
+#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+		if (net_ratelimit())
+			printk(KERN_DEBUG "no beacon data avail for idx=%d "
+			       "(%s)\n", if_id, bdev ? bdev->name : "N/A");
+#endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
+		return NULL;
+	}
+
+	/* Assume we are generating the normal beacon locally */
+	b_head = ap->beacon_head;
+	b_tail = ap->beacon_tail;
+	bh_len = ap->beacon_head_len;
+	bt_len = ap->beacon_tail_len;
+
+	skb = dev_alloc_skb(local->tx_headroom +
+		bh_len + bt_len + 256 /* maximum TIM len */);
+	if (!skb)
+		return NULL;
+
+	skb_reserve(skb, local->tx_headroom);
+	memcpy(skb_put(skb, bh_len), b_head, bh_len);
+
+	ieee80211_include_sequence(sdata, (struct ieee80211_hdr *)skb->mac_data);
+
+	ieee80211_beacon_add_tim(local, ap, skb);
+
+	if (b_tail) {
+		memcpy(skb_put(skb, bt_len), b_tail, bt_len);
+	}
+
+	if (control) {
+		memset(&extra, 0, sizeof(extra));
+		//extra.mode = local->oper_hw_mode;
+
+		rate = rate_control_get_rate(local, local->mdev, skb, &extra);
+		if (!rate) {
+			if (net_ratelimit()) {
+				printk(KERN_DEBUG "%s: ieee80211_beacon_get: no rate "
+				       "found\n", local->mdev->name);
+			}
+			dev_kfree_skb(skb);
+			return NULL;
+		}
+
+		control->tx_rate = (local->short_preamble &&
+				    (rate->flags & IEEE80211_RATE_PREAMBLE2)) ?
+			rate->val2 : rate->val;
+		control->antenna_sel_tx = local->hw.conf.antenna_sel_tx;
+		control->power_level = local->hw.conf.power_level;
+		control->flags |= IEEE80211_TXCTL_NO_ACK;
+		control->retry_limit = 1;
+		control->flags |= IEEE80211_TXCTL_CLEAR_DST_MASK;
+	}
+
+	ap->num_beacons++;
+	return skb;
 }
 
 
@@ -1721,6 +1887,77 @@ int sta_info_start(struct ieee80211_local *local)
 	return 0;
 }
 
+void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
+{
+	/* Default values for sub-interface parameters */
+	sdata->drop_unencrypted = 0;
+	sdata->eapol = 1;
+	for (int i = 0; i < IEEE80211_FRAGMENT_MAX; i++)
+		skb_queue_head_init(&sdata->fragments[i].skb_list);
+}
+
+int ieee80211_if_add(struct net_device *dev, const char *name,
+		     struct net_device **new_dev, int type)
+{
+	//full of bugs!!
+	struct net_device *ndev;
+	struct ieee80211_local *local = (struct ieee80211_local*)dev->ieee80211_ptr;//wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_sub_if_data *sdata = NULL;
+	int ret;
+
+	//ASSERT_RTNL();
+	ndev = local->mdev;//alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+			    //name, ieee80211_if_setup);
+	if (!ndev)
+		return -ENOMEM;
+
+	/*ret = dev_alloc_name(ndev, ndev->name);
+	if (ret < 0)
+		goto fail;*/
+
+	//memcpy(ndev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN);
+	ndev->base_addr = dev->base_addr;
+	ndev->irq = dev->irq;
+	ndev->mem_start = dev->mem_start;
+	ndev->mem_end = dev->mem_end;
+	//SET_NETDEV_DEV(ndev, wiphy_dev(local->hw.wiphy));
+
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(ndev);
+	ndev->ieee80211_ptr = &sdata->wdev;
+	//sdata->wdev.wiphy = local->hw.wiphy;
+	sdata->type = IEEE80211_IF_TYPE_AP;
+	sdata->dev = ndev;
+	sdata->local = local;
+	ieee80211_if_sdata_init(sdata);
+
+	/*ret = register_netdevice(ndev);
+	if (ret)
+		goto fail;*/
+
+	//ieee80211_debugfs_add_netdev(sdata);
+	//ieee80211_if_set_type(ndev, type);
+
+	//write_lock_bh(&local->sub_if_lock);
+	/*if (unlikely(local->reg_state == IEEE80211_DEV_UNREGISTERED)) {
+		write_unlock_bh(&local->sub_if_lock);
+		__ieee80211_if_del(local, sdata);
+		return -ENODEV;
+	}*/
+	list_add(&sdata->list, &local->sub_if_list);
+	if (new_dev)
+		*new_dev = ndev;
+	//write_unlock_bh(&local->sub_if_lock);
+
+	//ieee80211_update_default_wep_only(local);
+
+	return 0;
+
+fail:
+	//free_netdev(ndev);
+	return ret;
+}
+
+
 #define max_t(type,x,y) \
 	({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
 int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
@@ -1732,20 +1969,21 @@ int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
 	if (result < 0)
 		return result;
 
-	name = wiphy_dev(local->hw.wiphy)->driver->name;
-	local->hw.workqueue = create_singlethread_workqueue(name);
+	name = wiphy_dev(local->hw.wiphy)->driver->name;*/
+	local->hw.workqueue = create_workqueue("singlethread_workqueue");//create_singlethread_workqueue(name);
 	if (!local->hw.workqueue) {
 		result = -ENOMEM;
-		goto fail_workqueue;
-	}*/
+		return result;
+		//goto fail_workqueue;
+	}
 
 	/*
 	 * The hardware needs headroom for sending the frame,
 	 * and we need some headroom for passing the frame to monitor
 	 * interfaces, but never both at the same time.
 	 */
-	//local->tx_headroom = max_t(unsigned int , local->hw.extra_tx_headroom,
-	//			   sizeof(struct ieee80211_tx_status_rtap_hdr));
+	local->tx_headroom = max_t(unsigned int , local->hw.extra_tx_headroom,
+				   sizeof(struct ieee80211_tx_status_rtap_hdr));
 
 	//debugfs_hw_add(local);
 
@@ -1767,22 +2005,22 @@ int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
 	/*rtnl_lock();
 	result = dev_alloc_name(local->mdev, local->mdev->name);
 	if (result < 0)
-		goto fail_dev;
+		goto fail_dev;*/
 
-	memcpy(local->mdev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN);
-	SET_NETDEV_DEV(local->mdev, wiphy_dev(local->hw.wiphy));*/
+	//memcpy(local->mdev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN); //check this
+	//SET_NETDEV_DEV(local->mdev, wiphy_dev(local->hw.wiphy));
 
 	/*result = register_netdevice(local->mdev);
 	if (result < 0)
 		goto fail_dev;
 
-	ieee80211_debugfs_add_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));*/
+	ieee80211_debugfs_add_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));
 
-	/*result = ieee80211_init_rate_ctrl_alg(local, NULL);
+	result = ieee80211_init_rate_ctrl_alg(local, NULL);
 	if (result < 0) {
 		printk(KERN_DEBUG "%s: Failed to initialize rate control "
 		       "algorithm\n", local->mdev->name);
-		goto fail_rate;
+		//goto fail_rate;
 	}*/
 //this one maybe
 /*	result = ieee80211_wep_init(local);
@@ -1796,14 +2034,14 @@ int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
 	//ieee80211_install_qdisc(local->mdev);
 
 	/* add one default STA interface */
-/*	result = ieee80211_if_add(local->mdev, "wlan%d", NULL,
+	result = ieee80211_if_add(local->mdev, "en%d", NULL,
 				  IEEE80211_IF_TYPE_STA);
 	if (result)
 		printk(KERN_WARNING "%s: Failed to add default virtual iface\n",
 		       local->mdev->name);
 
-	local->reg_state = IEEE80211_DEV_REGISTERED;
-	rtnl_unlock();
+	(int)local->reg_state = 1;//IEEE80211_DEV_REGISTERED;//check this
+	/*rtnl_unlock();
 
 	ieee80211_led_init(local);*/
 
@@ -1835,63 +2073,6 @@ void ieee80211_start_queues(struct ieee80211_hw *hw){
     
     for (i = 0; i < local->hw.queues; i++)
         clear_bit(IEEE80211_LINK_STATE_XOFF, &local->state[i]);
-}
-
-void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
-	IOLog("TODO ieee80211_scan_completed\n");
-	return ;
-	/*struct ieee80211_local *local = hw_to_local(hw);
-	struct net_device *dev = local->scan_dev;
-	struct ieee80211_sub_if_data *sdata;
-	union iwreq_data wrqu;
-
-	local->last_scan_completed = jiffies;
-	wmb();
-	local->sta_scanning = 0;
-
-	if (ieee80211_hw_config(local))
-		printk(KERN_DEBUG "%s: failed to restore operational"
-		       "channel after scan\n", dev->name);
-
-
-	netif_tx_lock_bh(local->mdev);
-	local->filter_flags &= ~FIF_BCN_PRBRESP_PROMISC;
-	local->ops->configure_filter(local_to_hw(local),
-				     FIF_BCN_PRBRESP_PROMISC,
-				     &local->filter_flags,
-				     local->mdev->mc_count,
-				     local->mdev->mc_list);
-
-	netif_tx_unlock_bh(local->mdev);
-
-	memset(&wrqu, 0, sizeof(wrqu));
-	wireless_send_event(dev, SIOCGIWSCAN, &wrqu, NULL);
-
-	rcu_read_lock();
-	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
-
-		if (sdata->dev == local->mdev)
-			continue;
-
-		if (sdata->type == IEEE80211_IF_TYPE_STA) {
-			if (sdata->u.sta.flags & IEEE80211_STA_ASSOCIATED)
-				ieee80211_send_nullfunc(local, sdata, 0);
-			ieee80211_sta_timer((unsigned long)sdata);
-		}
-
-		netif_wake_queue(sdata->dev);
-	}
-	rcu_read_unlock();*/
-}
-
-
-static void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
-{
-	/* Default values for sub-interface parameters */
-	sdata->drop_unencrypted = 0;
-	sdata->eapol = 1;
-	for (int i = 0; i < IEEE80211_FRAGMENT_MAX; i++)
-		skb_queue_head_init(&sdata->fragments[i].skb_list);
 }
 
 
@@ -2122,7 +2303,7 @@ static void ieee80211_rx_bss_info(struct net_device *dev,
 	if (!beacon && memcmp(mgmt->da, dev->dev_addr, ETH_ALEN))
 		return; /* ignore ProbeResp to foreign address */
 
-#if 0
+#if 1
 	printk(KERN_DEBUG "%s: RX %s from " MAC_FMT " to " MAC_FMT "\n",
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
@@ -3023,9 +3204,8 @@ void ieee80211_sta_rx_mgmt(struct net_device *dev, struct sk_buff *skb,
 	case IEEE80211_STYPE_REASSOC_RESP:
 	case IEEE80211_STYPE_DEAUTH:
 	case IEEE80211_STYPE_DISASSOC:
-		//FIXME: Modify list_head
-		//skb_queue_tail(&ifsta->skb_queue, skb);
-		//queue_work(local->hw.workqueue, &ifsta->work);
+		skb_queue_tail(&ifsta->skb_queue, skb);
+		queue_work((struct workqueue_struct*)(local->hw.workqueue), (struct work_struct*)&ifsta->work);//check this
 		return;
 	default:
 		printk(KERN_DEBUG "%s: received unknown management frame - "
@@ -3171,9 +3351,7 @@ ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 		break;
 	}
 
-	UInt32 tmp = (UInt32) skb_data(skb);
-	payload = (u8*)(tmp + hdrlen);
-	//payload = skb->data + hdrlen;
+	payload = ((u8*)skb->mac_data) + hdrlen;
 	if (unlikely(skb_len(skb) - hdrlen < 8)) {
 		if (net_ratelimit()) {
 			printk(KERN_DEBUG "%s: RX too short data frame "
@@ -3426,9 +3604,6 @@ int ieee80211_hw_config(struct ieee80211_local *local)
 	local->hw.conf.freq = chan->freq;
 	local->hw.conf.phymode = mode->mode;
 	local->hw.conf.antenna_max = chan->antenna_max;
-	//FIXME: chan and mode un ieee80211_conf
-	//local->hw.conf.chan = chan;
-	//local->hw.conf.mode = mode;
 
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 	printk(KERN_DEBUG "HW CONFIG: channel=%d freq=%d "
@@ -3442,6 +3617,55 @@ int ieee80211_hw_config(struct ieee80211_local *local)
 	return ret;
 }
 
+void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
+	IOLog("ieee80211_scan_completed\n");
+	struct ieee80211_local *local = hw_to_local(hw);
+	struct net_device *dev = local->scan_dev;
+	struct ieee80211_sub_if_data *sdata;
+	union iwreq_data wrqu;
+
+	local->last_scan_completed = jiffies;
+	//wmb();
+	local->sta_scanning = 0;
+
+	if (ieee80211_hw_config(local))
+		printk(KERN_DEBUG "%s: failed to restore operational"
+		       "channel after scan\n", dev->name);
+
+	/*if (!(local->hw.flags & IEEE80211_HW_NO_PROBE_FILTERING) &&
+	    ieee80211_if_config(dev))
+		printk(KERN_DEBUG "%s: failed to restore operational"
+		       "BSSID after scan\n", dev->name);*/
+
+	//memset(&wrqu, 0, sizeof(wrqu));
+	//wireless_send_event(dev, SIOCGIWSCAN, &wrqu, NULL);
+
+	//read_lock(&local->sub_if_lock);
+	list_for_each_entry(sdata, &local->sub_if_list, list) {
+
+		/* No need to wake the master device. */
+		if (sdata->dev == local->mdev)
+			continue;
+
+		/*if (sdata->type == IEEE80211_IF_TYPE_STA) {
+			if (sdata->u.sta.associated)
+				ieee80211_send_nullfunc(local, sdata, 0);
+			ieee80211_sta_timer((unsigned long)sdata);
+		}*/
+
+		netif_wake_queue(sdata->dev);
+	}
+	//read_unlock(&local->sub_if_lock);
+
+	/*sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	if (sdata->type == IEEE80211_IF_TYPE_IBSS) {
+		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+		if (!ifsta->bssid_set ||
+		    (!ifsta->state == IEEE80211_IBSS_JOINED &&
+		    !ieee80211_sta_active_ibss(dev)))
+			ieee80211_sta_find_ibss(dev, ifsta);
+	}*/
+}
 
 static void ieee80211_sta_tx(struct net_device *dev, struct sk_buff *skb,
 			     int encrypt)
@@ -3540,8 +3764,8 @@ static void ieee80211_send_probe_req(struct net_device *dev, u8 *dst,
 void ieee80211_sta_scan_work(struct work_struct *work)
 {
 	//FIXME: error in SCAN_SEND_PROBE
-	/*struct ieee80211_local *local =
-		container_of(work, struct ieee80211_local, scan_work.work);
+	struct ieee80211_local *local = (struct ieee80211_local *)work->data;//check this
+		//container_of(work, struct ieee80211_local, scan_work.work);
 	struct net_device *dev = local->scan_dev;
 	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
 	struct ieee80211_hw_mode *mode;
@@ -3553,7 +3777,7 @@ void ieee80211_sta_scan_work(struct work_struct *work)
 		return;
 
 	switch (local->scan_state) {
-	case SCAN_SET_CHANNEL:
+	case 0://SCAN_SET_CHANNEL:
 		mode = local->scan_hw_mode;
 		if (local->scan_hw_mode->list.next == &local->modes_list &&
 		    local->scan_channel_idx >= mode->num_channels) {
@@ -3570,10 +3794,10 @@ void ieee80211_sta_scan_work(struct work_struct *work)
 			skip = 1;
 
 		if (!skip) {
-#if 0
+
 			printk(KERN_DEBUG "%s: scan channel %d (%d MHz)\n",
 			       dev->name, chan->chan, chan->freq);
-#endif
+
 
 			local->scan_channel = chan;
 			if (ieee80211_hw_config(local)) {
@@ -3599,22 +3823,22 @@ void ieee80211_sta_scan_work(struct work_struct *work)
 
 		next_delay = IEEE80211_PROBE_DELAY +
 			     usecs_to_jiffies(local->hw.channel_change_time);
-		local->scan_state = SCAN_SEND_PROBE;
+		(int)local->scan_state = 1;//SCAN_SEND_PROBE;
 		break;
-	case SCAN_SEND_PROBE:
+	case 1://SCAN_SEND_PROBE:
 		if (local->scan_channel->flag & IEEE80211_CHAN_W_ACTIVE_SCAN) {
 			ieee80211_send_probe_req(dev, NULL, local->scan_ssid,
 						 local->scan_ssid_len);
 			next_delay = IEEE80211_CHANNEL_TIME;
 		} else
 			next_delay = IEEE80211_PASSIVE_CHANNEL_TIME;
-		local->scan_state = SCAN_SET_CHANNEL;
+		(int)local->scan_state = 0;//SCAN_SET_CHANNEL;
 		break;
-	}*/
-	//FIXME: workqueue
-	//if (local->sta_scanning)
-	//	queue_delayed_work(local->hw.workqueue, &local->scan_work,
-	//			   next_delay);
+	}
+	//check this
+	if (local->sta_scanning)
+		queue_delayed_work((struct workqueue_struct*)local->hw.workqueue, (struct delayed_work*)&local->scan_work,
+				   next_delay);
 }
 
 /* How often station data is cleaned up (e.g., expiration of buffered frames)
@@ -3686,16 +3910,30 @@ static void ieee80211_tx_pending(unsigned long data)
 struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee80211_ops *  ops){
 	struct net_device *mdev;
 	struct ieee80211_local *local;
-	
 	struct ieee80211_sub_if_data *sdata;
 	int priv_size;
-	//struct wiphy *wiphy;
+	struct wiphy *wiphy;
 
+	/* Ensure 32-byte alignment of our private data and hw private data.
+	 * We use the wiphy priv data for both our ieee80211_local and for
+	 * the driver's private data
+	 *
+	 * In memory it'll be like this:
+	 *
+	 * +-------------------------+
+	 * | struct wiphy	    |
+	 * +-------------------------+
+	 * | struct ieee80211_local  |
+	 * +-------------------------+
+	 * | driver's private data   |
+	 * +-------------------------+
+	 *
+	 */
 	priv_size = ((sizeof(struct ieee80211_local) +
 		      NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST) +
 		    priv_data_len;
 
-/*	wiphy = wiphy_new(&mac80211_config_ops, priv_size);
+	/*wiphy = wiphy_new(&mac80211_config_ops, priv_size);
 
 	if (!wiphy)
 		return NULL;
@@ -3703,39 +3941,37 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	wiphy->privid = mac80211_wiphy_privid;
 
 	local = wiphy_priv(wiphy);
-	local->hw.wiphy = wiphy;
-*/
-
+	local->hw.wiphy = wiphy;*/
 	local=(struct ieee80211_local*)IOMalloc(priv_size);
 	memset(local,0,priv_size);
-	local->hw.priv =
-	(char*)local +
-			((sizeof(struct ieee80211_local) +
+	
+	local->hw.priv = (char *)local +
+			 ((sizeof(struct ieee80211_local) +
 			   NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST);
 
+	BUG_ON(!ops->tx);
+	BUG_ON(!ops->config);
+	BUG_ON(!ops->add_interface);
 	local->ops = ops;
 
 	/* for now, mdev needs sub_if_data :/ */
-/*	mdev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
-			    "wmaster%d", ether_setup);
+	mdev=(struct net_device*)IOMalloc(sizeof(struct ieee80211_sub_if_data));
+	memset(mdev,0,sizeof(struct ieee80211_sub_if_data));
+	
+	//mdev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+	//		    "wmaster%d", ether_setup);
 	if (!mdev) {
-		wiphy_free(wiphy);
+		//wiphy_free(wiphy);
 		return NULL;
 	}
 
-	sdata = IEEE80211_DEV_TO_SUB_IF(mdev);
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(mdev);
 	mdev->ieee80211_ptr = &sdata->wdev;
-	sdata->wdev.wiphy = wiphy;
-*/
+	//sdata->wdev.wiphy = wiphy;
 
-	mdev=(struct net_device*)IOMalloc(sizeof(struct ieee80211_sub_if_data));
-	memset(mdev,0,sizeof(struct ieee80211_sub_if_data));
-	sdata = (struct ieee80211_sub_if_data*)netdev_priv(mdev);
-	mdev->ieee80211_ptr=local;
-	local->mdev=mdev;
 	local->hw.queues = 1; /* default */
-	
-//	local->mdev = mdev;
+
+	local->mdev = mdev;
 	local->rx_pre_handlers = ieee80211_rx_pre_handlers;
 	local->rx_handlers = ieee80211_rx_handlers;
 	local->tx_handlers = ieee80211_tx_handlers;
@@ -3747,30 +3983,28 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	local->short_retry_limit = 7;
 	local->long_retry_limit = 4;
 	local->hw.conf.radio_enabled = 1;
-	//local->rate_ctrl_num_up = RATE_CONTROL_NUM_UP;
-	//local->rate_ctrl_num_down = RATE_CONTROL_NUM_DOWN;
 
 	local->enabled_modes = (unsigned int) -1;
 
 	INIT_LIST_HEAD(&local->modes_list);
 
-//	rwlock_init(&local->sub_if_lock);
+	//rwlock_init(&local->sub_if_lock);
 	INIT_LIST_HEAD(&local->sub_if_list);
 
-	INIT_DELAYED_WORK(&local->scan_work, ieee80211_sta_scan_work,31);
-//	init_timer(&local->stat_timer);
-//	local->stat_timer.function = ieee80211_stat_refresh;
-	//local->stat_timer.data = (unsigned long) local;
+	INIT_DELAYED_WORK(&local->scan_work, ieee80211_sta_scan_work, 100);
+	/*init_timer(&local->stat_timer);
+	local->stat_timer.function = ieee80211_stat_refresh;
+	local->stat_timer.data = (unsigned long) local;*/
 	//ieee80211_rx_bss_list_init(mdev);
-	INIT_LIST_HEAD(&local->sta_bss_list);
-	
+
 	sta_info_init(local);
-	
-/*	mdev->hard_start_xmit = ieee80211_master_start_xmit;
+
+	/*mdev->hard_start_xmit = ieee80211_master_start_xmit;
 	mdev->open = ieee80211_master_open;
 	mdev->stop = ieee80211_master_stop;
 	mdev->type = ARPHRD_IEEE80211;
 	mdev->hard_header_parse = header_parse_80211;*/
+
 	sdata->type = IEEE80211_IF_TYPE_AP;
 	sdata->dev = mdev;
 	sdata->local = local;
@@ -3778,20 +4012,19 @@ struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee
 	sdata->u.ap.max_ratectrl_rateidx = -1;
 	ieee80211_if_sdata_init(sdata);
 	list_add_tail(&sdata->list, &local->sub_if_list);
-	tasklet_init(&local->tx_pending_tasklet, ieee80211_tx_pending,  (unsigned long)local);
-	//maybe same as queue_work
-	//FIXME: taskle_disable		 
+
+	tasklet_init(&local->tx_pending_tasklet, ieee80211_tx_pending,
+		     (unsigned long)local);
 	//tasklet_disable(&local->tx_pending_tasklet);
 
 	tasklet_init(&local->tasklet,
 		     ieee80211_tasklet_handler,
 		     (unsigned long) local);
-	//FIXME: idem
 	//tasklet_disable(&local->tasklet);
 
 	skb_queue_head_init(&local->skb_queue);
 	skb_queue_head_init(&local->skb_queue_unreliable);
-	
+
 	printf("ieee80211_alloc_hw [OK]\n");
 	my_hw=local_to_hw(local);
 	return my_hw;

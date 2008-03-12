@@ -256,7 +256,7 @@ __div(unsigned long long n, unsigned int base)
 	((f * HZ) / 1000000000);		\
 })
 
-static unsigned long usecs_to_jiffies(const unsigned int u)
+static inline unsigned long usecs_to_jiffies(const unsigned int u)
  {
          //if (u > jiffies_to_usecs(MAX_JIFFY_OFFSET))
            //      return MAX_JIFFY_OFFSET;
@@ -569,7 +569,8 @@ struct ieee80211_local {
 	int monitors;
 	struct iw_statistics wstats;
 	u8 wstats_flags;
-    
+    int tx_headroom; /* required headroom for hardware/radiotap */
+	
 	enum {
 		IEEE80211_DEV_UNINITIALIZED = 0,
 		IEEE80211_DEV_REGISTERED,
@@ -1685,8 +1686,7 @@ struct ieee80211_if_sta {
 #define IEEE80211_STA_REQ_AUTH 1
 #define IEEE80211_STA_REQ_RUN  2
 	unsigned long request;
-	//struct sk_buff_head 
-	struct list_head skb_queue;
+	struct sk_buff_head skb_queue;
 
 	int key_mgmt;
 	unsigned long last_probe;
@@ -1699,8 +1699,7 @@ struct ieee80211_if_sta {
 	int auth_transaction;
 
 	unsigned long ibss_join_req;
-	//struct sk_buff *
-	mbuf_t probe_resp; /* ProbeResp template for IBSS */
+	struct sk_buff *probe_resp; /* ProbeResp template for IBSS */
 	u32 supp_rates_bits;
 
 	u32 last_rate; /* last tx data rate value. management and multi cast frame
@@ -1734,10 +1733,8 @@ struct ieee80211_if_ap {
 	 * bitmap_empty :)
 	 * NB: don't ever use set_bit, use bss_tim_set/bss_tim_clear! */
 	u8 tim[sizeof(unsigned long) * (IEEE80211_MAX_AID + 1)];//BITS_TO_LONGS
-	//atomic_t 
-	int num_sta_ps; /* number of stations in PS mode */
-	//struct sk_buff_head 
-	struct list_head ps_bc_buf;
+	atomic_t num_sta_ps; /* number of stations in PS mode */
+	struct sk_buff_head ps_bc_buf;
 	int dtim_period, dtim_count;
 	int force_unicast_rateidx; /* forced TX rateidx for unicast frames */
 	int max_ratectrl_rateidx; /* max TX rateidx for rate control */
