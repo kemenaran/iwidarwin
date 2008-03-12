@@ -126,6 +126,10 @@ IOMemoryMap * getMap(){
 /*
 	Setters
 */
+void setfTransmitQueue(IOBasicOutputQueue* fT){
+	fTransmitQueue=fT;
+}
+
 void setMyfifnet(ifnet_t fifnet){
 	my_fifnet = fifnet;
 }
@@ -383,7 +387,7 @@ static inline struct sk_buff *__dev_alloc_skb(unsigned int length,
          return skb;
  }
 
-static inline struct sk_buff *dev_alloc_skb(unsigned int length)
+struct sk_buff *dev_alloc_skb(unsigned int length)
  {
          return __dev_alloc_skb(length, GFP_ATOMIC);
  }
@@ -659,8 +663,8 @@ void mutex_init(struct mutex *new_mutex) {
 void mutex_lock(struct mutex *new_mtx) {
 //#ifndef NO_MUTEX_LOCKS
     //mutexes[current_mutex++] = new_mtx;
-	if(new_mtx)
-		lck_mtx_lock(new_mtx->mlock);
+	//if(new_mtx)
+	//	lck_mtx_lock(new_mtx->mlock);
 //#endif
     return;
 }
@@ -668,8 +672,8 @@ void mutex_lock(struct mutex *new_mtx) {
 void mutex_unlock(struct mutex *new_mtx) {
 //#ifndef NO_MUTEX_LOCKS
     //mutexes[current_mutex--] = NULL;
-	if(new_mtx)
-		lck_mtx_unlock(new_mtx->mlock);
+	//if(new_mtx)
+	//	lck_mtx_unlock(new_mtx->mlock);
 //#endif
     return;
 }
@@ -818,6 +822,7 @@ bool netif_queue_stopped(struct net_device *dev) {
 /* Perform netif operations on all configured interfaces */
 int ieee80211_netif_oper(struct ieee80211_hw *hw, Netif_Oper op)
 {
+IM_HERE_NOW();
     struct ieee80211_local *local = hw_to_local(hw);
     struct net_device *dev = local->mdev;
     
@@ -877,6 +882,7 @@ static inline int __ieee80211_invoke_rx_handlers(
                                  ieee80211_rx_handler *handlers,
                                  struct ieee80211_txrx_data *rx,
                                  struct sta_info *sta){
+IM_HERE_NOW();
 	ieee80211_rx_handler *handler;
 	ieee80211_txrx_result res = TXRX_DROP;
 
@@ -906,6 +912,7 @@ static inline void ieee80211_invoke_rx_handlers(struct ieee80211_local *local,
                                                  struct ieee80211_txrx_data *rx,
                                                  struct sta_info *sta)
 {
+IM_HERE_NOW();
          if (__ieee80211_invoke_rx_handlers(local, handlers, rx, sta) ==
              TXRX_CONTINUE)
                  dev_kfree_skb(rx->skb);
@@ -921,6 +928,7 @@ static inline void *netdev_priv(const struct net_device *dev)
 
 u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
  {
+ IM_HERE_NOW();
          u16 fc;
  
          if (len < 24)
@@ -955,6 +963,7 @@ u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
 
 static int ieee80211_get_radiotap_len(struct sk_buff *skb)
 {
+IM_HERE_NOW();
 	struct ieee80211_radiotap_header *hdr =
 		(struct ieee80211_radiotap_header *) skb_data(skb);
 
@@ -966,6 +975,7 @@ static int ieee80211_get_radiotap_len(struct sk_buff *skb)
 
 int ieee80211_get_hdrlen_from_skb(const struct sk_buff *skb)
 {
+IM_HERE_NOW();
 	const struct ieee80211_hdr *hdr = (const struct ieee80211_hdr *) skb_data(skb);
 	int hdrlen;
 
@@ -979,6 +989,7 @@ int ieee80211_get_hdrlen_from_skb(const struct sk_buff *skb)
 
 int ieee80211_wep_get_keyidx(struct sk_buff *skb)
 {
+IM_HERE_NOW();
 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
 	u16 fc;
 	int hdrlen;
@@ -1014,6 +1025,7 @@ enum ieee80211_msg_type {
 static struct ieee80211_rate *
 ieee80211_get_rate(struct ieee80211_local *local, int phymode, int hw_rate)
 {
+IM_HERE_NOW();
 	struct ieee80211_hw_mode *mode;
 	int r;
 
@@ -1037,6 +1049,7 @@ ieee80211_fill_frame_info(struct ieee80211_local *local,
 			  struct ieee80211_frame_info *fi,
 			  struct ieee80211_rx_status *status)
 {
+IM_HERE_NOW();
 	if (status) {
 		struct timespec ts;
 		struct ieee80211_rate *rate;
@@ -1108,6 +1121,7 @@ void
 ieee80211_rx_mgmt(struct ieee80211_local *local, struct sk_buff *skb,
 		  struct ieee80211_rx_status *status, u32 msg_type)
 {
+IM_HERE_NOW();
 	struct ieee80211_frame_info *fi;
 	const size_t hlen = sizeof(struct ieee80211_frame_info);
 	struct ieee80211_sub_if_data *sdata;
@@ -1155,6 +1169,7 @@ static void ieee80211_rx_michael_mic_report(struct net_device *dev,
 					    struct sta_info *sta,
 					    struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();
 	int keyidx, hdrlen;
 
 	hdrlen = ieee80211_get_hdrlen_from_skb(rx->skb);
@@ -1345,6 +1360,7 @@ static inline void *rate_control_alloc_sta(struct rate_control_ref *ref,
 struct sta_info * sta_info_add(struct ieee80211_local *local,
 			       struct net_device *dev, u8 *addr, gfp_t gfp)
 {
+IM_HERE_NOW();
 	struct sta_info *sta;
 
 	sta = (sta_info*)kzalloc(sizeof(*sta), gfp);
@@ -1408,6 +1424,7 @@ struct sta_info * ieee80211_ibss_add_sta(struct net_device *dev,
 					 struct sk_buff *skb, u8 *bssid,
 					 u8 *addr)
 {
+IM_HERE_NOW();
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	struct sta_info *sta;
 	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
@@ -1444,6 +1461,7 @@ struct sta_info * ieee80211_ibss_add_sta(struct net_device *dev,
 void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
 		    struct ieee80211_rx_status *status)
 {
+IM_HERE_NOW();
 	struct ieee80211_local *local = hw_to_local(hw);
 	struct ieee80211_sub_if_data *sdata;
 	struct sta_info *sta;
@@ -1452,6 +1470,7 @@ void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
 	u16 type;
 	int multicast;
 	int radiotap_len = 0;
+
 
 	if (status->flag & RX_FLAG_RADIOTAP) {
 		radiotap_len = ieee80211_get_radiotap_len(skb);
@@ -1614,12 +1633,14 @@ void __ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb,
 #define IEEE80211_TX_STATUS_MSG 2
 static void ieee80211_tasklet_handler(unsigned long data)
 {
+IM_HERE_NOW();
 	struct ieee80211_local *local = (struct ieee80211_local *) data;
 	struct sk_buff *skb;
 	struct ieee80211_rx_status rx_status;
 	struct ieee80211_tx_status *tx_status;
 	while ((skb = skb_dequeue(&local->skb_queue)) ||
 	       (skb = skb_dequeue(&local->skb_queue_unreliable))) {
+		IOLog("Packet Found\n");
 		switch (skb->pkt_type) {
 		case IEEE80211_RX_MSG:
 			/* status is in skb->cb */
@@ -1737,6 +1758,7 @@ static void ieee80211_beacon_add_tim(struct ieee80211_local *local,
 				     struct ieee80211_if_ap *bss,
 				     struct sk_buff *skb)
 {
+IM_HERE_NOW();
 	u8 *pos, *tim;
 	int aid0 = 0;
 	int i, have_bits = 0, n1, n2;
@@ -1798,6 +1820,7 @@ static void ieee80211_beacon_add_tim(struct ieee80211_local *local,
 }
 
 struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,int if_id,struct ieee80211_tx_control *control) {
+IM_HERE_NOW();
 	struct ieee80211_local *local = hw_to_local(hw);
 	struct sk_buff *skb;
 	struct net_device *bdev;

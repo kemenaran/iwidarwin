@@ -1,6 +1,9 @@
 #ifndef __DEFINES_H__
 #define __DEFINES_H__
 
+#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
+
+
 //#define CONFIG_IWL3945_DEBUG 1
 #define DUMP_PREFIX_OFFSET 0
 #define DUMP_PREFIX_ADDRESS 1

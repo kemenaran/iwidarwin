@@ -27,7 +27,7 @@ extern "C" {
 	extern int (*is_associated)(void *);
 	extern int (*mac_tx)(struct ieee80211_hw *hw, struct sk_buff *skb,struct ieee80211_tx_control *ctl);
 	extern void dev_kfree_skb(struct sk_buff *skb);
-	extern struct sk_buff *dev_alloc_skb(unsigned int length);
+	//
 }
 extern void setCurController(IONetworkController * tmp);
 extern IOWorkLoop * getWorkLoop();
@@ -41,8 +41,10 @@ extern u8 * getMyMacAddr();
 extern void setMyfifnet(ifnet_t fifnet);
 extern struct ieee80211_hw * get_my_hw();
 extern void setfNetif(IOEthernetInterface*	Intf);
+extern void setfTransmitQueue(IOBasicOutputQueue* fT);
+extern struct sk_buff *dev_alloc_skb(unsigned int length);
 
-extern IOBasicOutputQueue *				fTransmitQueue;
+
 struct ieee80211_tx_control tx_ctrl;//need to init this?			  
 IOService * my_provider;
 #pragma mark -
@@ -143,6 +145,7 @@ bool darwin_iwi3945::start(IOService *provider)
 			return false;
 		
 		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
+		setfTransmitQueue(fTransmitQueue);
 		if (fTransmitQueue == NULL)
 		{
 			IOLog("ERR: getOutputQueue()\n");
@@ -1463,6 +1466,7 @@ copy_packet:
 		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
 	
+
 	struct sk_buff *skb=dev_alloc_skb(mbuf_pkthdr_len(m));//TODO: make this work better
 	skb->mac_data=m;
 	int ret  = mac_tx(get_my_hw(),skb,&tx_ctrl);//check tx_ctrl setup
