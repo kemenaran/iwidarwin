@@ -24,6 +24,8 @@ OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);
 extern "C" {
     extern int (*init_routine)();
     extern void (*exit_routine)();
+	extern int (*is_associated)(void *);
+	extern int (*mac_tx)(struct ieee80211_hw *hw, struct sk_buff *skb,struct ieee80211_tx_control *ctl);
 }
 extern void setCurController(IONetworkController * tmp);
 extern IOWorkLoop * getWorkLoop();
@@ -36,9 +38,10 @@ extern void start_undirect_scan();
 extern u8 * getMyMacAddr();
 extern void setMyfifnet(ifnet_t fifnet);
 extern struct ieee80211_hw * get_my_hw();
-extern int iwl3945_mac_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
-		      struct ieee80211_tx_control *ctl);
-extern int iwl3945_is_associated(struct iwl3945_priv *priv);
+extern void setfNetif(IOEthernetInterface*	Intf);
+//extern int iwl3945_mac_tx(struct ieee80211_hw *hw, struct sk_buff *skb,struct ieee80211_tx_control *ctl);
+//extern int iwl3945_is_associated(struct iwl3945_priv *priv);
+
 
 struct ieee80211_tx_control tx_ctrl;			  
 IOService * my_provider;
@@ -164,7 +167,7 @@ bool darwin_iwi3945::start(IOService *provider)
 			IOLog("%s attach failed\n", getName());
 			break;
 		}
-
+		setfNetif(fNetif);
 				
 		fNetif->registerOutputHandler(this,getOutputHandler());
 		fNetif->registerService();
@@ -1280,8 +1283,6 @@ void darwin_iwi3945::down()
 }
 
 
-
-
 /*-------------------------------------------------------------------------
  * Called by IOEthernetInterface client to enable the controller.
  * This method is always called while running on the default workloop thread.
@@ -1304,7 +1305,9 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		IOLog("ifconfig going up\n ");
 		//FIXME: if associated set IFF_RUNNING
 		//if (priv->status & STATUS_ASSOCIATED) 
-		if (iwl3945_is_associated((struct iwl3945_priv*)get_my_hw()->priv)) ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
+		if(get_my_hw())
+			if (is_associated((void *)get_my_hw()->priv))
+				ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
@@ -1413,13 +1416,15 @@ copy_packet:
 		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
 	
-	if((fNetif->getFlags() & IFF_RUNNING)==0
-		 || !iwl3945_is_associated((struct iwl3945_priv*)get_my_hw()->priv))
-	{
-		netStats->outputPackets++;
-		IOLog("tx pkt with net down\n");
-		//goto finish;
-		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
+	if(get_my_hw()){
+		if((fNetif->getFlags() & IFF_RUNNING)==0
+			|| !is_associated((struct iwl3945_priv*)get_my_hw()->priv))
+		{
+			netStats->outputPackets++;
+			IOLog("tx pkt with net down\n");
+			//goto finish;
+			return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
+		}
 	}
 
 	mbuf_t nm;
@@ -1460,7 +1465,7 @@ copy_packet:
 	
 	struct sk_buff skb;//need to free skb?
 	skb.mac_data=m;
-	int ret  = iwl3945_mac_tx(get_my_hw(),&skb,&tx_ctrl);//check tx_ctrl setup
+	int ret  = mac_tx(get_my_hw(),&skb,&tx_ctrl);//check tx_ctrl setup
 	IOLog("iwl3945_mac_tx result %d\n",ret);
 	if (ret==0) netStats->outputPackets++;
 	//return ret;
