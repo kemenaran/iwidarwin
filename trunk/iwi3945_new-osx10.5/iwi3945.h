@@ -281,7 +281,7 @@ class darwin_iwi3945 : public IOEthernetController
 		#endif		
         IOInterruptEventSource *	fInterruptSrc;	// ???
         IOTimerEventSource *		fWatchdogTimer;	// ???
-        IOBasicOutputQueue *				fTransmitQueue;	// ???
+        //IOBasicOutputQueue *				fTransmitQueue;	// ???
         UInt16 *					memBase;
         UInt32						event;
 		IONetworkMedium	*			mediumTable[MEDIUM_TYPE_INVALID];

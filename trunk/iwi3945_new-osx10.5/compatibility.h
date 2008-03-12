@@ -13,6 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+
 	extern int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device);
 	extern void release_firmware (	const struct firmware *  	fw);
 	extern void flush_workqueue(struct workqueue_struct *wq);
@@ -208,6 +209,13 @@ for (pos = list_entry((head)->next, typeof(*pos), member);  \
 prefetch(pos->member.next), &pos->member != (head);    \
 pos = list_entry(pos->member.next, typeof(*pos), member))
     static inline void prefetch(const void *x) {;}
+	
+#define list_for_each_entry_rcu(pos, head, member) \
+         for (pos = list_entry((head)->next, typeof(*pos), member); \
+                 prefetch(rcu_dereference(pos)->member.next), \
+                         &pos->member != (head); \
+                 pos = list_entry(pos->member.next, typeof(*pos), member))
+
 	extern void enable_int();
 	extern void disable_int();
 	extern void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
@@ -242,6 +250,35 @@ static inline void atomic_dec( atomic_t *v)
 	extern u32 io_read32(u32 ofs);
 	
 	extern int run_add_interface();
+	
+	struct ieee80211_tx_status_rtap_hdr {
+	struct ieee80211_radiotap_header hdr;
+	__le16 tx_flags;
+	u8 data_retries;
+} __attribute__ ((packed));
+
+static inline void ieee80211_include_sequence(struct ieee80211_sub_if_data *sdata,
+					      struct ieee80211_hdr *hdr)
+{
+	/* Set the sequence number for this frame. */
+	hdr->seq_ctrl = cpu_to_le16(sdata->sequence);
+
+	/* Increase the sequence number. */
+	sdata->sequence = (sdata->sequence + 0x10) & IEEE80211_SCTL_SEQ;
+}
+
+#ifdef CONFIG_X86_32
+#define BITS_PER_LONG 32
+#else
+#define BITS_PER_LONG 64
+#endif
+
+#define BITMAP_LAST_WORD_MASK(nbits)                                    \
+(                                                                       \
+        ((nbits) % BITS_PER_LONG) ?                                     \
+                (1UL<<((nbits) % BITS_PER_LONG))-1 : ~0UL               \
+)
+
 #ifdef __cplusplus
 }
 #endif
