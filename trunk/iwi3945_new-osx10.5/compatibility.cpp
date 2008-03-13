@@ -247,12 +247,21 @@ static inline void skb_trim(struct sk_buff *skb, signed int len)
 }
 
 
+
 static inline void skb_queue_head_init(struct sk_buff_head *list)
 {
         spin_lock_init(&list->lock);
         list->prev = list->next = (struct sk_buff *)list;
         list->qlen = 0;
 }
+
+static inline struct sk_buff *skb_peek(struct sk_buff_head *list_)
+ {
+         struct sk_buff *list = ((struct sk_buff *)list_)->next;
+         if (list == (struct sk_buff *)list_)
+                 list = NULL;
+         return list;
+ }
 
 static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
 {
@@ -774,16 +783,13 @@ void
 IOPCCardAddTimer(struct timer_list * timer)
 {
     uint64_t                    deadline;
-
     clock_interval_to_deadline(timer->expires, NSEC_PER_SEC / HZ, &deadline);
-    //thread_call_func_delayed(timer->function, (void *)timer, deadline);
 	thread_call_enter1_delayed((thread_call_t)timer->function,(void*)timer->data,deadline);
 }
 
 int
 IOPCCardDeleteTimer(struct timer_list * timer)
 {
-    //return (int)thread_call_func_cancel(timerFunnel, (void *)timer, FALSE);
 	return thread_call_cancel((thread_call_t)timer->function);
 }
 
@@ -1725,7 +1731,7 @@ IM_HERE_NOW();
  * context. Post the skb on the queue and schedule the tasklet */
 void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct ieee80211_rx_status *status)
 {
-	
+IM_HERE_NOW();	
     struct ieee80211_local *local = hw_to_local(hw);
     
     BUILD_BUG_ON(sizeof(struct ieee80211_rx_status) > sizeof(skb->cb));
@@ -1753,22 +1759,26 @@ void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb, struct i
 
 
 void ieee80211_stop_queue(struct ieee80211_hw *hw, int queue) {
+IM_HERE_NOW();	
     return;
 }
 
 void ieee80211_tx_status(struct ieee80211_hw *hw,
                          struct sk_buff *skb,
                          struct ieee80211_tx_status *status) {
+IM_HERE_NOW();	
     return;
 }
 
 void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw,
                                  struct sk_buff *skb,
                                  struct ieee80211_tx_status *status) {
+IM_HERE_NOW();	
     return;
 }
 
 void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue) {
+IM_HERE_NOW();	
     fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 	return;
 }
@@ -1943,18 +1953,21 @@ IM_HERE_NOW();
 
 
 void ieee80211_stop_queues(struct ieee80211_hw *hw) {
+IM_HERE_NOW();	
     return;
 }
 
 int sta_info_start(struct ieee80211_local *local)
 {
+IM_HERE_NOW();	
 	//check this
-	//add_timer(&local->sta_cleanup);
+	add_timer(&local->sta_cleanup);
 	return 0;
 }
 
 void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
 {
+IM_HERE_NOW();	
 	/* Default values for sub-interface parameters */
 	sdata->drop_unencrypted = 0;
 	sdata->eapol = 1;
@@ -1965,6 +1978,7 @@ void ieee80211_if_sdata_init(struct ieee80211_sub_if_data *sdata)
 int ieee80211_if_add(struct net_device *dev, const char *name,
 		     struct net_device **new_dev, int type)
 {
+IM_HERE_NOW();	
 	//full of bugs!!
 	struct net_device *ndev;
 	struct ieee80211_local *local = (struct ieee80211_local*)dev->ieee80211_ptr;//wdev_priv(dev->ieee80211_ptr);
@@ -2027,6 +2041,7 @@ fail:
 #define max_t(type,x,y) \
 	({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
 int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
+IM_HERE_NOW();	
 	struct ieee80211_local *local = hw_to_local(hw);
 	const char *name;
 	int result;
@@ -2131,9 +2146,11 @@ fail_workqueue:
 
 
 void ieee80211_unregister_hw(struct ieee80211_hw *  hw){
+IM_HERE_NOW();	
 	return;
 }
 void ieee80211_start_queues(struct ieee80211_hw *hw){
+IM_HERE_NOW();	
     struct ieee80211_local *local = hw_to_local(hw);
     int i;
     
@@ -2149,6 +2166,7 @@ typedef enum { ParseOK = 0, ParseUnknown = 1, ParseFailed = -1 } ParseRes;
 static ParseRes ieee802_11_parse_elems(u8 *start, size_t len,
 				       struct ieee802_11_elems *elems)
 {
+IM_HERE_NOW();	
 	size_t left = len;
 	u8 *pos = start;
 	int unknown = 0;
@@ -2260,6 +2278,7 @@ static ParseRes ieee802_11_parse_elems(u8 *start, size_t len,
 static struct ieee80211_sta_bss *
 ieee80211_rx_bss_get(struct net_device *dev, u8 *bssid)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sta_bss *bss;
 
@@ -2280,6 +2299,7 @@ ieee80211_rx_bss_get(struct net_device *dev, u8 *bssid)
 static void __ieee80211_rx_bss_hash_add(struct net_device *dev,
 					struct ieee80211_sta_bss *bss)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	bss->hnext = local->sta_bss_hash[STA_HASH(bss->bssid)];
 	local->sta_bss_hash[STA_HASH(bss->bssid)] = bss;
@@ -2289,6 +2309,7 @@ static void __ieee80211_rx_bss_hash_add(struct net_device *dev,
 static struct ieee80211_sta_bss *
 ieee80211_rx_bss_add(struct net_device *dev, u8 *bssid)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sta_bss *bss;
 
@@ -2311,6 +2332,7 @@ ieee80211_rx_bss_add(struct net_device *dev, u8 *bssid)
 static void __ieee80211_rx_bss_hash_del(struct net_device *dev,
 					struct ieee80211_sta_bss *bss)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sta_bss *b, *prev = NULL;
 	b = local->sta_bss_hash[STA_HASH(bss->bssid)];
@@ -2330,6 +2352,7 @@ static void __ieee80211_rx_bss_hash_del(struct net_device *dev,
 
 static void ieee80211_rx_bss_free(struct ieee80211_sta_bss *bss)
 {
+IM_HERE_NOW();	
 	kfree(bss->wpa_ie);
 	kfree(bss->rsn_ie);
 	kfree(bss->wmm_ie);
@@ -2339,6 +2362,7 @@ static void ieee80211_rx_bss_free(struct ieee80211_sta_bss *bss)
 static void ieee80211_rx_bss_put(struct net_device *dev,
 				 struct ieee80211_sta_bss *bss)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	if (!atomic_dec_and_test(&bss->users))
 		return;
@@ -2357,6 +2381,7 @@ static void ieee80211_rx_bss_info(struct net_device *dev,
 				  struct ieee80211_rx_status *rx_status,
 				  int beacon)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
 	struct ieee802_11_elems elems;
 	size_t baselen;
@@ -2598,11 +2623,13 @@ static void ieee80211_rx_mgmt_probe_resp(struct net_device *dev,
 					 size_t len,
 					 struct ieee80211_rx_status *rx_status)
 {
+IM_HERE_NOW();	
 	ieee80211_rx_bss_info(dev, mgmt, len, rx_status, 0);
 }
 
 static void ieee80211_handle_erp_ie(struct net_device *dev, u8 erp_value)
 {
+IM_HERE_NOW();	
 	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
 	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 	int use_protection = (erp_value & WLAN_ERP_USE_PROTECTION) != 0;
@@ -2651,6 +2678,7 @@ static void ieee80211_sta_wmm_params(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta,
 				     u8 *wmm_param, size_t wmm_param_len)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_tx_queue_params params;
 	size_t left;
@@ -2730,6 +2758,7 @@ static void ieee80211_rx_mgmt_beacon(struct net_device *dev,
 				     size_t len,
 				     struct ieee80211_rx_status *rx_status)
 {
+IM_HERE_NOW();	
 	struct ieee80211_sub_if_data *sdata;
 	struct ieee80211_if_sta *ifsta;
 	size_t baselen;
@@ -2767,6 +2796,7 @@ static void ieee80211_rx_mgmt_beacon(struct net_device *dev,
 void ieee80211_sta_rx_scan(struct net_device *dev, struct sk_buff *skb,
 			   struct ieee80211_rx_status *rx_status)
 {
+IM_HERE_NOW();	
 	struct ieee80211_mgmt *mgmt;
 	u16 fc;
 
@@ -2793,12 +2823,14 @@ void ieee80211_sta_rx_scan(struct net_device *dev, struct sk_buff *skb,
 
 ieee80211_txrx_result ieee80211_rx_h_parse_qos(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 		return TXRX_CONTINUE;
 }
 
 
 static ieee80211_txrx_result ieee80211_rx_h_load_stats(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
@@ -2817,18 +2849,21 @@ static ieee80211_rx_handler ieee80211_rx_pre_handlers[] =
 static ieee80211_txrx_result 
 ieee80211_rx_h_if_stats(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
 static ieee80211_txrx_result
 ieee80211_rx_h_monitor(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
 static ieee80211_txrx_result
 ieee80211_rx_h_passive_scan(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = rx->local;
 	struct sk_buff *skb = rx->skb;
 
@@ -2921,6 +2956,7 @@ static void ieee80211_key_threshold_notify(struct net_device *dev,
 					   struct ieee80211_key *key,
 					   struct sta_info *sta)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	struct sk_buff *skb;
 	struct ieee80211_msg_key_notification *msg;
@@ -2955,6 +2991,7 @@ static void ieee80211_key_threshold_notify(struct net_device *dev,
 static ieee80211_txrx_result
 ieee80211_rx_h_check(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	struct ieee80211_hdr *hdr;
 	int always_sta_key;
 	hdr = (struct ieee80211_hdr *) skb_data(rx->skb);
@@ -3081,6 +3118,7 @@ ieee80211_rx_h_check(struct ieee80211_txrx_data *rx)
 ieee80211_txrx_result
 ieee80211_rx_h_ccmp_decrypt(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
@@ -3089,7 +3127,7 @@ ieee80211_rx_h_ccmp_decrypt(struct ieee80211_txrx_data *rx)
 /* Stored in sk_buff->cb */
 struct ieee80211_tx_packet_data {
 	int ifindex;
-	//unsigned long jiffies;
+	unsigned long jiffiess;
 	unsigned int req_tx_status:1;
 	unsigned int do_not_encrypt:1;
 	unsigned int requeue:1;
@@ -3100,6 +3138,7 @@ struct ieee80211_tx_packet_data {
 						  
 static inline void __bss_tim_clear(struct ieee80211_if_ap *bss, int aid)
 {
+IM_HERE_NOW();	
 	/*
 	 * This format has ben mandated by the IEEE specifications,
 	 * so this line may not be changed to use the __clear_bit() format.
@@ -3109,6 +3148,7 @@ static inline void __bss_tim_clear(struct ieee80211_if_ap *bss, int aid)
 
 static inline void bss_tim_clear(struct ieee80211_local *local, struct ieee80211_if_ap *bss, u16 aid)
 {
+IM_HERE_NOW();	
 	__bss_tim_clear(bss, aid);
 }
 		
@@ -3117,6 +3157,7 @@ static inline void bss_tim_clear(struct ieee80211_local *local, struct ieee80211
 
 static int ap_sta_ps_end(struct net_device *dev, struct sta_info *sta)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	struct sk_buff *skb;
 	int sent = 0;
@@ -3165,6 +3206,7 @@ static int ap_sta_ps_end(struct net_device *dev, struct sta_info *sta)
 
 static void ap_sta_ps_start(struct net_device *dev, struct sta_info *sta)
 {
+IM_HERE_NOW();	
 	struct ieee80211_sub_if_data *sdata;
 	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(sta->dev);
 
@@ -3181,6 +3223,7 @@ static void ap_sta_ps_start(struct net_device *dev, struct sta_info *sta)
 static ieee80211_txrx_result
 ieee80211_rx_h_sta_process(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	struct sta_info *sta = rx->sta;
 	struct net_device *dev = rx->dev;
 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(rx->skb);
@@ -3245,6 +3288,7 @@ ieee80211_rx_h_sta_process(struct ieee80211_txrx_data *rx)
 void ieee80211_sta_rx_mgmt(struct net_device *dev, struct sk_buff *skb,
 			   struct ieee80211_rx_status *rx_status)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata;
 	struct ieee80211_if_sta *ifsta;
@@ -3288,6 +3332,7 @@ void ieee80211_sta_rx_mgmt(struct net_device *dev, struct sk_buff *skb,
 static ieee80211_txrx_result
 ieee80211_rx_h_mgmt(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	struct ieee80211_sub_if_data *sdata;
 
 	if (!rx->u.rx.ra_match)
@@ -3330,6 +3375,7 @@ struct ethhdr {
 static ieee80211_txrx_result
 ieee80211_rx_h_data(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	struct net_device *dev = rx->dev;
 	struct ieee80211_local *local = rx->local;
 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(rx->skb);
@@ -3511,6 +3557,7 @@ static const unsigned char eapol_header[] =
 	
 static int ieee80211_is_eapol(const struct sk_buff *skb)
 {
+IM_HERE_NOW();	
 	const struct ieee80211_hdr *hdr;
 	u16 fc;
 	int hdrlen;
@@ -3540,6 +3587,7 @@ static int ieee80211_is_eapol(const struct sk_buff *skb)
 static ieee80211_txrx_result
 ieee80211_rx_h_drop_unencrypted(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	/*  If the device handles decryption totally, skip this test */
 	if (rx->local->hw.flags & IEEE80211_HW_DEVICE_HIDES_WEP)
 		return TXRX_CONTINUE;
@@ -3567,24 +3615,28 @@ ieee80211_rx_h_tkip_decrypt(struct ieee80211_txrx_data *rx)
 static ieee80211_txrx_result
 ieee80211_rx_h_wep_weak_iv_detection(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
 static ieee80211_txrx_result
 ieee80211_rx_h_wep_decrypt(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
 static ieee80211_txrx_result
 ieee80211_rx_h_defragment(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
 static ieee80211_txrx_result
 ieee80211_rx_h_ps_poll(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_QUEUED;
 }
 
@@ -3597,12 +3649,14 @@ ieee80211_rx_h_michael_mic_verify(struct ieee80211_txrx_data *rx)
 ieee80211_txrx_result
 ieee80211_rx_h_remove_qos_control(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
 static ieee80211_txrx_result
 ieee80211_rx_h_802_1x_pae(struct ieee80211_txrx_data *rx)
 {
+IM_HERE_NOW();	
 	return TXRX_CONTINUE;
 }
 
@@ -3652,6 +3706,7 @@ static ieee80211_tx_handler ieee80211_tx_handlers[] =
 
 int ieee80211_hw_config(struct ieee80211_local *local)
 {
+IM_HERE_NOW();	
 	struct ieee80211_hw_mode *mode;
 	struct ieee80211_channel *chan;
 	int ret = 0;
@@ -3736,6 +3791,7 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 static void ieee80211_sta_tx(struct net_device *dev, struct sk_buff *skb,
 			     int encrypt)
 {
+IM_HERE_NOW();	
 	//FIXME: lot of skb_function
 	struct ieee80211_sub_if_data *sdata;
 	struct ieee80211_tx_packet_data *pkt_data;
@@ -3762,6 +3818,7 @@ static void ieee80211_sta_tx(struct net_device *dev, struct sk_buff *skb,
 static void ieee80211_send_probe_req(struct net_device *dev, u8 *dst,
 				     u8 *ssid, size_t ssid_len)
 {
+IM_HERE_NOW();	
 	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_hw_mode *mode;
 	struct sk_buff *skb;
@@ -3829,6 +3886,7 @@ static void ieee80211_send_probe_req(struct net_device *dev, u8 *dst,
 
 void ieee80211_sta_scan_work(struct work_struct *work)
 {
+IM_HERE_NOW();	
 	//FIXME: error in SCAN_SEND_PROBE
 	struct ieee80211_local *local = (struct ieee80211_local *)work->data;//check this
 		//container_of(work, struct ieee80211_local, scan_work.work);
@@ -3907,12 +3965,90 @@ void ieee80211_sta_scan_work(struct work_struct *work)
 				   next_delay);
 }
 
+#define STA_TX_BUFFER_EXPIRE (10 * HZ)
+static inline int sta_info_buffer_expired(struct ieee80211_local *local,
+					  struct sta_info *sta,
+					  struct sk_buff *skb)
+{
+IM_HERE_NOW();	
+	struct ieee80211_tx_packet_data *pkt_data;
+	int timeout;
+
+	if (!skb)
+		return 0;
+
+	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
+
+	/* Timeout: (2 * listen_interval * beacon_int * 1024 / 1000000) sec */
+	timeout = (sta->listen_interval * local->hw.conf.beacon_int * 32 /
+		   15625) * HZ;
+	if (timeout < STA_TX_BUFFER_EXPIRE)
+		timeout = STA_TX_BUFFER_EXPIRE;
+	return time_after(jiffies, pkt_data->jiffiess + timeout);
+	
+	return 0;
+}
+
+
+static void sta_info_cleanup_expire_buffered(struct ieee80211_local *local,
+					     struct sta_info *sta)
+{
+IM_HERE_NOW();	
+	unsigned long flags;
+	struct sk_buff *skb;
+
+	if (skb_queue_empty(&sta->ps_tx_buf))
+		return;
+
+	for (;;) {
+		spin_lock_irqsave(&sta->ps_tx_buf.lock, flags);
+		skb = skb_peek(&sta->ps_tx_buf);
+		if (sta_info_buffer_expired(local, sta, skb)) {
+			skb = __skb_dequeue(&sta->ps_tx_buf);
+			if (skb_queue_empty(&sta->ps_tx_buf))
+				sta->flags &= ~WLAN_STA_TIM;
+		} else
+			skb = NULL;
+		spin_unlock_irqrestore(&sta->ps_tx_buf.lock, flags);
+
+		if (skb) {
+			local->total_ps_buffered--;
+			printk(KERN_DEBUG "Buffered frame expired (STA "
+			       MAC_FMT ")\n", MAC_ARG(sta->addr));
+			dev_kfree_skb(skb);
+		} else
+			break;
+	}
+}
+
 /* How often station data is cleaned up (e.g., expiration of buffered frames)
  */
 #define STA_INFO_CLEANUP_INTERVAL (10 * HZ)
 
+static void sta_info_cleanup(unsigned long data)
+{
+IM_HERE_NOW();	
+	struct ieee80211_local *local = (struct ieee80211_local *) data;
+	struct sta_info *sta;
+
+	spin_lock_bh(&local->sta_lock);
+	list_for_each_entry(sta, &local->sta_list, list) {
+		__sta_info_get(sta);
+		sta_info_cleanup_expire_buffered(local, sta);
+		sta_info_put(sta);
+	}
+	spin_unlock_bh(&local->sta_lock);
+
+	local->sta_cleanup.expires = jiffies + STA_INFO_CLEANUP_INTERVAL;
+	add_timer(&local->sta_cleanup);
+}
+
+
+
+
 void sta_info_init(struct ieee80211_local *local)
 {
+IM_HERE_NOW();	
 	spin_lock_init(&local->sta_lock);
 	INIT_LIST_HEAD(&local->sta_list);
 	INIT_LIST_HEAD(&local->deleted_sta_list);
@@ -3921,7 +4057,7 @@ void sta_info_init(struct ieee80211_local *local)
 	local->sta_cleanup.expires = jiffies + STA_INFO_CLEANUP_INTERVAL;
 	local->sta_cleanup.data = (unsigned long) local;
 	//FIXME: sta_info_cleanup
-	//local->sta_cleanup.function = sta_info_cleanup;
+	local->sta_cleanup.function = sta_info_cleanup;
 
 #ifdef CONFIG_MAC80211_DEBUGFS
 	INIT_WORK(&local->sta_debugfs_add, sta_info_debugfs_add_task);
@@ -3931,6 +4067,7 @@ void sta_info_init(struct ieee80211_local *local)
 //FIXME: !!
 static void ieee80211_tx_pending(unsigned long data)
 {
+IM_HERE_NOW();	
 	/*struct ieee80211_local *local = (struct ieee80211_local *)data;
 	struct net_device *dev = local->mdev;
 	struct ieee80211_tx_stored_packet *store;
@@ -3974,6 +4111,7 @@ static void ieee80211_tx_pending(unsigned long data)
 
 
 struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee80211_ops *  ops){
+IM_HERE_NOW();	
 	struct net_device *mdev;
 	struct ieee80211_local *local;
 	struct ieee80211_sub_if_data *sdata;
@@ -4266,6 +4404,7 @@ static void next_chan_all_modes(struct ieee80211_local *local,
 static void ieee80211_scan_start(struct ieee80211_local *local,
                                  struct ieee80211_scan_conf *conf)
 {
+IM_HERE_NOW();	
     struct ieee80211_hw_mode *old_mode = local->scan.mode;
     int old_chan_idx = local->scan.chan_idx;
     struct ieee80211_hw_mode *mode = NULL;
@@ -4365,6 +4504,7 @@ static void ieee80211_scan_start(struct ieee80211_local *local,
 static void ieee80211_scan_stop(struct ieee80211_local *local,
                                 struct ieee80211_scan_conf *conf)
 {
+IM_HERE_NOW();	
     struct ieee80211_hw_mode *mode;
     struct ieee80211_channel *chan;
     int wait;
@@ -4411,6 +4551,7 @@ static void ieee80211_scan_stop(struct ieee80211_local *local,
  * and switch them if necessary. */
 static void ieee80211_start_hard_monitor(struct ieee80211_local *local)
 {
+IM_HERE_NOW();	
     struct ieee80211_if_init_conf conf;
     
     if (local->open_count && local->open_count == local->monitors &&
@@ -4430,6 +4571,7 @@ static void ieee80211_start_hard_monitor(struct ieee80211_local *local)
 
 static void ieee80211_scan_handler(unsigned long ullocal)
 {
+IM_HERE_NOW();	
     struct ieee80211_local *local = (struct ieee80211_local *) ullocal;
     struct ieee80211_scan_conf conf;
     
@@ -4460,6 +4602,7 @@ static void ieee80211_scan_handler(unsigned long ullocal)
 
 void ieee80211_init_scan(struct ieee80211_local *local)
 {
+IM_HERE_NOW();	
     struct ieee80211_hdr hdr;
     u16 fc;
     int len = 10;
