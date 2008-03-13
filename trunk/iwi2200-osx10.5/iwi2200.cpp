@@ -1261,7 +1261,9 @@ int darwin_iwi2200::ipw_queue_tx_init(
 	}
 
 	//q->bd = pci_alloc_consistent(dev, sizeof(q->bd[0]) * count, &q->q.dma_addr);
-	q->bd=(struct tfd_frame*)IOMallocContiguous(sizeof(q->bd[0]) * count,sizeof(struct tfd_frame*),&q->q.dma_addr);
+	size_t size_dma = RT_ALIGN_Z(sizeof(q->bd[0]) * count, PAGE_SIZE);
+	q->bd=(struct tfd_frame*)IOMallocContiguous(size_dma, PAGE_SIZE, &q->q.dma_addr);
+	//q->bd=(struct tfd_frame*)IOMallocContiguous(sizeof(q->bd[0]) * count,sizeof(struct tfd_frame*),&q->q.dma_addr);
 
 	if (!q->bd) {
 		IWI_DEBUG("pci_alloc_consistent(%zd) failed\n",
@@ -3064,13 +3066,14 @@ bool darwin_iwi2200::uploadFirmware(u8 * data, size_t len)
 	u8 *shared_virt;
 	IOBufferMemoryDescriptor *memD;
 
-//	shared_virt=(u8*)IOMallocContiguous(len,sizeof(u8),&shared_phys);
+	size_t size_dma = RT_ALIGN_Z(len, PAGE_SIZE);
+	shared_virt=(u8*)IOMallocContiguous(size_dma,PAGE_SIZE,&shared_phys);
 
-	memD = MemoryDmaAlloc(len, &shared_phys, &shared_virt);
+	/*memD = MemoryDmaAlloc(len, &shared_phys, &shared_virt);
 	if(!memD) 
 		return -ENOMEM;
 
-	memD->prepare();
+	memD->prepare();*/
 	memmove(shared_virt, data, len);
 
 	/* Start the Dma */
@@ -3112,8 +3115,8 @@ bool darwin_iwi2200::uploadFirmware(u8 * data, size_t len)
 	}
 
  out:
-	memD->complete();
-	memD->release();
+	//memD->complete();
+	//memD->release();
 	return rc;
 		   
 }
