@@ -9,7 +9,7 @@
 
 //#define IWI_NOLOG
 //#define IWI_DEBUG_NORMAL
-#define IWI_DEBUG_FULL_MODE
+//#define IWI_DEBUG_FULL_MODE
 #define IWI_WARNERR
 
 #if defined(IWI_NOLOG)

@@ -21,7 +21,7 @@
 #include <IOKit/IODeviceMemory.h>
 #include <IOKit/assert.h>
 #include <IOKit/IODataQueue.h>
-
+#include <IOKit/IOMapper.h>
 
 
 //includes for fifnet functions
@@ -58,6 +58,9 @@ extern "C" {
 #include "ipw2200.h"
 
 
+#define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
+#define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
+#define _4G 0x0000000100000000LL
 
 #define le16_to_cpu(x)	OSSwapLittleToHostInt16(x)
 #define le32_to_cpu(x)	OSSwapLittleToHostInt32(x)
