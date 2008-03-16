@@ -14,6 +14,8 @@
 extern "C" {
 #endif		
 
+	extern  struct net_device *alloc_netdev(int sizeof_priv, const char *mask,
+                                         void (*setup)(struct net_device *));
 	extern int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device);
 	extern void release_firmware (	const struct firmware *  	fw);
 	extern void flush_workqueue(struct workqueue_struct *wq);
@@ -21,6 +23,7 @@ extern "C" {
 #define create_workqueue(name) __create_workqueue((name), 0)
 	extern void destroy_workqueue (	struct workqueue_struct *  	wq);
 	extern int cancel_work_sync(struct work_struct *work);
+	extern int tasklet_disable(struct tasklet_struct *t);
 	extern void tasklet_schedule(struct tasklet_struct *t);
 	extern void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data);
 	extern void sysfs_remove_group(struct kobject * kobj,  const struct attribute_group * grp);
@@ -209,7 +212,13 @@ for (pos = list_entry((head)->next, typeof(*pos), member);  \
 prefetch(pos->member.next), &pos->member != (head);    \
 pos = list_entry(pos->member.next, typeof(*pos), member))
     static inline void prefetch(const void *x) {;}
-	
+
+#define list_for_each_entry_safe(pos, n, head, member)			\
+	for (pos = list_entry((head)->next, typeof(*pos), member),	\
+		n = list_entry(pos->member.next, typeof(*pos), member);	\
+	     &pos->member != (head); 					\
+	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+		 	
 #define list_for_each_entry_rcu(pos, head, member) \
          for (pos = list_entry((head)->next, typeof(*pos), member); \
                  prefetch(rcu_dereference(pos)->member.next), \

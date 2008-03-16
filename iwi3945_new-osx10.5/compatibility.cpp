@@ -1749,10 +1749,10 @@ IM_HERE_NOW();
 	memcpy(skb->cb, status, sizeof(*status));
 	skb->pkt_type = IEEE80211_RX_MSG;
 	skb_queue_tail(&local->skb_queue, skb);
-	//tasklet_schedule(&local->tasklet);
+	tasklet_schedule(&local->tasklet);
 	
 	//Start the tasklet
-	IOCreateThread((void(*)(void*))&ieee80211_tasklet_handler,local);
+	//IOCreateThread((void(*)(void*))&ieee80211_tasklet_handler,local);
 }
 
 
@@ -1981,21 +1981,25 @@ int ieee80211_if_add(struct net_device *dev, const char *name,
 IM_HERE_NOW();	
 	//full of bugs!!
 	struct net_device *ndev;
-	struct ieee80211_local *local = (struct ieee80211_local*)dev->ieee80211_ptr;//wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata = NULL;
 	int ret;
 
 	//ASSERT_RTNL();
-	ndev = local->mdev;//alloc_netdev(sizeof(struct ieee80211_sub_if_data),
-			    //name, ieee80211_if_setup);
+	ndev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+			    name, NULL);//ieee80211_if_setup);
 	if (!ndev)
 		return -ENOMEM;
 
+	char ii[4];
+	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
+	bcopy(ii,ndev->name,sizeof(ii));
+	
 	/*ret = dev_alloc_name(ndev, ndev->name);
 	if (ret < 0)
 		goto fail;*/
 
-	//memcpy(ndev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN);
+	memcpy(ndev->dev_addr, &my_mac_addr, ETH_ALEN);//local->hw.wiphy->perm_addr, ETH_ALEN);
 	ndev->base_addr = dev->base_addr;
 	ndev->irq = dev->irq;
 	ndev->mem_start = dev->mem_start;
@@ -2003,7 +2007,7 @@ IM_HERE_NOW();
 	//SET_NETDEV_DEV(ndev, wiphy_dev(local->hw.wiphy));
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(ndev);
-	ndev->ieee80211_ptr = &sdata->wdev;
+	ndev->ieee80211_ptr = &local;//&sdata->wdev;
 	//sdata->wdev.wiphy = local->hw.wiphy;
 	sdata->type = IEEE80211_IF_TYPE_AP;
 	sdata->dev = ndev;
@@ -2037,6 +2041,214 @@ fail:
 	return ret;
 }
 
+struct rate_control_ref *rate_control_alloc(const char *name,
+					    struct ieee80211_local *local)
+{
+	struct rate_control_ref *ref;
+
+	ref = (struct rate_control_ref*)kmalloc(sizeof(struct rate_control_ref), GFP_KERNEL);
+	if (!ref)
+		goto fail_ref;
+	kref_init(&ref->kref,NULL);
+	//ref->ops = ieee80211_rate_control_ops_get(name);
+	if (!ref->ops)
+		goto fail_ops;
+	ref->priv = ref->ops->alloc(local);
+	if (!ref->priv)
+		goto fail_priv;
+	return ref;
+
+fail_priv:
+	//ieee80211_rate_control_ops_put(ref->ops);
+fail_ops:
+	kfree(ref);
+fail_ref:
+	return NULL;
+}
+
+static void sta_info_hash_del(struct ieee80211_local *local,
+			      struct sta_info *sta)
+{
+	struct sta_info *s;
+
+	s = local->sta_hash[STA_HASH(sta->addr)];
+	if (!s)
+		return;
+	if (memcmp(s->addr, sta->addr, ETH_ALEN) == 0) {
+		local->sta_hash[STA_HASH(sta->addr)] = s->hnext;
+		return;
+	}
+
+	while (s->hnext && memcmp(s->hnext->addr, sta->addr, ETH_ALEN) != 0)
+		s = s->hnext;
+	if (s->hnext)
+		s->hnext = s->hnext->hnext;
+	else
+		printk(KERN_ERR "%s: could not remove STA " MAC_FMT " from "
+		       "hash table\n", local->mdev->name, MAC_ARG(sta->addr));
+}
+
+
+static inline void __bss_tim_clear(struct ieee80211_if_ap *bss, int aid)
+{
+IM_HERE_NOW();	
+	/*
+	 * This format has ben mandated by the IEEE specifications,
+	 * so this line may not be changed to use the __clear_bit() format.
+	 */
+	bss->tim[(aid)/8] &= !(1<<((aid) % 8));
+}
+
+void sta_info_remove_aid_ptr(struct sta_info *sta)
+{
+	struct ieee80211_sub_if_data *sdata;
+
+	if (sta->aid <= 0)
+		return;
+
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(sta->dev);
+
+	if (sdata->local->ops->set_tim)
+		sdata->local->ops->set_tim(local_to_hw(sdata->local),
+					  sta->aid, 0);
+	if (sdata->bss)
+		__bss_tim_clear(sdata->bss, sta->aid);
+}
+
+static void sta_info_remove(struct sta_info *sta)
+{
+	struct ieee80211_local *local = sta->local;
+	struct ieee80211_sub_if_data *sdata;
+
+	sta_info_hash_del(local, sta);
+	list_del(&sta->list);
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(sta->dev);
+	if (sta->flags & WLAN_STA_PS) {
+		sta->flags &= ~WLAN_STA_PS;
+		if (sdata->bss)
+			atomic_dec(&sdata->bss->num_sta_ps);
+	}
+	local->num_sta--;
+	sta_info_remove_aid_ptr(sta);
+}
+
+static void finish_sta_info_free(struct ieee80211_local *local,
+				 struct sta_info *sta)
+{
+#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+	printk(KERN_DEBUG "%s: Removed STA " MAC_FMT "\n",
+	       local->mdev->name, MAC_ARG(sta->addr));
+#endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
+
+	/*if (sta->key) {
+		ieee80211_debugfs_key_remove(sta->key);
+		ieee80211_key_free(sta->key);
+		sta->key = NULL;
+	}*/
+
+	//rate_control_remove_sta_debugfs(sta);
+	//ieee80211_sta_debugfs_remove(sta);
+
+	sta_info_put(sta);
+}
+
+void sta_info_free(struct sta_info *sta, int locked)
+{
+	struct sk_buff *skb;
+	struct ieee80211_local *local = sta->local;
+
+	if (!locked) {
+		spin_lock_bh(&local->sta_lock);
+		sta_info_remove(sta);
+		spin_unlock_bh(&local->sta_lock);
+	} else {
+		sta_info_remove(sta);
+	}
+	if (local->ops->sta_table_notification)
+		local->ops->sta_table_notification(local_to_hw(local),
+						  local->num_sta);
+
+	while ((skb = skb_dequeue(&sta->ps_tx_buf)) != NULL) {
+		local->total_ps_buffered--;
+		dev_kfree_skb_any(skb);
+	}
+	while ((skb = skb_dequeue(&sta->tx_filtered)) != NULL) {
+		dev_kfree_skb_any(skb);
+	}
+
+	/*if (sta->key) {
+		if (local->ops->set_key) {
+			struct ieee80211_key_conf *key;
+			key = ieee80211_key_data2conf(local, sta->key);
+			if (key) {
+				local->ops->set_key(local_to_hw(local),
+						   DISABLE_KEY,
+						   sta->addr, key, sta->aid);
+				kfree(key);
+			}
+		}
+	} else if (sta->key_idx_compression != HW_KEY_IDX_INVALID) {
+		struct ieee80211_key_conf conf;
+		memset(&conf, 0, sizeof(conf));
+		conf.hw_key_idx = sta->key_idx_compression;
+		conf.alg = ALG_NULL;
+		conf.flags |= IEEE80211_KEY_FORCE_SW_ENCRYPT;
+		local->ops->set_key(local_to_hw(local), DISABLE_KEY,
+				   sta->addr, &conf, sta->aid);
+		sta->key_idx_compression = HW_KEY_IDX_INVALID;
+	}*/
+
+#ifdef CONFIG_MAC80211_DEBUGFS
+	if (in_atomic()) {
+		list_add(&sta->list, &local->deleted_sta_list);
+		queue_work(local->hw.workqueue, &local->sta_debugfs_add);
+	} else
+#endif
+		finish_sta_info_free(local, sta);
+}
+
+void sta_info_flush(struct ieee80211_local *local, struct net_device *dev)
+{
+	struct sta_info *sta, *tmp;
+
+	spin_lock_bh(&local->sta_lock);
+	list_for_each_entry_safe(sta, tmp, &local->sta_list, list)
+		if (!dev || dev == sta->dev)
+			sta_info_free(sta, 1);
+	spin_unlock_bh(&local->sta_lock);
+}
+
+int ieee80211_init_rate_ctrl_alg(struct ieee80211_local *local,
+				 const char *name)
+{
+	struct rate_control_ref *ref, *old;
+
+	//ASSERT_RTNL();
+	/*if (local->open_count || netif_running(local->mdev) ||
+	    (local->apdev && netif_running(local->apdev)))
+		return -EBUSY;*/
+
+	ref = rate_control_alloc(name, local);
+	if (!ref) {
+		printk(KERN_WARNING "%s: Failed to select rate control "
+		       "algorithm\n", local->mdev->name);
+		return -ENOENT;
+	}
+
+	old = local->rate_ctrl;
+	local->rate_ctrl = ref;
+	if (old) {
+		rate_control_put(old);
+		sta_info_flush(local, NULL);
+	}
+
+	printk(KERN_DEBUG "%s: Selected rate control "
+	       "algorithm '%s'\n", local->mdev->name,
+	       ref->ops->name);
+
+
+	return 0;
+}
 
 #define max_t(type,x,y) \
 	({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
@@ -2080,29 +2292,33 @@ IM_HERE_NOW();
 		local->wstats_flags |= IW_QUAL_DBM;
 
 	result = sta_info_start(local);
-	//if (result < 0)
+	if (result < 0) return -1;
 	//	goto fail_sta_info;
 
+	char ii[4];
+	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
+	bcopy(ii,local->mdev->name,sizeof(ii));
+		
 	/*rtnl_lock();
 	result = dev_alloc_name(local->mdev, local->mdev->name);
 	if (result < 0)
 		goto fail_dev;*/
 
-	//memcpy(local->mdev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN); //check this
+	memcpy(local->mdev->dev_addr, &my_mac_addr, ETH_ALEN);//local->hw.wiphy->perm_addr, ETH_ALEN); //check this
 	//SET_NETDEV_DEV(local->mdev, wiphy_dev(local->hw.wiphy));
 
 	/*result = register_netdevice(local->mdev);
 	if (result < 0)
 		goto fail_dev;
 
-	ieee80211_debugfs_add_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));
+	ieee80211_debugfs_add_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));*/
 
 	result = ieee80211_init_rate_ctrl_alg(local, NULL);
 	if (result < 0) {
 		printk(KERN_DEBUG "%s: Failed to initialize rate control "
 		       "algorithm\n", local->mdev->name);
 		//goto fail_rate;
-	}*/
+	}
 //this one maybe
 /*	result = ieee80211_wep_init(local);
 
@@ -2115,7 +2331,7 @@ IM_HERE_NOW();
 	//ieee80211_install_qdisc(local->mdev);
 
 	/* add one default STA interface */
-	result = ieee80211_if_add(local->mdev, "en%d", NULL,
+	result = ieee80211_if_add(local->mdev, "en1", NULL,
 				  IEEE80211_IF_TYPE_STA);
 	if (result)
 		printk(KERN_WARNING "%s: Failed to add default virtual iface\n",
@@ -3136,15 +3352,7 @@ struct ieee80211_tx_packet_data {
 };
 
 						  
-static inline void __bss_tim_clear(struct ieee80211_if_ap *bss, int aid)
-{
-IM_HERE_NOW();	
-	/*
-	 * This format has ben mandated by the IEEE specifications,
-	 * so this line may not be changed to use the __clear_bit() format.
-	 */
-	bss->tim[(aid)/8] &= !(1<<((aid) % 8));
-}
+
 
 static inline void bss_tim_clear(struct ieee80211_local *local, struct ieee80211_if_ap *bss, u16 aid)
 {
@@ -4109,6 +4317,37 @@ IM_HERE_NOW();
 	}*/
 }
 
+ struct net_device *alloc_netdev(int sizeof_priv, const char *mask,
+                                         void (*setup)(struct net_device *))
+  {
+          void *p;
+          struct net_device *dev;
+          int alloc_size;
+  
+          /* ensure 32-byte alignment of both the device and private area */
+  
+          alloc_size = (sizeof(struct net_device) + 31) & ~31;
+          alloc_size += sizeof_priv + 31;
+  
+          p = kmalloc (alloc_size, GFP_KERNEL);
+          if (!p) {
+                  printk(KERN_ERR "alloc_dev: Unable to allocate device.\n");
+                  return NULL;
+          }
+  
+          memset(p, 0, alloc_size);
+  
+          dev = (struct net_device *)(((long)p + 31) & ~31);
+          dev->padded = (char *)dev - (char *)p;
+  
+          if (sizeof_priv)
+                  dev->priv = netdev_priv(dev);
+  
+        //  setup(dev);
+         strcpy(dev->name, mask);
+ 
+         return dev;
+ }
 
 struct ieee80211_hw * ieee80211_alloc_hw (size_t priv_data_len,const struct ieee80211_ops *  ops){
 IM_HERE_NOW();	
@@ -4153,24 +4392,24 @@ IM_HERE_NOW();
 			 ((sizeof(struct ieee80211_local) +
 			   NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST);
 
-	BUG_ON(!ops->tx);
-	BUG_ON(!ops->config);
-	BUG_ON(!ops->add_interface);
+	//BUG_ON(!ops->tx);
+	//BUG_ON(!ops->config);
+	//BUG_ON(!ops->add_interface);
 	local->ops = ops;
 
 	/* for now, mdev needs sub_if_data :/ */
-	mdev=(struct net_device*)IOMalloc(sizeof(struct ieee80211_sub_if_data));
-	memset(mdev,0,sizeof(struct ieee80211_sub_if_data));
+	//mdev=(struct net_device*)IOMalloc(sizeof(struct ieee80211_sub_if_data));
+	//memset(mdev,0,sizeof(struct ieee80211_sub_if_data));
 	
-	//mdev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
-	//		    "wmaster%d", ether_setup);
+	mdev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+			    "wmaster1",NULL);//%d", ether_setup);
 	if (!mdev) {
 		//wiphy_free(wiphy);
 		return NULL;
 	}
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(mdev);
-	mdev->ieee80211_ptr = &sdata->wdev;
+	mdev->ieee80211_ptr = &local;//sdata->wdev;
 	//sdata->wdev.wiphy = wiphy;
 
 	local->hw.queues = 1; /* default */
@@ -4195,12 +4434,14 @@ IM_HERE_NOW();
 	//rwlock_init(&local->sub_if_lock);
 	INIT_LIST_HEAD(&local->sub_if_list);
 
-	INIT_DELAYED_WORK(&local->scan_work, ieee80211_sta_scan_work, 100);
+	INIT_DELAYED_WORK(&local->scan_work, ieee80211_sta_scan_work, 11);
 	/*init_timer(&local->stat_timer);
 	local->stat_timer.function = ieee80211_stat_refresh;
 	local->stat_timer.data = (unsigned long) local;*/
 	//ieee80211_rx_bss_list_init(mdev);
-
+	spin_lock_init(&local->sta_bss_lock);
+	INIT_LIST_HEAD(&local->sta_bss_list);
+	
 	sta_info_init(local);
 
 	/*mdev->hard_start_xmit = ieee80211_master_start_xmit;
@@ -4217,14 +4458,16 @@ IM_HERE_NOW();
 	ieee80211_if_sdata_init(sdata);
 	list_add_tail(&sdata->list, &local->sub_if_list);
 
+	local->tx_pending_tasklet.padding=125;//reserve space in tlink for tx_pending_tasklet
 	tasklet_init(&local->tx_pending_tasklet, ieee80211_tx_pending,
 		     (unsigned long)local);
-	//tasklet_disable(&local->tx_pending_tasklet);
+	tasklet_disable(&local->tx_pending_tasklet);
 
+	local->tasklet.padding=126;//reserve space in tlink for tasklet
 	tasklet_init(&local->tasklet,
 		     ieee80211_tasklet_handler,
 		     (unsigned long) local);
-	//tasklet_disable(&local->tasklet);
+	tasklet_disable(&local->tasklet);
 
 	skb_queue_head_init(&local->skb_queue);
 	skb_queue_head_init(&local->skb_queue_unreliable);
@@ -4238,8 +4481,134 @@ IM_HERE_NOW();
 void ieee80211_free_hw (	struct ieee80211_hw *  	hw){
 	return;
 }
-int ieee80211_register_hwmode(struct ieee80211_hw *hw,struct ieee80211_hw_mode *mode){
-	return 1;
+
+static int rate_list_match(const int *rate_list, int rate)
+{
+	int i;
+
+	if (!rate_list)
+		return 0;
+
+	for (i = 0; rate_list[i] >= 0; i++)
+		if (rate_list[i] == rate)
+			return 1;
+
+	return 0;
+}
+
+static inline int ieee80211_is_erp_rate(int phymode, int rate)
+{
+	if (phymode == MODE_IEEE80211G) {
+		if (rate != 10 && rate != 20 &&
+		    rate != 55 && rate != 110)
+			return 1;
+	}
+	return 0;
+}
+
+void ieee80211_prepare_rates(struct ieee80211_local *local,
+			     struct ieee80211_hw_mode *mode)
+{
+	int i;
+
+	for (i = 0; i < mode->num_rates; i++) {
+		struct ieee80211_rate *rate = &mode->rates[i];
+
+		rate->flags &= ~(IEEE80211_RATE_SUPPORTED |
+				 IEEE80211_RATE_BASIC);
+
+		if (local->supp_rates[mode->mode]) {
+			if (!rate_list_match(local->supp_rates[mode->mode],
+					     rate->rate))
+				continue;
+		}
+
+		rate->flags |= IEEE80211_RATE_SUPPORTED;
+
+		/* Use configured basic rate set if it is available. If not,
+		 * use defaults that are sane for most cases. */
+		if (local->basic_rates[mode->mode]) {
+			if (rate_list_match(local->basic_rates[mode->mode],
+					    rate->rate))
+				rate->flags |= IEEE80211_RATE_BASIC;
+		} else switch (mode->mode) {
+		case MODE_IEEE80211A:
+			if (rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_IEEE80211B:
+			if (rate->rate == 10 || rate->rate == 20)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_ATHEROS_TURBO:
+			if (rate->rate == 120 || rate->rate == 240 ||
+			    rate->rate == 480)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		case MODE_IEEE80211G:
+			if (rate->rate == 10 || rate->rate == 20 ||
+			    rate->rate == 55 || rate->rate == 110)
+				rate->flags |= IEEE80211_RATE_BASIC;
+			break;
+		}
+
+		/* Set ERP and MANDATORY flags based on phymode */
+		switch (mode->mode) {
+		case MODE_IEEE80211A:
+			if (rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			break;
+		case MODE_IEEE80211B:
+			if (rate->rate == 10)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			break;
+		case MODE_ATHEROS_TURBO:
+			break;
+		case MODE_IEEE80211G:
+			if (rate->rate == 10 || rate->rate == 20 ||
+			    rate->rate == 55 || rate->rate == 110 ||
+			    rate->rate == 60 || rate->rate == 120 ||
+			    rate->rate == 240)
+				rate->flags |= IEEE80211_RATE_MANDATORY;
+			break;
+		}
+		if (ieee80211_is_erp_rate(mode->mode, rate->rate))
+			rate->flags |= IEEE80211_RATE_ERP;
+	}
+}
+
+int ieee80211_register_hwmode(struct ieee80211_hw *hw,
+			      struct ieee80211_hw_mode *mode)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	struct ieee80211_rate *rate;
+	int i;
+
+	INIT_LIST_HEAD(&mode->list);
+	list_add_tail(&mode->list, &local->modes_list);
+
+	local->hw_modes |= (1 << mode->mode);
+	for (i = 0; i < mode->num_rates; i++) {
+		rate = &(mode->rates[i]);
+		rate->rate_inv = CHAN_UTIL_RATE_LCM / rate->rate;
+	}
+	ieee80211_prepare_rates(local, mode);
+
+	if (!local->oper_hw_mode) {
+		/* Default to this mode */
+		local->hw.conf.phymode = mode->mode;
+		local->oper_hw_mode = local->scan_hw_mode = mode;
+		local->oper_channel = local->scan_channel = &mode->channels[0];
+		//local->hw.conf.mode = local->oper_hw_mode;
+		//local->hw.conf.chan = local->oper_channel;
+	}
+
+	//if (!(hw->flags & IEEE80211_HW_DEFAULT_REG_DOMAIN_CONFIGURED))
+	//	ieee80211_set_default_regdomain(mode);
+
+	return 0;
 }
 //define the whispy for the driver
 void SET_IEEE80211_DEV(	struct ieee80211_hw *  	hw,struct device *  	dev){
@@ -4456,7 +4825,7 @@ IM_HERE_NOW();
     conf->skb = local->scan.skb ?
     skb_clone(local->scan.skb, GFP_ATOMIC) : NULL;
     conf->tx_control = &local->scan.tx_control;
-#if 0
+#if 1
     printk(KERN_DEBUG "%s: Doing scan on mode: %d freq: %d chan: %d "
            "for %d ms\n",
            local->mdev->name, conf->scan_phymode, conf->scan_freq,
@@ -4915,7 +5284,6 @@ struct workqueue_struct *__create_workqueue(const char *name,int singlethread){
 }
 
 static thread_call_t tlink[256];//for the queue work...
-
 /*
 	Cancel a work queue
 */
@@ -4974,13 +5342,20 @@ struct thread_data{
 
 
 void tasklet_schedule(struct tasklet_struct *t){
-	queue_te(13,(thread_call_func_t)t->func,my_hw->priv,NULL,true);
+	queue_te(t->padding,(thread_call_func_t)t->func,my_hw->priv,NULL,true);
 	return;
 }
 /*
 	Used only once ,
 */
+
+int tasklet_disable(struct tasklet_struct *t){
+	queue_td(t->padding,NULL);
+	return 0;
+}
+
 void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data){
+	t->padding++;
 	t->func=func;
 	t->data=data;
 	return;

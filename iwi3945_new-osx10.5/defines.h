@@ -587,8 +587,10 @@ struct ieee80211_local {
 	 * added to skb_queue will be processed, but frames in
 	 * skb_queue_unreliable may be dropped if the total length of these
 	 * queues increases over the limit. */
+	 struct tasklet_struct tasklet;
+	 struct tasklet_struct tx_pending_tasklet;
+	 
 #define IEEE80211_IRQSAFE_QUEUE_LIMIT 128
-	struct tasklet_struct tasklet;
 	struct sk_buff_head skb_queue;
 	struct sk_buff_head skb_queue_unreliable;
 	enum {
@@ -607,7 +609,6 @@ struct ieee80211_local {
     
 	unsigned long state[NUM_TX_DATA_QUEUES];
 	struct ieee80211_tx_stored_packet pending_packet[NUM_TX_DATA_QUEUES];
-	struct tasklet_struct tx_pending_tasklet;
     
 	int mc_count;	/* total count of multicast entries in all interfaces */
 	int iff_allmultis, iff_promiscs;
@@ -2041,5 +2042,8 @@ static inline void init_waitqueue_head(wait_queue_head_t *q)
   /* These ones are invisible by user level */
   #define PACKET_LOOPBACK         5               /* MC/BRD frame looped back */
   #define PACKET_FASTROUTE        6               /* Fastrouted frame     */
+ 
+ #define CHAN_UTIL_RATE_LCM 95040
+ #define WLAN_STA_PS BIT(2)
  
 #endif //__DEFINES_H__
