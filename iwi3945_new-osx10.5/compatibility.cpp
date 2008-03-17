@@ -1787,6 +1787,7 @@ IM_HERE_NOW();
 
  int __bitmap_empty(const unsigned long *bitmap, int bits)
  {
+ IM_HERE_NOW();
          int k, lim = bits/BITS_PER_LONG;
          for (k = 0; k < lim; ++k)
                  if (bitmap[k])
@@ -1801,6 +1802,7 @@ IM_HERE_NOW();
  
 static inline int bitmap_empty(const unsigned long *src, int nbits)
 {
+IM_HERE_NOW();
          if (nbits <= BITS_PER_LONG)
                  return ! (*src & BITMAP_LAST_WORD_MASK(nbits));
          else
@@ -1991,8 +1993,8 @@ IM_HERE_NOW();
 	if (!ndev)
 		return -ENOMEM;
 
-	char ii[4];
-	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
+	char ii[4] = "en1";
+	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,ndev->name,sizeof(ii));
 	
 	/*ret = dev_alloc_name(ndev, ndev->name);
@@ -2027,9 +2029,12 @@ IM_HERE_NOW();
 		__ieee80211_if_del(local, sdata);
 		return -ENODEV;
 	}*/
-	list_add(&sdata->list, &local->sub_if_list);
+	
+	//FIXME: Kernel Panic herre !
+	//list_add(&sdata->list, &local->sub_if_list);
 	if (new_dev)
 		*new_dev = ndev;
+	
 	//write_unlock_bh(&local->sub_if_lock);
 
 	//ieee80211_update_default_wep_only(local);
@@ -2044,6 +2049,7 @@ fail:
 struct rate_control_ref *rate_control_alloc(const char *name,
 					    struct ieee80211_local *local)
 {
+IM_HERE_NOW();
 	struct rate_control_ref *ref;
 
 	ref = (struct rate_control_ref*)kmalloc(sizeof(struct rate_control_ref), GFP_KERNEL);
@@ -2069,6 +2075,7 @@ fail_ref:
 static void sta_info_hash_del(struct ieee80211_local *local,
 			      struct sta_info *sta)
 {
+IM_HERE_NOW();
 	struct sta_info *s;
 
 	s = local->sta_hash[STA_HASH(sta->addr)];
@@ -2101,6 +2108,7 @@ IM_HERE_NOW();
 
 void sta_info_remove_aid_ptr(struct sta_info *sta)
 {
+IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata;
 
 	if (sta->aid <= 0)
@@ -2117,6 +2125,7 @@ void sta_info_remove_aid_ptr(struct sta_info *sta)
 
 static void sta_info_remove(struct sta_info *sta)
 {
+IM_HERE_NOW();
 	struct ieee80211_local *local = sta->local;
 	struct ieee80211_sub_if_data *sdata;
 
@@ -2135,6 +2144,7 @@ static void sta_info_remove(struct sta_info *sta)
 static void finish_sta_info_free(struct ieee80211_local *local,
 				 struct sta_info *sta)
 {
+IM_HERE_NOW();
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 	printk(KERN_DEBUG "%s: Removed STA " MAC_FMT "\n",
 	       local->mdev->name, MAC_ARG(sta->addr));
@@ -2154,6 +2164,7 @@ static void finish_sta_info_free(struct ieee80211_local *local,
 
 void sta_info_free(struct sta_info *sta, int locked)
 {
+IM_HERE_NOW();
 	struct sk_buff *skb;
 	struct ieee80211_local *local = sta->local;
 
@@ -2209,6 +2220,7 @@ void sta_info_free(struct sta_info *sta, int locked)
 
 void sta_info_flush(struct ieee80211_local *local, struct net_device *dev)
 {
+IM_HERE_NOW();
 	struct sta_info *sta, *tmp;
 
 	spin_lock_bh(&local->sta_lock);
@@ -2221,6 +2233,7 @@ void sta_info_flush(struct ieee80211_local *local, struct net_device *dev)
 int ieee80211_init_rate_ctrl_alg(struct ieee80211_local *local,
 				 const char *name)
 {
+IM_HERE_NOW();
 	struct rate_control_ref *ref, *old;
 
 	//ASSERT_RTNL();
@@ -2295,10 +2308,9 @@ IM_HERE_NOW();
 	if (result < 0) return -1;
 	//	goto fail_sta_info;
 
-	char ii[4];
-	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
+	char ii[4] = "en1";
+	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,local->mdev->name,sizeof(ii));
-		
 	/*rtnl_lock();
 	result = dev_alloc_name(local->mdev, local->mdev->name);
 	if (result < 0)
@@ -2871,7 +2883,7 @@ enum ieee80211_tx_queue {
 	IEEE80211_TX_QUEUE_DATA4,
 	IEEE80211_TX_QUEUE_SVP,
 
-	//NUM_TX_DATA_QUEUES,
+	NUM_TX_DATA_QUEUES_F,
 
 /* due to stupidity in the sub-ioctl userspace interface, the items in
  * this struct need to have fixed values. As soon as it is removed, we can
