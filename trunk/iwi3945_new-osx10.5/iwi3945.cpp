@@ -171,10 +171,11 @@ bool darwin_iwi3945::start(IOService *provider)
 			break;
 		}
 		setfNetif(fNetif);
-				
+		
 		fNetif->registerOutputHandler(this,getOutputHandler());
 		fNetif->registerService();
 		registerService();
+
 
 #ifdef IO80211_VERSION
 		mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
