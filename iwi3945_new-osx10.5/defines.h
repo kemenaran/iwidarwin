@@ -204,7 +204,7 @@ struct tasklet_struct {
 
 struct delayed_work;
 
-struct net_device;
+//struct net_device;
 
 union iwreq_data {
     char a;

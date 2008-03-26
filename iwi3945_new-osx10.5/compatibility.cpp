@@ -1981,7 +1981,7 @@ int ieee80211_if_add(struct net_device *dev, const char *name,
 		     struct net_device **new_dev, int type)
 {
 IM_HERE_NOW();	
-	//full of bugs!!
+
 	struct net_device *ndev;
 	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata = NULL;
@@ -2001,7 +2001,7 @@ IM_HERE_NOW();
 	if (ret < 0)
 		goto fail;*/
 
-	memcpy(ndev->dev_addr, &my_mac_addr, ETH_ALEN);//local->hw.wiphy->perm_addr, ETH_ALEN);
+	memcpy(ndev->dev_addr, my_mac_addr, ETH_ALEN);//local->hw.wiphy->perm_addr, ETH_ALEN);
 	ndev->base_addr = dev->base_addr;
 	ndev->irq = dev->irq;
 	ndev->mem_start = dev->mem_start;
@@ -2030,8 +2030,7 @@ IM_HERE_NOW();
 		return -ENODEV;
 	}*/
 	
-	//FIXME: Kernel Panic herre !
-	//list_add(&sdata->list, &local->sub_if_list);
+	//list_add(&sdata->list, &local->sub_if_list);//__ieee80211_if_del disable this call?
 	if (new_dev)
 		*new_dev = ndev;
 	
@@ -2316,7 +2315,7 @@ IM_HERE_NOW();
 	if (result < 0)
 		goto fail_dev;*/
 
-	memcpy(local->mdev->dev_addr, &my_mac_addr, ETH_ALEN);//local->hw.wiphy->perm_addr, ETH_ALEN); //check this
+	memcpy(local->mdev->dev_addr, my_mac_addr, ETH_ALEN);//local->hw.wiphy->perm_addr, ETH_ALEN); //check this
 	//SET_NETDEV_DEV(local->mdev, wiphy_dev(local->hw.wiphy));
 
 	/*result = register_netdevice(local->mdev);
