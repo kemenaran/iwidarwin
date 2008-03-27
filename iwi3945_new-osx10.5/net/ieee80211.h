@@ -100,10 +100,7 @@ struct	iw_statistics
 };
 #define	NETDEV_ALIGN		32
 #define	NETDEV_ALIGN_CONST	(NETDEV_ALIGN - 1)
-static void *netdev_priv(struct net_device *dev)
-{
-	return (char *)dev + ((sizeof(struct net_device*)+ NETDEV_ALIGN_CONST)& ~NETDEV_ALIGN_CONST);
-}
+
 struct net_device_stats
 {
 	unsigned long	rx_packets;		/* total packets received	*/
@@ -409,6 +406,11 @@ do { if (ieee80211_debug_level & (level)) \
 
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define MAC_ARG(x) ((u8*)(x))[0],((u8*)(x))[1],((u8*)(x))[2],((u8*)(x))[3],((u8*)(x))[4],((u8*)(x))[5]
+
+static void *netdev_priv(struct net_device *dev)
+{
+	return (char *)dev + ((sizeof(struct net_device*)+ NETDEV_ALIGN_CONST)& ~NETDEV_ALIGN_CONST);
+}
 
 static inline int ieee80211_is_empty_essid(const char *essid, int essid_len)
 {
@@ -1082,7 +1084,7 @@ struct ieee80211_hw {
 	 * that you must fill in the perm_addr and dev fields
 	 * of this structure, use the macros provided below. */
 	//struct wiphy *wiphy;
-
+	//void *workqueue;
 	/* assigned by mac80211, don't write */
 	struct ieee80211_conf conf;
 

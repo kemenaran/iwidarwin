@@ -31,7 +31,27 @@
 #include <IOKit/IODeviceMemory.h>
 #include <IOKit/assert.h>
 #include <IOKit/IODataQueue.h>
+#include <sys/kern_control.h>
 
+#include <sys/kernel_types.h>
+#include <mach/vm_types.h>
+#include <sys/kpi_mbuf.h>
+
+#include <IOKit/IOMemoryDescriptor.h>
+#include <IOKit/network/IONetworkController.h>
+#include <IOKit/pci/IOPCIDevice.h>
+#include <libkern/OSAtomic.h>
+#include <IOKit/IOInterruptEventSource.h>
+
+#include "defines.h"
+#include "iwl-3945.h"
+#include "iwl-helpers.h"
+#include "iwl-3945-debug.h"
+// TODO: replace all IOLOG, printk and use the debug system
+
+
+extern void iwl3945_bg_up(struct iwl3945_priv *priv);
+extern void iwl3945_down(struct iwl3945_priv *priv);
 
 #pragma mark -
 #pragma mark Class definition
@@ -261,6 +281,13 @@ class darwin_iwi3945 : public IOEthernetController
 		virtual UInt32	 outputPacket(mbuf_t m, void * param);
 		virtual UInt32	 outputPacket2(mbuf_t m, void * param);
 		virtual mbuf_t mergePacket(mbuf_t m);
+
+	//kext control functions:	
+	friend  int 		sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len); //send network list to network selector app.
+	friend  int 		setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags); //get slected network from network selector app.
+	friend  int			ConnectClient(kern_ctl_ref kctlref,struct sockaddr_ctl *sac,void **unitinfo); //connect to network selector app.
+	friend  int 		disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo); //disconnect network selector app.
+	friend	int			configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len);
 		
         // statistics
         IONetworkStats		*netStats;
@@ -302,5 +329,9 @@ class darwin_iwi3945 : public IOEthernetController
 		u32							myState;		//information of the state of the card
 		
 		ifnet_t						fifnet;
-		
+		//open link to user interface application flag:
+	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
+							//the user is connected to the driver.
+		struct iwl3945_priv *priv;
+							
     };

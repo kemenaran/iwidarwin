@@ -3603,7 +3603,7 @@ static void iwl3945_rx_reply_error(struct iwl3945_priv *priv,
 		le32_to_cpu(pkt->u.err_resp.error_info));
 }
 
-#define TX_STATUS_ENTRY(x) case TX_STATUS_FAIL_ ## x: return #x
+//#define TX_STATUS_ENTRY(x) case TX_STATUS_FAIL_ ## x: return #x
 
 static void iwl3945_rx_csa(struct iwl3945_priv *priv, struct iwl3945_rx_mem_buffer *rxb)
 {
