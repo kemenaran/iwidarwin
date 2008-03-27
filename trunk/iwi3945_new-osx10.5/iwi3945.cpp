@@ -8,7 +8,7 @@
  */
 
 #include "iwi3945.h"
-#include "defines.h"
+//#include "defines.h"
 #include "compatibility.h"
 
 // Define my superclass
@@ -47,6 +47,8 @@ extern struct sk_buff *dev_alloc_skb(unsigned int length);
 
 struct ieee80211_tx_control tx_ctrl;//need to init this?			  
 IOService * my_provider;
+static darwin_iwi3945 *clone;
+
 #pragma mark -
 #pragma mark Overrides required for implementation
 
@@ -95,6 +97,84 @@ void darwin_iwi3945::postMessage(UInt32 message) {
 
 #pragma mark -
 #pragma mark Setup and teardown
+
+int ConnectClient(kern_ctl_ref kctlref,struct sockaddr_ctl *sac,void **unitinfo)
+{
+	IOLog("connect\n");
+	clone->userInterfaceLink=1;
+	return(0);
+}
+
+int disconnectClient(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo)
+{
+	clone->userInterfaceLink=0;
+	IOLog("disconnect\n");
+	return(0);
+}
+
+int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt, void *data, size_t len)
+{
+	if (opt==1)
+	{
+		if (test_bit(3, &clone->priv->status)) // off -> on 3=STATUS_RF_KILL_SW
+		{
+			//clone->priv->config &= ~CFG_ASSOCIATE;
+			IOLog("Trying to turn card on...\n");	
+			clear_bit(3, &clone->priv->status);
+			iwl3945_bg_up(clone->priv);
+			
+		}
+		else
+		{
+			IOLog("Trying to turn card off...\n");
+			set_bit(3, &clone->priv->status);
+			iwl3945_down(clone->priv);
+		}	
+	}
+
+	return(0);
+}
+
+int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len)
+{
+	/*if (opt==0) memcpy(data,clone->priv,*len);
+	if (opt==1) memcpy(data,clone->priv->ieee,*len);
+	if (opt==2)
+	{
+
+	}
+	if (opt==3) memcpy(data,clone->priv->assoc_network,*len);
+	if (opt==4)
+	{	
+		if (clone->netStats->outputPackets<30 || !(clone->priv->status & STATUS_AUTH)) return 1;
+		ifaddr_t *addresses;
+		struct sockaddr *out_addr, ou0;
+		out_addr=&ou0;
+		int p=0;
+		if (ifnet_get_address_list_family(clone->fifnet, &addresses, AF_INET)==0)
+		{
+			if (!addresses[0]) p=1;
+			else
+			if (ifaddr_address(addresses[0], out_addr, sizeof(*out_addr))==0)
+			{
+				//IWI_LOG("my ip address: " IP_FORMAT "\n",IP_LIST(out_addr->sa_data));
+				memcpy(data,out_addr->sa_data,*len);
+
+			}
+			else p=1;
+			ifnet_free_address_list(addresses);
+		} else p=1;
+		if (p==1) return 1;
+	}
+	if (opt==5) memcpy(data,clone->priv->net_dev,*len);*/
+	return (0);
+}
+
+int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags)
+{
+return 0;
+}
+
 bool darwin_iwi3945::init(OSDictionary *dict)
 {
 	return super::init(dict);
@@ -130,7 +210,9 @@ bool darwin_iwi3945::start(IOService *provider)
 	myState = APPLE80211_S_INIT;
     IOLog("iwi3945: Starting\n");
     int err = 0;
-    
+    //linking the kext control clone to the driver:
+	clone=this;
+
 	do {
         
         // Note: super::start() calls createWorkLoop & getWorkLoop
@@ -204,7 +286,21 @@ bool darwin_iwi3945::start(IOService *provider)
 		setSelectedMedium(mediumTable[MEDIUM_TYPE_AUTO]);
 		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
 #endif
-		
+	
+		struct kern_ctl_reg		ep_ctl; // Initialize control
+		kern_ctl_ref	kctlref;
+		bzero(&ep_ctl, sizeof(ep_ctl));
+		ep_ctl.ctl_id = 0; /* OLD STYLE: ep_ctl.ctl_id = kEPCommID; */
+		ep_ctl.ctl_unit = 0;
+		strcpy(ep_ctl.ctl_name,"insanelymac.iwidarwin.control");
+		ep_ctl.ctl_flags = 0;
+		ep_ctl.ctl_connect = ConnectClient;
+		ep_ctl.ctl_disconnect = disconnectClient;
+		ep_ctl.ctl_send = setSelectedNetwork;
+		ep_ctl.ctl_setopt = configureConnection;
+		ep_ctl.ctl_getopt = sendNetworkList;
+		errno_t error = ctl_register(&ep_ctl, &kctlref);
+			
 
         return true;
     } while(false);

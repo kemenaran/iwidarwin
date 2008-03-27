@@ -61,7 +61,8 @@
  *
  */
 
-#define _iwl3945_write32(iwl, ofs, val) OSWriteLittleInt32((iwl)->hw_base, ofs ,val)//writel((val), (iwl)->hw_base + (ofs))
+#define _iwl3945_write32(iwl, ofs, val) OSWriteLittleInt32((iwl)->hw_base, ofs ,val)
+//writel((val), (iwl)->hw_base + (ofs))
 #ifdef CONFIG_IWL3945_DEBUG
 static inline void __iwl3945_write32(const char *f, u32 l, struct iwl3945_priv *iwl,
 				 u32 ofs, u32 val)
@@ -75,7 +76,8 @@ static inline void __iwl3945_write32(const char *f, u32 l, struct iwl3945_priv *
 #define iwl3945_write32(iwl, ofs, val) _iwl3945_write32(iwl, ofs, val)
 #endif
 
-#define _iwl3945_read32(iwl, ofs) readl((iwl)->hw_base + (ofs))
+#define _iwl3945_read32(iwl, ofs) OSReadLittleInt32((iwl)->hw_base, ofs)
+ //readl((iwl)->hw_base + (ofs))
 #ifdef CONFIG_IWL3945_DEBUG
 static inline u32 __iwl3945_read32(char *f, u32 l, struct iwl3945_priv *iwl, u32 ofs)
 {
