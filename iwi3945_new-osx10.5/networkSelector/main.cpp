@@ -1,3 +1,5 @@
+typedef unsigned char	u_char;
+#include <libkern/OSByteOrder.h>
 #include <iostream>
 #include <stdlib.h>
 #include <sys/kern_control.h>

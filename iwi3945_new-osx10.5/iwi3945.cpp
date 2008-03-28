@@ -27,6 +27,9 @@ extern "C" {
 	extern int (*is_associated)(void *);
 	extern int (*mac_tx)(struct ieee80211_hw *hw, struct sk_buff *skb,struct ieee80211_tx_control *ctl);
 	extern void dev_kfree_skb(struct sk_buff *skb);
+	
+	extern void (*iwl_down)(struct iwl3945_priv *);
+	extern void (*iwl_up)(struct iwl3945_priv *);
 	//
 }
 extern void setCurController(IONetworkController * tmp);
@@ -121,14 +124,14 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			//clone->priv->config &= ~CFG_ASSOCIATE;
 			IOLog("Trying to turn card on...\n");	
 			clear_bit(3, &clone->priv->status);
-			iwl3945_bg_up(clone->priv);
+			iwl_up(clone->priv);
 			
 		}
 		else
 		{
 			IOLog("Trying to turn card off...\n");
 			set_bit(3, &clone->priv->status);
-			iwl3945_down(clone->priv);
+			iwl_down(clone->priv);
 		}	
 	}
 
