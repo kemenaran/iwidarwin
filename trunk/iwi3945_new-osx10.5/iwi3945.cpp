@@ -43,6 +43,7 @@ extern void start_undirect_scan();
 extern u8 * getMyMacAddr();
 extern void setMyfifnet(ifnet_t fifnet);
 extern struct ieee80211_hw * get_my_hw();
+extern void * get_my_priv();
 extern void setfNetif(IOEthernetInterface*	Intf);
 extern void setfTransmitQueue(IOBasicOutputQueue* fT);
 extern struct sk_buff *dev_alloc_skb(unsigned int length);
@@ -124,14 +125,20 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			//clone->priv->config &= ~CFG_ASSOCIATE;
 			IOLog("Trying to turn card on...\n");	
 			clear_bit(3, &clone->priv->status);
-			iwl_up(clone->priv);
+			if(get_my_priv())
+				iwl_up((struct iwl3945_priv*)get_my_priv());
+			else
+				IOLog("No Priv\n");
 			
 		}
 		else
 		{
 			IOLog("Trying to turn card off...\n");
 			set_bit(3, &clone->priv->status);
-			iwl_down(clone->priv);
+			if(get_my_priv())
+				iwl_down((struct iwl3945_priv*)get_my_priv());
+			else
+				IOLog("No Priv\n");
 		}	
 	}
 

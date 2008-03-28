@@ -6393,6 +6393,10 @@ static void __iwl3945_down(struct iwl3945_priv *priv)
 
 static void iwl3945_down(struct iwl3945_priv *priv)
 {
+	if(!priv){
+		IOLog("No Priv defined\n");
+		return;
+	}
 	mutex_lock(&priv->mutex);
 	__iwl3945_down(priv);
 	mutex_unlock(&priv->mutex);
@@ -6803,7 +6807,6 @@ static void iwl3945_bg_request_scan(struct iwl3945_priv *priv)
 
 static void iwl3945_bg_up(struct iwl3945_priv *priv)
 {
-	//struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv, up);
 	if(!priv){
 		IOLog("No Priv defined\n");
 		return;
