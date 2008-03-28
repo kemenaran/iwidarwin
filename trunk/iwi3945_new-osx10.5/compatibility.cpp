@@ -343,15 +343,15 @@ static inline unsigned char *__skb_pull(struct sk_buff *skb, unsigned int len)
 }
 
 /**
-953  *      skb_pull - remove data from the start of a buffer
-954  *      @skb: buffer to use
-955  *      @len: amount of data to remove
-956  *
-957  *      This function removes data from the start of a buffer, returning
-958  *      the memory to the headroom. A pointer to the next data in the buffer
-959  *      is returned. Once the data has been pulled future pushes will overwrite
-960  *      the old data.
-961  */
+  *      skb_pull - remove data from the start of a buffer
+  *      @skb: buffer to use
+  *      @len: amount of data to remove
+  *
+  *      This function removes data from the start of a buffer, returning
+  *      the memory to the headroom. A pointer to the next data in the buffer
+  *      is returned. Once the data has been pulled future pushes will overwrite
+  *      the old data.
+  */
  static inline unsigned char *skb_pull(struct sk_buff *skb, unsigned int len)
  {
          return unlikely(len > skb_len(skb)) ? NULL : __skb_pull(skb, len);
@@ -1750,9 +1750,6 @@ IM_HERE_NOW();
 	skb->pkt_type = IEEE80211_RX_MSG;
 	skb_queue_tail(&local->skb_queue, skb);
 	tasklet_schedule(&local->tasklet);
-	
-	//Start the tasklet
-	//IOCreateThread((void(*)(void*))&ieee80211_tasklet_handler,local);
 }
 
 
@@ -4474,14 +4471,16 @@ IM_HERE_NOW();
 		     (unsigned long)local);
 	tasklet_disable(&local->tx_pending_tasklet);
 
+	skb_queue_head_init(&local->skb_queue);
+	skb_queue_head_init(&local->skb_queue_unreliable);
+
 	local->tasklet.padding=126;//reserve space in tlink for tasklet
 	tasklet_init(&local->tasklet,
 		     ieee80211_tasklet_handler,
 		     (unsigned long) local);
 	tasklet_disable(&local->tasklet);
 
-	skb_queue_head_init(&local->skb_queue);
-	skb_queue_head_init(&local->skb_queue_unreliable);
+
 
 	printf("ieee80211_alloc_hw [OK]\n");
 	my_hw=local_to_hw(local);

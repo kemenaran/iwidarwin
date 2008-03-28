@@ -1938,6 +1938,9 @@ int __x = (x);          \
 #define module_exit(func) void (*exit_routine)(void) = func
 #define module_associated(func) int (*is_associated)(void *) = func
 #define module_mac_tx(func) int (*mac_tx)(struct ieee80211_hw *, struct sk_buff *,struct ieee80211_tx_control *) = func
+//for up and down the card
+#define module_down(func) void (*iwl_down)(struct iwl3945_priv *)=func
+#define module_up(func) void (*iwl_up)(struct iwl3945_priv *)=func
 
 
 #include "compatibility.h"
