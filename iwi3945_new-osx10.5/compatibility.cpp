@@ -100,6 +100,13 @@ struct ieee80211_hw * get_my_hw(){
 	return NULL;
 }
 
+
+void * get_my_priv(){
+	if(my_hw)
+		return my_hw->priv;
+	return NULL;
+}
+
 IOWorkLoop * getWorkLoop(){
 	if(workqueue)
 		return workqueue;
@@ -1749,7 +1756,9 @@ IM_HERE_NOW();
 	memcpy(skb->cb, status, sizeof(*status));
 	skb->pkt_type = IEEE80211_RX_MSG;
 	skb_queue_tail(&local->skb_queue, skb);
-	tasklet_schedule(&local->tasklet);
+	//tasklet_schedule(&local->tasklet);
+	//FIXME: tasklet only give the priv as argument must be changed
+	IOCreateThread((void(*)(void*))&ieee80211_tasklet_handler,local);
 }
 
 
