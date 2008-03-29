@@ -61,6 +61,7 @@ int main (int argc, char * const argv[]) {
 		cout<<"\nWelcome to the insanelyMac SpacePort 0.1\n";
 
 		cout<<"\n1) Turn card on/off ";
+		cout<<"\n2) Start scan ";
 		cout<<"\n5) Close Program \n0) Refresh";
 		cout<<"\n\nEnter Option:  ";
 		cin>>sel;
@@ -81,6 +82,7 @@ int main (int argc, char * const argv[]) {
 				setsockopt(fd,SYSPROTO_CONTROL,1,NULL,0);
 				break;
 			case (2):
+				setsockopt(fd,SYSPROTO_CONTROL,2,NULL,0);
 				break;
 		}
 	}

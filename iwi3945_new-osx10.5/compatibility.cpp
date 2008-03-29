@@ -5431,9 +5431,7 @@ void destroy_workqueue (	struct workqueue_struct *  	wq){
 
 
 void start_undirect_scan(){
-	struct ieee80211_local *local;
-	local=hw_to_local(my_hw);
-	local->ops->hw_scan(my_hw, NULL, 0);
+
 }
 
 void io_write32(u32 ofs, u32 val){

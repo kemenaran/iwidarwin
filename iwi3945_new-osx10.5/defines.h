@@ -1941,6 +1941,7 @@ int __x = (x);          \
 //for up and down the card
 #define module_down(func) void (*iwl_down)(struct iwl3945_priv *)=func
 #define module_up(func) void (*iwl_up)(struct iwl3945_priv *)=func
+#define module_scan(func) void (*iwl_scan)(struct iwl3945_priv *)=func
 
 
 #include "compatibility.h"
