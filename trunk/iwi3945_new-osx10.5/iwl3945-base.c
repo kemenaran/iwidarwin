@@ -8964,3 +8964,4 @@ module_associated(iwl3945_is_associated);
 module_mac_tx(iwl3945_mac_tx);
 module_down(iwl3945_down);
 module_up(iwl3945_bg_up);
+module_scan(iwl3945_bg_up);

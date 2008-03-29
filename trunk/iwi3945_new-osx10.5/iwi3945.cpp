@@ -30,6 +30,7 @@ extern "C" {
 	
 	extern void (*iwl_down)(struct iwl3945_priv *);
 	extern void (*iwl_up)(struct iwl3945_priv *);
+	extern void (*iwl_scan)(struct iwl3945_priv *);
 	//
 }
 extern void setCurController(IONetworkController * tmp);
@@ -141,6 +142,9 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				IOLog("No Priv\n");
 		}	
 	}
+	if(opt == 2){
+		iwl_scan((struct iwl3945_priv*)get_my_priv());
+	}
 
 	return(0);
 }
@@ -182,7 +186,7 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 
 int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf_t m, int flags)
 {
-return 0;
+	return 0;
 }
 
 bool darwin_iwi3945::init(OSDictionary *dict)
