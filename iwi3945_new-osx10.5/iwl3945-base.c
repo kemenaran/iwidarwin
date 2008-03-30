@@ -75,10 +75,14 @@ static int iwl3945_tx_queue_update_write_ptr(struct iwl3945_priv *priv,
 /* module parameters */
 static int iwl3945_param_disable_hw_scan; /* def: 0 = use 3945's h/w scan */
 static int iwl3945_param_debug;    /* def: 0 = minimal debug log messages */
-static int iwl3945_param_disable;  /* def: 0 = enable radio */
+iwl3945_param_debug =  0xffffffff;//show all debug messages
+//iwl3945_param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP|IWL_DL_POWER);
+//iwl3945_param_debug |=IWL_DL_INFO;
+static int iwl3945_param_disable;// TODO: link this in info.plist
+  /* def: 0 = enable radio */
 static int iwl3945_param_antenna;  /* def: 0 = both antennas (use diversity) */
 int iwl3945_param_hwcrypto;        /* def: 0 = use software encryption */
-static int iwl3945_param_qos_enable = 1; /* def: 1 = use quality of service */
+static int iwl3945_param_qos_enable = 0; /* def: 1 = use quality of service set 0 give less bugs */
 int iwl3945_param_queues_num = IWL_MAX_NUM_QUEUES; /* def: 8 Tx queues */
 
 /*
