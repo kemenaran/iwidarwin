@@ -74,8 +74,8 @@ static int iwl3945_tx_queue_update_write_ptr(struct iwl3945_priv *priv,
 
 /* module parameters */
 static int iwl3945_param_disable_hw_scan; /* def: 0 = use 3945's h/w scan */
-static int iwl3945_param_debug;    /* def: 0 = minimal debug log messages */
-iwl3945_param_debug =  0xffffffff;//show all debug messages
+//static int iwl3945_param_debug;    /* def: 0 = minimal debug log messages */
+static int iwl3945_param_debug =  0xffffffff;//show all debug messages
 //iwl3945_param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP|IWL_DL_POWER);
 //iwl3945_param_debug |=IWL_DL_INFO;
 static int iwl3945_param_disable;// TODO: link this in info.plist
@@ -4758,13 +4758,13 @@ static void iwl3945_irq_handle_error(struct iwl3945_priv *priv)
 	/* Cancel currently queued command. */
 	clear_bit(STATUS_HCMD_ACTIVE, &priv->status);
 
-//#ifdef CONFIG_IWL3945_DEBUG
-//	if (iwl3945_debug_level & IWL_DL_FW_ERRORS) {
+#ifdef CONFIG_IWL3945_DEBUG
+	if (iwl3945_debug_level & IWL_DL_FW_ERRORS) {
 		iwl3945_dump_nic_error_log(priv);
 		iwl3945_dump_nic_event_log(priv);
 		iwl3945_print_rx_config_cmd(&priv->staging_rxon);
-//	}
-//#endif
+	}
+#endif
 
 	wake_up_interruptible(&priv->wait_command_queue);
 
@@ -6833,9 +6833,9 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 		return;
 	iwl3945_down(priv);
 //FIXME: Hack for restart
-	run_add_interface();
+	//run_add_interface();
 //FIXME: End hack
-	queue_work(priv->workqueue, &priv->up);
+	//queue_work(priv->workqueue, &priv->up); // maybe kp here
 
 }
 
