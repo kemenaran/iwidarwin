@@ -1759,6 +1759,7 @@ IM_HERE_NOW();
 	//tasklet_schedule(&local->tasklet);
 	//FIXME: tasklet only give the priv as argument must be changed
 	IOCreateThread((void(*)(void*))&ieee80211_tasklet_handler,local);
+	IOExitThread();
 }
 
 
