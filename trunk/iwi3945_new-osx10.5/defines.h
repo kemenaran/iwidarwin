@@ -1,11 +1,9 @@
 #ifndef __DEFINES_H__
 #define __DEFINES_H__
 
-#define IM_HERE_NOW()
-// printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
+#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
+#define CONFIG_IWL3945_DEBUG 1
 
-
-//#define CONFIG_IWL3945_DEBUG 1
 #define DUMP_PREFIX_OFFSET 0
 #define DUMP_PREFIX_ADDRESS 1
 
@@ -144,7 +142,7 @@ typedef signed long long s64;
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define BUG() do { \
 printk("BUG: failure at %s:%d/%s()!\n", __FILE__, __LINE__, __FUNCTION__); \
-panic("BUG!"); \
+printk("BUG!"); \
 } while (0)
 #define BUG_ON(condition) do { if (unlikely((condition)!=0)) BUG(); } while(0)
 

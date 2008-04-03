@@ -940,12 +940,12 @@ IM_HERE_NOW();
 		res = (*handler)(rx);
 		if (res != TXRX_CONTINUE) {
 			if (res == TXRX_DROP) {
-				//I802_DEBUG_INC(local->rx_handlers_drop);
+				I802_DEBUG_INC(local->rx_handlers_drop);
 				if (sta)
 					sta->rx_dropped++;
 			}
-			//if (res == TXRX_QUEUED)
-			//	I802_DEBUG_INC(local->rx_handlers_queued);
+			if (res == TXRX_QUEUED)
+				I802_DEBUG_INC(local->rx_handlers_queued);
 			break;
 		}
 	}
@@ -1743,7 +1743,7 @@ IM_HERE_NOW();
     
     BUILD_BUG_ON(sizeof(struct ieee80211_rx_status) > sizeof(skb->cb));
     
-    IOLog("todo ieee80211_rx_irqsafe\n");
+    IOLog("ieee80211_rx_irqsafe\n");
 	
 	//PrintPacketHeader(skb->mac_data);
 	/*char    *frame;
@@ -5135,7 +5135,7 @@ int pci_register_driver(struct pci_driver * drv){
 	result2 = (local->ops->open) (&local->hw);
 	
 
-    ieee80211_init_scan(local);//is this in the right place??
+    //ieee80211_init_scan(local);//is this in the right place??
     local->open_count++;
     
 	return 0;

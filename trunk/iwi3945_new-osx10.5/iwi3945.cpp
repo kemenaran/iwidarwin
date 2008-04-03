@@ -124,7 +124,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		if (test_bit(3, &clone->priv->status)) // off -> on 3=STATUS_RF_KILL_SW
 		{
 			//clone->priv->config &= ~CFG_ASSOCIATE;
-			IOLog("Trying to turn card on...\n");	
+			IOLog("Trying to turn card on... don't work use kextload\n");	
+			return(0);
 			clear_bit(3, &clone->priv->status);
 			if(get_my_priv())
 				iwl_up((struct iwl3945_priv*)get_my_priv());
@@ -134,7 +135,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}
 		else
 		{
-			IOLog("Trying to turn card off...\n");
+			IOLog("Trying to turn card off... don't work use kextunload\n");
+			return(0);
 			set_bit(3, &clone->priv->status);
 			if(get_my_priv())
 				iwl_down((struct iwl3945_priv*)get_my_priv());
@@ -143,7 +145,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}	
 	}
 	if(opt == 2){
-		iwl_scan((struct iwl3945_priv*)get_my_priv());
+		IOLog("don't work yet \n");
+		//iwl_scan((struct iwl3945_priv*)get_my_priv());
 	}
 
 	return(0);
