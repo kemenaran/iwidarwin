@@ -54,11 +54,11 @@
 
 #include "iwl-3945.h"
 #include "iwl-helpers.h"
-
+/*
 #define IWL_DEBUG(level, fmt, args...) \
 do { printk(KERN_ERR DRV_NAME": %c %s " fmt, \
 	 in_interrupt() ? 'I' : 'U', __FUNCTION__ , ## args); } while (0)
-
+*/
 #ifdef CONFIG_IWL3945_DEBUG
 u32 iwl3945_debug_level;
 #endif
@@ -4368,7 +4368,8 @@ int iwl3945_calc_sig_qual(int rssi_dbm, int noise_dbm)
 }
 
 /**
- * iwl3945_rx_handle - Main entry function for receiving responses from uCode
+ * 
+  - Main entry function for receiving responses from uCode
  *
  * Uses the priv->rx_handlers callback function array to invoke
  * the appropriate handlers, including command responses,
@@ -4394,7 +4395,7 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 		fill_rx = 1;
 	/* Rx interrupt, but nothing sent from uCode */
 	if (i == r)
-		IWL_DEBUG(IWL_DL_RX | IWL_DL_ISR, "r = %d, i = %d\n", r, i);
+		IWL_DEBUG(IWL_DL_RX | IWL_DL_ISR, "nothing sent from uCode r = %d, i = %d\n", r, i);
 
 	while (i != r) {
 		rxb = rxq->queue[i];
@@ -4525,7 +4526,7 @@ static int iwl3945_tx_queue_update_write_ptr(struct iwl3945_priv *priv,
 	return rc;
 }
 
-//#ifdef CONFIG_IWL3945_DEBUG
+#ifdef CONFIG_IWL3945_DEBUG
 static void iwl3945_print_rx_config_cmd(struct iwl3945_rxon_cmd *rxon)
 {
 	IWL_DEBUG_RADIO("RX CONFIG:\n");
@@ -4544,7 +4545,7 @@ static void iwl3945_print_rx_config_cmd(struct iwl3945_rxon_cmd *rxon)
 			MAC_ARG(rxon->bssid_addr));
 	IWL_DEBUG_RADIO("u16 assoc_id: 0x%x\n", le16_to_cpu(rxon->assoc_id));
 }
-//#endif
+#endif
 
 static void iwl3945_enable_interrupts(struct iwl3945_priv *priv)
 {
@@ -4826,12 +4827,12 @@ static void iwl3945_irq_tasklet(struct iwl3945_priv *priv)
 	iwl3945_write32(priv, CSR_FH_INT_STATUS, inta_fh);
 	
 #ifdef CONFIG_IWL3945_DEBUG
-	//if (iwl3945_debug_level & IWL_DL_ISR) {
+	if (iwl3945_debug_level & IWL_DL_ISR) {
 		/* just for debug */
-		u32 inta_mask = iwl3945_read32(priv, CSR_INT_MASK);
+		u32 inta_mask= iwl3945_read32(priv, CSR_INT_MASK);
 		IWL_DEBUG_ISR("TASKLET : inta 0x%08x, enabled 0x%08x, fh 0x%08x\n",
 			      inta, inta_mask, inta_fh);
-	//}
+	}
 #endif
 
 	/* Since CSR_INT and CSR_FH_INT_STATUS reads and clears are not
@@ -8921,7 +8922,8 @@ static int __init iwl3945_init(void)
 		IWL_ERROR("Unable to initialize PCI module\n");
 		return ret;
 	}
-#ifdef CONFIG_IWL3945_DEBUG
+#if 0
+//def CONFIG_IWL3945_DEBUG
 	ret = driver_create_file(&iwl3945_driver.driver, &driver_attr_debug_level);
 	if (ret) {
 		IWL_ERROR("Unable to create driver sysfs file\n");
@@ -8935,7 +8937,8 @@ static int __init iwl3945_init(void)
 
 static void __exit iwl3945_exit(void)
 {
-#ifdef CONFIG_IWL3945_DEBUG
+#if 0
+//def CONFIG_IWL3945_DEBUG
 	driver_remove_file(&iwl3945_driver.driver, &driver_attr_debug_level);
 #endif
 	pci_unregister_driver(&iwl3945_driver);
