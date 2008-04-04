@@ -2050,4 +2050,8 @@ static inline void init_waitqueue_head(wait_queue_head_t *q)
  #define CHAN_UTIL_RATE_LCM 95040
  #define WLAN_STA_PS BIT(2)
  
+ #define IEEE80211_HW_DEFAULT_REG_DOMAIN_CONFIGURED (1<<11)
+
+
+
 #endif //__DEFINES_H__

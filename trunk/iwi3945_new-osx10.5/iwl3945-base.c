@@ -73,11 +73,41 @@ static int iwl3945_tx_queue_update_write_ptr(struct iwl3945_priv *priv,
  ******************************************************************************/
 
 /* module parameters */
+
 static int iwl3945_param_disable_hw_scan; /* def: 0 = use 3945's h/w scan */
 //static int iwl3945_param_debug;    /* def: 0 = minimal debug log messages */
-static int iwl3945_param_debug =  0xffffffff;//show all debug messages
-//iwl3945_param_debug &= ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP|IWL_DL_POWER);
-//iwl3945_param_debug |=IWL_DL_INFO;
+static int iwl3945_param_debug =  0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
+/*
+#define IWL_DL_INFO          (1<<0)
+#define IWL_DL_MAC80211      (1<<1)
+#define IWL_DL_HOST_COMMAND  (1<<2)
+#define IWL_DL_STATE         (1<<3)
+#define IWL_DL_RADIO         (1<<7)
+#define IWL_DL_POWER         (1<<8)
+#define IWL_DL_TEMP          (1<<9)
+#define IWL_DL_NOTIF         (1<<10)
+#define IWL_DL_SCAN          (1<<11)
+#define IWL_DL_ASSOC         (1<<12)
+#define IWL_DL_DROP          (1<<13)
+#define IWL_DL_TXPOWER       (1<<14)
+#define IWL_DL_AP            (1<<15)
+#define IWL_DL_FW            (1<<16)
+#define IWL_DL_RF_KILL       (1<<17)
+#define IWL_DL_FW_ERRORS     (1<<18)
+#define IWL_DL_LED           (1<<19)
+#define IWL_DL_RATE          (1<<20)
+#define IWL_DL_CALIB         (1<<21)
+#define IWL_DL_WEP           (1<<22)
+#define IWL_DL_TX            (1<<23)
+#define IWL_DL_RX            (1<<24)
+#define IWL_DL_ISR           (1<<25)
+#define IWL_DL_HT            (1<<26)
+#define IWL_DL_IO            (1<<27)
+#define IWL_DL_11H           (1<<28)
+#define IWL_DL_STATS         (1<<29)
+#define IWL_DL_TX_REPLY      (1<<30)
+#define IWL_DL_QOS           (1<<31)
+*/
 static int iwl3945_param_disable;// TODO: link this in info.plist
   /* def: 0 = enable radio */
 static int iwl3945_param_antenna;  /* def: 0 = both antennas (use diversity) */
