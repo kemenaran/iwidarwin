@@ -2269,6 +2269,97 @@ IM_HERE_NOW();
 	return 0;
 }
 
+static int ieee80211_regdom = 0x10; /* FCC */
+static int ieee80211_japan_5ghz /* = 0 */;
+struct ieee80211_channel_range {
+	short start_freq;
+	short end_freq;
+	unsigned char power_level;
+	unsigned char antenna_max;
+};
+static const struct ieee80211_channel_range ieee80211_fcc_channels[] = {
+	{ 2412, 2462, 27, 6 } /* IEEE 802.11b/g, channels 1..11 */,
+	{ 5180, 5240, 17, 6 } /* IEEE 802.11a, channels 36..48 */,
+	{ 5260, 5320, 23, 6 } /* IEEE 802.11a, channels 52..64 */,
+	{ 5745, 5825, 30, 6 } /* IEEE 802.11a, channels 149..165, outdoor */,
+	{ 0 }
+};
+
+static const struct ieee80211_channel_range *channel_range =	ieee80211_fcc_channels;
+
+static void ieee80211_unmask_channel(int mode, struct ieee80211_channel *chan)
+{
+	int i;
+
+	chan->flag = 0;
+
+	if (ieee80211_regdom == 64 &&
+	    (mode == MODE_ATHEROS_TURBO || mode == MODE_ATHEROS_TURBOG)) {
+		/* Do not allow Turbo modes in Japan. */
+		return;
+	}
+
+	for (i = 0; channel_range[i].start_freq; i++) {
+		const struct ieee80211_channel_range *r = &channel_range[i];
+		if (r->start_freq <= chan->freq && r->end_freq >= chan->freq) {
+			if (ieee80211_regdom == 64 && !ieee80211_japan_5ghz &&
+			    chan->freq >= 5260 && chan->freq <= 5320) {
+				/*
+				 * Skip new channels in Japan since the
+				 * firmware was not marked having been upgraded
+				 * by the vendor.
+				 */
+				continue;
+			}
+
+			if (ieee80211_regdom == 0x10 &&
+			    (chan->freq == 5190 || chan->freq == 5210 ||
+			     chan->freq == 5230)) {
+				    /* Skip MKK channels when in FCC domain. */
+				    continue;
+			}
+
+			chan->flag |= IEEE80211_CHAN_W_SCAN |
+				IEEE80211_CHAN_W_ACTIVE_SCAN |
+				IEEE80211_CHAN_W_IBSS;
+			chan->power_level = r->power_level;
+			chan->antenna_max = r->antenna_max;
+
+			if (ieee80211_regdom == 64 &&
+			    (chan->freq == 5170 || chan->freq == 5190 ||
+			     chan->freq == 5210 || chan->freq == 5230)) {
+				/*
+				 * New regulatory rules in Japan have backwards
+				 * compatibility with old channels in 5.15-5.25
+				 * GHz band, but the station is not allowed to
+				 * use active scan on these old channels.
+				 */
+				chan->flag &= ~IEEE80211_CHAN_W_ACTIVE_SCAN;
+			}
+
+			if (ieee80211_regdom == 64 &&
+			    (chan->freq == 5260 || chan->freq == 5280 ||
+			     chan->freq == 5300 || chan->freq == 5320)) {
+				/*
+				 * IBSS is not allowed on 5.25-5.35 GHz band
+				 * due to radar detection requirements.
+				 */
+				chan->flag &= ~IEEE80211_CHAN_W_IBSS;
+			}
+
+			break;
+		}
+	}
+}
+
+
+void ieee80211_set_default_regdomain(struct ieee80211_hw_mode *mode)
+{
+	int c;
+	for (c = 0; c < mode->num_channels; c++)
+		ieee80211_unmask_channel(mode->mode, &mode->channels[c]);
+}
+
 #define max_t(type,x,y) \
 	({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
 int ieee80211_register_hw (	struct ieee80211_hw *  	hw){
@@ -4621,12 +4712,12 @@ int ieee80211_register_hwmode(struct ieee80211_hw *hw,
 		local->hw.conf.phymode = mode->mode;
 		local->oper_hw_mode = local->scan_hw_mode = mode;
 		local->oper_channel = local->scan_channel = &mode->channels[0];
-		//local->hw.conf.mode = local->oper_hw_mode;
-		//local->hw.conf.chan = local->oper_channel;
+		local->hw.conf.mode = local->oper_hw_mode;
+		local->hw.conf.chan = local->oper_channel;
 	}
 
-	//if (!(hw->flags & IEEE80211_HW_DEFAULT_REG_DOMAIN_CONFIGURED))
-	//	ieee80211_set_default_regdomain(mode);
+	if (!(hw->flags & IEEE80211_HW_DEFAULT_REG_DOMAIN_CONFIGURED))
+		ieee80211_set_default_regdomain(mode);
 
 	return 0;
 }
