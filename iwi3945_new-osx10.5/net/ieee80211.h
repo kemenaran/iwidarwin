@@ -969,7 +969,8 @@ struct ieee80211_conf {
 	int channel;			/* IEEE 802.11 channel number */
 	int freq;			/* MHz */
 	int channel_val;		/* hw specific value for the channel */
-
+	struct ieee80211_channel *chan;
+	struct ieee80211_hw_mode *mode;
 	int phymode;			/* MODE_IEEE80211A, .. */
 	unsigned int regulatory_domain;
 	int radio_enabled;
