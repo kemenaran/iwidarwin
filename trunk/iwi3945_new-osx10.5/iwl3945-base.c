@@ -4433,7 +4433,8 @@ static void iwl3945_rx_handle(struct iwl3945_priv *priv)
 		/* If an RXB doesn't have a Rx queue slot associated with it,
 		 * then a bug has been introduced in the queue refilling
 		 * routines -- catch it here */
-		BUG_ON(rxb == NULL);
+		//BUG_ON
+		if (rxb == NULL) break;;
 
 		rxq->queue[i] = NULL;
 

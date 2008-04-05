@@ -2422,6 +2422,9 @@ IM_HERE_NOW();
 
 	ieee80211_debugfs_add_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));*/
 
+	//fix for local->apdev
+	local->apdev=local->mdev;
+	
 	result = ieee80211_init_rate_ctrl_alg(local, NULL);
 	if (result < 0) {
 		printk(KERN_DEBUG "%s: Failed to initialize rate control "
