@@ -1797,8 +1797,7 @@ void iwl3945_reg_txpower_periodic(struct iwl3945_priv *priv)
 	iwl3945_hw_reg_comp_txpower_temp(priv);
 
  reschedule:
-	queue_delayed_work(priv->workqueue,
-			   &priv->thermal_periodic, REG_RECALIB_PERIOD * HZ);
+	queue_delayed_work(priv->workqueue, &priv->thermal_periodic, REG_RECALIB_PERIOD * HZ);
 }
 
 static void iwl3945_bg_reg_txpower_periodic(struct iwl3945_priv *priv)
