@@ -5165,7 +5165,136 @@ int run_add_interface() {
     return res;
 }    
 
+static int __ieee80211_if_config(struct net_device *dev,
+				 struct sk_buff *beacon,
+				 struct ieee80211_tx_control *control)
+{
+	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_if_conf conf;
+	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
+	if (!local->ops->config_interface /*|| !netif_running(dev)*/)
+		return 0;
+
+	memset(&conf, 0, sizeof(conf));
+	conf.type = sdata->type;
+	if (sdata->type == IEEE80211_IF_TYPE_STA ||
+	    sdata->type == IEEE80211_IF_TYPE_IBSS) {
+		if (local->sta_scanning &&
+		    local->scan_dev == dev)
+			conf.bssid = scan_bssid;
+		else
+			conf.bssid = sdata->u.sta.bssid;
+		conf.ssid = sdata->u.sta.ssid;
+		conf.ssid_len = sdata->u.sta.ssid_len;
+		conf.generic_elem = sdata->u.sta.extra_ie;
+		conf.generic_elem_len = sdata->u.sta.extra_ie_len;
+	} else if (sdata->type == IEEE80211_IF_TYPE_AP) {
+		conf.ssid = sdata->u.ap.ssid;
+		conf.ssid_len = sdata->u.ap.ssid_len;
+		conf.generic_elem = sdata->u.ap.generic_elem;
+		conf.generic_elem_len = sdata->u.ap.generic_elem_len;
+		conf.beacon = beacon;
+		conf.beacon_control = control;
+	}
+	return local->ops->config_interface(local_to_hw(local),
+					   dev->ifindex, &conf);
+}
+
+int ieee80211_if_config(struct net_device *dev)
+{
+	return __ieee80211_if_config(dev, NULL, NULL);
+}
+
+static int ieee80211_open(struct net_device *dev)
+{
+	struct ieee80211_sub_if_data *sdata, *nsdata;
+	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_if_init_conf conf;
+	int res;
+
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	//read_lock(&local->sub_if_lock);
+	/*list_for_each_entry(nsdata, &local->sub_if_list, list) {
+		struct net_device *ndev = nsdata->dev;
+
+		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
+		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
+		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
+			//read_unlock(&local->sub_if_lock);
+			return -ENOTUNIQ;
+		}
+	}*/
+	//read_unlock(&local->sub_if_lock);
+
+	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
+	    is_zero_ether_addr(sdata->u.wds.remote_addr))
+		return -ENOLINK;
+
+	if (sdata->type == IEEE80211_IF_TYPE_MNTR && local->open_count &&
+	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER)) {
+		/* run the interface in a "soft monitor" mode */
+		local->monitors++;
+		local->open_count++;
+		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
+		return 0;
+	}
+	//ieee80211_start_soft_monitor(local);
+
+	conf.if_id = dev->ifindex;
+	conf.type = sdata->type;
+	conf.mac_addr = dev->dev_addr;
+	res = local->ops->add_interface(local_to_hw(local), &conf);
+	if (res) {
+		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
+			ieee80211_start_hard_monitor(local);
+		return res;
+	}
+
+	if (local->open_count == 0) {
+		res = 0;
+		//tasklet_enable(&local->tx_pending_tasklet);
+		//tasklet_enable(&local->tasklet);
+		if (local->ops->open)
+			res = local->ops->open(local_to_hw(local));
+		if (res == 0) {
+			res = 1;//dev_open(local->mdev);
+			if (res) {
+				if (local->ops->stop)
+					local->ops->stop(local_to_hw(local));
+			} else {
+				res = ieee80211_hw_config(local);
+				if (res && local->ops->stop)
+					local->ops->stop(local_to_hw(local));
+				//else if (!res && local->apdev)
+				//	dev_open(local->apdev);
+			}
+		}
+		if (res) {
+			if (local->ops->remove_interface)
+				local->ops->remove_interface(local_to_hw(local),
+							    &conf);
+			return res;
+		}
+	}
+	local->open_count++;
+
+	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
+		local->monitors++;
+		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
+	} else
+		ieee80211_if_config(dev);
+
+	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
+	    !local->user_space_mlme)
+		netif_carrier_off(dev);
+	else
+		netif_carrier_on(dev);*/
+
+	netif_start_queue(dev);
+	return 0;
+}
 
 
 /*
@@ -5221,16 +5350,16 @@ int pci_register_driver(struct pci_driver * drv){
 	//Start ...
 #warning This assumes the "happy path" and fails miserably when things don't go well
 	struct ieee80211_local *local = hw_to_local(my_hw);
-	int result3 = run_add_interface();
+	int result3 = ieee80211_open(local->mdev);//run_add_interface();
 	if(result3)
 		IOLog("Error add_interface\n");
 	IOSleep(300);
 	//Start mac_open
-	result2 = (local->ops->open) (&local->hw);
+	//result2 = (local->ops->open) (&local->hw);
 	
 
     //ieee80211_init_scan(local);//is this in the right place??
-    local->open_count++;
+    //local->open_count++;
     
 	return 0;
 }
