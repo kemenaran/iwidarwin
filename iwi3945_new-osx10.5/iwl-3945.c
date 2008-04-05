@@ -328,8 +328,8 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 
 	if (!(rx_end->status & RX_RES_STATUS_NO_CRC32_ERROR)
 	    || !(rx_end->status & RX_RES_STATUS_NO_RXE_OVERFLOW)) {
-		//IOLog("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
-		IOLog(".");
+		IOLog("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
+		//IOLog(".");
 		return;
 	}
 
