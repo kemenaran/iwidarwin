@@ -2094,7 +2094,7 @@ IM_HERE_NOW();
 		return -ENODEV;
 	}*/
 	
-	list_add(&sdata->list, &local->sub_if_list);
+	//list_add(&sdata->list, &local->sub_if_list);
 	if (new_dev)
 		*new_dev = ndev;
 	
@@ -2510,8 +2510,12 @@ IM_HERE_NOW();
 
 	ieee80211_led_init(local);*/
 	
-	//fix for local->apdev
+	printk(KERN_WARNING "add apdev iface\n");
+			   
+	//fix for local->apdev ????
 	local->apdev=local->mdev;
+	
+	printk(KERN_WARNING "add apdev iface OK\n");
 	return 0;
 
 /*fail_wep:
@@ -5227,6 +5231,8 @@ static int __ieee80211_if_config(struct net_device *dev,
 				 struct sk_buff *beacon,
 				 struct ieee80211_tx_control *control)
 {
+IM_HERE_NOW();	
+
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_if_conf conf;
@@ -5267,6 +5273,8 @@ int ieee80211_if_config(struct net_device *dev)
 
 static int ieee80211_open(struct net_device *dev)
 {
+	IM_HERE_NOW();	
+
 	struct ieee80211_sub_if_data *sdata, *nsdata;
 	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_if_init_conf conf;
