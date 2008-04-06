@@ -582,7 +582,7 @@ struct ieee80211_local {
 		IEEE80211_DEV_REGISTERED,
 		IEEE80211_DEV_UNREGISTERED,
 	} reg_state;
-    
+	
 	/* Tasklet and skb queue to process calls from IRQ mode. All frames
 	 * added to skb_queue will be processed, but frames in
 	 * skb_queue_unreliable may be dropped if the total length of these
@@ -969,16 +969,15 @@ struct sta_info {
 
 struct rate_control_extra {
     /* values from rate_control_get_rate() to the caller: */
-    struct ieee80211_rate *probe; /* probe with this rate, or NULL for no
-     * probing */
-    int startidx, endidx, rateidx;
-    struct ieee80211_rate *nonerp;
-    int nonerp_idx;
-    
-    /* parameters from the caller to rate_control_get_rate(): */
-    int mgmt_data; /* this is data frame that is used for management
-     * (e.g., IEEE 802.1X EAPOL) */
-    u16 ethertype;
+	struct ieee80211_rate *probe; /* probe with this rate, or NULL for no
+				       * probing */
+	struct ieee80211_rate *nonerp;
+
+	/* parameters from the caller to rate_control_get_rate(): */
+	struct ieee80211_hw_mode *mode;
+	int mgmt_data; /* this is data frame that is used for management
+			* (e.g., IEEE 802.1X EAPOL) */
+	u16 ethertype;
 };
 
 
@@ -1034,8 +1033,7 @@ struct ieee80211_rx_status {
 };
 
 
-typedef enum { ALG_NONE, ALG_WEP, ALG_TKIP, ALG_CCMP, ALG_NULL }
-ieee80211_key_alg;
+typedef enum { ALG_NONE, ALG_WEP, ALG_TKIP, ALG_CCMP, ALG_NULL } ieee80211_key_alg;
 struct ieee80211_key_conf {
     
 	int hw_key_idx;			/* filled + used by low-level driver */
@@ -1655,12 +1653,9 @@ struct sta_ts_data {
 #define IEEE80211_MAX_AID 2007
 struct ieee80211_if_sta {
 	enum ieee80211_state state;
-	//struct timer_list 
-	void* timer;
-	//struct work_struct 
-	void* work;
-	//struct timer_list 
-	void* admit_timer; /* Recompute EDCA admitted time */
+	struct timer_list timer;
+	struct work_struct work;
+	struct timer_list admit_timer; /* Recompute EDCA admitted time */
 	u8 bssid[ETH_ALEN], prev_bssid[ETH_ALEN];
 	u8 ssid[IEEE80211_MAX_SSID_LEN];
 	size_t ssid_len;
@@ -2052,6 +2047,151 @@ static inline void init_waitqueue_head(wait_queue_head_t *q)
  
  #define IEEE80211_HW_DEFAULT_REG_DOMAIN_CONFIGURED (1<<11)
 
+/* Stored in sk_buff->cb */
+struct ieee80211_tx_packet_data {
+	int ifindex;
+	unsigned long jiffiess;
+	unsigned int req_tx_status:1;
+	unsigned int do_not_encrypt:1;
+	unsigned int requeue:1;
+	unsigned int mgmt_iface:1;
+	unsigned int queue:4;
+};
 
+struct ieee80211_msg_key_notification {
+	int tx_rx_count;
+	char ifname[IFNAMSIZ];
+	u8 addr[ETH_ALEN]; /* ff:ff:ff:ff:ff:ff for broadcast keys */
+};
+
+#define NUM_RX_DATA_QUEUES 17
+
+struct ieee80211_key {
+	struct kref kref;
+
+	int hw_key_idx; /* filled and used by low-level driver */
+	ieee80211_key_alg alg;
+	union {
+		struct {
+			/* last used TSC */
+			u32 iv32;
+			u16 iv16;
+			u16 p1k[5];
+			int tx_initialized;
+
+			/* last received RSC */
+			u32 iv32_rx[NUM_RX_DATA_QUEUES];
+			u16 iv16_rx[NUM_RX_DATA_QUEUES];
+			u16 p1k_rx[NUM_RX_DATA_QUEUES][5];
+			int rx_initialized[NUM_RX_DATA_QUEUES];
+		} tkip;
+		struct {
+			u8 tx_pn[6];
+			u8 rx_pn[NUM_RX_DATA_QUEUES][6];
+			struct crypto_cipher *tfm;
+			u32 replays; /* dot11RSNAStatsCCMPReplays */
+			/* scratch buffers for virt_to_page() (crypto API) */
+#ifndef AES_BLOCK_LEN
+#define AES_BLOCK_LEN 16
+#endif
+			u8 tx_crypto_buf[6 * AES_BLOCK_LEN];
+			u8 rx_crypto_buf[6 * AES_BLOCK_LEN];
+		} ccmp;
+	} u;
+	int tx_rx_count; /* number of times this key has been used */
+	int keylen;
+
+	/* if the low level driver can provide hardware acceleration it should
+	 * clear this flag */
+	unsigned int force_sw_encrypt:1;
+	unsigned int default_tx_key:1; /* This key is the new default TX key
+					* (used only for broadcast keys). */
+	s8 keyidx; /* WEP key index */
+
+#ifdef CONFIG_MAC80211_DEBUGFS
+	struct {
+		struct dentry *stalink;
+		struct dentry *dir;
+		struct dentry *keylen;
+		struct dentry *force_sw_encrypt;
+		struct dentry *keyidx;
+		struct dentry *hw_key_idx;
+		struct dentry *tx_rx_count;
+		struct dentry *algorithm;
+		struct dentry *tx_spec;
+		struct dentry *rx_spec;
+		struct dentry *replays;
+		struct dentry *key;
+	} debugfs;
+#endif
+
+	u8 key[0];
+};
+
+#define IEEE80211_AUTH_TIMEOUT (HZ / 5)
+#define IEEE80211_AUTH_MAX_TRIES 3
+#define IEEE80211_ASSOC_TIMEOUT (HZ / 5)
+#define IEEE80211_ASSOC_MAX_TRIES 3
+#define IEEE80211_MONITORING_INTERVAL (2 * HZ)
+#define IEEE80211_PROBE_INTERVAL (60 * HZ)
+#define IEEE80211_RETRY_AUTH_INTERVAL (1 * HZ)
+#define IEEE80211_SCAN_INTERVAL (2 * HZ)
+#define IEEE80211_SCAN_INTERVAL_SLOW (15 * HZ)
+#define IEEE80211_IBSS_JOIN_TIMEOUT (20 * HZ)
+
+#define IEEE80211_PROBE_DELAY (HZ / 33)
+#define IEEE80211_CHANNEL_TIME (HZ / 33)
+#define IEEE80211_PASSIVE_CHANNEL_TIME (HZ / 5)
+#define IEEE80211_SCAN_RESULT_EXPIRE (10 * HZ)
+#define IEEE80211_IBSS_MERGE_INTERVAL (30 * HZ)
+#define IEEE80211_IBSS_INACTIVITY_LIMIT (60 * HZ)
+
+#define IEEE80211_IBSS_MAX_STA_ENTRIES 128
+
+
+#define IEEE80211_FC(type, stype) cpu_to_le16(type | stype)
+
+#define ERP_INFO_USE_PROTECTION BIT(1)
+
+enum {
+	IEEE80211_KEY_MGMT_NONE = 0,
+	IEEE80211_KEY_MGMT_IEEE8021X = 1,
+	IEEE80211_KEY_MGMT_WPA_PSK = 2,
+	IEEE80211_KEY_MGMT_WPA_EAP = 3,
+};
+
+/* Stations flags (struct sta_info::flags) */
+#define WLAN_STA_AUTH BIT(0)
+#define WLAN_STA_ASSOC BIT(1)
+#define WLAN_STA_PS BIT(2)
+#define WLAN_STA_TIM BIT(3) /* TIM bit is on for PS stations */
+#define WLAN_STA_PERM BIT(4) /* permanent; do not remove entry on expiration */
+#define WLAN_STA_AUTHORIZED BIT(5) /* If 802.1X is used, this flag is
+				    * controlling whether STA is authorized to
+				    * send and receive non-IEEE 802.1X frames
+				    */
+#define WLAN_STA_SHORT_PREAMBLE BIT(7)
+#define WLAN_STA_WME BIT(9)
+#define WLAN_STA_WDS BIT(27)
+
+#define IW_CUSTOM_MAX 256
+
+//FIXME: !!
+enum ieee80211_tx_queue {
+	IEEE80211_TX_QUEUE_DATA0,
+	IEEE80211_TX_QUEUE_DATA1,
+	IEEE80211_TX_QUEUE_DATA2,
+	IEEE80211_TX_QUEUE_DATA3,
+	IEEE80211_TX_QUEUE_DATA4,
+	IEEE80211_TX_QUEUE_SVP,
+
+	NUM_TX_DATA_QUEUES_F,
+
+/* due to stupidity in the sub-ioctl userspace interface, the items in
+ * this struct need to have fixed values. As soon as it is removed, we can
+ * fix these entries. */
+	IEEE80211_TX_QUEUE_AFTER_BEACON = 6,
+	IEEE80211_TX_QUEUE_BEACON = 7
+};
 
 #endif //__DEFINES_H__

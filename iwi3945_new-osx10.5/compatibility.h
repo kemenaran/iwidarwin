@@ -14,6 +14,8 @@
 extern "C" {
 #endif		
 
+
+	extern void ieee80211_sta_work(struct work_struct *work);
 	extern  struct net_device *alloc_netdev(int sizeof_priv, const char *mask,
                                          void (*setup)(struct net_device *));
 	extern int request_firmware(const struct firmware ** firmware_p, const char * name, struct device * device);

@@ -8519,7 +8519,8 @@ static void iwl3945_setup_deferred_work(struct iwl3945_priv *priv)
 	INIT_DELAYED_WORK(&priv->scan_check, iwl3945_bg_scan_check,10);
 
 	iwl3945_hw_setup_deferred_work(priv);
-
+	
+	priv->irq_tasklet.padding=127;//reserve space in tlink for tasklet
 	tasklet_init(&priv->irq_tasklet, (void (*)(unsigned long))
 		     iwl3945_irq_tasklet, (unsigned long)priv);
 }
