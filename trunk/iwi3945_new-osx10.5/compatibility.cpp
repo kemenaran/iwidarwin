@@ -1984,6 +1984,63 @@ IM_HERE_NOW();
 		skb_queue_head_init(&sdata->fragments[i].skb_list);
 }
 
+void ieee80211_if_set_type(struct net_device *dev, int type)
+{
+IM_HERE_NOW();
+	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	int oldtype = sdata->type;
+
+	//dev->hard_start_xmit = ieee80211_subif_start_xmit;
+
+	sdata->type = type;
+	switch (type) {
+	case IEEE80211_IF_TYPE_WDS:
+		sdata->bss = NULL;
+		break;
+	case IEEE80211_IF_TYPE_VLAN:
+		break;
+	case IEEE80211_IF_TYPE_AP:
+		sdata->u.ap.dtim_period = 2;
+		sdata->u.ap.force_unicast_rateidx = -1;
+		sdata->u.ap.max_ratectrl_rateidx = -1;
+		skb_queue_head_init(&sdata->u.ap.ps_bc_buf);
+		sdata->bss = &sdata->u.ap;
+		break;
+	case IEEE80211_IF_TYPE_STA:
+	case IEEE80211_IF_TYPE_IBSS: {
+		struct ieee80211_sub_if_data *msdata;
+		struct ieee80211_if_sta *ifsta;
+
+		ifsta = &sdata->u.sta;
+		//INIT_WORK(&ifsta->work, ieee80211_sta_work);
+		//setup_timer(&ifsta->timer, ieee80211_sta_timer,(unsigned long) sdata);
+		skb_queue_head_init(&ifsta->skb_queue);
+
+		ifsta->capab = WLAN_CAPABILITY_ESS;
+		ifsta->auth_algs = IEEE80211_AUTH_ALG_OPEN |
+			IEEE80211_AUTH_ALG_SHARED_KEY;
+		ifsta->create_ibss = 1;
+		ifsta->wmm_enabled = 1;
+		ifsta->auto_channel_sel = 1;
+		ifsta->auto_bssid_sel = 1;
+
+		msdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(sdata->local->mdev);
+		sdata->bss = &msdata->u.ap;
+		break;
+	}
+	case IEEE80211_IF_TYPE_MNTR:
+		dev->type = ARPHRD_IEEE80211_RADIOTAP;
+		//dev->hard_start_xmit = ieee80211_monitor_start_xmit;
+		break;
+	default:
+		printk(KERN_WARNING "%s: %s: Unknown interface type 0x%x",
+		       dev->name, __FUNCTION__, type);
+	}
+	//ieee80211_debugfs_change_if_type(sdata, oldtype);
+	//ieee80211_update_default_wep_only(local);
+}
+
 int ieee80211_if_add(struct net_device *dev, const char *name,
 		     struct net_device **new_dev, int type)
 {
@@ -2016,7 +2073,7 @@ IM_HERE_NOW();
 	//SET_NETDEV_DEV(ndev, wiphy_dev(local->hw.wiphy));
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(ndev);
-	ndev->ieee80211_ptr = &local;//&sdata->wdev;
+	ndev->ieee80211_ptr = local;//&sdata->wdev;
 	//sdata->wdev.wiphy = local->hw.wiphy;
 	sdata->type = IEEE80211_IF_TYPE_AP;
 	sdata->dev = ndev;
@@ -2028,7 +2085,7 @@ IM_HERE_NOW();
 		goto fail;*/
 
 	//ieee80211_debugfs_add_netdev(sdata);
-	//ieee80211_if_set_type(ndev, type);
+	ieee80211_if_set_type(ndev, type);
 
 	//write_lock_bh(&local->sub_if_lock);
 	/*if (unlikely(local->reg_state == IEEE80211_DEV_UNREGISTERED)) {
@@ -2037,7 +2094,7 @@ IM_HERE_NOW();
 		return -ENODEV;
 	}*/
 	
-	//list_add(&sdata->list, &local->sub_if_list);//__ieee80211_if_del disable this call?
+	list_add(&sdata->list, &local->sub_if_list);
 	if (new_dev)
 		*new_dev = ndev;
 	
@@ -2422,8 +2479,7 @@ IM_HERE_NOW();
 
 	ieee80211_debugfs_add_netdev(IEEE80211_DEV_TO_SUB_IF(local->mdev));*/
 
-	//fix for local->apdev
-	local->apdev=local->mdev;
+
 	
 	result = ieee80211_init_rate_ctrl_alg(local, NULL);
 	if (result < 0) {
@@ -2453,7 +2509,9 @@ IM_HERE_NOW();
 	/*rtnl_unlock();
 
 	ieee80211_led_init(local);*/
-
+	
+	//fix for local->apdev
+	local->apdev=local->mdev;
 	return 0;
 
 /*fail_wep:
@@ -4521,7 +4579,7 @@ IM_HERE_NOW();
 	}
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(mdev);
-	mdev->ieee80211_ptr = &local;//sdata->wdev;
+	mdev->ieee80211_ptr = local;//sdata->wdev;
 	//sdata->wdev.wiphy = wiphy;
 
 	local->hw.queues = 1; /* default */
