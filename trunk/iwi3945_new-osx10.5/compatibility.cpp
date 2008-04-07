@@ -2111,6 +2111,7 @@ IM_HERE_NOW();
 
 		ifsta = &sdata->u.sta;
 		INIT_WORK(&ifsta->work, ieee80211_sta_work, 12);
+		ifsta->work.data=sdata;
 		//setup_timer(&ifsta->timer, ieee80211_sta_timer,(unsigned long) sdata);
 		set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
 		queue_work((struct workqueue_struct*)(local->hw.workqueue), (struct work_struct*)&ifsta->work);//check this
