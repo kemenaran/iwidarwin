@@ -1461,20 +1461,17 @@ IM_HERE_NOW();
 	printk(KERN_DEBUG "%s: Added STA " MAC_FMT "\n",
 	       local->mdev->name, MAC_ARG(addr));
 #endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
-
+/*
 #ifdef CONFIG_MAC80211_DEBUGFS
 	if (!in_interrupt()) {
 		sta->debugfs_registered = 1;
 		ieee80211_sta_debugfs_add(sta);
 		rate_control_add_sta_debugfs(sta);
 	} else {
-		/* debugfs entry adding might sleep, so schedule process
-		 * context task for adding entry for STAs that do not yet
-		 * have one. */
 		queue_work(local->hw.workqueue, &local->sta_debugfs_add);
 	}
 #endif
-
+*/
 	return sta;
 }
 
@@ -2111,10 +2108,10 @@ IM_HERE_NOW();
 
 		ifsta = &sdata->u.sta;
 		INIT_WORK(&ifsta->work, ieee80211_sta_work, 12);
-		ifsta->work.data=sdata;
 		//setup_timer(&ifsta->timer, ieee80211_sta_timer,(unsigned long) sdata);
 		set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
-		queue_work((struct workqueue_struct*)(local->hw.workqueue), (struct work_struct*)&ifsta->work);//check this
+		queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
+		//queue_work(local->hw.workqueue, &ifsta->work);//check this
 
 		skb_queue_head_init(&ifsta->skb_queue);
 
@@ -2372,13 +2369,14 @@ IM_HERE_NOW();
 				   sta->addr, &conf, sta->aid);
 		sta->key_idx_compression = HW_KEY_IDX_INVALID;
 	}*/
-
+/*
 #ifdef CONFIG_MAC80211_DEBUGFS
 	if (in_atomic()) {
 		list_add(&sta->list, &local->deleted_sta_list);
 		queue_work(local->hw.workqueue, &local->sta_debugfs_add);
 	} else
 #endif
+*/
 		finish_sta_info_free(local, sta);
 }
 
@@ -4470,7 +4468,8 @@ IM_HERE_NOW();
 	case IEEE80211_STYPE_DEAUTH:
 	case IEEE80211_STYPE_DISASSOC:
 		skb_queue_tail(&ifsta->skb_queue, skb);
-		queue_work((struct workqueue_struct*)(local->hw.workqueue), (struct work_struct*)&ifsta->work);//check this
+		queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
+		//queue_work(local->hw.workqueue, &ifsta->work);//check this
 		return;
 	default:
 		printk(KERN_DEBUG "%s: received unknown management frame - "
@@ -7002,7 +7001,8 @@ int ieee80211_sta_req_scan(struct net_device *dev, u8 *ssid, size_t ssid_len)
 	}
 
 	set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);
-	queue_work(local->hw.workqueue, &ifsta->work);
+	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
+	//queue_work(local->hw.workqueue, &ifsta->work);
 	return 0;
 }
 
@@ -7400,7 +7400,7 @@ static void ieee80211_send_disassoc(struct net_device *dev,
 void ieee80211_sta_work(struct work_struct *work)
 {
 IM_HERE_NOW();
-	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)work->data;//check this
+	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)work;//check this
 	//	container_of(work, struct ieee80211_sub_if_data, u.sta.work);
 	struct net_device *dev = sdata->dev;
 	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
