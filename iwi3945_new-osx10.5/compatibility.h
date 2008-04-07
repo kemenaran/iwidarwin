@@ -13,8 +13,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
-
-
+	
+	extern void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start);
 	extern void ieee80211_sta_work(struct work_struct *work);
 	extern  struct net_device *alloc_netdev(int sizeof_priv, const char *mask,
                                          void (*setup)(struct net_device *));
