@@ -33,8 +33,6 @@ struct list_head {
 	struct list_head *next, *prev;
 };
 typedef struct { volatile int counter; } atomic_t;
-typedef signed char s8;
-typedef unsigned long long u64;
 #define        __iomem
 #endif
 enum {

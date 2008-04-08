@@ -34,7 +34,6 @@
 #include <linux/if_arp.h>	/* ARPHRD_ETHER */
 #include <net/iw_handler.h>	/* new driver API */
 #endif
-
 #include "ieee80211_crypt.h"
 #include "ieee80211_radiotap.h"
 
@@ -49,11 +48,10 @@ typedef struct {
 #endif
     lck_spin_t *lock;
 } spinlock_t;
-typedef unsigned short __le16;
-typedef unsigned short __u16;
-typedef unsigned char __u8;
-typedef unsigned long long __le64;
-typedef unsigned int __u32;
+
+
+
+
 #define IW_MAX_SPY		8
 #define IW_ESSID_MAX_SIZE	32
 #define ETH_ALEN	6
