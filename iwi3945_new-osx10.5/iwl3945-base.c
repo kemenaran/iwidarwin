@@ -7875,7 +7875,8 @@ static ssize_t store_debug_level(struct device_driver *d,
 	else
 		iwl3945_debug_level = val;
 
-	return strnlen(buf, count);
+	//return strnlen(buf, count);
+	return strlen(buf);
 }
 
 //static DRIVER_ATTR(debug_level, S_IWUSR | S_IRUGO,
@@ -8474,7 +8475,8 @@ static ssize_t dump_error_log(struct device *d,
 	if (p[0] == '1')
 		iwl3945_dump_nic_error_log((struct iwl3945_priv *)d->driver_data);
 
-	return strnlen(buf, count);
+	//return strnlen(buf, count);
+	return strlen(buf);
 }
 
 static DEVICE_ATTR(dump_errors, S_IWUSR, NULL, dump_error_log);
@@ -8488,7 +8490,8 @@ static ssize_t dump_event_log(struct device *d,
 	if (p[0] == '1')
 		iwl3945_dump_nic_event_log((struct iwl3945_priv *)d->driver_data);
 
-	return strnlen(buf, count);
+	//return strnlen(buf, count);
+	return strlen(buf);
 }
 
 static DEVICE_ATTR(dump_events, S_IWUSR, NULL, dump_event_log);
@@ -8787,7 +8790,7 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 	err = iwl3945_eeprom_init(priv);
 	if (err) {
 		IWL_ERROR("Unable to init EEPROM\n");
-		goto out_remove_sysfs;
+		//goto out_remove_sysfs;
 	}
 	/* MAC Address location in EEPROM same for 3945/4965 */
 	get_eeprom_mac(priv, priv->mac_addr);
@@ -8798,7 +8801,7 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 	err = ieee80211_register_hw(priv->hw);
 	if (err) {
 		IWL_ERROR("Failed to register network device (error %d)\n", err);
-		goto out_remove_sysfs;
+		//goto out_remove_sysfs;
 	}
 
 	priv->hw->conf.beacon_int = 100;

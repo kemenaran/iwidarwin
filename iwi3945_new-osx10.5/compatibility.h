@@ -14,6 +14,7 @@
 extern "C" {
 #endif		
 	
+	extern int netif_running(struct net_device *dev);
 	extern void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start);
 	extern void ieee80211_sta_work(struct work_struct *work);
 	extern  struct net_device *alloc_netdev(int sizeof_priv, const char *mask,
@@ -78,15 +79,16 @@ extern "C" {
 	extern void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, size_t size, int direction);
 	extern int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask);
 #define pci_resource_len(dev,bar) 8
-	extern void mutex_init(struct mutex *);
+	
     extern int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned long irqflags, const char *devname, void *dev_id);	
     extern void spin_lock_irqsave(spinlock_t *a, int b);
     extern void spin_unlock_irqrestore(spinlock_t *lock, int fl);
     extern void spin_lock_init(spinlock_t *lock);
     extern void spin_lock(spinlock_t *lock);
     extern void spin_unlock(spinlock_t *lock);
-    extern void mutex_lock(struct mutex *);
-    extern void mutex_unlock(struct mutex *);
+
+	
+
     extern void msleep(unsigned int msecs);
     extern void init_timer(struct timer_list *timer);
 #undef mod_timer
@@ -139,6 +141,7 @@ extern "C" {
     extern addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction);
     extern int skb_tailroom(const struct sk_buff *skb);
     extern void *skb_data(const struct sk_buff *skb);
+	extern int skb_set_data(const struct sk_buff *skb, void *data, size_t len);
     extern int skb_len(const struct sk_buff *skb);
     extern void skb_reserve(struct sk_buff *skb, int len);
     extern void *skb_put(struct sk_buff *skb, unsigned int len);
@@ -164,7 +167,7 @@ extern "C" {
 #define wake_up_interruptible_all(x)	__wake_up(x, TASK_INTERRUPTIBLE, 0, NULL)
     extern void __wake_up(wait_queue_head_t *q, unsigned int mode, int nr, void *key);
     extern int cancel_delayed_work(struct delayed_work *work);
-    extern long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout);
+   // extern long wait_event_interruptible_timeout(wait_queue_head_t wq, long condition, long timeout);
     // This has to be one of the most beautiful algorithms I've seen:
     static inline __attribute__((const))
     bool is_power_of_2(unsigned long n)
@@ -209,11 +212,12 @@ extern "C" {
      * @head:   the head for your list.
      * @member: the name of the list_struct within the struct.
      */
-#define list_for_each_entry(pos, head, member)              \
-for (pos = list_entry((head)->next, typeof(*pos), member);  \
-prefetch(pos->member.next), &pos->member != (head);    \
-pos = list_entry(pos->member.next, typeof(*pos), member))
-    static inline void prefetch(const void *x) {;}
+static inline void prefetch(const void *x) {;}
+
+#define list_for_each_entry(pos, head, member)				\
+	for (pos = list_entry((head)->next, typeof(*pos), member);	\
+	     prefetch(pos->member.next), &pos->member != (head); 	\
+	     pos = list_entry(pos->member.next, typeof(*pos), member))
 
 #define list_for_each_entry_safe(pos, n, head, member)			\
 	for (pos = list_entry((head)->next, typeof(*pos), member),	\
