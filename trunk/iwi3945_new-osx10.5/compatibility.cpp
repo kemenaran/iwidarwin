@@ -6297,16 +6297,17 @@ static int ieee80211_open(struct net_device *dev)
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	//read_lock(&local->sub_if_lock);
-	list_for_each_entry(nsdata, &local->sub_if_list, list) {
+	//??? nsdata should be sdata
+	/*list_for_each_entry(nsdata, &local->sub_if_list, list) {
 		struct net_device *ndev = nsdata->dev;
 
-		if (ndev != dev && ndev != local->mdev /*&& netif_running(ndev)*/ &&
+		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
 		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
 		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
 			//read_unlock(&local->sub_if_lock);
 			return -1;//-ENOTUNIQ;
 		}
-	}
+	}*/
 	//read_unlock(&local->sub_if_lock);
 
 	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
@@ -6432,7 +6433,7 @@ int pci_register_driver(struct pci_driver * drv){
 	struct ieee80211_local *local = hw_to_local(my_hw);
 	int result3 = ieee80211_open(local->mdev);//run_add_interface();
 	if(result3)
-		IOLog("Error add_interface\n");
+		IOLog("Error ieee80211_open\n");
 	IOSleep(300);
 	//Start mac_open
 	//result2 = (local->ops->open) (&local->hw);
