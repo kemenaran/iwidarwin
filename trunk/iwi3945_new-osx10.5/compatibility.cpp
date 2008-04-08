@@ -5,20 +5,41 @@
  *  Created by Sean Cross on 2/8/08.
  *  Copyright 2008 __MyCompanyName__. All rights reserved.
  *
+ osx 10.4 info.plist
+		<key>com.apple.iokit.IONetworkingFamily</key>
+        <string>1.1.3</string>
+        <key>com.apple.iokit.IOPCIFamily</key>
+        <string>1.2</string>
+		<key>com.apple.iokit.IO80211Family</key>
+		<string>1.0.0</string>
+        <key>com.apple.kernel.iokit</key>
+        <string>6.0</string>
+		<key>com.apple.kpi.bsd</key>
+		<string>8.0.0b2</string>
+		<key>com.apple.kpi.mach</key>
+		<string>8.0.0b2</string>
+		<key>com.apple.kpi.unsupported</key>
+		<string>8.0.0b2</string>
+		<key>com.apple.kpi.libkern</key>
+		<string>8.0.0b2</string>
+		<key>com.apple.kpi.iokit</key>
+		<string>8.0.0b2</string>
  */
 
 #define NO_SPIN_LOCKS 0
 #define NO_MUTEX_LOCKS 0
 #define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 
-#include <sys/kernel_types.h>
+/*#include <sys/kernel_types.h>
 #include <mach/vm_types.h>
 #include <sys/kpi_mbuf.h>
+#include <libkern/OSByteOrder.h>
+#include <libkern/OSAtomic.h>
+*/
 
 #include <IOKit/IOMemoryDescriptor.h>
 #include <IOKit/network/IONetworkController.h>
 #include <IOKit/pci/IOPCIDevice.h>
-#include <libkern/OSAtomic.h>
 #include <IOKit/IOInterruptEventSource.h>
 
 #include <IOKit/assert.h>
@@ -27,16 +48,15 @@
 #include <IOKit/IOInterruptEventSource.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>
 #include <IOKit/pci/IOPCIDevice.h>
-//#include <IOKit/network/IONetworkController.h>
-//#include <IOKit/network/IONetworkInterface.h>
+#include <IOKit/network/IONetworkController.h>
+#include <IOKit/network/IONetworkInterface.h>
 #include <IOKit/network/IOEthernetController.h>
 #include <IOKit/network/IOEthernetInterface.h>
 #include <IOKit/network/IOGatedOutputQueue.h>
 #include <IOKit/network/IOMbufMemoryCursor.h>
-#include <libkern/OSByteOrder.h>
 #include <IOKit/pccard/IOPCCard.h>
-//#include <IOKit/apple80211/IO80211Controller.h>
-//#include <IOKit/apple80211/IO80211Interface.h>
+#include <IOKit/apple80211/IO80211Controller.h>
+#include <IOKit/apple80211/IO80211Interface.h>
 #include <IOKit/network/IOPacketQueue.h>
 #include <IOKit/network/IONetworkMedium.h>
 #include <IOKit/IOTimerEventSource.h>
@@ -44,11 +64,11 @@
 #include <IOKit/assert.h>
 #include <IOKit/IODataQueue.h>
 
-
-
 #include "defines.h"
-#include "compatibility.h"
+//#include "compatibility.h"
 #include "firmware/ipw3945.ucode.h"
+
+
 
 
 // Note: This, in itself, makes this very much non-reentrant.  It's used
@@ -60,7 +80,7 @@ static IO80211Interface*			my_fNetif;
 static IOEthernetInterface*			my_fNetif;
 #endif
 static IOBasicOutputQueue *				fTransmitQueue;	
-static ieee80211_hw * my_hw;
+
 static IOWorkLoop * workqueue;
 static IOInterruptEventSource *	fInterruptSrc;
 static IOInterruptEventSource *	DMAInterruptSource;
@@ -80,6 +100,7 @@ static bool is_unloaded=false;
 #define MAX_MUTEXES 256
 static struct mutex *mutexes[MAX_MUTEXES];
 unsigned long current_mutex = 0;
+
 
 /*
 	Getters
@@ -130,6 +151,12 @@ IOMemoryMap * getMap(){
 }
 
 
+int netif_running(struct net_device *dev)
+{
+	if (!my_fNetif || !dev) return 0;
+	if((my_fNetif->getFlags() & IFF_RUNNING)==0) return 0;
+	return 1;//running
+}
 
 /*
 	Setters
@@ -307,6 +334,10 @@ struct sk_buff *skb_clone(const struct sk_buff *skb, unsigned int ignored) {
 
 void *skb_data(const struct sk_buff *skb) {
     return mbuf_data(skb->mac_data);
+}
+
+int skb_set_data(const struct sk_buff *skb, void *data, size_t len) {
+   return mbuf_setdata(skb->mac_data,data,len);
 }
 
 int skb_len(const struct sk_buff *skb) {
@@ -863,7 +894,6 @@ bool netif_queue_stopped(struct net_device *dev) {
 #warning Check for stopped queue here
     return 0;
 }
-
 
 
 /* Perform netif operations on all configured interfaces */
@@ -1484,7 +1514,7 @@ struct sta_info * ieee80211_ibss_add_sta(struct net_device *dev,
 					 u8 *addr)
 {
 IM_HERE_NOW();
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct sta_info *sta;
 	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
 
@@ -2013,7 +2043,7 @@ static void ieee80211_rx_mgmt_probe_req(struct net_device *dev,
 {
 IM_HERE_NOW();
 
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	int tx_last_beacon;
 	struct sk_buff *skb;
@@ -2082,7 +2112,7 @@ void ieee80211_if_set_type(struct net_device *dev, int type)
 {
 IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	int oldtype = sdata->type;
 
 	//dev->hard_start_xmit = ieee80211_subif_start_xmit;
@@ -2145,7 +2175,7 @@ int ieee80211_if_add(struct net_device *dev, const char *name,
 IM_HERE_NOW();	
 
 	struct net_device *ndev;
-	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local =  wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata = NULL;
 	int ret;
 
@@ -2171,7 +2201,8 @@ IM_HERE_NOW();
 	//SET_NETDEV_DEV(ndev, wiphy_dev(local->hw.wiphy));
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(ndev);
-	ndev->ieee80211_ptr = local;//&sdata->wdev;
+	
+	ndev->ieee80211_ptr = hw_to_local(my_hw);//&sdata->wdev;
 	//sdata->wdev.wiphy = local->hw.wiphy;
 	sdata->type = IEEE80211_IF_TYPE_AP;
 	sdata->dev = ndev;
@@ -2186,16 +2217,15 @@ IM_HERE_NOW();
 	ieee80211_if_set_type(ndev, type);
 
 	//write_lock_bh(&local->sub_if_lock);
-	/*if (unlikely(local->reg_state == IEEE80211_DEV_UNREGISTERED)) {
-		write_unlock_bh(&local->sub_if_lock);
-		__ieee80211_if_del(local, sdata);
+	//if (unlikely(local->reg_state == IEEE80211_DEV_UNREGISTERED)) {
+	if (unlikely(local->reg_state == 0)) {
+		//write_unlock_bh(&local->sub_if_lock);
+		//__ieee80211_if_del(local, sdata);
 		return -ENODEV;
-	}*/
-	
-	//list_add(&sdata->list, &local->sub_if_list);
+	}
+	list_add(&sdata->list, &local->sub_if_list);
 	if (new_dev)
 		*new_dev = ndev;
-	
 	//write_unlock_bh(&local->sub_if_lock);
 
 	//ieee80211_update_default_wep_only(local);
@@ -2399,9 +2429,9 @@ IM_HERE_NOW();
 	struct rate_control_ref *ref, *old;
 
 	//ASSERT_RTNL();
-	/*if (local->open_count || netif_running(local->mdev) ||
+	if (local->open_count || netif_running(local->mdev) ||
 	    (local->apdev && netif_running(local->apdev)))
-		return -EBUSY;*/
+		return -EBUSY;
 
 	ref = rate_control_alloc(name, local);
 	if (!ref) {
@@ -2609,12 +2639,10 @@ IM_HERE_NOW();
 
 	ieee80211_led_init(local);*/
 	
-	printk(KERN_WARNING "add apdev iface\n");
-			   
+		   
 	//fix for local->apdev ????
 	local->apdev=local->mdev;
 	
-	printk(KERN_WARNING "add apdev iface OK\n");
 	return 0;
 
 /*fail_wep:
@@ -2768,7 +2796,7 @@ static struct ieee80211_sta_bss *
 ieee80211_rx_bss_get(struct net_device *dev, u8 *bssid)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local =  wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sta_bss *bss;
 
 	spin_lock_bh(&local->sta_bss_lock);
@@ -2789,7 +2817,7 @@ static void __ieee80211_rx_bss_hash_add(struct net_device *dev,
 					struct ieee80211_sta_bss *bss)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	bss->hnext = local->sta_bss_hash[STA_HASH(bss->bssid)];
 	local->sta_bss_hash[STA_HASH(bss->bssid)] = bss;
 }
@@ -2799,7 +2827,7 @@ static struct ieee80211_sta_bss *
 ieee80211_rx_bss_add(struct net_device *dev, u8 *bssid)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sta_bss *bss;
 
 	bss = (ieee80211_sta_bss*)kzalloc(sizeof(*bss), GFP_ATOMIC);
@@ -2822,7 +2850,7 @@ static void __ieee80211_rx_bss_hash_del(struct net_device *dev,
 					struct ieee80211_sta_bss *bss)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sta_bss *b, *prev = NULL;
 	b = local->sta_bss_hash[STA_HASH(bss->bssid)];
 	while (b) {
@@ -2852,7 +2880,7 @@ static void ieee80211_rx_bss_put(struct net_device *dev,
 				 struct ieee80211_sta_bss *bss)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	if (!atomic_dec_and_test(&bss->users))
 		return;
 
@@ -2871,7 +2899,7 @@ static void ieee80211_rx_bss_info(struct net_device *dev,
 				  int beacon)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local =  wdev_priv(dev->ieee80211_ptr);
 	struct ieee802_11_elems elems;
 	size_t baselen;
 	int channel, invalid = 0, clen;
@@ -3149,7 +3177,7 @@ static void ieee80211_sta_wmm_params(struct net_device *dev,
 				     u8 *wmm_param, size_t wmm_param_len)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_tx_queue_params params;
 	size_t left;
 	int count;
@@ -3305,7 +3333,7 @@ static void ieee80211_send_auth(struct net_device *dev,
 				int encrypt)
 {
 IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct sk_buff *skb;
 	struct ieee80211_mgmt *mgmt;
 
@@ -3375,7 +3403,7 @@ static void ieee80211_send_assoc(struct net_device *dev,
 				 struct ieee80211_if_sta *ifsta)
 {
 IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_hw_mode *mode;
 	struct sk_buff *skb;
 	struct ieee80211_mgmt *mgmt;
@@ -3781,7 +3809,7 @@ static void ieee80211_send_probe_req(struct net_device *dev, u8 *dst,
 				     u8 *ssid, size_t ssid_len)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_hw_mode *mode;
 	struct sk_buff *skb;
 	struct ieee80211_mgmt *mgmt;
@@ -3846,7 +3874,7 @@ static void ieee80211_associated(struct net_device *dev,
 				 struct ieee80211_if_sta *ifsta)
 {
 IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct sta_info *sta;
 	int disassoc;
 
@@ -3912,7 +3940,7 @@ static void ieee80211_rx_mgmt_assoc_resp(struct net_device *dev,
 					 int reassoc)
 {
 IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_hw_mode *mode;
 	struct sta_info *sta;
 	u32 rates;
@@ -4128,7 +4156,7 @@ static void ieee80211_key_threshold_notify(struct net_device *dev,
 					   struct sta_info *sta)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct sk_buff *skb;
 	struct ieee80211_msg_key_notification *msg;
 
@@ -4311,7 +4339,7 @@ IM_HERE_NOW();
 static int ap_sta_ps_end(struct net_device *dev, struct sta_info *sta)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct sk_buff *skb;
 	int sent = 0;
 	struct ieee80211_sub_if_data *sdata;
@@ -4442,7 +4470,7 @@ void ieee80211_sta_rx_mgmt(struct net_device *dev, struct sk_buff *skb,
 			   struct ieee80211_rx_status *rx_status)
 {
 IM_HERE_NOW();	
-	struct ieee80211_local *local = (ieee80211_local *)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata;
 	struct ieee80211_if_sta *ifsta;
 	struct ieee80211_mgmt *mgmt;
@@ -5248,9 +5276,9 @@ IM_HERE_NOW();
 			 ((sizeof(struct ieee80211_local) +
 			   NETDEV_ALIGN_CONST) & ~NETDEV_ALIGN_CONST);
 
-	//BUG_ON(!ops->tx);
-	//BUG_ON(!ops->config);
-	//BUG_ON(!ops->add_interface);
+	BUG_ON(!ops->tx);
+	BUG_ON(!ops->config);
+	BUG_ON(!ops->add_interface);
 	local->ops = ops;
 
 	/* for now, mdev needs sub_if_data :/ */
@@ -5265,7 +5293,7 @@ IM_HERE_NOW();
 	}
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(mdev);
-	mdev->ieee80211_ptr = local;//sdata->wdev;
+	mdev->ieee80211_ptr = hw_to_local(my_hw);//sdata->wdev;
 	//sdata->wdev.wiphy = wiphy;
 
 	local->hw.queues = 1; /* default */
@@ -5327,11 +5355,11 @@ IM_HERE_NOW();
 		     ieee80211_tasklet_handler,
 		     (unsigned long) local);
 	tasklet_disable(&local->tasklet);
-
-
+	
+	my_hw=local_to_hw(local);
 
 	printf("ieee80211_alloc_hw [OK]\n");
-	my_hw=local_to_hw(local);
+	
 	return my_hw;
 
 }
@@ -5916,11 +5944,11 @@ static int __ieee80211_if_config(struct net_device *dev,
 IM_HERE_NOW();	
 
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_if_conf conf;
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-	if (!local->ops->config_interface /*|| !netif_running(dev)*/)
+	if (!local->ops->config_interface || !netif_running(dev))
 		return 0;
 
 	memset(&conf, 0, sizeof(conf));
@@ -6291,29 +6319,24 @@ static int ieee80211_open(struct net_device *dev)
 	IM_HERE_NOW();	
 
 	struct ieee80211_sub_if_data *sdata, *nsdata;
-	struct ieee80211_local *local = (ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local =  wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_if_init_conf conf;
 	int res;
-
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	//read_lock(&local->sub_if_lock);
-	//??? nsdata should be sdata
-	/*list_for_each_entry(nsdata, &local->sub_if_list, list) {
+	list_for_each_entry(nsdata, &local->sub_if_list, list) {
 		struct net_device *ndev = nsdata->dev;
-
 		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
 		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
 		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
 			//read_unlock(&local->sub_if_lock);
 			return -1;//-ENOTUNIQ;
 		}
-	}*/
+	}
 	//read_unlock(&local->sub_if_lock);
-
 	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
 	    is_zero_ether_addr(sdata->u.wds.remote_addr))
 		return -ENOLINK;
-
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR && local->open_count &&
 	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER)) {
 		/* run the interface in a "soft monitor" mode */
@@ -6323,7 +6346,6 @@ static int ieee80211_open(struct net_device *dev)
 		return 0;
 	}
 	//ieee80211_start_soft_monitor(local);
-
 	conf.if_id = dev->ifindex;
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
@@ -6333,7 +6355,6 @@ static int ieee80211_open(struct net_device *dev)
 			ieee80211_start_hard_monitor(local);
 		return res;
 	}
-
 	if (local->open_count == 0) {
 		res = 0;
 		tasklet_enable(&local->tx_pending_tasklet);
@@ -6361,7 +6382,6 @@ static int ieee80211_open(struct net_device *dev)
 		}
 	}
 	local->open_count++;
-
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
@@ -6373,7 +6393,6 @@ static int ieee80211_open(struct net_device *dev)
 		netif_carrier_off(dev);
 	else
 		netif_carrier_on(dev);*/
-
 	netif_start_queue(dev);
 	return 0;
 }
@@ -6622,7 +6641,7 @@ static int ieee80211_sta_start_scan(struct net_device *dev,
 				    u8 *ssid, size_t ssid_len)
 {
 IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata;
 
 	if (ssid_len > IEEE80211_MAX_SSID_LEN)
@@ -6706,7 +6725,7 @@ static void ieee80211_sta_reset_auth(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 
 	if (local->ops->reset_tsf) {
 		/* Reset own TSF to allow time synchronization work. */
@@ -6807,7 +6826,7 @@ IM_HERE_NOW();
 static int ieee80211_sta_active_ibss(struct net_device *dev)
 {
 	IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	int active = 0;
 	struct sta_info *sta;
 
@@ -6830,7 +6849,7 @@ static int ieee80211_sta_join_ibss(struct net_device *dev,
 				   struct ieee80211_sta_bss *bss)
 {
 	IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	int res, rates, i, j;
 	struct sk_buff *skb;
 	struct ieee80211_mgmt *mgmt;
@@ -6990,7 +7009,7 @@ int ieee80211_sta_req_scan(struct net_device *dev, u8 *ssid, size_t ssid_len)
 	IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 
 	if (sdata->type != IEEE80211_IF_TYPE_STA)
 		return ieee80211_sta_start_scan(dev, ssid, ssid_len);
@@ -7011,7 +7030,7 @@ static int ieee80211_sta_create_ibss(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sta_bss *bss;
 	struct ieee80211_sub_if_data *sdata;
 	struct ieee80211_hw_mode *mode;
@@ -7070,7 +7089,7 @@ static int ieee80211_sta_find_ibss(struct net_device *dev,
 				   struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sta_bss *bss;
 	int found = 0;
 	u8 bssid[ETH_ALEN];
@@ -7160,7 +7179,7 @@ int ieee80211_sta_set_ssid(struct net_device *dev, char *ssid, size_t len)
 	IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata;
 	struct ieee80211_if_sta *ifsta;
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 
 	if (len > IEEE80211_MAX_SSID_LEN)
 		return -EINVAL;
@@ -7248,7 +7267,7 @@ static int ieee80211_sta_config_auth(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	struct ieee80211_sta_bss *bss, *selected = NULL;
 	int top_rssi = 0, freq;
@@ -7340,7 +7359,7 @@ static void ieee80211_authenticate(struct net_device *dev,
 static void ieee80211_sta_expire(struct net_device *dev)
 {
 	IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct sta_info *sta, *tmp;
 
 	spin_lock_bh(&local->sta_lock);
@@ -7373,7 +7392,7 @@ static void ieee80211_send_disassoc(struct net_device *dev,
 				    struct ieee80211_if_sta *ifsta, u16 reason)
 {
 	IM_HERE_NOW();
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct sk_buff *skb;
 	struct ieee80211_mgmt *mgmt;
 
@@ -7403,14 +7422,14 @@ void ieee80211_sta_work(struct work_struct *work)
 IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)work;//check this
 	//	container_of(work, struct ieee80211_sub_if_data, u.sta.work);
+
 	struct net_device *dev = sdata->dev;
-	struct ieee80211_local *local = (struct ieee80211_local*)wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_if_sta *ifsta;
 	struct sk_buff *skb;
 
-
-	//if (!netif_running(dev))
-	//	return;
+	if (!netif_running(dev))
+		return;
 
 	if (local->sta_scanning)
 		return;
@@ -7449,6 +7468,7 @@ clear_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request);
 	 if (!test_bit(IEEE80211_STA_REQ_RUN, &ifsta->request))
 		return;
 	}
+
 	switch (ifsta->state) {
 	case IEEE80211_DISABLED:
 		break;
@@ -7480,4 +7500,5 @@ clear_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request);
 		ieee80211_send_disassoc(dev, ifsta, WLAN_REASON_UNSPECIFIED);
 		ieee80211_set_disassoc(dev, ifsta, 0);
 	}
+
 }

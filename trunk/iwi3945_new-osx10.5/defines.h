@@ -1,6 +1,7 @@
 #ifndef __DEFINES_H__
 #define __DEFINES_H__
 
+
 #define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 #define CONFIG_IWL3945_DEBUG 1
 
@@ -57,41 +58,15 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 (type *)( (char *)__mptr - offsetof(type,member) );})
 
 
-
-
-
-
-
-
-
-
-
-
-/*
-#include <IOKit/assert.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IODeviceMemory.h>
-#include <IOKit/IOInterruptEventSource.h>
-#include <IOKit/IOBufferMemoryDescriptor.h>
-#include <IOKit/pci/IOPCIDevice.h>
-//#include <IOKit/network/IONetworkController.h>
-//#include <IOKit/network/IONetworkInterface.h>
-#include <IOKit/network/IOEthernetController.h>
-#include <IOKit/network/IOEthernetInterface.h>
-#include <IOKit/network/IOGatedOutputQueue.h>
-#include <IOKit/network/IOMbufMemoryCursor.h>
-#include <libkern/OSByteOrder.h>
-#include <IOKit/pccard/IOPCCard.h>
-#include <IOKit/apple80211/IO80211Controller.h>
-#include <IOKit/apple80211/IO80211Interface.h>
-#include <IOKit/network/IOPacketQueue.h>
-#include <IOKit/network/IONetworkMedium.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IODeviceMemory.h>
-#include <IOKit/assert.h>
-#include <IOKit/IODataQueue.h>
-*/
-
+/* Force a compilation error if condition is true */
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+#define ETH_ALEN 6
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define BUG() do { \
+printk("BUG: failure at %s:%d/%s()!\n", __FILE__, __LINE__, __FUNCTION__); \
+printk("BUG!"); \
+} while (0)
+#define BUG_ON(condition) do { if (unlikely((condition)!=0)) BUG(); } while(0)
 
 //#include <i386/locks.h>
 #include <IOKit/pccard/k_compat.h>
@@ -100,7 +75,7 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 #undef mod_timer	
 #include <IOKit/IOLocks.h>
 
-
+//#include <IOKit/network/IOPacketQueue.h>
 //includes for fifnet functions
 //extern "C" {
 #include <net/if_var.h>
@@ -121,33 +96,9 @@ const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
 #include <sys/sockio.h>
 #include <sys/malloc.h>
 #include <sys/queue.h>
-
 //}
 
-
-typedef signed int	s32;
-typedef signed short	s16;
-//typedef unsigned long long u64;
-typedef signed long long s64;
-
-
-//typedef u16 __u16;
-//typedef unsigned long long __le64;
-#define __bitwise 1
-
-
-/* Force a compilation error if condition is true */
-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-#define ETH_ALEN 6
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-#define BUG() do { \
-printk("BUG: failure at %s:%d/%s()!\n", __FILE__, __LINE__, __FUNCTION__); \
-printk("BUG!"); \
-} while (0)
-#define BUG_ON(condition) do { if (unlikely((condition)!=0)) BUG(); } while(0)
-
-
-
+typedef IOPhysicalAddress dma_addr_t;
 #define cpu_to_le16(x) le16_to_cpu(x)
 #define cpu_to_le32(x) le32_to_cpu(x)
 #define __constant_cpu_to_le32(x) cpu_to_le32(x)
@@ -155,9 +106,33 @@ printk("BUG!"); \
 #define le64_to_cpu(x) OSSwapLittleToHostInt64(x)
 #define cpu_to_le64(x) OSSwapHostToLittleInt64(x)
 
+//#include "iwi3945.h"
+#include "net/compat.h"
+#include "net/ieee80211.h"
+#include "net/ieee80211_radiotap.h"
 
-typedef IOPhysicalAddress dma_addr_t;
 
+
+struct sk_buff {
+
+	struct sk_buff          *next;
+	struct sk_buff          *prev;
+	int pkt_type;
+//    void *data;
+//    unsigned int len;
+    mbuf_t mac_data;
+    
+    /*
+     * This is the control buffer. It is free to use for every
+     * layer. Please put your private variables there. If you
+     * want to keep them across layers you have to do a skb_clone()
+     * first. This is owned by whoever has the skb queued ATM.
+     */
+    // (We keep this on OS X because it's a handy scratch space.)
+    char            cb[48];
+    
+    void *intf; // A pointer to an IO80211Controller.
+};
 
 
 
@@ -194,7 +169,7 @@ struct mutex {
 };
 
 
-struct work_struct;
+//struct work_struct;
 
 struct tasklet_struct {
     int padding;
@@ -202,7 +177,7 @@ struct tasklet_struct {
 	unsigned long data;
 };
 
-struct delayed_work;
+//struct delayed_work;
 
 //struct net_device;
 
@@ -225,7 +200,7 @@ enum ieee80211_link_state_t {
 };
 
 
-struct ieee80211_hw;
+//struct ieee80211_hw;
 
 #define KERN_WARNING "warning "
 #define KERN_ERR "error "
@@ -309,25 +284,9 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 
 #define time_after(a,b)	((long)(b) - (long)(a) < 0)
 
-#define wdev_priv(x) x
-
-//#include "iwi3945.h"
-#include "net/compat.h"
-#include "net/ieee80211.h"
-#include "net/ieee80211_radiotap.h"
-
-struct sta_local;
-struct ieee80211_tx_control;
-struct ieee80211_tx_stored_packet;
-
-
-
-
-//FIXME: change bitwise
-typedef __u32  __be32;
-typedef __u16 __be16;
-typedef uint64_t __be64;
-
+//struct sta_local;
+//struct ieee80211_tx_control;
+//struct ieee80211_tx_stored_packet;
 
 struct ieee80211_frame_info {
 	__be32 version;
@@ -356,7 +315,7 @@ struct ieee80211_frame_info {
 
 
 
-struct work_struct;
+//struct work_struct;
 typedef void (*work_func_t)(struct work_struct *work);
 
 
@@ -765,26 +724,7 @@ struct ieee80211_local {
 
 
 
-struct sk_buff {
 
-	struct sk_buff          *next;
-	struct sk_buff          *prev;
-	int pkt_type;
-//    void *data;
-//    unsigned int len;
-    mbuf_t mac_data;
-    
-    /*
-     * This is the control buffer. It is free to use for every
-     * layer. Please put your private variables there. If you
-     * want to keep them across layers you have to do a skb_clone()
-     * first. This is owned by whoever has the skb queued ATM.
-     */
-    // (We keep this on OS X because it's a handy scratch space.)
-    char            cb[48];
-    
-    void *intf; // A pointer to an IO80211Controller.
-};
 
 
 /* Parsed Information Elements */
@@ -1619,11 +1559,16 @@ struct pci_driver {
 
 
 
-
+static struct ieee80211_hw * my_hw;
 
 static inline struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw)
 {
     return container_of(hw, struct ieee80211_local, hw);
+}
+
+static inline struct ieee80211_local *wdev_priv(void *x)
+{
+	return hw_to_local(my_hw);
 }
 
 struct ieee80211_fragment_entry {
@@ -1938,7 +1883,6 @@ int __x = (x);          \
 #define module_scan(func) void (*iwl_scan)(struct iwl3945_priv *)=func
 
 
-#include "compatibility.h"
 
 
 
@@ -2194,4 +2138,14 @@ enum ieee80211_tx_queue {
 	IEEE80211_TX_QUEUE_BEACON = 7
 };
 
+
+
+
+
+
+//this must be last lines in file. the includes are broken
+#include "compatibility.h"	
+extern void mutex_init(struct mutex *new_mutex);
+extern void mutex_lock(struct mutex *new_mutex);
+extern void mutex_unlock(struct mutex *new_mutex);
 #endif //__DEFINES_H__
