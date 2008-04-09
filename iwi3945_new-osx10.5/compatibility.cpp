@@ -4980,7 +4980,7 @@ void ieee80211_sta_scan_work(struct work_struct *work)
 {
 IM_HERE_NOW();	
 	//FIXME: error in SCAN_SEND_PROBE
-	struct ieee80211_local *local = (struct ieee80211_local *)work->data;//check this
+	struct ieee80211_local *local = (struct ieee80211_local *)work;//check this
 		//container_of(work, struct ieee80211_local, scan_work.work);
 	struct net_device *dev = local->scan_dev;
 	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
@@ -5053,8 +5053,9 @@ IM_HERE_NOW();
 	}
 	//check this
 	if (local->sta_scanning)
-		queue_delayed_work(local->hw.workqueue, &local->scan_work,
-				   next_delay);
+	queue_te(local->scan_work.work.number,(thread_call_func_t)local->scan_work.work.func,local,next_delay,true);
+		//queue_delayed_work(local->hw.workqueue, &local->scan_work,
+		//		   next_delay);
 }
 
 #define STA_TX_BUFFER_EXPIRE (10 * HZ)
@@ -6715,8 +6716,9 @@ IM_HERE_NOW();
 		       dev->name);
 
 	/* TODO: start scan as soon as all nullfunc frames are ACKed */
-	queue_delayed_work(local->hw.workqueue, &local->scan_work,
-			   IEEE80211_CHANNEL_TIME);
+	queue_te(local->scan_work.work.number,(thread_call_func_t)local->scan_work.work.func,local,IEEE80211_CHANNEL_TIME,true);
+	//queue_delayed_work(local->hw.workqueue, &local->scan_work,
+	//		   IEEE80211_CHANNEL_TIME);
 
 	return 0;
 }

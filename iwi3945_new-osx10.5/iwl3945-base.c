@@ -3689,10 +3689,10 @@ static void iwl3945_rx_pm_debug_statistics_notif(struct iwl3945_priv *priv,
 	iwl3945_print_hex_dump(IWL_DL_RADIO, pkt->u.raw, le32_to_cpu(pkt->len));
 }
 
-static void iwl3945_bg_beacon_update(struct work_struct *work)
+static void iwl3945_bg_beacon_update(struct iwl3945_priv *priv)
 {
-	struct iwl3945_priv *priv =
-		container_of(work, struct iwl3945_priv, beacon_update);
+	//struct iwl3945_priv *priv =
+	//	container_of(work, struct iwl3945_priv, beacon_update);
 	struct sk_buff *beacon;
 
 	/* Pull updated AP beacon from mac80211. will fail if not in AP mode */
