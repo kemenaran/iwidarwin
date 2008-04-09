@@ -86,7 +86,9 @@ extern "C" {
     extern void spin_lock_init(spinlock_t *lock);
     extern void spin_lock(spinlock_t *lock);
     extern void spin_unlock(spinlock_t *lock);
-
+extern void mutex_init(struct mutex *new_mutex);
+extern void mutex_lock(struct mutex *new_mutex);
+extern void mutex_unlock(struct mutex *new_mutex);
 	
 
     extern void msleep(unsigned int msecs);
