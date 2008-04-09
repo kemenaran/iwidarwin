@@ -6454,7 +6454,7 @@ int pci_register_driver(struct pci_driver * drv){
 	int result3 = ieee80211_open(local->mdev);//run_add_interface();
 	if(result3)
 		IOLog("Error ieee80211_open\n");
-	IOSleep(300);
+	//IOSleep(300);//need this?
 	//Start mac_open
 	//result2 = (local->ops->open) (&local->hw);
 	
