@@ -259,15 +259,17 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateExpansionKey</key>
 							<array>
 								<string>089C166AFE841209C02AAC07</string>
+								<string>9BC218750D40F26A000BA789</string>
+								<string>9BC2146E0D40F0C3000BA789</string>
 								<string>247142CAFF3F8F9811CA285C</string>
+								<string>61B06DFD0B589546000DD1AE</string>
 								<string>089C167CFE841241C02AAC07</string>
 								<string>1C37FBAC04509CD000000102</string>
-								<string>611FB3340D9C6AF900C96240</string>
+								<string>6123CE070DAD743800FE60CC</string>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>1</integer>
 									<integer>0</integer>
 								</array>
 							</array>
@@ -418,9 +420,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>611FB3350D9C6AF900C96240</string>
+				<string>6123CE110DAD749800FE60CC</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>611FB3360D9C6AF900C96240</string>
+				<string>6123CE120DAD749800FE60CC</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>

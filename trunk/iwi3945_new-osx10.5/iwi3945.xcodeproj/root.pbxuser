@@ -4,6 +4,7 @@
 		activeBuildConfigurationName = Debug;
 		activeTarget = 32D94FC30562CBF700B6AF17 /* iwi3945 */;
 		addToTargets = (
+			32D94FC30562CBF700B6AF17 /* iwi3945 */,
 		);
 		breakpoints = (
 			61ADCB800BA4FD5000D9146C /* (null):5019 */,
@@ -71,8 +72,8 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 228354771;
-			PBXWorkspaceStateSaveDate = 228354771;
+			PBXPerProjectTemplateStateSaveDate = 229471287;
+			PBXWorkspaceStateSaveDate = 229471287;
 		};
 		perUserProjectItems = {
 			618A5E0F0B85411A00694B28 /* PBXTextBookmark */ = 618A5E0F0B85411A00694B28 /* PBXTextBookmark */;
