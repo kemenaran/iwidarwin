@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
+		6123CE0A0DAD745500FE60CC /* rc80211_simple.c in Sources */ = {isa = PBXBuildFile; fileRef = 6123CE090DAD745500FE60CC /* rc80211_simple.c */; };
 		9BC214620D40F0BA000BA789 /* iwl-3945-commands.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BC214560D40F0BA000BA789 /* iwl-3945-commands.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9BC214630D40F0BA000BA789 /* iwl-3945-debug.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BC214570D40F0BA000BA789 /* iwl-3945-debug.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9BC214640D40F0BA000BA789 /* iwl-3945-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BC214580D40F0BA000BA789 /* iwl-3945-hw.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -31,6 +32,7 @@
 		089C167EFE841241C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		32D94FCF0562CBF700B6AF17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
 		32D94FD00562CBF700B6AF17 /* iwi3945.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwi3945.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		6123CE090DAD745500FE60CC /* rc80211_simple.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = rc80211_simple.c; sourceTree = "<group>"; };
 		61B06DFE0B589546000DD1AE /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
 		61B06DFF0B589546000DD1AE /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
 		61B06E000B589546000DD1AE /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
@@ -149,6 +151,7 @@
 		9BC218750D40F26A000BA789 /* Added code */ = {
 			isa = PBXGroup;
 			children = (
+				6123CE090DAD745500FE60CC /* rc80211_simple.c */,
 				9BEDC4540D5B3A55002000EA /* compatibility.h */,
 				C0D2FE850D797B93009EB1D3 /* compatibility.cpp */,
 				9BC218760D40F275000BA789 /* defines.h */,
@@ -210,7 +213,6 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 1DEB91DD08733DB10010E9CD /* Build configuration list for PBXProject "iwi3945" */;
-			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 089C166AFE841209C02AAC07 /* iwi3945 */;
 			projectDirPath = "";
@@ -268,6 +270,7 @@
 				9BC2146D0D40F0BA000BA789 /* iwl3945-base.c in Sources */,
 				9BC218710D40F12C000BA789 /* iwi3945.cpp in Sources */,
 				C0D2FE860D797B93009EB1D3 /* compatibility.cpp in Sources */,
+				6123CE0A0DAD745500FE60CC /* rc80211_simple.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
