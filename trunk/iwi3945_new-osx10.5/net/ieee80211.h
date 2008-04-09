@@ -50,6 +50,13 @@ typedef struct {
 } spinlock_t;
 
 
+union iwreq_data {
+    char a;
+};
+
+struct iw_request_info {
+    int padding;
+};
 
 
 #define IW_MAX_SPY		8
