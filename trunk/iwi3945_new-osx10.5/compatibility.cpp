@@ -941,11 +941,34 @@ IM_HERE_NOW();
 
 int ieee80211_rate_control_register(struct rate_control_ops *ops) {
 IM_HERE_NOW();
+	struct rate_control_alg *alg;
+
+	alg = (struct rate_control_alg*)kzalloc(sizeof(*alg), GFP_KERNEL);
+	if (alg == NULL) {
+		return -ENOMEM;
+	}
+	alg->ops = ops;
+
+	//mutex_lock(&rate_ctrl_mutex);
+	list_add_tail(&alg->list, &rate_ctrl_algs);
+	//mutex_unlock(&rate_ctrl_mutex);
+
     return 0;
 }
 
 void ieee80211_rate_control_unregister(struct rate_control_ops *ops) {
 IM_HERE_NOW();
+struct rate_control_alg *alg;
+
+	//mutex_lock(&rate_ctrl_mutex);
+	list_for_each_entry(alg, &rate_ctrl_algs, list) {
+		if (alg->ops == ops) {
+			list_del(&alg->list);
+			break;
+		}
+	}
+	//mutex_unlock(&rate_ctrl_mutex);
+	kfree(alg);
     return;
 }
 
@@ -2237,6 +2260,39 @@ fail:
 	return ret;
 }
 
+static struct rate_control_ops *
+ieee80211_try_rate_control_ops_get(const char *name)
+{
+	struct rate_control_alg *alg;
+	struct rate_control_ops *ops = NULL;
+IM_HERE_NOW();
+	//mutex_lock(&rate_ctrl_mutex);
+	list_for_each_entry(alg, &rate_ctrl_algs, list) {
+		if (!name || !strcmp(alg->ops->name, name))
+			/*if (try_module_get(alg->ops->module)) {
+				ops = alg->ops;
+				break;
+			}*/
+			ops = alg->ops;
+	}
+	//mutex_unlock(&rate_ctrl_mutex);
+	return ops;
+}
+
+static struct rate_control_ops *
+ieee80211_rate_control_ops_get(const char *name)
+{
+	struct rate_control_ops *ops;
+IM_HERE_NOW();
+	ops = ieee80211_try_rate_control_ops_get(name);
+	if (!ops) {
+		//request_module("rc80211_%s", name ? name : "default");
+		rate_control_simple_init();
+		ops = ieee80211_try_rate_control_ops_get(name);
+	}
+	return ops;
+}
+
 struct rate_control_ref *rate_control_alloc(const char *name,
 					    struct ieee80211_local *local)
 {
@@ -2247,7 +2303,7 @@ IM_HERE_NOW();
 	if (!ref)
 		goto fail_ref;
 	kref_init(&ref->kref,NULL);
-	//ref->ops = ieee80211_rate_control_ops_get(name);
+	ref->ops = ieee80211_rate_control_ops_get(name);
 	if (!ref->ops)
 		goto fail_ops;
 	ref->priv = ref->ops->alloc(local);
@@ -4120,6 +4176,7 @@ static ieee80211_txrx_result
 ieee80211_rx_h_if_stats(struct ieee80211_txrx_data *rx)
 {
 IM_HERE_NOW();	
+rx->sdata->channel_use_raw += rx->u.rx.load;
 	return TXRX_CONTINUE;
 }
 
@@ -4935,10 +4992,10 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		printk(KERN_DEBUG "%s: failed to restore operational"
 		       "channel after scan\n", dev->name);
 
-	/*if (!(local->hw.flags & IEEE80211_HW_NO_PROBE_FILTERING) &&
+	if (!(local->hw.flags & IEEE80211_HW_NO_PROBE_FILTERING) &&
 	    ieee80211_if_config(dev))
 		printk(KERN_DEBUG "%s: failed to restore operational"
-		       "BSSID after scan\n", dev->name);*/
+		       "BSSID after scan\n", dev->name);
 
 	//memset(&wrqu, 0, sizeof(wrqu));
 	//wireless_send_event(dev, SIOCGIWSCAN, &wrqu, NULL);
@@ -4950,24 +5007,27 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		if (sdata->dev == local->mdev)
 			continue;
 
-		/*if (sdata->type == IEEE80211_IF_TYPE_STA) {
+		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
 				ieee80211_send_nullfunc(local, sdata, 0);
-			ieee80211_sta_timer((unsigned long)sdata);
-		}*/
+			//ieee80211_sta_timer((unsigned long)sdata);
+			struct ieee80211_if_sta *ifsta=&sdata->u.sta;
+			set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
+			queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
+		}
 
 		netif_wake_queue(sdata->dev);
 	}
 	//read_unlock(&local->sub_if_lock);
 
-	/*sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	if (sdata->type == IEEE80211_IF_TYPE_IBSS) {
 		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 		if (!ifsta->bssid_set ||
 		    (!ifsta->state == IEEE80211_IBSS_JOINED &&
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
-	}*/
+	}
 }
 
 
@@ -6607,7 +6667,7 @@ IM_HERE_NOW();
 	kfree_skb(skb);
 }
 
-static void ieee80211_send_nullfunc(struct ieee80211_local *local,
+void ieee80211_send_nullfunc(struct ieee80211_local *local,
 				    struct ieee80211_sub_if_data *sdata,
 				    int powersave)
 {
@@ -6825,7 +6885,7 @@ IM_HERE_NOW();
 	return ret;
 }
 
-static int ieee80211_sta_active_ibss(struct net_device *dev)
+int ieee80211_sta_active_ibss(struct net_device *dev)
 {
 	IM_HERE_NOW();
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
@@ -7087,7 +7147,7 @@ static int ieee80211_sta_create_ibss(struct net_device *dev,
 	return ieee80211_sta_join_ibss(dev, ifsta, bss);
 }
 
-static int ieee80211_sta_find_ibss(struct net_device *dev,
+int ieee80211_sta_find_ibss(struct net_device *dev,
 				   struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();

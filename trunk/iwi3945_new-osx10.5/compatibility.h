@@ -14,6 +14,14 @@
 extern "C" {
 #endif		
 	
+	extern int __init rate_control_simple_init(void);
+	extern int ieee80211_sta_find_ibss(struct net_device *dev,
+				   struct ieee80211_if_sta *ifsta);
+	extern int ieee80211_sta_active_ibss(struct net_device *dev);
+	extern void ieee80211_send_nullfunc(struct ieee80211_local *local,
+				    struct ieee80211_sub_if_data *sdata,
+				    int powersave);
+	extern int ieee80211_if_config(struct net_device *dev);
 	extern int netif_running(struct net_device *dev);
 	extern void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start);
 	extern void ieee80211_sta_work(struct work_struct *work);
