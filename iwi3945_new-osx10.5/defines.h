@@ -795,6 +795,8 @@ struct kref {
           void (*release)(struct kref *kref);
   };
  
+ struct dentry;
+ 
 struct sta_info {
 	struct kref kref;
 	struct list_head list;
@@ -2131,8 +2133,18 @@ enum ieee80211_tx_queue {
 	IEEE80211_TX_QUEUE_BEACON = 7
 };
 
+#define LIST_HEAD_INIT(name) { &(name), &(name) }
 
+#undef LIST_HEAD
+#define LIST_HEAD(name) \
+	struct list_head name = LIST_HEAD_INIT(name)
 
+static LIST_HEAD(rate_ctrl_algs);
+
+struct rate_control_alg {
+	struct list_head list;
+	struct rate_control_ops *ops;
+};
 
 
 
