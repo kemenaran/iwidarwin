@@ -34,12 +34,12 @@
 extern u32 iwl3945_debug_level;
 #define IWL_DEBUG(level, fmt, args...) \
 do { if (iwl3945_debug_level & (level)) \
-  printk(KERN_ERR DRV_NAME": %c %s " fmt, \
+  IOLog(KERN_ERR DRV_NAME": %c %s " fmt, \
 	 in_interrupt() ? 'I' : 'U', __FUNCTION__ , ## args); } while (0)
 
 #define IWL_DEBUG_LIMIT(level, fmt, args...) \
 do { if ((iwl3945_debug_level & (level)) && net_ratelimit()) \
-  printk(KERN_ERR DRV_NAME": %c %s " fmt, \
+  IOLog(KERN_ERR DRV_NAME": %c %s " fmt, \
 	 in_interrupt() ? 'I' : 'U', __FUNCTION__ , ## args); } while (0)
 #else
 static inline void IWL_DEBUG(int level, const char *fmt, ...)
@@ -115,8 +115,8 @@ static inline void IWL_DEBUG_LIMIT(int level, const char *fmt, ...)
 #define IWL_DL_TX_REPLY      (1<<30)
 #define IWL_DL_QOS           (1<<31)
 
-#define IWL_ERROR(f, a...) printk(KERN_ERR DRV_NAME ": " f, ## a)
-#define IWL_WARNING(f, a...) printk(KERN_WARNING DRV_NAME ": " f, ## a)
+#define IWL_ERROR(f, a...) IOLog(KERN_ERR DRV_NAME ": " f, ## a)
+#define IWL_WARNING(f, a...) IOLog(KERN_WARNING DRV_NAME ": " f, ## a)
 #define IWL_DEBUG_INFO(f, a...)    IWL_DEBUG(IWL_DL_INFO, f, ## a)
 
 #define IWL_DEBUG_MAC80211(f, a...)     IWL_DEBUG(IWL_DL_MAC80211, f, ## a)

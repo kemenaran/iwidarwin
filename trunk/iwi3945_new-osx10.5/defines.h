@@ -2150,5 +2150,8 @@ struct rate_control_alg {
 
 //this must be last lines in file. the includes are broken
 #include "compatibility.h"	
-
+//os x 10.4
+/*extern void mutex_init(struct mutex *new_mutex);
+extern void mutex_lock(struct mutex *new_mutex);
+extern void mutex_unlock(struct mutex *new_mutex);*/
 #endif //__DEFINES_H__
