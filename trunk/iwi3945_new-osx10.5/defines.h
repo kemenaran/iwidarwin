@@ -169,8 +169,6 @@ struct mutex {
 };
 
 
-//struct work_struct;
-
 struct tasklet_struct {
     int padding;
 	void (*func)(unsigned long);
@@ -181,13 +179,6 @@ struct tasklet_struct {
 
 //struct net_device;
 
-union iwreq_data {
-    char a;
-};
-
-struct iw_request_info {
-    int padding;
-};
 
 typedef enum {
     SET_KEY, DISABLE_KEY, REMOVE_ALL_KEYS,
@@ -315,7 +306,7 @@ struct ieee80211_frame_info {
 
 
 
-//struct work_struct;
+struct work_struct;
 typedef void (*work_func_t)(struct work_struct *work);
 
 
@@ -1536,6 +1527,8 @@ extern struct pci_device_id iwl3945_hw_card_ids[];
 #define MODULE_PARM_DESC(x, y)
 #define MODULE_DEVICE_TABLE(x, y)
 
+struct device_driver;
+
 struct pci_driver {
     struct list_head node;
     char *name;
@@ -1875,7 +1868,7 @@ int __x = (x);          \
 // This magic allows us to call init() and exit(), despite them being declared static
 #define module_init(func) int (*init_routine)(void) = func
 #define module_exit(func) void (*exit_routine)(void) = func
-#define module_associated(func) int (*is_associated)(void *) = func
+#define module_associated(func) int (*is_associated)(struct iwl3945_priv *priv) = func
 #define module_mac_tx(func) int (*mac_tx)(struct ieee80211_hw *, struct sk_buff *,struct ieee80211_tx_control *) = func
 //for up and down the card
 #define module_down(func) void (*iwl_down)(struct iwl3945_priv *)=func
