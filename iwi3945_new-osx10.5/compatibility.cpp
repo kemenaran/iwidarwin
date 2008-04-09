@@ -1028,7 +1028,7 @@ static inline void *netdev_priv(const struct net_device *dev)
  IM_HERE_NOW();
          return dev->priv;
  }
-#define IEEE80211_DEV_TO_SUB_IF(dev) netdev_priv(dev)
+
 
 u8 *ieee80211_get_bssid(struct ieee80211_hdr *hdr, size_t len)
  {
@@ -6417,13 +6417,12 @@ static int ieee80211_open(struct net_device *dev)
 		return res;
 	}
 	if (local->open_count == 0) {
-		res = 0;
 		tasklet_enable(&local->tx_pending_tasklet);
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
 		if (res == 0) {
-			res = 0;//dev_open(local->mdev);
+			//res = dev_open(local->mdev);
 			if (res) {
 				if (local->ops->stop)
 					local->ops->stop(local_to_hw(local));
@@ -6514,7 +6513,7 @@ int pci_register_driver(struct pci_driver * drv){
 	int result3 = ieee80211_open(local->mdev);//run_add_interface();
 	if(result3)
 		IOLog("Error ieee80211_open\n");
-	//IOSleep(300);//need this?
+	//IOSleep(300);//leave time for interface get status running - FIXME
 	//Start mac_open
 	//result2 = (local->ops->open) (&local->hw);
 	

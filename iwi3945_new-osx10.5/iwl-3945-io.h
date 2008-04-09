@@ -170,7 +170,7 @@ static inline int _iwl3945_grab_nic_access(struct iwl3945_priv *priv)
 #endif
 	if (test_bit(STATUS_RF_KILL_HW, &priv->status) ||
 	    test_bit(STATUS_RF_KILL_SW, &priv->status)) {
-		IWL_WARNING("WARNING: Requesting MAC access during RFKILL "
+		IWL_DEBUG_INFO("WARNING: Requesting MAC access during RFKILL "
 			"wakes up NIC\n");
 
 		/* 10 msec allows time for NIC to complete its data save */
@@ -180,7 +180,7 @@ static inline int _iwl3945_grab_nic_access(struct iwl3945_priv *priv)
 				"gpctl = 0x%08x\n", gp_ctl);
 			mdelay(10);
 		} else
-			IWL_DEBUG_RF_KILL("power-down complete, "
+			IWL_DEBUG_INFO("power-down complete, "
 					  "gpctl = 0x%08x\n", gp_ctl);
 	}
 
@@ -191,7 +191,7 @@ static inline int _iwl3945_grab_nic_access(struct iwl3945_priv *priv)
 			   (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
 			    CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 50);
 	if (ret < 0) {
-		IWL_ERROR("MAC is in deep sleep!\n");
+		IWL_DEBUG_INFO("MAC is in deep sleep!\n");
 		return -EIO;
 	}
 
@@ -232,7 +232,7 @@ static inline void __iwl3945_release_nic_access(const char *f, u32 l,
 					    struct iwl3945_priv *priv)
 {
 	if (atomic_read(&priv->restrict_refcnt) <= 0)
-		IWL_ERROR("Release unheld nic access at line %d.\n", l);
+		IWL_DEBUG_IO("Release unheld nic access at line %d.\n", l);
 
 	IWL_DEBUG_IO("releasing nic access - %s %d\n", f, l);
 	_iwl3945_release_nic_access(priv);
@@ -254,7 +254,7 @@ static inline u32 __iwl3945_read_direct32(const char *f, u32 l,
 {
 	u32 value = _iwl3945_read_direct32(priv, reg);
 	if (!atomic_read(&priv->restrict_refcnt))
-		IWL_ERROR("Nic access not held from %s %d\n", f, l);
+		IWL_DEBUG_IO("Nic access not held from %s %d\n", f, l);
 	IWL_DEBUG_IO("read_direct32(0x%4X) = 0x%08x - %s %d \n", reg, value,
 		     f, l);
 	return value;
@@ -275,7 +275,7 @@ static void __iwl3945_write_direct32(u32 line,
 				   struct iwl3945_priv *priv, u32 reg, u32 value)
 {
 	if (!atomic_read(&priv->restrict_refcnt))
-		IWL_ERROR("Nic access not held from line %d\n", line);
+		IWL_DEBUG_IO("Nic access not held from line %d\n", line);
 	_iwl3945_write_direct32(priv, reg, value);
 }
 #define iwl3945_write_direct32(priv, reg, value) \
@@ -340,7 +340,7 @@ static inline u32 _iwl3945_read_prph(struct iwl3945_priv *priv, u32 reg)
 static inline u32 __iwl3945_read_prph(u32 line, struct iwl3945_priv *priv, u32 reg)
 {
 	if (!atomic_read(&priv->restrict_refcnt))
-		IWL_ERROR("Nic access not held from line %d\n", line);
+		IWL_DEBUG_IO("Nic access not held from line %d\n", line);
 	return _iwl3945_read_prph(priv, reg);
 }
 
@@ -362,7 +362,7 @@ static inline void __iwl3945_write_prph(u32 line, struct iwl3945_priv *priv,
 					      u32 addr, u32 val)
 {
 	if (!atomic_read(&priv->restrict_refcnt))
-		IWL_ERROR("Nic access from line %d\n", line);
+		IWL_DEBUG_IO("Nic access from line %d\n", line);
 	_iwl3945_write_prph(priv, addr, val);
 }
 
@@ -379,7 +379,7 @@ static inline void __iwl3945_set_bits_prph(u32 line, struct iwl3945_priv *priv,
 					u32 reg, u32 mask)
 {
 	if (!atomic_read(&priv->restrict_refcnt))
-		IWL_ERROR("Nic access not held from line %d\n", line);
+		IWL_DEBUG_IO("Nic access not held from line %d\n", line);
 
 	_iwl3945_set_bits_prph(priv, reg, mask);
 }
@@ -397,7 +397,7 @@ static inline void __iwl3945_set_bits_mask_prph(u32 line,
 		struct iwl3945_priv *priv, u32 reg, u32 bits, u32 mask)
 {
 	if (!atomic_read(&priv->restrict_refcnt))
-		IWL_ERROR("Nic access not held from line %d\n", line);
+		IWL_DEBUG_IO("Nic access not held from line %d\n", line);
 	_iwl3945_set_bits_mask_prph(priv, reg, bits, mask);
 }
 #define iwl3945_set_bits_mask_prph(priv, reg, bits, mask) \

@@ -222,6 +222,8 @@ extern void mutex_unlock(struct mutex *new_mutex);
      * @head:   the head for your list.
      * @member: the name of the list_struct within the struct.
      */
+#define IEEE80211_DEV_TO_SUB_IF(dev) netdev_priv(dev)
+
 static inline void prefetch(const void *x) {;}
 
 #define list_for_each_entry(pos, head, member)				\
