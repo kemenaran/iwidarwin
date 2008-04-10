@@ -76,7 +76,7 @@ static int iwl3945_tx_queue_update_write_ptr(struct iwl3945_priv *priv,
 
 static int iwl3945_param_disable_hw_scan; /* def: 0 = use 3945's h/w scan */
 //static int iwl3945_param_debug;    /* def: 0 = minimal debug log messages */
-static int iwl3945_param_debug =  0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP | IWL_DL_INFO);
+static int iwl3945_param_debug =  0;//0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP | IWL_DL_INFO);
 /*
 #define IWL_DL_INFO          (1<<0)
 #define IWL_DL_MAC80211      (1<<1)
