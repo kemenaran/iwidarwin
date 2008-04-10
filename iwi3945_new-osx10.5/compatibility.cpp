@@ -1752,7 +1752,7 @@ IM_HERE_NOW();
 	struct ieee80211_tx_status *tx_status;
 	while ((skb = skb_dequeue(&local->skb_queue)) ||
 	       (skb = skb_dequeue(&local->skb_queue_unreliable))) {
-		IOLog("Packet Found\n");
+		//IOLog("Packet Found\n");
 		switch (skb->pkt_type) {
 		case IEEE80211_RX_MSG:
 			/* status is in skb->cb */
@@ -1793,7 +1793,7 @@ IM_HERE_NOW();
     
     BUILD_BUG_ON(sizeof(struct ieee80211_rx_status) > sizeof(skb->cb));
     
-    IOLog("ieee80211_rx_irqsafe\n");
+  //  IOLog("ieee80211_rx_irqsafe\n");
 	
 	//PrintPacketHeader(skb->mac_data);
 	/*char    *frame;
@@ -1817,7 +1817,12 @@ IM_HERE_NOW();
 
 void ieee80211_stop_queue(struct ieee80211_hw *hw, int queue) {
 IM_HERE_NOW();	
-    return;
+	struct ieee80211_local *local = hw_to_local(hw);
+
+	//if (!ieee80211_qdisc_installed(local->mdev) && queue == 0)
+	//	netif_stop_queue(local->mdev);
+	set_bit(IEEE80211_LINK_STATE_XOFF, &local->state[queue]);
+
 }
 
 void ieee80211_tx_status(struct ieee80211_hw *hw,
@@ -1984,7 +1989,7 @@ IM_HERE_NOW();
 
 	if (control) {
 		memset(&extra, 0, sizeof(extra));
-		//extra.mode = local->oper_hw_mode;
+		extra.mode = local->oper_hw_mode;
 
 		rate = rate_control_get_rate(local, local->mdev, skb, &extra);
 		if (!rate) {
@@ -2013,7 +2018,11 @@ IM_HERE_NOW();
 
 void ieee80211_stop_queues(struct ieee80211_hw *hw) {
 IM_HERE_NOW();	
-    return;
+	int i;
+
+	for (i = 0; i < hw->queues; i++)
+		ieee80211_stop_queue(hw, i);
+
 }
 
 int sta_info_start(struct ieee80211_local *local)
@@ -4157,6 +4166,52 @@ IM_HERE_NOW();
 static ieee80211_txrx_result ieee80211_rx_h_load_stats(struct ieee80211_txrx_data *rx)
 {
 IM_HERE_NOW();	
+	struct ieee80211_local *local = rx->local;
+	struct sk_buff *skb = rx->skb;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->mac_data;
+	u32 load = 0, hdrtime;
+	struct ieee80211_rate *rate;
+	struct ieee80211_hw_mode *mode = local->hw.conf.mode;
+	int i;
+
+	/* Estimate total channel use caused by this frame */
+
+	if (unlikely(mode->num_rates < 0))
+		return TXRX_CONTINUE;
+
+	rate = &mode->rates[0];
+	for (i = 0; i < mode->num_rates; i++) {
+		if (mode->rates[i].val == rx->u.rx.status->rate) {
+			rate = &mode->rates[i];
+			break;
+		}
+	}
+
+	/* 1 bit at 1 Mbit/s takes 1 usec; in channel_use values,
+	 * 1 usec = 1/8 * (1080 / 10) = 13.5 */
+
+	if (mode->mode == MODE_IEEE80211A ||
+	    mode->mode == MODE_ATHEROS_TURBO ||
+	    mode->mode == MODE_ATHEROS_TURBOG ||
+	    (mode->mode == MODE_IEEE80211G &&
+	     rate->flags & IEEE80211_RATE_ERP))
+		hdrtime = CHAN_UTIL_HDR_SHORT;
+	else
+		hdrtime = CHAN_UTIL_HDR_LONG;
+
+	load = hdrtime;
+	if (!is_multicast_ether_addr(hdr->addr1))
+		load += hdrtime;
+
+	load += skb_len(skb) * rate->rate_inv;
+
+	/* Divide channel_use by 8 to avoid wrapping around the counter */
+	load >>= CHAN_UTIL_SHIFT;
+	local->channel_use_raw += load;
+	if (rx->sta)
+		rx->sta->channel_use_raw += load;
+	rx->u.rx.load = load;
+
 	return TXRX_CONTINUE;
 }
 
@@ -4876,7 +4931,72 @@ static ieee80211_txrx_result
 ieee80211_rx_h_ps_poll(struct ieee80211_txrx_data *rx)
 {
 IM_HERE_NOW();	
+	struct sk_buff *skb;
+	int no_pending_pkts;
+
+	if (likely(!rx->sta ||
+		   (rx->fc & IEEE80211_FCTL_FTYPE) != IEEE80211_FTYPE_CTL ||
+		   (rx->fc & IEEE80211_FCTL_STYPE) != IEEE80211_STYPE_PSPOLL ||
+		   !rx->u.rx.ra_match))
+		return TXRX_CONTINUE;
+
+	skb = skb_dequeue(&rx->sta->tx_filtered);
+	if (!skb) {
+		skb = skb_dequeue(&rx->sta->ps_tx_buf);
+		if (skb)
+			rx->local->total_ps_buffered--;
+	}
+	no_pending_pkts = skb_queue_empty(&rx->sta->tx_filtered) &&
+		skb_queue_empty(&rx->sta->ps_tx_buf);
+
+	if (skb) {
+		struct ieee80211_hdr *hdr =
+			(struct ieee80211_hdr *) skb->mac_data;
+
+		/* tell TX path to send one frame even though the STA may
+		 * still remain is PS mode after this frame exchange */
+		rx->sta->pspoll = 1;
+
+#ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
+		printk(KERN_DEBUG "STA " MAC_FMT " aid %d: PS Poll (entries "
+		       "after %d)\n",
+		       MAC_ARG(rx->sta->addr), rx->sta->aid,
+		       skb_queue_len(&rx->sta->ps_tx_buf));
+#endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
+
+		/* Use MoreData flag to indicate whether there are more
+		 * buffered frames for this STA */
+		if (no_pending_pkts) {
+			hdr->frame_control &= cpu_to_le16(~IEEE80211_FCTL_MOREDATA);
+			rx->sta->flags &= ~WLAN_STA_TIM;
+		} else
+			hdr->frame_control |= cpu_to_le16(IEEE80211_FCTL_MOREDATA);
+
+		//dev_queue_xmit(skb);
+		currentController->outputPacket(skb->mac_data,NULL);
+		
+		if (no_pending_pkts) {
+			if (rx->local->ops->set_tim)
+				rx->local->ops->set_tim(local_to_hw(rx->local),
+						       rx->sta->aid, 0);
+			if (rx->sdata->bss)
+				bss_tim_clear(rx->local, rx->sdata->bss, rx->sta->aid);
+		}
+#ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
+	} else if (!rx->u.rx.sent_ps_buffered) {
+		printk(KERN_DEBUG "%s: STA " MAC_FMT " sent PS Poll even "
+		       "though there is no buffered frames for it\n",
+		       rx->dev->name, MAC_ARG(rx->sta->addr));
+#endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
+
+	}
+
+	/* Free PS Poll skb here instead of returning TXRX_DROP that would
+	 * count as an dropped frame. */
+	dev_kfree_skb(rx->skb);
+
 	return TXRX_QUEUED;
+
 }
 
 ieee80211_txrx_result
@@ -4896,6 +5016,32 @@ static ieee80211_txrx_result
 ieee80211_rx_h_802_1x_pae(struct ieee80211_txrx_data *rx)
 {
 IM_HERE_NOW();	
+	if (rx->sdata->eapol && ieee80211_is_eapol(rx->skb) &&
+	    rx->sdata->type != IEEE80211_IF_TYPE_STA && rx->u.rx.ra_match) {
+		/* Pass both encrypted and unencrypted EAPOL frames to user
+		 * space for processing. */
+		if (!rx->local->apdev)
+			return TXRX_DROP;
+		ieee80211_rx_mgmt(rx->local, rx->skb, rx->u.rx.status,
+				  ieee80211_msg_normal);
+		return TXRX_QUEUED;
+	}
+
+	if (unlikely(rx->sdata->ieee802_1x &&
+		     (rx->fc & IEEE80211_FCTL_FTYPE) == IEEE80211_FTYPE_DATA &&
+		     (rx->fc & IEEE80211_FCTL_STYPE) != IEEE80211_STYPE_NULLFUNC &&
+		     (!rx->sta || !(rx->sta->flags & WLAN_STA_AUTHORIZED)) &&
+		     !ieee80211_is_eapol(rx->skb))) {
+#ifdef CONFIG_MAC80211_DEBUG
+		struct ieee80211_hdr *hdr =
+			(struct ieee80211_hdr *) rx->skb->data;
+		printk(KERN_DEBUG "%s: dropped frame from " MAC_FMT
+		       " (unauthorized port)\n", rx->dev->name,
+		       MAC_ARG(hdr->addr2));
+#endif /* CONFIG_MAC80211_DEBUG */
+		return TXRX_DROP;
+	}
+
 	return TXRX_CONTINUE;
 }
 
@@ -5217,17 +5363,92 @@ IM_HERE_NOW();
 #endif
 }
 
-//FIXME: !!
+static inline int __ieee80211_queue_stopped(const struct ieee80211_local *local,
+					    int queue)
+{
+	return test_bit(IEEE80211_LINK_STATE_XOFF, &local->state[queue]);
+}
+
+static inline int __ieee80211_queue_pending(const struct ieee80211_local *local,
+					    int queue)
+{
+	return test_bit(IEEE80211_LINK_STATE_PENDING, &local->state[queue]);
+}
+
+static inline void ieee80211_dump_frame(const char *ifname, const char *title,
+					struct sk_buff *skb)
+{
+}
+
+static int __ieee80211_tx(struct ieee80211_local *local, struct sk_buff *skb,
+			  struct ieee80211_txrx_data *tx)
+{
+IM_HERE_NOW();	
+	struct ieee80211_tx_control *control = tx->u.tx.control;
+	int ret, i;
+
+	/*if (!ieee80211_qdisc_installed(local->mdev) &&
+	    __ieee80211_queue_stopped(local, 0)) {
+		netif_stop_queue(local->mdev);
+		return IEEE80211_TX_AGAIN;
+	}*/
+	if (skb) {
+		ieee80211_dump_frame(local->mdev->name, "TX to low-level driver", skb);
+		ret = local->ops->tx(local_to_hw(local), skb, control);
+		if (ret)
+			return IEEE80211_TX_AGAIN;
+		local->mdev->trans_start = jiffies;
+		//ieee80211_led_tx(local, 1);
+	}
+	if (tx->u.tx.extra_frag) {
+		control->flags &= ~(IEEE80211_TXCTL_USE_RTS_CTS |
+				    IEEE80211_TXCTL_USE_CTS_PROTECT |
+				    IEEE80211_TXCTL_CLEAR_DST_MASK |
+				    IEEE80211_TXCTL_FIRST_FRAGMENT);
+		for (i = 0; i < tx->u.tx.num_extra_frag; i++) {
+			if (!tx->u.tx.extra_frag[i])
+				continue;
+			if (__ieee80211_queue_stopped(local, control->queue))
+				return IEEE80211_TX_FRAG_AGAIN;
+			if (i == tx->u.tx.num_extra_frag) {
+				control->tx_rate = tx->u.tx.last_frag_hwrate;
+				//control->rate = tx->u.tx.last_frag_rate;//FIXME
+				if (tx->u.tx.probe_last_frag)
+					control->flags |=
+						IEEE80211_TXCTL_RATE_CTRL_PROBE;
+				else
+					control->flags &=
+						~IEEE80211_TXCTL_RATE_CTRL_PROBE;
+			}
+
+			ieee80211_dump_frame(local->mdev->name,
+					     "TX to low-level driver",
+					     tx->u.tx.extra_frag[i]);
+			ret = local->ops->tx(local_to_hw(local),
+					    tx->u.tx.extra_frag[i],
+					    control);
+			if (ret)
+				return IEEE80211_TX_FRAG_AGAIN;
+			local->mdev->trans_start = jiffies;
+			//ieee80211_led_tx(local, 1);
+			tx->u.tx.extra_frag[i] = NULL;
+		}
+		kfree(tx->u.tx.extra_frag);
+		tx->u.tx.extra_frag = NULL;
+	}
+	return IEEE80211_TX_OK;
+}
+
 static void ieee80211_tx_pending(unsigned long data)
 {
 IM_HERE_NOW();	
-	/*struct ieee80211_local *local = (struct ieee80211_local *)data;
+	struct ieee80211_local *local = (struct ieee80211_local *)data;
 	struct net_device *dev = local->mdev;
 	struct ieee80211_tx_stored_packet *store;
 	struct ieee80211_txrx_data tx;
 	int i, ret, reschedule = 0;
 
-	netif_tx_lock_bh(dev);
+	//netif_tx_lock_bh(dev);
 	for (i = 0; i < local->hw.queues; i++) {
 		if (__ieee80211_queue_stopped(local, i))
 			continue;
@@ -5252,7 +5473,7 @@ IM_HERE_NOW();
 			reschedule = 1;
 		}
 	}
-	netif_tx_unlock_bh(dev);
+	/*netif_tx_unlock_bh(dev);
 	if (reschedule) {
 		if (!ieee80211_qdisc_installed(dev)) {
 			if (!__ieee80211_queue_stopped(local, 0))
@@ -7098,6 +7319,7 @@ static int ieee80211_sta_create_ibss(struct net_device *dev,
 	u8 bssid[ETH_ALEN], *pos;
 	int i;
 
+//FIXME was if 0
 #if 1
 	/* Easier testing, use fixed BSSID. */
 	memset(bssid, 0xfe, ETH_ALEN);
