@@ -4426,7 +4426,7 @@ IM_HERE_NOW();
 	return TXRX_CONTINUE;
 }
 
-ieee80211_txrx_result
+static ieee80211_txrx_result
 ieee80211_rx_h_ccmp_decrypt(struct ieee80211_txrx_data *rx)
 {
 IM_HERE_NOW();	
@@ -4900,7 +4900,7 @@ IM_HERE_NOW();
 	return TXRX_CONTINUE;
 }
 
-ieee80211_txrx_result
+static ieee80211_txrx_result
 ieee80211_rx_h_tkip_decrypt(struct ieee80211_txrx_data *rx)
 {
 	return TXRX_CONTINUE;
@@ -4999,13 +4999,13 @@ IM_HERE_NOW();
 
 }
 
-ieee80211_txrx_result
+static ieee80211_txrx_result
 ieee80211_rx_h_michael_mic_verify(struct ieee80211_txrx_data *rx)
 {
 	return TXRX_CONTINUE;
 }
 
-ieee80211_txrx_result
+static ieee80211_txrx_result
 ieee80211_rx_h_remove_qos_control(struct ieee80211_txrx_data *rx)
 {
 IM_HERE_NOW();	
@@ -6664,15 +6664,13 @@ static int ieee80211_open(struct net_device *dev)
 	}
 	local->open_count++;
 	
-	//at this time the driver need to wait for netif to come up to call ieee80211_if_config
-	IOSleep(1000);
-	
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 		ieee80211_if_config(dev);
 
+	local->user_space_mlme=0;//hack
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
@@ -6731,20 +6729,10 @@ int pci_register_driver(struct pci_driver * drv){
 	fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	//get_eeprom_mac(my_hw->priv,my_mac_addr);
-	//Start ...
-#warning This assumes the "happy path" and fails miserably when things don't go well
 	struct ieee80211_local *local = hw_to_local(my_hw);
 	int result3 = ieee80211_open(local->mdev);//run_add_interface();
 	if(result3)
 		IOLog("Error ieee80211_open\n");
-	//IOSleep(300);//leave time for interface get status running - FIXME
-	//Start mac_open
-	//result2 = (local->ops->open) (&local->hw);
-	
-
-    //ieee80211_init_scan(local);//is this in the right place??
-    //local->open_count++;
     
 	return 0;
 }

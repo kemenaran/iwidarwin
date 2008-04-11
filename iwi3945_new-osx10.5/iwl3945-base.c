@@ -847,7 +847,7 @@ static int iwl3945_send_cmd_sync(struct iwl3945_priv *priv, struct iwl3945_host_
 			break;  
 	}
 
-	printf("Wait %s Condition: %dms left\n",get_cmd_string(cmd->id),ret);	
+	IWL_DEBUG_INFO("Wait %s Condition: %dms left\n",get_cmd_string(cmd->id),ret);	
 	if (!ret) {
 		if (test_bit(STATUS_HCMD_ACTIVE, &priv->status)) {
 			IWL_ERROR("Error sending %s: time out after %dms.\n",
@@ -6430,7 +6430,7 @@ static void __iwl3945_down(struct iwl3945_priv *priv)
 static void iwl3945_down(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	mutex_lock(&priv->mutex);
@@ -6541,7 +6541,7 @@ static int __iwl3945_up(struct iwl3945_priv *priv)
 static void iwl3945_bg_init_alive_start(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	//struct iwl3945_priv *priv =
@@ -6551,16 +6551,16 @@ static void iwl3945_bg_init_alive_start(struct iwl3945_priv *priv)
 		return;
 
 	mutex_lock(&priv->mutex);
-	IOLog("__ IN iwl3945_init_alive_start __\n");
+	IWL_DEBUG_INFO("__ IN iwl3945_init_alive_start __\n");
 	iwl3945_init_alive_start(priv);
-	IOLog("__ OUT iwl3945_init_alive_start __\n");
+	IWL_DEBUG_INFO("__ OUT iwl3945_init_alive_start __\n");
 	mutex_unlock(&priv->mutex);
 }
 
 static void iwl3945_bg_alive_start(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	//struct iwl3945_priv *priv =
@@ -6579,7 +6579,7 @@ static void iwl3945_bg_alive_start(struct iwl3945_priv *priv)
 static void iwl3945_bg_rf_kill(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	//struct iwl3945_priv *priv = container_of(work, struct iwl3945_priv, rf_kill);
@@ -6615,7 +6615,7 @@ static void iwl3945_bg_rf_kill(struct iwl3945_priv *priv)
 static void iwl3945_bg_scan_check(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	//struct iwl3945_priv *priv =
@@ -6640,7 +6640,7 @@ static void iwl3945_bg_scan_check(struct iwl3945_priv *priv)
 static void iwl3945_bg_request_scan(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	//struct iwl3945_priv *priv =
@@ -6844,7 +6844,7 @@ static void iwl3945_bg_request_scan(struct iwl3945_priv *priv)
 static void iwl3945_bg_up(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
@@ -6858,7 +6858,7 @@ static void iwl3945_bg_up(struct iwl3945_priv *priv)
 static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
@@ -6876,7 +6876,7 @@ static void iwl3945_bg_rx_replenish(struct iwl3945_priv *priv)
 	//struct iwl3945_priv *priv =
 	//    container_of(data, struct iwl3945_priv, rx_replenish);
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
@@ -6894,7 +6894,7 @@ static void iwl3945_bg_post_associate(struct iwl3945_priv *priv)
 	//struct iwl3945_priv *priv = container_of(data, struct iwl3945_priv,
 	//				     post_associate.work);
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	int rc = 0;
@@ -6999,7 +6999,7 @@ static void iwl3945_bg_abort_scan(struct iwl3945_priv *priv)
 {
 	//struct iwl3945_priv *priv = container_of(work, struct iwl3945_priv, abort_scan);
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 	if (!iwl3945_is_ready(priv))
@@ -7018,7 +7018,7 @@ static int iwl3945_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *co
 static void iwl3945_bg_scan_completed(struct iwl3945_priv *priv)
 {
 	if(!priv){
-		IOLog("No Priv defined\n");
+		IWL_WARNING("No Priv defined\n");
 		return;
 	}
 		
@@ -7119,10 +7119,10 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 			break;  
 	}
 	
-    printf("Wait START_ALIVE Condition: %dms left\n",ret);
+    IWL_DEBUG_INFO("Wait START_ALIVE Condition: %dms left\n",ret);
 	if (!ret) {
         if (!test_bit(STATUS_READY, &priv->status)) {
-            IOLog("Wait for START_ALIVE timeout after %dms.\n",
+            IWL_DEBUG_INFO("Wait for START_ALIVE timeout after %dms.\n",
 				  jiffies_to_msecs(UCODE_READY_TIMEOUT));
 			ret = -ETIMEDOUT;
 			goto out_release_irq;
