@@ -6663,6 +6663,10 @@ static int ieee80211_open(struct net_device *dev)
 		}
 	}
 	local->open_count++;
+	
+	//at this time the driver need to wait for netif to come up to call ieee80211_if_config
+	IOSleep(1000);
+	
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
