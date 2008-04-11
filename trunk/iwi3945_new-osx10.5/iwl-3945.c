@@ -320,7 +320,7 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 	int snr;
 
 	if ((unlikely(rx_stats->phy_count > 20))) {
-		IOLog
+		IWL_DEBUG_STATS
 		    ("dsp size out of range [0,20]: "
 		     "%d/n", rx_stats->phy_count);
 		return;
@@ -328,8 +328,7 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 
 	if (!(rx_end->status & RX_RES_STATUS_NO_CRC32_ERROR)
 	    || !(rx_end->status & RX_RES_STATUS_NO_RXE_OVERFLOW)) {
-		IOLog("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
-		//IOLog(".");
+		IWL_DEBUG_STATS("Bad CRC or FIFO: 0x%08X.\n", rx_end->status);
 		return;
 	}
 
@@ -922,7 +921,7 @@ int iwl3945_hw_nic_init(struct iwl3945_priv *priv)
 
 	//IM_HERE_NOW();
 	 iwl3945_nic_set_pwr_src(priv, 1);
-    printf("Finished nic_set_pwr_src\n");
+    IWL_DEBUG_INFO("Finished nic_set_pwr_src\n");
 	//IM_HERE_NOW();
 	 spin_lock_irqsave(&priv->lock, flags);
 
