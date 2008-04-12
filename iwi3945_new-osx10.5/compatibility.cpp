@@ -6672,8 +6672,6 @@ static int ieee80211_open(struct net_device *dev)
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 	{
-		//hack - wait for en1 to be running
-		while (netif_running(dev)==0) IOSleep(1);
 		ieee80211_if_config(dev);
 	}
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
@@ -6738,7 +6736,8 @@ int pci_register_driver(struct pci_driver * drv){
 	int result3 = ieee80211_open(local->mdev);//run_add_interface();
 	if(result3)
 		IOLog("Error ieee80211_open\n");
-    
+    //hack
+	ieee80211_sta_start_scan(local->mdev, NULL, 0);
 	return 0;
 }
 
