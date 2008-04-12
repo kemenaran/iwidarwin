@@ -6666,7 +6666,7 @@ static int ieee80211_open(struct net_device *dev)
 		}
 	}
 	local->open_count++;
-	
+	IOSleep(1000);//hack
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
@@ -6680,6 +6680,91 @@ static int ieee80211_open(struct net_device *dev)
 	else
 		netif_carrier_on(dev);*/
 	netif_start_queue(dev);
+	return 0;
+}
+
+static int ieee80211_sta_start_scan(struct net_device *dev,
+				    u8 *ssid, size_t ssid_len)
+{
+IM_HERE_NOW();
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_sub_if_data *sdata;
+
+	if (ssid_len > IEEE80211_MAX_SSID_LEN)
+		return -EINVAL;
+
+	/* MLME-SCAN.request (page 118)  page 144 (11.1.3.1)
+	 * BSSType: INFRASTRUCTURE, INDEPENDENT, ANY_BSS
+	 * BSSID: MACAddress
+	 * SSID
+	 * ScanType: ACTIVE, PASSIVE
+	 * ProbeDelay: delay (in microseconds) to be used prior to transmitting
+	 *    a Probe frame during active scanning
+	 * ChannelList
+	 * MinChannelTime (>= ProbeDelay), in TU
+	 * MaxChannelTime: (>= MinChannelTime), in TU
+	 */
+
+	 /* MLME-SCAN.confirm
+	  * BSSDescriptionSet
+	  * ResultCode: SUCCESS, INVALID_PARAMETERS
+	 */
+
+	if (local->sta_scanning) {
+		if (local->scan_dev == dev)
+			return 0;
+		return -EBUSY;
+	}
+
+	if (local->ops->hw_scan) {
+		int rc = local->ops->hw_scan(local_to_hw(local),
+					    ssid, ssid_len);
+		if (!rc) {
+			local->sta_scanning = 1;
+			local->scan_dev = dev;
+		}
+		return rc;
+	}
+
+	local->sta_scanning = 1;
+
+	//read_lock(&local->sub_if_lock);
+	list_for_each_entry(sdata, &local->sub_if_list, list) {
+
+		/* Don't stop the master interface, otherwise we can't transmit
+		 * probes! */
+		if (sdata->dev == local->mdev)
+			continue;
+
+		//netif_stop_queue(sdata->dev);
+		if (sdata->type == IEEE80211_IF_TYPE_STA &&
+		    sdata->u.sta.associated)
+			ieee80211_send_nullfunc(local, sdata, 1);
+	}
+	//read_unlock(&local->sub_if_lock);
+
+	if (ssid) {
+		local->scan_ssid_len = ssid_len;
+		memcpy(local->scan_ssid, ssid, ssid_len);
+	} else
+		local->scan_ssid_len = 0;
+	(int)local->scan_state = 0;//SCAN_SET_CHANNEL;
+	local->scan_hw_mode = list_entry(local->modes_list.next,
+					 struct ieee80211_hw_mode,
+					 list);
+	local->scan_channel_idx = 0;
+	local->scan_dev = dev;
+
+	if (!(local->hw.flags & IEEE80211_HW_NO_PROBE_FILTERING) &&
+	    ieee80211_if_config(dev))
+		printk(KERN_DEBUG "%s: failed to set BSSID for scan\n",
+		       dev->name);
+
+	/* TODO: start scan as soon as all nullfunc frames are ACKed */
+	queue_te(local->scan_work.work.number,(thread_call_func_t)local->scan_work.work.func,local,IEEE80211_CHANNEL_TIME,true);
+	//queue_delayed_work(local->hw.workqueue, &local->scan_work,
+	//		   IEEE80211_CHANNEL_TIME);
+
 	return 0;
 }
 
@@ -6914,90 +6999,6 @@ IM_HERE_NOW();
 	ieee80211_sta_tx(sdata->dev, skb, 0);
 }
 
-static int ieee80211_sta_start_scan(struct net_device *dev,
-				    u8 *ssid, size_t ssid_len)
-{
-IM_HERE_NOW();
-	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
-	struct ieee80211_sub_if_data *sdata;
-
-	if (ssid_len > IEEE80211_MAX_SSID_LEN)
-		return -EINVAL;
-
-	/* MLME-SCAN.request (page 118)  page 144 (11.1.3.1)
-	 * BSSType: INFRASTRUCTURE, INDEPENDENT, ANY_BSS
-	 * BSSID: MACAddress
-	 * SSID
-	 * ScanType: ACTIVE, PASSIVE
-	 * ProbeDelay: delay (in microseconds) to be used prior to transmitting
-	 *    a Probe frame during active scanning
-	 * ChannelList
-	 * MinChannelTime (>= ProbeDelay), in TU
-	 * MaxChannelTime: (>= MinChannelTime), in TU
-	 */
-
-	 /* MLME-SCAN.confirm
-	  * BSSDescriptionSet
-	  * ResultCode: SUCCESS, INVALID_PARAMETERS
-	 */
-
-	if (local->sta_scanning) {
-		if (local->scan_dev == dev)
-			return 0;
-		return -EBUSY;
-	}
-
-	if (local->ops->hw_scan) {
-		int rc = local->ops->hw_scan(local_to_hw(local),
-					    ssid, ssid_len);
-		if (!rc) {
-			local->sta_scanning = 1;
-			local->scan_dev = dev;
-		}
-		return rc;
-	}
-
-	local->sta_scanning = 1;
-
-	//read_lock(&local->sub_if_lock);
-	list_for_each_entry(sdata, &local->sub_if_list, list) {
-
-		/* Don't stop the master interface, otherwise we can't transmit
-		 * probes! */
-		if (sdata->dev == local->mdev)
-			continue;
-
-		//netif_stop_queue(sdata->dev);
-		if (sdata->type == IEEE80211_IF_TYPE_STA &&
-		    sdata->u.sta.associated)
-			ieee80211_send_nullfunc(local, sdata, 1);
-	}
-	//read_unlock(&local->sub_if_lock);
-
-	if (ssid) {
-		local->scan_ssid_len = ssid_len;
-		memcpy(local->scan_ssid, ssid, ssid_len);
-	} else
-		local->scan_ssid_len = 0;
-	(int)local->scan_state = 0;//SCAN_SET_CHANNEL;
-	local->scan_hw_mode = list_entry(local->modes_list.next,
-					 struct ieee80211_hw_mode,
-					 list);
-	local->scan_channel_idx = 0;
-	local->scan_dev = dev;
-
-	if (!(local->hw.flags & IEEE80211_HW_NO_PROBE_FILTERING) &&
-	    ieee80211_if_config(dev))
-		printk(KERN_DEBUG "%s: failed to set BSSID for scan\n",
-		       dev->name);
-
-	/* TODO: start scan as soon as all nullfunc frames are ACKed */
-	queue_te(local->scan_work.work.number,(thread_call_func_t)local->scan_work.work.func,local,IEEE80211_CHANNEL_TIME,true);
-	//queue_delayed_work(local->hw.workqueue, &local->scan_work,
-	//		   IEEE80211_CHANNEL_TIME);
-
-	return 0;
-}
 
 static void ieee80211_sta_reset_auth(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta)
