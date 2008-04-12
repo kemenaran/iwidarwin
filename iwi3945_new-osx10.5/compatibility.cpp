@@ -1580,7 +1580,7 @@ IM_HERE_NOW();
 	struct ieee80211_hdr *hdr;
 	struct ieee80211_txrx_data rx;
 	u16 type;
-	int multicast;
+	int multicast=0;
 	int radiotap_len = 0;
 
 
@@ -1625,9 +1625,8 @@ IM_HERE_NOW();
 	skb = rx.skb;
 
 	skb_push(skb, radiotap_len);
-	//hack
-	if (1/*sta && !sta->assoc_ap && !(sta->flags & WLAN_STA_WDS) &&
-	    !local->iff_promiscs && !multicast*/) {
+	if (sta && !sta->assoc_ap && !(sta->flags & WLAN_STA_WDS) &&
+	    !local->iff_promiscs && !multicast) {
 		rx.u.rx.ra_match = 1;
 		ieee80211_invoke_rx_handlers(local, local->rx_handlers, &rx,
 					     sta);
@@ -6231,9 +6230,8 @@ IM_HERE_NOW();
 	struct ieee80211_if_conf conf;
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-	//hack
-	//if (!local->ops->config_interface || !netif_running(dev))
-	//	return 0;
+	if (!local->ops->config_interface || !netif_running(dev))
+		return 0;
 
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
@@ -6670,8 +6668,11 @@ static int ieee80211_open(struct net_device *dev)
 		local->monitors++;
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
+	{
+		//hack - wait for en1 to be running
+		while (netif_running(dev)==0) IOSLeep(1);
 		ieee80211_if_config(dev);
-
+	}
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
@@ -6726,8 +6727,8 @@ int pci_register_driver(struct pci_driver * drv){
 	if((reg & 0x0000ff00) != 0)
 		fPCIDevice->configWrite16(0x40, reg & 0xffff00ff);
 
-	fPCIDevice->setBusMasterEnable(true);
-	fPCIDevice->setMemoryEnable(true);
+	//fPCIDevice->setBusMasterEnable(true);
+	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
 	struct ieee80211_local *local = hw_to_local(my_hw);
