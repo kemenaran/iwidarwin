@@ -6666,7 +6666,6 @@ static int ieee80211_open(struct net_device *dev)
 		}
 	}
 	local->open_count++;
-	IOSleep(1000);//hack
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
