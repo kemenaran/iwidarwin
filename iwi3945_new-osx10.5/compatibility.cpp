@@ -6230,8 +6230,9 @@ IM_HERE_NOW();
 	struct ieee80211_if_conf conf;
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-	if (!local->ops->config_interface || !netif_running(dev))
-		return 0;
+	//hack
+	//if (!local->ops->config_interface || !netif_running(dev))
+	//	return 0;
 
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
@@ -6670,7 +6671,6 @@ static int ieee80211_open(struct net_device *dev)
 	} else
 		ieee80211_if_config(dev);
 
-	local->user_space_mlme=0;//hack
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
