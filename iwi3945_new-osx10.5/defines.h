@@ -1025,6 +1025,7 @@ struct pci_device_id {
 
 #define ATOMIC_INIT(i)	{ (i) }
 #define set_bit(x, y) setbit(y, x)
+/*
 #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
 #define xchg(ptr,v) ((__typeof__(*(ptr)))__xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
 struct __xchg_dummy { unsigned long a[100]; };
@@ -1052,7 +1053,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void * ptr, int siz
             break;
     }
     return x;
-}
+}*/
 
 /**
  * atomic_set - set atomic variable
