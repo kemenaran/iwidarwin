@@ -6632,6 +6632,7 @@ static int ieee80211_open(struct net_device *dev)
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 	res = local->ops->add_interface(local_to_hw(local), &conf);
+	res=0;//hack
 	if (res) {
 		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
 			ieee80211_start_hard_monitor(local);
@@ -6642,6 +6643,7 @@ static int ieee80211_open(struct net_device *dev)
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
+		res=0;//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
@@ -6649,6 +6651,7 @@ static int ieee80211_open(struct net_device *dev)
 					local->ops->stop(local_to_hw(local));
 			} else {
 				res = ieee80211_hw_config(local);
+				res=0;//hack
 				if (res && local->ops->stop)
 					local->ops->stop(local_to_hw(local));
 				//else if (!res && local->apdev)
@@ -6670,7 +6673,7 @@ static int ieee80211_open(struct net_device *dev)
 	} else
 	{
 		//hack - wait for en1 to be running
-		while (netif_running(dev)==0) IOSLeep(1);
+		while (netif_running(dev)==0) IOSleep(1);
 		ieee80211_if_config(dev);
 	}
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
