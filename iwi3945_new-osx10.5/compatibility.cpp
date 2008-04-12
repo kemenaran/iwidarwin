@@ -1625,8 +1625,9 @@ IM_HERE_NOW();
 	skb = rx.skb;
 
 	skb_push(skb, radiotap_len);
-	if (sta && !sta->assoc_ap && !(sta->flags & WLAN_STA_WDS) &&
-	    !local->iff_promiscs && !multicast) {
+	//hack
+	if (1/*sta && !sta->assoc_ap && !(sta->flags & WLAN_STA_WDS) &&
+	    !local->iff_promiscs && !multicast*/) {
 		rx.u.rx.ra_match = 1;
 		ieee80211_invoke_rx_handlers(local, local->rx_handlers, &rx,
 					     sta);
