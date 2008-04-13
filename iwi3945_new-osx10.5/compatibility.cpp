@@ -2142,7 +2142,26 @@ IM_HERE_NOW();
 	ieee80211_sta_tx(dev, skb, 0);
 }
 
+static inline void setup_timer(struct timer_list * timer,
+                                 void (*function)(unsigned long),
+                                 unsigned long data)
+ {
+         timer->function = function;
+         timer->data = data;
+         init_timer(timer);
+ }
 
+void ieee80211_sta_timer(unsigned long data)
+{
+	struct ieee80211_sub_if_data *sdata =
+		(struct ieee80211_sub_if_data *) data;
+	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+	struct ieee80211_local *local = wdev_priv(&sdata->wdev);
+
+	set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
+	//queue_work(local->hw.workqueue, &ifsta->work);
+	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
+}
 
 void ieee80211_if_set_type(struct net_device *dev, int type)
 {
@@ -2174,10 +2193,7 @@ IM_HERE_NOW();
 
 		ifsta = &sdata->u.sta;
 		INIT_WORK(&ifsta->work, ieee80211_sta_work, 12);
-		//setup_timer(&ifsta->timer, ieee80211_sta_timer,(unsigned long) sdata);
-		set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
-		queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
-		//queue_work(local->hw.workqueue, &ifsta->work);//check this
+		setup_timer(&ifsta->timer, ieee80211_sta_timer,(unsigned long) sdata);
 
 		skb_queue_head_init(&ifsta->skb_queue);
 
@@ -5160,10 +5176,7 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
 				ieee80211_send_nullfunc(local, sdata, 0);
-			//ieee80211_sta_timer((unsigned long)sdata);
-			struct ieee80211_if_sta *ifsta=&sdata->u.sta;
-			set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
-			queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
+			ieee80211_sta_timer((unsigned long)sdata);
 		}
 
 		netif_wake_queue(sdata->dev);
@@ -6234,9 +6247,8 @@ IM_HERE_NOW();
 	struct ieee80211_if_conf conf;
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-	//hack
-	//if (!local->ops->config_interface || !netif_running(dev))
-	//	return 0;
+	if (!local->ops->config_interface || !netif_running(dev))
+		return 0;
 
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
@@ -7712,9 +7724,9 @@ IM_HERE_NOW();
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_if_sta *ifsta;
 	struct sk_buff *skb;
-	//hack
-	//if (!netif_running(dev))
-	//	return;
+
+	if (!netif_running(dev))
+		return;
 
 	if (local->sta_scanning)
 		return;
