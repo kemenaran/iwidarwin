@@ -1880,8 +1880,7 @@ int __x = (x);          \
 #define module_down(func) void (*iwl_down)(struct iwl3945_priv *)=func
 #define module_up(func) void (*iwl_up)(struct iwl3945_priv *)=func
 #define module_scan(func) void (*iwl_scan)(struct iwl3945_priv *)=func
-
-
+#define module_iwlready(func) int (*iwlready)(struct iwl3945_priv *)=func
 
 
 
@@ -2168,9 +2167,9 @@ struct rate_control_alg {
 #define CHAN_UTIL_HDR_LONG (202 * CHAN_UTIL_PER_USEC)
 #define CHAN_UTIL_HDR_SHORT (40 * CHAN_UTIL_PER_USEC)
 
-
 //this must be last lines in file. the includes are broken
 #include "compatibility.h"	
+
 //os x 10.4
 /*extern void mutex_init(struct mutex *new_mutex);
 extern void mutex_lock(struct mutex *new_mutex);
