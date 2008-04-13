@@ -101,6 +101,7 @@ static bool is_unloaded=false;
 static struct mutex *mutexes[MAX_MUTEXES];
 unsigned long current_mutex = 0;
 
+extern int (*iwlready)(struct iwl3945_priv *);
 
 /*
 	Getters
@@ -6658,7 +6659,6 @@ static int ieee80211_open(struct net_device *dev)
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
 		tasklet_enable(&local->tasklet);
-		IOSleep(500);//hack
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
 		res=0;//hack
@@ -6668,6 +6668,7 @@ static int ieee80211_open(struct net_device *dev)
 				if (local->ops->stop)
 					local->ops->stop(local_to_hw(local));
 			} else {
+				while (!iwlready((struct iwl3945_priv*)my_hw->priv)) IOSleep(1);//hack
 				res = ieee80211_hw_config(local);
 				res=0;//hack
 				if (res && local->ops->stop)
@@ -6689,6 +6690,7 @@ static int ieee80211_open(struct net_device *dev)
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 	{
+		while (!netif_running(dev)) IOSleep(1);//hack
 		ieee80211_if_config(dev);
 	}
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
