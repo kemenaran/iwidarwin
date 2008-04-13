@@ -6827,7 +6827,7 @@ int pci_register_driver(struct pci_driver * drv){
 	if(result3)
 		IOLog("Error ieee80211_open\n");
     //hack
-	ieee80211_sta_start_scan(local->mdev, NULL, 0);
+	//ieee80211_sta_start_scan(local->mdev, NULL, 0);
 	return 0;
 }
 
