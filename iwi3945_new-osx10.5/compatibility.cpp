@@ -1637,6 +1637,8 @@ IM_HERE_NOW();
 		//FIXME: read_lock
 		//read_lock(&local->sub_if_lock);
 		list_for_each_entry(sdata, &local->sub_if_list, list) {
+		printk( "bssid=" MAC_FMT " stabssid=" MAC_FMT "\n", MAC_ARG(bssid),
+		       MAC_ARG(sdata->u.sta.bssid));
 			rx.u.rx.ra_match = 1;
 			switch (sdata->type) {
 			case IEEE80211_IF_TYPE_STA:
@@ -1650,6 +1652,8 @@ IM_HERE_NOW();
 				} else if (!multicast &&
 					   compare_ether_addr(sdata->dev->dev_addr,
 							      hdr->addr1) != 0) {
+				printk( "mul %d dev_addr=" MAC_FMT " addr1=" MAC_FMT "\n", multicast, MAC_ARG(sdata->dev->dev_addr),
+		       MAC_ARG(hdr->addr1));
 					if (!sdata->promisc)
 						continue;
 					rx.u.rx.ra_match = 0;
@@ -7708,9 +7712,9 @@ IM_HERE_NOW();
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_if_sta *ifsta;
 	struct sk_buff *skb;
-
-	if (!netif_running(dev))
-		return;
+	//hack
+	//if (!netif_running(dev))
+	//	return;
 
 	if (local->sta_scanning)
 		return;
