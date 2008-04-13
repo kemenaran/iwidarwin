@@ -6230,8 +6230,9 @@ IM_HERE_NOW();
 	struct ieee80211_if_conf conf;
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-	if (!local->ops->config_interface || !netif_running(dev))
-		return 0;
+	//hack
+	//if (!local->ops->config_interface || !netif_running(dev))
+	//	return 0;
 
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
@@ -6641,6 +6642,7 @@ static int ieee80211_open(struct net_device *dev)
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
 		tasklet_enable(&local->tasklet);
+		IOSleep(500);//hack
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
 		res=0;//hack
