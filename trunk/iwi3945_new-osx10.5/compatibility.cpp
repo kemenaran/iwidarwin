@@ -101,8 +101,11 @@ static bool is_unloaded=false;
 static struct mutex *mutexes[MAX_MUTEXES];
 unsigned long current_mutex = 0;
 
-extern int (*iwlready)(struct iwl3945_priv *);
 
+struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
+{
+	return &local->hw;
+}
 /*
 	Getters
 */
@@ -867,10 +870,7 @@ void *dev_get_drvdata(void *p) {
 
 #pragma mark -
 #pragma mark Adapt 80211 functions to OS X
-static struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
-{
-	return &local->hw;
-}
+
 
 
 
@@ -6104,7 +6104,7 @@ IM_HERE_NOW();
 
 /* Check if running monitor interfaces should go to a "hard monitor" mode
  * and switch them if necessary. */
-static void ieee80211_start_hard_monitor(struct ieee80211_local *local)
+void ieee80211_start_hard_monitor(struct ieee80211_local *local)
 {
 IM_HERE_NOW();	
     struct ieee80211_if_init_conf conf;
@@ -6248,8 +6248,9 @@ IM_HERE_NOW();
 	struct ieee80211_if_conf conf;
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-	if (!local->ops->config_interface || !netif_running(dev))
-		return 0;
+	//hack
+	//if (!local->ops->config_interface || !netif_running(dev))
+	//	return 0;
 
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
@@ -6598,111 +6599,7 @@ u32 io_read32(u32 ofs){
 	return NULL;
 }
 
-static inline int identical_mac_addr_allowed(int type1, int type2)
-{
-	return (type1 == IEEE80211_IF_TYPE_MNTR ||
-		type2 == IEEE80211_IF_TYPE_MNTR ||
-		(type1 == IEEE80211_IF_TYPE_AP &&
-		 type2 == IEEE80211_IF_TYPE_WDS) ||
-		(type1 == IEEE80211_IF_TYPE_WDS &&
-		 (type2 == IEEE80211_IF_TYPE_WDS ||
-		  type2 == IEEE80211_IF_TYPE_AP)) ||
-		(type1 == IEEE80211_IF_TYPE_AP &&
-		 type2 == IEEE80211_IF_TYPE_VLAN) ||
-		(type1 == IEEE80211_IF_TYPE_VLAN &&
-		 (type2 == IEEE80211_IF_TYPE_AP ||
-		  type2 == IEEE80211_IF_TYPE_VLAN)));
-}
-
-static int ieee80211_open(struct net_device *dev)
-{
-	IM_HERE_NOW();	
-
-	struct ieee80211_sub_if_data *sdata, *nsdata;
-	struct ieee80211_local *local =  wdev_priv(dev->ieee80211_ptr);
-	struct ieee80211_if_init_conf conf;
-	int res;
-	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-	//read_lock(&local->sub_if_lock);
-	list_for_each_entry(nsdata, &local->sub_if_list, list) {
-		struct net_device *ndev = nsdata->dev;
-		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
-		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
-		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
-			//read_unlock(&local->sub_if_lock);
-			return -1;//-ENOTUNIQ;
-		}
-	}
-	//read_unlock(&local->sub_if_lock);
-	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
-	    is_zero_ether_addr(sdata->u.wds.remote_addr))
-		return -ENOLINK;
-	if (sdata->type == IEEE80211_IF_TYPE_MNTR && local->open_count &&
-	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER)) {
-		/* run the interface in a "soft monitor" mode */
-		local->monitors++;
-		local->open_count++;
-		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
-		return 0;
-	}
-	//ieee80211_start_soft_monitor(local);
-	conf.if_id = dev->ifindex;
-	conf.type = sdata->type;
-	conf.mac_addr = dev->dev_addr;
-	res = local->ops->add_interface(local_to_hw(local), &conf);
-	res=0;//hack
-	if (res) {
-		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
-			ieee80211_start_hard_monitor(local);
-		return res;
-	}
-	if (local->open_count == 0) {
-		tasklet_enable(&local->tx_pending_tasklet);
-		tasklet_enable(&local->tasklet);
-		if (local->ops->open)
-			res = local->ops->open(local_to_hw(local));
-		res=0;//hack
-		if (res == 0) {
-			//res = dev_open(local->mdev);
-			if (res) {
-				if (local->ops->stop)
-					local->ops->stop(local_to_hw(local));
-			} else {
-				while (!iwlready((struct iwl3945_priv*)my_hw->priv)) IOSleep(1);//hack
-				res = ieee80211_hw_config(local);
-				res=0;//hack
-				if (res && local->ops->stop)
-					local->ops->stop(local_to_hw(local));
-				//else if (!res && local->apdev)
-				//	dev_open(local->apdev);
-			}
-		}
-		if (res) {
-			if (local->ops->remove_interface)
-				local->ops->remove_interface(local_to_hw(local),
-							    &conf);
-			return res;
-		}
-	}
-	local->open_count++;
-	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
-		local->monitors++;
-		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
-	} else
-	{
-		while (!netif_running(dev)) IOSleep(1);//hack
-		ieee80211_if_config(dev);
-	}
-	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
-	    !local->user_space_mlme)
-		netif_carrier_off(dev);
-	else
-		netif_carrier_on(dev);*/
-	netif_start_queue(dev);
-	return 0;
-}
-
-static int ieee80211_sta_start_scan(struct net_device *dev,
+int ieee80211_sta_start_scan(struct net_device *dev,
 				    u8 *ssid, size_t ssid_len)
 {
 IM_HERE_NOW();
@@ -6836,10 +6733,10 @@ int pci_register_driver(struct pci_driver * drv){
 	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	struct ieee80211_local *local = hw_to_local(my_hw);
+	/*struct ieee80211_local *local = hw_to_local(my_hw);
 	int result3 = ieee80211_open(local->mdev);//run_add_interface();
 	if(result3)
-		IOLog("Error ieee80211_open\n");
+		IOLog("Error ieee80211_open\n");*/
     //hack
 	//ieee80211_sta_start_scan(local->mdev, NULL, 0);
 	return 0;

@@ -14,6 +14,9 @@
 extern "C" {
 #endif		
 	
+	extern int ieee80211_sta_start_scan(struct net_device *dev,
+				    u8 *ssid, size_t ssid_len);
+	extern struct ieee80211_hw* local_to_hw(struct ieee80211_local *local);
 	extern int __init rate_control_simple_init(void);
 	extern int ieee80211_sta_find_ibss(struct net_device *dev,
 				   struct ieee80211_if_sta *ifsta);
