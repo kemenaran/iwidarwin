@@ -243,18 +243,22 @@ bool darwin_iwi3945::start(IOService *provider)
 		
 		setCurController(this);
 		my_provider=provider;
+		IOLog("1\n");
 		if( init_routine() )
 			return false;
-
+IOLog("2\n");
 //ieee80211_open	
-	struct ieee80211_local *local = hw_to_local(my_hw);
+	struct ieee80211_local *local = hw_to_local(get_my_hw());
+IOLog("3\n");
 	struct net_device *dev=local->mdev;
 	struct ieee80211_sub_if_data *sdata, *nsdata;
 	//struct ieee80211_local *local =  wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_if_init_conf conf;
 	int res;
+IOLog("4\n");
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	//read_lock(&local->sub_if_lock);
+IOLog("5\n");
 	list_for_each_entry(nsdata, &local->sub_if_list, list) {
 		struct net_device *ndev = nsdata->dev;
 		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
@@ -264,6 +268,7 @@ bool darwin_iwi3945::start(IOService *provider)
 			return -1;//-ENOTUNIQ;
 		}
 	}
+IOLog("6\n");
 	//read_unlock(&local->sub_if_lock);
 	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
 	    is_zero_ether_addr(sdata->u.wds.remote_addr))
@@ -276,12 +281,16 @@ bool darwin_iwi3945::start(IOService *provider)
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 		return 0;
 	}
+IOLog("7\n");
 	//ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
+IOLog("8\n");
 	while (!iwlready((struct iwl3945_priv*)my_hw->priv)) IOSleep(1);//hack
-	res = local->ops->add_interface(local_to_hw(local), &conf);
+IOLog("9\n");
+		res = local->ops->add_interface(local_to_hw(local), &conf);
+IOLog("10\n");
 		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
 		setfTransmitQueue(fTransmitQueue);
 		if (fTransmitQueue == NULL)
@@ -311,11 +320,14 @@ bool darwin_iwi3945::start(IOService *provider)
 			ieee80211_start_hard_monitor(local);
 		return res;
 	}
+IOLog("11\n");
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
 		tasklet_enable(&local->tasklet);
+IOLog("12\n");
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
+IOLog("13\n");
 		fNetif->registerService();
 		registerService();
 #ifdef IO80211_VERSION
@@ -367,6 +379,7 @@ bool darwin_iwi3945::start(IOService *provider)
 			return res;
 		}
 	}
+IOLog("14\n");
 	local->open_count++;
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
@@ -376,6 +389,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		//while (!netif_running(dev)) IOSleep(1);//hack
 		ieee80211_if_config(dev);
 	}
+IOLog("15\n");
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
