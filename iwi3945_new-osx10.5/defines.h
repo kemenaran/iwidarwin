@@ -2167,6 +2167,22 @@ struct rate_control_alg {
 #define CHAN_UTIL_HDR_LONG (202 * CHAN_UTIL_PER_USEC)
 #define CHAN_UTIL_HDR_SHORT (40 * CHAN_UTIL_PER_USEC)
 
+static inline int identical_mac_addr_allowed(int type1, int type2)
+{
+	return (type1 == IEEE80211_IF_TYPE_MNTR ||
+		type2 == IEEE80211_IF_TYPE_MNTR ||
+		(type1 == IEEE80211_IF_TYPE_AP &&
+		 type2 == IEEE80211_IF_TYPE_WDS) ||
+		(type1 == IEEE80211_IF_TYPE_WDS &&
+		 (type2 == IEEE80211_IF_TYPE_WDS ||
+		  type2 == IEEE80211_IF_TYPE_AP)) ||
+		(type1 == IEEE80211_IF_TYPE_AP &&
+		 type2 == IEEE80211_IF_TYPE_VLAN) ||
+		(type1 == IEEE80211_IF_TYPE_VLAN &&
+		 (type2 == IEEE80211_IF_TYPE_AP ||
+		  type2 == IEEE80211_IF_TYPE_VLAN)));
+}
+
 //this must be last lines in file. the includes are broken
 #include "compatibility.h"	
 
