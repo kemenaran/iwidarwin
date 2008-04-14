@@ -23,9 +23,7 @@ OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);
 // Magic to make the init/exit routines public.
 extern "C" {
     
-	extern int ieee80211_hw_config(struct ieee80211_local *local);
-	extern void ieee80211_start_hard_monitor(struct ieee80211_local *local);
-	extern void tasklet_enable(struct tasklet_struct *t);
+	
     extern int (*iwlready)(struct iwl3945_priv *);
 	extern int (*init_routine)();
     extern void (*exit_routine)();

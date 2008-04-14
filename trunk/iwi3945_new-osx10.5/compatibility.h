@@ -14,6 +14,9 @@
 extern "C" {
 #endif		
 	
+	extern int ieee80211_hw_config(struct ieee80211_local *local);
+	extern void ieee80211_start_hard_monitor(struct ieee80211_local *local);
+	extern void tasklet_enable(struct tasklet_struct *t);
 	extern int ieee80211_sta_start_scan(struct net_device *dev,
 				    u8 *ssid, size_t ssid_len);
 	extern struct ieee80211_hw* local_to_hw(struct ieee80211_local *local);
