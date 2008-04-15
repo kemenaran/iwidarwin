@@ -342,6 +342,16 @@ static int networkMenuCount = 0;
 				break;
 			}
 		}
+		if ( priv.ieee->networks[ii].ssid==NULL)
+		{
+			[self cancelModeChange:nil];
+			[hiddenessid setStringValue:@""];
+			[NSApp runModalForWindow:(NSWindow *)cr_hiddenDialog relativeToWindow:mainWindow];
+			//[NSApp beginSheet:cr_hiddenDialog modalForWindow:mainWindow
+			//modalDelegate:self didEndSelector:nil contextInfo:nil];
+			if ([[hiddenessid stringValue] isEqualToString:@""]) return;
+			memcpy(priv.ieee->networks[ii].ssid,[[hiddenessid stringValue] cString],priv.ieee->networks[ii].ssid_len);
+		}
 		if (vi==-1) return;
 		ii=vi;
 		if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY)!=0)
@@ -407,6 +417,12 @@ static int networkMenuCount = 0;
 		}
 	}
 	[self CancelConnect:nil];
+}
+
+- (IBAction)Cancelhidden:(id)sender;
+{
+	[cr_hiddenDialog orderOut:nil];
+	 [NSApp endSheet:cr_hiddenDialog];
 }
 
 - (IBAction)CancelConnect:(id)sender;
