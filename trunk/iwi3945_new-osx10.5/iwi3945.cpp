@@ -56,6 +56,7 @@ extern struct sk_buff *dev_alloc_skb(unsigned int length);
 struct ieee80211_tx_control tx_ctrl;//need to init this?			  
 IOService * my_provider;
 static darwin_iwi3945 *clone;
+int first_up;
 
 #pragma mark -
 #pragma mark Overrides required for implementation
@@ -287,13 +288,13 @@ IOLog("7\n");
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 IOLog("8\n");
-	int rp=0;
+	/*int rp=0;
 	while (!iwlready((struct iwl3945_priv*)get_my_hw()->priv)) 
 	{
-		rp++;
-		IOSleep(1);//hack
-		if (rp==3000) break;
-	}
+		rp++;*/
+		IOSleep(3000);//hack
+		/*if (rp==3000) break;
+	}*/
 IOLog("9\n");
 		res = local->ops->add_interface(local_to_hw(local), &conf);
 IOLog("10\n");
@@ -392,14 +393,8 @@ IOLog("14\n");
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 	{
-		rp=0;
-		while (!netif_running(dev)) 
-		{
-			rp++;
-			IOSleep(1);//hack
-			if (rp==5000) break;
-		}
-		ieee80211_if_config(dev);
+		//ieee80211_if_config(dev);
+		first_up=0;
 	}
 IOLog("15\n");
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
@@ -1537,6 +1532,14 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
+		//hack
+		if (first_up==0)
+		{
+		first_up=1;
+		struct ieee80211_local *local = hw_to_local(get_my_hw());
+		struct net_device *dev=local->mdev;
+		ieee80211_if_config(dev);
+		}
 		return kIOReturnSuccess;
 	}
 	else
