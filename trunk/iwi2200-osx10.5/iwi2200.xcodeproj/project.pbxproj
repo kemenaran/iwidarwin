@@ -410,7 +410,6 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 4624EDE508C25CE500F266F6 /* Build configuration list for PBXProject "iwi2200" */;
-			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 089C166AFE841209C02AAC07 /* iwi2200 */;
 			projectDirPath = "";
@@ -603,6 +602,7 @@
 				);
 				OTHER_LDFLAGS = "";
 				PREBINDING = YES;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 				SHARED_PRECOMPS_DIR = "";
 			};
 			name = Debug;
@@ -619,6 +619,7 @@
 				);
 				OTHER_LDFLAGS = "";
 				PREBINDING = YES;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 				SHARED_PRECOMPS_DIR = "";
 			};
 			name = Release;
@@ -631,6 +632,7 @@
 				OTHER_CFLAGS = "-DBSD_BUILD";
 				OTHER_LDFLAGS = "";
 				PREBINDING = YES;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 				SHARED_PRECOMPS_DIR = "";
 			};
 			name = Default;
