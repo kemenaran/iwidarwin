@@ -6249,8 +6249,10 @@ IM_HERE_NOW();
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 	if (!local->ops->config_interface || !netif_running(dev))
+	{
+		IOLog("no netif_running\n");
 		return 0;
-
+	}
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
 	if (sdata->type == IEEE80211_IF_TYPE_STA ||

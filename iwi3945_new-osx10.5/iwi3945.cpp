@@ -292,7 +292,7 @@ IOLog("8\n");
 	while (!iwlready((struct iwl3945_priv*)get_my_hw()->priv)) 
 	{
 		rp++;*/
-		IOSleep(3000);//hack
+		//IOSleep(1000);//hack
 		/*if (rp==3000) break;
 	}*/
 IOLog("9\n");
@@ -393,7 +393,7 @@ IOLog("14\n");
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 	{
-		//ieee80211_if_config(dev);
+		ieee80211_if_config(dev);
 		first_up=0;
 	}
 IOLog("15\n");
@@ -1532,14 +1532,14 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
 		//hack
-		if (first_up==0)
+		/*if (first_up==0)
 		{
 			//first_up=1;
 			struct ieee80211_local *local = hw_to_local(get_my_hw());
 			struct net_device *dev=local->mdev;
 			ieee80211_if_config(dev);
 			ieee80211_sta_start_scan(dev, NULL, 0);
-		}
+		}*/
 		return kIOReturnSuccess;
 	}
 	else
