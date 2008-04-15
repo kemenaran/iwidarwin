@@ -149,8 +149,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}	
 	}
 	if(opt == 2){
-		IOLog("don't work yet \n");
-		//iwl_scan((struct iwl3945_priv*)get_my_priv());
+		IOLog("request scan \n");
+		iwl_scan((struct iwl3945_priv*)get_my_priv());
 	}
 
 	return(0);
@@ -292,7 +292,7 @@ IOLog("8\n");
 	while (!iwlready((struct iwl3945_priv*)get_my_hw()->priv)) 
 	{
 		rp++;*/
-		//IOSleep(1000);//hack
+		IOSleep(1000);//hack
 		/*if (rp==3000) break;
 	}*/
 IOLog("9\n");
@@ -393,7 +393,7 @@ IOLog("14\n");
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 	{
-		ieee80211_if_config(dev);
+		//ieee80211_if_config(dev);
 		first_up=0;
 	}
 IOLog("15\n");
@@ -403,6 +403,7 @@ IOLog("15\n");
 	else
 		netif_carrier_on(dev);*/
 	//netif_start_queue(dev);
+	fTransmitQueue->start();
 //end ieee80211_open	
 
 
@@ -1532,14 +1533,13 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
 		//hack
-		/*if (first_up==0)
+		if (first_up==0)
 		{
-			//first_up=1;
+			first_up=1;
 			struct ieee80211_local *local = hw_to_local(get_my_hw());
 			struct net_device *dev=local->mdev;
 			ieee80211_if_config(dev);
-			ieee80211_sta_start_scan(dev, NULL, 0);
-		}*/
+		}
 		return kIOReturnSuccess;
 	}
 	else
