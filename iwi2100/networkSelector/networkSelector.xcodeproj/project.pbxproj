@@ -46,7 +46,7 @@
 		61D0D0770BE74F60002A86B9 /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
 		61D0D0780BE74F60002A86B9 /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
 		61D0D0790BE74F60002A86B9 /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
-		8DD76F6C0486A84900D96B5E /* networkSelector */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = networkSelector; sourceTree = BUILT_PRODUCTS_DIR; };
+		8DD76F6C0486A84900D96B5E /* networkSelector */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; path = networkSelector; sourceTree = BUILT_PRODUCTS_DIR; };
 		C6859E8B029090EE04C91782 /* networkSelector.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = networkSelector.1; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
