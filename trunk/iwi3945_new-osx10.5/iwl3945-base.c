@@ -7415,15 +7415,13 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 	    !(priv->hw->flags & IEEE80211_HW_NO_PROBE_FILTERING)) {
 		IWL_DEBUG_MAC80211("leave - scanning\n");
 		mutex_unlock(&priv->mutex);
-		//hack
-		//return 0;
+		return 0;
 	}
 
 	if (priv->interface_id != if_id) {
 		IWL_DEBUG_MAC80211("leave - interface_id != if_id\n");
 		mutex_unlock(&priv->mutex);
-		//hack
-		//return 0;
+		return 0;
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {
