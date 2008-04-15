@@ -99,6 +99,8 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 	IBOutlet NSTextField *networkName;
 	IBOutlet NSPanel *cr_passwordDialog;
 	IBOutlet NSTextField *passwordName;
+	IBOutlet NSPanel *cr_hiddenDialog;
+	IBOutlet NSTextField *hiddenessid;
 	
 	NSTimer *timecheck;
 	NSTimeInterval tinterval;
@@ -121,6 +123,7 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 	
 }
 
+- (IBAction)Cancelhidden:(id)sender;
 - (IBAction)CancelConnect:(id)sender;
 - (IBAction)Connect:(id)sender;
 - (void)ConnectFromMenu:(id)sender;
@@ -137,6 +140,7 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 - (IBAction)createAdHocSelected:(id)sender;
 - (IBAction)createPassword:(id)sender;
 - (IBAction)createPasswordSelected:(id)sender;
+- (IBAction)createhidden:(id)sender;
 
 - (void)tableView:(NSTableView *)aTableView
     setObjectValue:anObject
