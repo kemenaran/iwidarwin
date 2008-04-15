@@ -405,8 +405,7 @@ IOLog("15\n");
 	//netif_start_queue(dev);
 //end ieee80211_open	
 
-//hack
-ieee80211_sta_start_scan(dev, NULL, 0);
+
 IOLog("16\n");	
 		struct kern_ctl_reg		ep_ctl; // Initialize control
 		kern_ctl_ref	kctlref;
@@ -1535,10 +1534,11 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		//hack
 		if (first_up==0)
 		{
-		first_up=1;
-		struct ieee80211_local *local = hw_to_local(get_my_hw());
-		struct net_device *dev=local->mdev;
-		ieee80211_if_config(dev);
+			//first_up=1;
+			struct ieee80211_local *local = hw_to_local(get_my_hw());
+			struct net_device *dev=local->mdev;
+			ieee80211_if_config(dev);
+			ieee80211_sta_start_scan(dev, NULL, 0);
 		}
 		return kIOReturnSuccess;
 	}
