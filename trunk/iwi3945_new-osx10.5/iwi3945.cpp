@@ -288,13 +288,13 @@ IOLog("7\n");
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 IOLog("8\n");
-	/*int rp=0;
-	while (!iwlready((struct iwl3945_priv*)get_my_hw()->priv)) 
+	int rp=0;
+	while (!iwlready((struct iwl3945_priv*)get_my_priv())) 
 	{
-		rp++;*/
-		IOSleep(1000);//hack
-		/*if (rp==3000) break;
-	}*/
+		rp++;
+		IOSleep(1);//hack
+		if (rp==3000) break;
+	}
 IOLog("9\n");
 		res = local->ops->add_interface(local_to_hw(local), &conf);
 IOLog("10\n");
@@ -403,7 +403,6 @@ IOLog("15\n");
 	else
 		netif_carrier_on(dev);*/
 	//netif_start_queue(dev);
-	fTransmitQueue->start();
 //end ieee80211_open	
 
 
@@ -1539,6 +1538,8 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 			struct ieee80211_local *local = hw_to_local(get_my_hw());
 			struct net_device *dev=local->mdev;
 			ieee80211_if_config(dev);
+			IOLog("1st scan\n");
+			iwl_scan((struct iwl3945_priv*)get_my_priv());
 		}
 		return kIOReturnSuccess;
 	}
