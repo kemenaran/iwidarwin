@@ -6248,9 +6248,8 @@ IM_HERE_NOW();
 	struct ieee80211_if_conf conf;
 	static u8 scan_bssid[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-	//hack
-	//if (!local->ops->config_interface || !netif_running(dev))
-	//	return 0;
+	if (!local->ops->config_interface || !netif_running(dev))
+		return 0;
 
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
