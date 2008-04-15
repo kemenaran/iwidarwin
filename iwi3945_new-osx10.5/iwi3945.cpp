@@ -287,7 +287,13 @@ IOLog("7\n");
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 IOLog("8\n");
-	while (!iwlready((struct iwl3945_priv*)my_hw->priv)) IOSleep(1);//hack
+	int rp=0;
+	while (!iwlready((struct iwl3945_priv*)get_my_hw()->priv)) 
+	{
+		rp++;
+		IOSleep(1);//hack
+		if (rp==3000) break;
+	}
 IOLog("9\n");
 		res = local->ops->add_interface(local_to_hw(local), &conf);
 IOLog("10\n");
@@ -386,7 +392,13 @@ IOLog("14\n");
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 	{
-		//while (!netif_running(dev)) IOSleep(1);//hack
+		rp=0;
+		while (!netif_running(dev)) 
+		{
+			rp++;
+			IOSleep(1);//hack
+			if (rp==5000) break;
+		}
 		ieee80211_if_config(dev);
 	}
 IOLog("15\n");
@@ -400,7 +412,7 @@ IOLog("15\n");
 
 //hack
 ieee80211_sta_start_scan(dev, NULL, 0);
-	
+IOLog("16\n");	
 		struct kern_ctl_reg		ep_ctl; // Initialize control
 		kern_ctl_ref	kctlref;
 		bzero(&ep_ctl, sizeof(ep_ctl));
@@ -414,7 +426,7 @@ ieee80211_sta_start_scan(dev, NULL, 0);
 		ep_ctl.ctl_setopt = configureConnection;
 		ep_ctl.ctl_getopt = sendNetworkList;
 		errno_t error = ctl_register(&ep_ctl, &kctlref);
-			
+IOLog("17\n");			
 
         return true;
     } while(false);
