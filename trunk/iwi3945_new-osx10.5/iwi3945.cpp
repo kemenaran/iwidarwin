@@ -288,7 +288,7 @@ IOLog("7\n");
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 IOLog("8\n");
-
+IOSleep(4000);//hack
 IOLog("9\n");
 		res = local->ops->add_interface(local_to_hw(local), &conf);
 IOLog("10\n");
@@ -325,13 +325,7 @@ IOLog("11\n");
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
 		tasklet_enable(&local->tasklet);
-	int rp=0;
-	while (!iwlready((struct iwl3945_priv*)get_my_priv())) 
-	{
-		rp++;
-		IOSleep(1);//hack
-		if (rp==3000) break;
-	}
+		
 IOLog("12\n");
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
