@@ -4,6 +4,7 @@
         {
             ACTIONS = {
                 CancelConnect = id; 
+                Cancelhidden = id; 
                 Connect = id; 
                 ConnectFromMenu = id; 
                 LEDAction = id; 
@@ -16,6 +17,7 @@
                 createAdHocSelected = id; 
                 createPassword = id; 
                 createPasswordSelected = id; 
+                createhidden = id; 
                 openAboutWindow = id; 
                 openMainWindow = id; 
                 quit = id; 
@@ -36,11 +38,13 @@
                 appcontrol = id; 
                 cancelChangeButton = NSButton; 
                 changeModeButton = NSButton; 
+                "cr_hiddenDialog" = NSPanel; 
                 "cr_networkDialog" = NSPanel; 
                 "cr_passwordDialog" = NSPanel; 
                 createButton = NSButton; 
                 createNetworkTitle = NSTextField; 
                 dataOutlet = NSTableView; 
+                hiddenessid = NSTextField; 
                 listWindow = id; 
                 mainWindow = NSWindow; 
                 modeChangeTitle = NSTextField; 
