@@ -101,6 +101,7 @@ inline void list_add_tail(struct list_head *new2, struct list_head *head)
 	IBOutlet NSTextField *passwordName;
 	IBOutlet NSPanel *cr_hiddenDialog;
 	IBOutlet NSTextField *hiddenessid;
+	IBOutlet NSButton *hexapassw;
 	
 	NSTimer *timecheck;
 	NSTimeInterval tinterval;
