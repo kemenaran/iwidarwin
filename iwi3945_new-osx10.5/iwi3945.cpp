@@ -288,7 +288,7 @@ IOLog("7\n");
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 IOLog("8\n");
-IOSleep(4000);//hack
+IOSleep(3000);//hack
 IOLog("9\n");
 		res = local->ops->add_interface(local_to_hw(local), &conf);
 IOLog("10\n");
