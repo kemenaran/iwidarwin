@@ -288,7 +288,7 @@ IOLog("7\n");
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 IOLog("8\n");
-IOSleep(3000);//hack
+//IOSleep(3000);//hack
 IOLog("9\n");
 		res = local->ops->add_interface(local_to_hw(local), &conf);
 IOLog("10\n");
@@ -315,7 +315,7 @@ IOLog("10\n");
 		}
 		setfNetif(fNetif);
 		fNetif->registerOutputHandler(this,getOutputHandler());
-	res=0;//hack
+
 	if (res) {
 		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
 			ieee80211_start_hard_monitor(local);
@@ -325,7 +325,6 @@ IOLog("11\n");
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
 		tasklet_enable(&local->tasklet);
-		
 IOLog("12\n");
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
@@ -359,7 +358,7 @@ IOLog("13\n");
 		setSelectedMedium(mediumTable[MEDIUM_TYPE_AUTO]);
 		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
 #endif			
-		res=0;//hack
+
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
@@ -367,7 +366,7 @@ IOLog("13\n");
 					local->ops->stop(local_to_hw(local));
 			} else {
 				res = ieee80211_hw_config(local);
-				res=0;//hack
+
 				if (res && local->ops->stop)
 					local->ops->stop(local_to_hw(local));
 				//else if (!res && local->apdev)

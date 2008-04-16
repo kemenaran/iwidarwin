@@ -817,11 +817,11 @@ static int iwl3945_send_cmd_sync(struct iwl3945_priv *priv, struct iwl3945_host_
 	 /* A synchronous command can not have a callback set. */
 	BUG_ON(cmd->meta.u.callback != NULL);
 
-	/*if (atomic_xchg(&entry, 1)) {
+	if (atomic_xchg(&entry, 1)) {
 		IWL_ERROR("Error sending %s: Already sending a host command\n",
 			  get_cmd_string(cmd->id));
 		return -EBUSY;
-	}*/
+	}
 
 	set_bit(STATUS_HCMD_ACTIVE, &priv->status);
 
@@ -7225,6 +7225,14 @@ static int iwl3945_mac_add_interface(struct ieee80211_hw *hw,
 		IWL_DEBUG_MAC80211("Set: " MAC_FMT "\n", MAC_ARG(conf->mac_addr));
 		memcpy(priv->mac_addr, conf->mac_addr, ETH_ALEN);
 	}
+//hack
+int rp=0;
+while (!iwl3945_is_ready(priv)) 
+{
+	rp++;
+	IOSleep(1);
+	if (rp==3000) return -1;
+}
 
 	if (iwl3945_is_ready(priv))
 		iwl3945_set_mode(priv, conf->type);
