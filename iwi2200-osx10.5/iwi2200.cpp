@@ -10692,7 +10692,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		int i,n,h;
 		i=0;
 		h=0;
-		if (strlen(buf)>5)
+		/*if (strlen(buf)>5)
 		if (*(buf+2)==':' && *(buf+5)==':')
 		{
 			h=1;
@@ -10706,7 +10706,49 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				key[i++]=n;
 				buf=buf+3;
 			}
+		}*/
+		if (!h)
+		{
+			while( sscanf( buf, "%02x", &n ) == 1 )
+			{
+				if (i==WEP_KEY_LEN) 
+				{
+					IWI_ERR("wrong wep password size\n");
+					return 1;
+				}
+				key[i++]=n;
+				buf=buf+2;
+			}
 		}
+		
+		bcopy(key,clone->priv->ieee->sec.keys[clone->priv->ieee->sec.active_key],i);
+		clone->priv->ieee->sec.key_sizes[clone->priv->ieee->sec.active_key]=i;
+
+	}
+	if (opt==7 && len>0)
+	{
+		memset(clone->priv->ieee->sec.keys[clone->priv->ieee->sec.active_key],0,SCM_KEY_LEN);
+		u8 key[WEP_KEY_LEN];
+		char *buf=(char*)data;
+		//bcopy(data,buf,len);
+		int i,n,h;
+		i=0;
+		h=0;
+		/*if (strlen(buf)>5)
+		if (*(buf+2)==':' && *(buf+5)==':')
+		{
+			h=1;
+			while( sscanf( buf, "%x", &n ) == 1 )
+			{
+				if (i==WEP_KEY_LEN) 
+				{
+					IWI_ERR("wrong wep password size\n");
+					return 1;
+				}
+				key[i++]=n;
+				buf=buf+3;
+			}
+		}*/
 		if (!h)
 		{
 			while( sscanf( buf, "%c", &n ) == 1 )
@@ -10818,10 +10860,19 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			clone->priv->ieee->sec.level=0;
 			clone->priv->ieee->sec.auth_mode = 0;
 		}
+		int hidden=0;
 		list_for_each_entry(network, &clone->priv->ieee->network_list, list) 
 		{
 			if (!memcmp(network->bssid,((struct ieee80211_network *)data)->bssid,sizeof(network->bssid)))
 			{
+				if (network->flags & NETWORK_EMPTY_ESSID) 
+				{
+					IWI_LOG("hidden net\n");
+					network->flags&=~NETWORK_EMPTY_ESSID;
+					network->ssid_len=((struct ieee80211_network *)data)->ssid_len;
+					memcpy(network->ssid,((struct ieee80211_network *)data)->ssid,network->ssid_len);
+					hidden=1;
+				}
 				if ((network->capability & WLAN_CAPABILITY_PRIVACY)!=0) 
 				//if ((network->security & STD_OPN)==0)
 				{
@@ -10861,6 +10912,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		if (network == NULL)
 		{
 			IWI_LOG("can't associate to this network\n");
+			if (hidden)
+			{
+				network->flags|=NETWORK_EMPTY_ESSID;
+				network->ssid_len=0;
+				memcpy(network->ssid,"<hidden>",sizeof("<hidden>"));
+			}
 			return 1;
 		}
 		int rep=0;
@@ -10874,6 +10931,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		if (rep == 10)
 		{
 			IWI_LOG("failed when associating to this network\n");
+			if (hidden)
+			{
+				network->flags|=NETWORK_EMPTY_ESSID;
+				network->ssid_len=0;
+				memcpy(network->ssid,"<hidden>",sizeof("<hidden>"));
+			}
 			return 1;
 		}
 	}
