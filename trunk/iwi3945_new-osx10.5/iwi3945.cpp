@@ -224,6 +224,7 @@ const OSString * darwin_iwi3945::newModelString( void ) const
     return OSString::withCString(model);
 }
 
+
 bool darwin_iwi3945::start(IOService *provider)
 {
 	UInt16	reg;
@@ -244,54 +245,9 @@ bool darwin_iwi3945::start(IOService *provider)
 		
 		setCurController(this);
 		my_provider=provider;
-		IOLog("1\n");
 		if( init_routine() )
 			return false;
-IOLog("2\n");
-//ieee80211_open	
-	struct ieee80211_local *local = hw_to_local(get_my_hw());
-IOLog("3\n");
-	struct net_device *dev=local->mdev;
-	struct ieee80211_sub_if_data *sdata, *nsdata;
-	//struct ieee80211_local *local =  wdev_priv(dev->ieee80211_ptr);
-	struct ieee80211_if_init_conf conf;
-	int res;
-IOLog("4\n");
-	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-	//read_lock(&local->sub_if_lock);
-IOLog("5\n");
-	list_for_each_entry(nsdata, &local->sub_if_list, list) {
-		struct net_device *ndev = nsdata->dev;
-		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
-		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
-		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
-			//read_unlock(&local->sub_if_lock);
-			return -1;//-ENOTUNIQ;
-		}
-	}
-IOLog("6\n");
-	//read_unlock(&local->sub_if_lock);
-	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
-	    is_zero_ether_addr(sdata->u.wds.remote_addr))
-		return -ENOLINK;
-	if (sdata->type == IEEE80211_IF_TYPE_MNTR && local->open_count &&
-	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER)) {
-		/* run the interface in a "soft monitor" mode */
-		local->monitors++;
-		local->open_count++;
-		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
-		return 0;
-	}
-IOLog("7\n");
-	//ieee80211_start_soft_monitor(local);
-	conf.if_id = dev->ifindex;
-	conf.type = sdata->type;
-	conf.mac_addr = dev->dev_addr;
-IOLog("8\n");
-//IOSleep(3000);//hack
-IOLog("9\n");
-		res = local->ops->add_interface(local_to_hw(local), &conf);
-IOLog("10\n");
+
 		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
 		setfTransmitQueue(fTransmitQueue);
 		if (fTransmitQueue == NULL)
@@ -316,19 +272,6 @@ IOLog("10\n");
 		setfNetif(fNetif);
 		fNetif->registerOutputHandler(this,getOutputHandler());
 
-	if (res) {
-		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
-			ieee80211_start_hard_monitor(local);
-		return res;
-	}
-IOLog("11\n");
-	if (local->open_count == 0) {
-		tasklet_enable(&local->tx_pending_tasklet);
-		tasklet_enable(&local->tasklet);
-IOLog("12\n");
-		if (local->ops->open)
-			res = local->ops->open(local_to_hw(local));
-IOLog("13\n");
 		fNetif->registerService();
 		registerService();
 #ifdef IO80211_VERSION
@@ -359,48 +302,7 @@ IOLog("13\n");
 		setLinkStatus(kIONetworkLinkValid, mediumTable[MEDIUM_TYPE_AUTO]);
 #endif			
 
-		if (res == 0) {
-			//res = dev_open(local->mdev);
-			if (res) {
-				if (local->ops->stop)
-					local->ops->stop(local_to_hw(local));
-			} else {
-				res = ieee80211_hw_config(local);
-
-				if (res && local->ops->stop)
-					local->ops->stop(local_to_hw(local));
-				//else if (!res && local->apdev)
-				//	dev_open(local->apdev);
-			}
-		}
-		if (res) {
-			if (local->ops->remove_interface)
-				local->ops->remove_interface(local_to_hw(local),
-							    &conf);
-			return res;
-		}
-	}
-IOLog("14\n");
-	local->open_count++;
-	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
-		local->monitors++;
-		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
-	} else
-	{
-		//ieee80211_if_config(dev);
-		first_up=0;
-	}
-IOLog("15\n");
-	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
-	    !local->user_space_mlme)
-		netif_carrier_off(dev);
-	else
-		netif_carrier_on(dev);*/
-	//netif_start_queue(dev);
-//end ieee80211_open	
-
-
-IOLog("16\n");	
+		
 		struct kern_ctl_reg		ep_ctl; // Initialize control
 		kern_ctl_ref	kctlref;
 		bzero(&ep_ctl, sizeof(ep_ctl));
@@ -414,8 +316,9 @@ IOLog("16\n");
 		ep_ctl.ctl_setopt = configureConnection;
 		ep_ctl.ctl_getopt = sendNetworkList;
 		errno_t error = ctl_register(&ep_ctl, &kctlref);
-IOLog("17\n");			
 
+		first_up=0;//ready for first load
+		
         return true;
     } while(false);
     
@@ -1502,6 +1405,90 @@ void darwin_iwi3945::down()
  * This method is always called while running on the default workloop thread.
  *-------------------------------------------------------------------------*/
 
+static int ieee80211_open(struct ieee80211_local *local)
+{
+	struct net_device *dev=local->mdev;
+	struct ieee80211_sub_if_data *sdata, *nsdata;
+	struct ieee80211_if_init_conf conf;
+	int res;
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	//read_lock(&local->sub_if_lock);
+	/*list_for_each_entry(nsdata, &local->sub_if_list, list) {
+		struct net_device *ndev = nsdata->dev;
+		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
+		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
+		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
+			//read_unlock(&local->sub_if_lock);
+			return -1;//-ENOTUNIQ;
+		}
+	}*/
+
+	//read_unlock(&local->sub_if_lock);
+	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
+	    is_zero_ether_addr(sdata->u.wds.remote_addr))
+		return -ENOLINK;
+	if (sdata->type == IEEE80211_IF_TYPE_MNTR && local->open_count &&
+	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER)) {
+		/* run the interface in a "soft monitor" mode */
+		local->monitors++;
+		local->open_count++;
+		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
+		return 0;
+	}
+
+	//ieee80211_start_soft_monitor(local);
+	conf.if_id = dev->ifindex;
+	conf.type = sdata->type;
+	conf.mac_addr = dev->dev_addr;
+	res = local->ops->add_interface(local_to_hw(local), &conf);
+	if (res) {
+		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
+			ieee80211_start_hard_monitor(local);
+		return res;
+	}
+	if (local->open_count == 0) {
+		tasklet_enable(&local->tx_pending_tasklet);
+		tasklet_enable(&local->tasklet);
+		if (local->ops->open)
+			res = local->ops->open(local_to_hw(local));
+		if (res == 0) {
+			//res = dev_open(local->mdev);
+			if (res) {
+				if (local->ops->stop)
+					local->ops->stop(local_to_hw(local));
+			} else {
+				res = ieee80211_hw_config(local);
+
+				if (res && local->ops->stop)
+					local->ops->stop(local_to_hw(local));
+				//else if (!res && local->apdev)
+				//	dev_open(local->apdev);
+			}
+		}
+		if (res) {
+			if (local->ops->remove_interface)
+				local->ops->remove_interface(local_to_hw(local),
+							    &conf);
+			return res;
+		}
+	}
+	local->open_count++;
+	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
+		local->monitors++;
+		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
+	} else
+	{
+		ieee80211_if_config(dev);
+	}
+	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
+	    !local->user_space_mlme)
+		netif_carrier_off(dev);
+	else
+		netif_carrier_on(dev);*/
+	//netif_start_queue(dev);
+
+}
+
 IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 {
 	IOLog("darwin_iwi3945::enable()\n");
@@ -1524,17 +1511,17 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 				ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-		fTransmitQueue->start();
-		//hack
 		if (first_up==0)
 		{
 			first_up=1;
-			struct ieee80211_local *local = hw_to_local(get_my_hw());
-			struct net_device *dev=local->mdev;
-			ieee80211_if_config(dev);
+			ieee80211_open(hw_to_local(get_my_hw()));
+			fTransmitQueue->start();
 			IOLog("1st scan\n");
 			iwl_scan((struct iwl3945_priv*)get_my_priv());
 		}
+		else
+		fTransmitQueue->start();
+		
 		return kIOReturnSuccess;
 	}
 	else
