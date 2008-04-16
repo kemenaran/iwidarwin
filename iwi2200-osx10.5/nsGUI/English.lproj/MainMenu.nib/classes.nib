@@ -44,6 +44,7 @@
                 createButton = NSButton; 
                 createNetworkTitle = NSTextField; 
                 dataOutlet = NSTableView; 
+                hexapassw = NSButton; 
                 hiddenessid = NSTextField; 
                 listWindow = id; 
                 mainWindow = NSWindow; 
