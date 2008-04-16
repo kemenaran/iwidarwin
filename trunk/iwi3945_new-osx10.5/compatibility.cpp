@@ -6732,8 +6732,8 @@ int pci_register_driver(struct pci_driver * drv){
 	if((reg & 0x0000ff00) != 0)
 		fPCIDevice->configWrite16(0x40, reg & 0xffff00ff);
 
-	//fPCIDevice->setBusMasterEnable(true);
-	//fPCIDevice->setMemoryEnable(true);
+	fPCIDevice->setBusMasterEnable(true);
+	fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
 	/*struct ieee80211_local *local = hw_to_local(my_hw);
