@@ -1516,8 +1516,8 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 			first_up=1;
 			ieee80211_open(hw_to_local(get_my_hw()));
 			fTransmitQueue->start();
-			IOLog("1st scan\n");
-			iwl_scan((struct iwl3945_priv*)get_my_priv());
+			//IOLog("1st scan\n");
+			//iwl_scan((struct iwl3945_priv*)get_my_priv());
 		}
 		else
 		fTransmitQueue->start();
