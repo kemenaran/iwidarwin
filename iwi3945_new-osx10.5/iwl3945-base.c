@@ -7095,14 +7095,14 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 
     mutex_unlock(&priv->mutex);
 
-	if (ret)
-		goto out_release_irq;
+	//if (ret)
+	//	goto out_release_irq;
 
 	IWL_DEBUG_INFO("Start UP work.\n");
 
     if (test_bit(STATUS_IN_SUSPEND, &priv->status)) {
         IWL_DEBUG_INFO("Card is in suspend mode\n");
-		return 0;
+		//return 0;
     }
 
 	/* Wait for START_ALIVE from ucode. Otherwise callbacks from
@@ -7124,8 +7124,8 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
         if (!test_bit(STATUS_READY, &priv->status)) {
             IWL_DEBUG_INFO("Wait for START_ALIVE timeout after %dms.\n",
 				  jiffies_to_msecs(UCODE_READY_TIMEOUT));
-			ret = -ETIMEDOUT;
-			goto out_release_irq;
+			//ret = -ETIMEDOUT;
+			//goto out_release_irq;
 		}
 	}
 
@@ -7225,16 +7225,8 @@ static int iwl3945_mac_add_interface(struct ieee80211_hw *hw,
 		IWL_DEBUG_MAC80211("Set: " MAC_FMT "\n", MAC_ARG(conf->mac_addr));
 		memcpy(priv->mac_addr, conf->mac_addr, ETH_ALEN);
 	}
-//hack
-int rp=0;
-while (!iwl3945_is_ready(priv)) 
-{
-	rp++;
-	IOSleep(1);
-	if (rp==3000) return -1;
-}
 
-	if (iwl3945_is_ready(priv))
+	//hack if (iwl3945_is_ready(priv))
 		iwl3945_set_mode(priv, conf->type);
 
 	mutex_unlock(&priv->mutex);
@@ -7262,8 +7254,8 @@ static int iwl3945_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *co
 
 	if (!iwl3945_is_ready(priv)) {
 		IWL_DEBUG_MAC80211("leave - not ready\n");
-		ret = -EIO;
-		goto out;
+		//ret = -EIO;
+		//goto out;
 	}
 
 	/* TODO: Figure out how to get ieee80211_local->sta_scanning w/ only
@@ -7284,8 +7276,8 @@ static int iwl3945_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *co
 			       conf->channel, conf->phymode);
 		IWL_DEBUG_MAC80211("leave - invalid channel\n");
 		spin_unlock_irqrestore(&priv->lock, flags);
-		ret = -EINVAL;
-		goto out;
+		//ret = -EINVAL;
+		//goto out;
 	}
 
 	iwl3945_set_rxon_channel(priv, conf->phymode, conf->channel);
@@ -7310,13 +7302,13 @@ static int iwl3945_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *co
 
 	if (!conf->radio_enabled) {
 		IWL_DEBUG_MAC80211("leave - radio disabled\n");
-		goto out;
+		//goto out;
 	}
 
 	if (iwl3945_is_rfkill(priv)) {
 		IWL_DEBUG_MAC80211("leave - RF kill\n");
-		ret = -EIO;
-		goto out;
+		//ret = -EIO;
+		//goto out;
 	}
 
 	iwl3945_set_rate(priv);
@@ -7332,7 +7324,7 @@ static int iwl3945_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *co
 out:
 	clear_bit(STATUS_CONF_PENDING, &priv->status);
 	mutex_unlock(&priv->mutex);
-	return ret;
+	return 0;//ret;
 }
 
 static void iwl3945_config_ap(struct iwl3945_priv *priv)
@@ -7409,8 +7401,8 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 		return 0;
 	}
 
-	if (!iwl3945_is_alive(priv))
-		return -EAGAIN;
+	//if (!iwl3945_is_alive(priv))
+	//	return -EAGAIN;
 
 	mutex_lock(&priv->mutex);
 
@@ -7429,7 +7421,7 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 	if (priv->interface_id != if_id) {
 		IWL_DEBUG_MAC80211("leave - interface_id != if_id\n");
 		mutex_unlock(&priv->mutex);
-		return 0;
+		//return 0;
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {
@@ -7445,8 +7437,8 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 		priv->ibss_beacon = conf->beacon;
 	}
 
-	if (iwl3945_is_rfkill(priv))
-		goto done;
+	//if (iwl3945_is_rfkill(priv))
+	//	goto done;
 
 	if (conf->bssid && !is_zero_ether_addr(conf->bssid) &&
 	    !is_multicast_ether_addr(conf->bssid)) {
