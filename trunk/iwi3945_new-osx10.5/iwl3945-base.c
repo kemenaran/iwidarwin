@@ -6327,8 +6327,6 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 	iwl3945_reg_txpower_periodic(priv);
 
 	IWL_DEBUG_INFO("ALIVE processing complete.\n");
-	//hack
-	iwl3945_scan_initiate(priv);
 	
 	wake_up_interruptible(&priv->wait_command_queue);
 
