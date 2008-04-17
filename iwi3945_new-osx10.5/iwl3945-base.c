@@ -6866,6 +6866,7 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 	iwl3945_down(priv);
 //FIXME: Hack for restart
 	//run_add_interface();
+	ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
 	queue_work(priv->workqueue, &priv->up); // maybe kp here
 
