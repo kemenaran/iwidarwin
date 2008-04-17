@@ -817,11 +817,12 @@ static int iwl3945_send_cmd_sync(struct iwl3945_priv *priv, struct iwl3945_host_
 	 /* A synchronous command can not have a callback set. */
 	BUG_ON(cmd->meta.u.callback != NULL);
 
-	if (atomic_xchg(&entry, 1)) {
+	//FIXME
+	/*if (atomic_xchg(&entry, 1)) {
 		IWL_ERROR("Error sending %s: Already sending a host command\n",
 			  get_cmd_string(cmd->id));
 		return -EBUSY;
-	}
+	}*/
 
 	set_bit(STATUS_HCMD_ACTIVE, &priv->status);
 
@@ -6868,7 +6869,7 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 	//run_add_interface();
 	ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
-	queue_work(priv->workqueue, &priv->up); // maybe kp here
+	//queue_work(priv->workqueue, &priv->up); // maybe kp here
 
 }
 
