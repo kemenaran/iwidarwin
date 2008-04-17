@@ -7751,6 +7751,7 @@ int ieee80211_open(struct ieee80211_local *local)
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
+		IOSLeep(500);//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
