@@ -7786,8 +7786,8 @@ int ieee80211_open(struct ieee80211_local *local)
 		netif_carrier_on(dev);*/
 	//netif_start_queue(dev);
 	
-	IOLog("1st scan\n");
-	iwl_scan((struct iwl3945_priv*)get_my_priv());
+	//IOLog("1st scan\n");
+	//iwl_scan((struct iwl3945_priv*)get_my_priv());
 	
 	return 0;
 }
