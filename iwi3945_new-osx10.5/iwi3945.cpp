@@ -23,7 +23,7 @@ OSDefineMetaClassAndStructors(darwin_iwi3945, IOEthernetController);
 // Magic to make the init/exit routines public.
 extern "C" {
     
-	
+	extern void (*iwl_scan)(struct iwl3945_priv *);
     extern int (*iwlready)(struct iwl3945_priv *);
 	extern int (*init_routine)();
     extern void (*exit_routine)();
@@ -33,7 +33,7 @@ extern "C" {
 	
 	extern void (*iwl_down)(struct iwl3945_priv *);
 	extern void (*iwl_up)(struct iwl3945_priv *);
-	extern void (*iwl_scan)(struct iwl3945_priv *);
+	
 	//
 }
 extern void setCurController(IONetworkController * tmp);
@@ -57,6 +57,7 @@ struct ieee80211_tx_control tx_ctrl;//need to init this?
 IOService * my_provider;
 static darwin_iwi3945 *clone;
 int first_up;
+static thread_call_t tlink2[256];//for the queue work...
 
 #pragma mark -
 #pragma mark Overrides required for implementation
@@ -318,6 +319,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		errno_t error = ctl_register(&ep_ctl, &kctlref);
 
 		first_up=0;//ready for first load
+		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,2000,true);
 		
         return true;
     } while(false);
@@ -326,7 +328,77 @@ bool darwin_iwi3945::start(IOService *provider)
     return false;
 }
 
+void darwin_iwi3945::queue_td2(int num , thread_call_func_t func)
+{
+	if (tlink2[num])
+	{
+		thread_call_cancel(tlink2[num]);
+	}
+}
 
+void darwin_iwi3945::queue_te2(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start)
+{
+		//par=my_hw->priv;
+	//thread_call_func_t my_func;
+	if (tlink2[num])
+		queue_td2(num,NULL);
+	if (!tlink2[num])
+		tlink2[num]=thread_call_allocate(func,this);
+	uint64_t timei2;
+	if (timei)
+		clock_interval_to_deadline(timei,kMillisecondScale,&timei2);
+	int r;
+	if (start==true && tlink2[num])
+	{
+		if (!par && !timei)	
+			r=thread_call_enter(tlink2[num]);
+		if (!par && timei)
+			r=thread_call_enter_delayed(tlink2[num],timei2);
+		if (par && !timei)
+			r=thread_call_enter1(tlink2[num],par);
+		if (par && timei)
+			r=thread_call_enter1_delayed(tlink2[num],par,timei2);
+	}
+
+}
+
+void darwin_iwi3945::check_firstup(void)
+{
+	IOLog("check_firstup\n");
+	if (first_up==0) 
+	{
+		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,2000,true);
+		return;
+	}
+	/*disable(fNetif);
+	u8 addr[6];
+	const char *buf=fakemac;
+	int i,n;
+	i=0;
+	if (strlen(buf)==17)
+	{
+		if (*(buf+2)==':' && *(buf+5)==':')
+		{
+			while( sscanf( buf, "%x", &n ) == 1 )
+			{
+				addr[i++]=n;
+				buf=buf+3;
+			}
+		}
+		IWI_LOG("Setting mac address from parameter to " MAC_FMT "\n",MAC_ARG(addr));
+		ifnet_set_lladdr(fifnet,addr,6);
+		bcopy(addr, priv->mac_addr, ETH_ALEN);
+		bcopy(addr, priv->net_dev->dev_addr, ETH_ALEN);
+		bcopy(addr, priv->ieee->dev->dev_addr,  ETH_ALEN);
+	}*/
+	queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
+}
+
+void darwin_iwi3945::adapter_start(void)
+{
+	IOLog("ieee80211_open\n");
+	ieee80211_open(hw_to_local(get_my_hw()));
+}
 
 void darwin_iwi3945::free(void)
 {
@@ -1405,89 +1477,6 @@ void darwin_iwi3945::down()
  * This method is always called while running on the default workloop thread.
  *-------------------------------------------------------------------------*/
 
-static int ieee80211_open(struct ieee80211_local *local)
-{
-	struct net_device *dev=local->mdev;
-	struct ieee80211_sub_if_data *sdata, *nsdata;
-	struct ieee80211_if_init_conf conf;
-	int res;
-	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-	//read_lock(&local->sub_if_lock);
-	/*list_for_each_entry(nsdata, &local->sub_if_list, list) {
-		struct net_device *ndev = nsdata->dev;
-		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
-		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
-		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
-			//read_unlock(&local->sub_if_lock);
-			return -1;//-ENOTUNIQ;
-		}
-	}*/
-
-	//read_unlock(&local->sub_if_lock);
-	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
-	    is_zero_ether_addr(sdata->u.wds.remote_addr))
-		return -ENOLINK;
-	if (sdata->type == IEEE80211_IF_TYPE_MNTR && local->open_count &&
-	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER)) {
-		/* run the interface in a "soft monitor" mode */
-		local->monitors++;
-		local->open_count++;
-		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
-		return 0;
-	}
-
-	//ieee80211_start_soft_monitor(local);
-	conf.if_id = dev->ifindex;
-	conf.type = sdata->type;
-	conf.mac_addr = dev->dev_addr;
-	res = local->ops->add_interface(local_to_hw(local), &conf);
-	if (res) {
-		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
-			ieee80211_start_hard_monitor(local);
-		return res;
-	}
-	if (local->open_count == 0) {
-		tasklet_enable(&local->tx_pending_tasklet);
-		tasklet_enable(&local->tasklet);
-		if (local->ops->open)
-			res = local->ops->open(local_to_hw(local));
-		if (res == 0) {
-			//res = dev_open(local->mdev);
-			if (res) {
-				if (local->ops->stop)
-					local->ops->stop(local_to_hw(local));
-			} else {
-				res = ieee80211_hw_config(local);
-
-				if (res && local->ops->stop)
-					local->ops->stop(local_to_hw(local));
-				//else if (!res && local->apdev)
-				//	dev_open(local->apdev);
-			}
-		}
-		if (res) {
-			if (local->ops->remove_interface)
-				local->ops->remove_interface(local_to_hw(local),
-							    &conf);
-			return res;
-		}
-	}
-	local->open_count++;
-	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
-		local->monitors++;
-		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
-	} else
-	{
-		ieee80211_if_config(dev);
-	}
-	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
-	    !local->user_space_mlme)
-		netif_carrier_off(dev);
-	else
-		netif_carrier_on(dev);*/
-	//netif_start_queue(dev);
-
-}
 
 IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 {
@@ -1500,7 +1489,10 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		ifnet_find_by_name(ii,&fifnet);
 		setMyfifnet(fifnet);
 	}
-    
+    if (first_up==0)
+		{
+			first_up=1;
+		}
 	if ((fNetif->getFlags() & IFF_RUNNING)==0)
 	{
 		IOLog("ifconfig going up\n ");
@@ -1511,15 +1503,6 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 				ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-		if (first_up==0)
-		{
-			first_up=1;
-			ieee80211_open(hw_to_local(get_my_hw()));
-			fTransmitQueue->start();
-			//IOLog("1st scan\n");
-			//iwl_scan((struct iwl3945_priv*)get_my_priv());
-		}
-		else
 		fTransmitQueue->start();
 		
 		return kIOReturnSuccess;

@@ -23,9 +23,7 @@
 		<key>com.apple.kpi.libkern</key>
 		<string>8.0.0b2</string>
 		<key>com.apple.kpi.iokit</key>
-		<string>8.0.0b2</string>	
-		
-		
+		<string>8.0.0b2</string>
  */
 
 #define NO_SPIN_LOCKS 0
@@ -103,6 +101,7 @@ static bool is_unloaded=false;
 static struct mutex *mutexes[MAX_MUTEXES];
 unsigned long current_mutex = 0;
 
+extern void (*iwl_scan)(struct iwl3945_priv *);
 
 struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
 {
@@ -5126,14 +5125,18 @@ IM_HERE_NOW();
 		chan = local->oper_channel;
 		mode = local->oper_hw_mode;
 	}
-
+if (chan)
+{
 	local->hw.conf.channel = chan->chan;
 	local->hw.conf.channel_val = chan->val;
 	local->hw.conf.power_level = chan->power_level;
 	local->hw.conf.freq = chan->freq;
+}
+if (mode)
+{
 	local->hw.conf.phymode = mode->mode;
 	local->hw.conf.antenna_max = chan->antenna_max;
-
+}
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 	printk(KERN_DEBUG "HW CONFIG: channel=%d freq=%d "
 	       "phymode=%d\n", local->hw.conf.channel, local->hw.conf.freq,
@@ -7700,4 +7703,91 @@ clear_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request);
 		ieee80211_set_disassoc(dev, ifsta, 0);
 	}
 
+}
+
+int ieee80211_open(struct ieee80211_local *local)
+{
+	struct net_device *dev=local->mdev;
+	struct ieee80211_sub_if_data *sdata, *nsdata;
+	struct ieee80211_if_init_conf conf;
+	int res;
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	//read_lock(&local->sub_if_lock);
+	/*list_for_each_entry(nsdata, &local->sub_if_list, list) {
+		struct net_device *ndev = nsdata->dev;
+		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
+		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
+		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
+			//read_unlock(&local->sub_if_lock);
+			return -1;//-ENOTUNIQ;
+		}
+	}*/
+
+	//read_unlock(&local->sub_if_lock);
+	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
+	    is_zero_ether_addr(sdata->u.wds.remote_addr))
+		return -ENOLINK;
+	if (sdata->type == IEEE80211_IF_TYPE_MNTR && local->open_count &&
+	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER)) {
+		/* run the interface in a "soft monitor" mode */
+		local->monitors++;
+		local->open_count++;
+		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
+		return 0;
+	}
+
+	//ieee80211_start_soft_monitor(local);
+	conf.if_id = dev->ifindex;
+	conf.type = sdata->type;
+	conf.mac_addr = dev->dev_addr;
+	res = local->ops->add_interface(local_to_hw(local), &conf);
+	if (res) {
+		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
+			ieee80211_start_hard_monitor(local);
+		return res;
+	}
+	if (local->open_count == 0) {
+		tasklet_enable(&local->tx_pending_tasklet);
+		tasklet_enable(&local->tasklet);
+		if (local->ops->open)
+			res = local->ops->open(local_to_hw(local));
+		if (res == 0) {
+			//res = dev_open(local->mdev);
+			if (res) {
+				if (local->ops->stop)
+					local->ops->stop(local_to_hw(local));
+			} else {
+				res = ieee80211_hw_config(local);
+				if (res && local->ops->stop)
+					local->ops->stop(local_to_hw(local));
+				//else if (!res && local->apdev)
+				//	dev_open(local->apdev);
+			}
+		}
+		if (res) {
+			if (local->ops->remove_interface)
+				local->ops->remove_interface(local_to_hw(local),
+							    &conf);
+			return res;
+		}
+	}
+	local->open_count++;
+	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
+		local->monitors++;
+		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
+	} else
+	{
+		ieee80211_if_config(dev);
+	}
+	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
+	    !local->user_space_mlme)
+		netif_carrier_off(dev);
+	else
+		netif_carrier_on(dev);*/
+	//netif_start_queue(dev);
+	
+	IOLog("1st scan\n");
+	iwl_scan((struct iwl3945_priv*)get_my_priv());
+	
+	return 0;
 }
