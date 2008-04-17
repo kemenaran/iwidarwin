@@ -135,7 +135,11 @@ class darwin_iwi3945 : public IOEthernetController
         OSDeclareDefaultStructors(darwin_iwi3945)
         
     public:
-        //virtual const char * getNamePrefix() const;
+        virtual void queue_td2(int num , thread_call_func_t func);
+		virtual void queue_te2(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start);
+		virtual void adapter_start(void);
+		virtual void check_firstup(void);
+		//virtual const char * getNamePrefix() const;
         virtual bool		init(OSDictionary *dictionary = 0);
         virtual void		free(void);
         

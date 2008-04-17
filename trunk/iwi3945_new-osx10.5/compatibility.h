@@ -13,6 +13,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	
+	extern int ieee80211_open(struct ieee80211_local *local);
 	extern int ieee80211_hw_config(struct ieee80211_local *local);
 	extern void ieee80211_start_hard_monitor(struct ieee80211_local *local);
 	extern void tasklet_enable(struct tasklet_struct *t);
@@ -99,6 +101,7 @@ extern "C" {
     extern void spin_lock_init(spinlock_t *lock);
     extern void spin_lock(spinlock_t *lock);
     extern void spin_unlock(spinlock_t *lock);
+//osx 10.5
 extern void mutex_init(struct mutex *new_mutex);
 extern void mutex_lock(struct mutex *new_mutex);
 extern void mutex_unlock(struct mutex *new_mutex);

@@ -76,7 +76,7 @@ static int iwl3945_tx_queue_update_write_ptr(struct iwl3945_priv *priv,
 
 static int iwl3945_param_disable_hw_scan; /* def: 0 = use 3945's h/w scan */
 //static int iwl3945_param_debug;    /* def: 0 = minimal debug log messages */
-static int iwl3945_param_debug =  0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP | IWL_DL_INFO);
+static int iwl3945_param_debug =  0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
 /*
 #define IWL_DL_INFO          (1<<0)
 #define IWL_DL_MAC80211      (1<<1)
@@ -6474,7 +6474,7 @@ static int __iwl3945_up(struct iwl3945_priv *priv)
 	rc = iwl3945_hw_nic_init(priv);
 	if (rc) {
 		IWL_ERROR("Unable to int nic\n");
-		//return rc;
+		return rc;
 	}
 
 	/* make sure rfkill handshake bits are cleared */
@@ -6497,8 +6497,8 @@ static int __iwl3945_up(struct iwl3945_priv *priv)
 	       priv->ucode_data.len);
 
 	/* We return success when we resume from suspend and rf_kill is on. */
-	//if (test_bit(STATUS_RF_KILL_HW, &priv->status))
-	//	return 0;
+	if (test_bit(STATUS_RF_KILL_HW, &priv->status))
+		return 0;
 
 	for (i = 0; i < MAX_HW_RESTARTS; i++) {
 
@@ -6508,7 +6508,6 @@ static int __iwl3945_up(struct iwl3945_priv *priv)
 		 * load bootstrap program into processor's memory,
 		 * prepare to load the "initialize" uCode */
 		rc = iwl3945_load_bsm(priv);
-
 		if (rc) {
 			IWL_ERROR("Unable to set up bootstrap uCode: %d\n", rc);
 			continue;
@@ -7228,6 +7227,7 @@ static int iwl3945_mac_add_interface(struct ieee80211_hw *hw,
 
 	if (iwl3945_is_ready(priv))
 		iwl3945_set_mode(priv, conf->type);
+	else IWL_DEBUG_MAC80211("failed to set mode\n");
 
 	mutex_unlock(&priv->mutex);
 
