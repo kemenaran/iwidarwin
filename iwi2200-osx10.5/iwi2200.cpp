@@ -840,7 +840,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		//_mbufCursor = IOMbufLittleMemoryCursor::withSpecification(IPW_RX_BUF_SIZE, 1);
 		//for (int i=0;i<20;i++) memset(&nonets[i],0,sizeof(struct ieee80211_network));
 		
-		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,1000,true);
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,2000,true);
 	
 	return true;			// end start successfully
 	} while (false);
@@ -854,7 +854,7 @@ void darwin_iwi2200::check_firstup()
 {
 	if (firstifup==0) 
 	{
-		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,1000,true);
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,2000,true);
 		return;
 	}
 	disable(fNetif);
