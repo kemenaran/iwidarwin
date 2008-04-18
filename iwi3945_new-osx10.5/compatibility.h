@@ -13,7 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
-	
+	extern void ieee80211_sta_scan_work(struct work_struct *work);
 	extern int ieee80211_open(struct ieee80211_local *local);
 	extern int ieee80211_hw_config(struct ieee80211_local *local);
 	extern void ieee80211_start_hard_monitor(struct ieee80211_local *local);

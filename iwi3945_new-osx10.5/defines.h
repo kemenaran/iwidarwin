@@ -612,7 +612,8 @@ struct ieee80211_local {
 	struct list_head sub_if_list;
 	int sta_scanning;
 	int scan_channel_idx;
-	enum { SCAN_SET_CHANNEL, SCAN_SEND_PROBE } scan_state;
+	//enum { SCAN_SET_CHANNEL, SCAN_SEND_PROBE } 
+	int scan_state;
 	unsigned long last_scan_completed;
 	struct delayed_work scan_work;
 	struct net_device *scan_dev;
