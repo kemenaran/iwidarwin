@@ -7778,6 +7778,7 @@ int ieee80211_open(struct ieee80211_local *local)
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 	{
+		IOSleep(500);//hack
 		res=ieee80211_if_config(dev);
 	}
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
