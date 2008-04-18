@@ -7751,7 +7751,7 @@ int ieee80211_open(struct ieee80211_local *local)
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
-		IOSLeep(500);//hack
+		IOSleep(500);//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
@@ -7772,13 +7772,14 @@ int ieee80211_open(struct ieee80211_local *local)
 			return res;
 		}
 	}
+	res=0;
 	local->open_count++;
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
 	{
-		ieee80211_if_config(dev);
+		res=ieee80211_if_config(dev);
 	}
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
@@ -7787,8 +7788,12 @@ int ieee80211_open(struct ieee80211_local *local)
 		netif_carrier_on(dev);*/
 	//netif_start_queue(dev);
 	
-	//IOLog("1st scan\n");
+	IOLog("1st scan\n");
+	if (res==0)
 	//iwl_scan((struct iwl3945_priv*)get_my_priv());
+	ieee80211_sta_start_scan(dev, NULL, 0);
+	else
+	IOLog(" not ready for 1st scan\n");
 	
 	return 0;
 }
