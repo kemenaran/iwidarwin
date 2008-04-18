@@ -7793,7 +7793,7 @@ int ieee80211_open(struct ieee80211_local *local)
 	//ieee80211_sta_start_scan(dev, NULL, 0);
 	ieee80211_init_scan(local);
 	else
-	IOLog(" not ready for 1st scan\n");*/
+	IOLog(" not ready for 1st scan\n");
 	
 	return 0;
 }
