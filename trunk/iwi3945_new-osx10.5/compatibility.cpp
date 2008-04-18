@@ -5208,7 +5208,6 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 void ieee80211_sta_scan_work(struct work_struct *work)
 {
 IM_HERE_NOW();	
-	//FIXME: error in SCAN_SEND_PROBE
 	struct ieee80211_local *local = (struct ieee80211_local *)work;//check this
 		//container_of(work, struct ieee80211_local, scan_work.work);
 	struct net_device *dev = local->scan_dev;
@@ -5268,7 +5267,7 @@ IM_HERE_NOW();
 
 		next_delay = IEEE80211_PROBE_DELAY +
 			     usecs_to_jiffies(local->hw.channel_change_time);
-		(int)local->scan_state = 1;//SCAN_SEND_PROBE;
+		local->scan_state = 1;//SCAN_SEND_PROBE;
 		break;
 	case 1://SCAN_SEND_PROBE:
 		if (local->scan_channel->flag & IEEE80211_CHAN_W_ACTIVE_SCAN) {
@@ -5277,7 +5276,7 @@ IM_HERE_NOW();
 			next_delay = IEEE80211_CHANNEL_TIME;
 		} else
 			next_delay = IEEE80211_PASSIVE_CHANNEL_TIME;
-		(int)local->scan_state = 0;//SCAN_SET_CHANNEL;
+		local->scan_state = 0;//SCAN_SET_CHANNEL;
 		break;
 	}
 	//check this
@@ -6670,7 +6669,7 @@ IM_HERE_NOW();
 		memcpy(local->scan_ssid, ssid, ssid_len);
 	} else
 		local->scan_ssid_len = 0;
-	(int)local->scan_state = 0;//SCAN_SET_CHANNEL;
+	local->scan_state = 0;//SCAN_SET_CHANNEL;
 	local->scan_hw_mode = list_entry(local->modes_list.next,
 					 struct ieee80211_hw_mode,
 					 list);
