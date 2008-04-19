@@ -822,46 +822,71 @@ void spin_unlock_bh( spinlock_t *lock ) {
 #pragma mark -
 #pragma mark timer adaptation
 
-/*void
-IOPCCardAddTimer(struct timer_list * timer)
+static thread_call_func_t timer_func[99];
+int timer_func_count=0;
+
+
+
+void test_timer(work_func_t timer0,thread_call_param_t data){
+	
+	struct timer_list2 * timer=(struct timer_list2*)timer0;
+	if(timer && data)
+	{
+		(timer->function)((unsigned long)data);
+	}
+	else
+		IOLog("Error while lauch timer thread\n");
+}
+
+void
+IOPCCardAddTimer(struct timer_list2 * timer)
 {
-    uint64_t                    deadline;
-    clock_interval_to_deadline(timer->expires, NSEC_PER_SEC / HZ, &deadline);
-	thread_call_enter1_delayed((thread_call_t)timer->function,(void*)timer->data,deadline);
+IM_HERE_NOW();
+    uint64_t deadline, timei;
+	if (timer->expires>0)
+	timei=jiffies_to_msecs(timer->expires);
+	else timei=0;
+	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
+	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
+	if (!timer_func[timer->vv])
+	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
+	return thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
 }
 
 int
-IOPCCardDeleteTimer(struct timer_list * timer)
+IOPCCardDeleteTimer(struct timer_list2 * timer)
 {
-	return thread_call_cancel((thread_call_t)timer->function);
-}*/
+	if (!timer_func[timer->vv]) return 0;
+	return thread_call_cancel(timer_func[timer->vv]);
+}
 
-
-int add_timer(struct timer_list *timer) {
+int add_timer(struct timer_list2 *timer) {
 IM_HERE_NOW();
 	IOPCCardAddTimer(timer);
 	return 0;
 }
 
-int del_timer(struct timer_list *timer) {
+int del_timer(struct timer_list2 *timer) {
 IM_HERE_NOW();
 	IOPCCardDeleteTimer(timer);
 	return 0;
 }
 
-void init_timer(struct timer_list *timer) {
+void init_timer(struct timer_list2 *timer) {
 IM_HERE_NOW();
-	timer=(struct timer_list*)IOMalloc(sizeof(struct timer_list*));
+	timer=(struct timer_list2*)IOMalloc(sizeof(struct timer_list2*));
+	timer_func_count++;
+	timer->vv=timer_func_count;
 }
 
-int mod_timer(struct timer_list *timer, int length) {
+int mod_timer(struct timer_list2 *timer, int length) {
 IM_HERE_NOW();
 	del_timer(timer);
 	timer->expires = length; 
 	add_timer(timer);
 }
 
-int del_timer_sync(struct timer_list *timer) {
+int del_timer_sync(struct timer_list2 *timer) {
 IM_HERE_NOW();
 	del_timer(timer);
 }
@@ -2150,7 +2175,7 @@ IM_HERE_NOW();
 	ieee80211_sta_tx(dev, skb, 0);
 }
 
-static inline void setup_timer(struct timer_list * timer,
+static inline void setup_timer(struct timer_list2 * timer,
                                  void (*function)(unsigned long),
                                  unsigned long data)
  {
