@@ -2148,9 +2148,10 @@ static inline void setup_timer(struct timer_list * timer,
                                  void (*function)(unsigned long),
                                  unsigned long data)
  {
-         timer->function = function;
-         timer->data = data;
          init_timer(timer);
+		 timer->function = function;
+         timer->data = data;
+         add_timer(timer);
  }
 
 void ieee80211_sta_timer(unsigned long data)
@@ -2275,7 +2276,7 @@ IM_HERE_NOW();
 	if (unlikely(local->reg_state == 0)) {
 		//write_unlock_bh(&local->sub_if_lock);
 		//__ieee80211_if_del(local, sdata);
-		return -ENODEV;
+		return 0;//-ENODEV;
 	}
 	list_add(&sdata->list, &local->sub_if_list);
 	if (new_dev)
@@ -7784,16 +7785,15 @@ int ieee80211_open(struct ieee80211_local *local)
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
 	else
-		netif_carrier_on(dev);*/
-	//netif_start_queue(dev);
+		netif_carrier_on(dev);
+	netif_start_queue(dev);*/
 	
-	IOLog("1st scan\n");
+	/*IOLog("1st scan\n");
 	if (res==0)
 	//iwl_scan((struct iwl3945_priv*)get_my_priv());
 	//ieee80211_sta_start_scan(dev, NULL, 0);
-	ieee80211_init_scan(local);
 	else
-	IOLog(" not ready for 1st scan\n");
+	IOLog(" not ready for 1st scan\n");*/
 	
 	return 0;
 }
