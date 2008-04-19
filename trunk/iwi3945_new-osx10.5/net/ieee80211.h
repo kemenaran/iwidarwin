@@ -231,7 +231,7 @@ struct net_device
 	int			allmulti;
 
 	int			watchdog_timeo;
-	struct timer_list	watchdog_timer;
+	struct timer_list2	watchdog_timer;
 
 	/* Protocol specific pointers */
 	
@@ -1721,7 +1721,7 @@ struct ieee80211_device {
 	struct list_head crypt_deinit_list;
 	struct ieee80211_crypt_data *crypt[WEP_KEYS];
 	int tx_keyidx;		/* default TX key index (crypt[tx_keyidx]) */
-	struct timer_list crypt_deinit_timer;
+	struct timer_list2 crypt_deinit_timer;
 	int crypt_quiesced;
 
 	int bcrx_sta_key;	/* use individual keys to override default keys even
