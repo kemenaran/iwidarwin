@@ -884,6 +884,7 @@ int mod_timer(struct timer_list2 *timer, int length) {
 IM_HERE_NOW();
 	del_timer(timer);
 	timer->expires = length; 
+	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
 	add_timer(timer);
 }
 
