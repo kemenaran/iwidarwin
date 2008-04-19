@@ -822,42 +822,42 @@ void spin_unlock_bh( spinlock_t *lock ) {
 #pragma mark -
 #pragma mark timer adaptation
 
-static thread_call_func_t timer_func[99];
+static thread_call_t timer_func[99];
 int timer_func_count=0;
-
-
-
-void test_timer(work_func_t timer0,thread_call_param_t data){
-	
-	struct timer_list2 * timer=(struct timer_list2*)timer0;
-	if(timer && data)
-	{
-		(timer->function)((unsigned long)data);
-	}
-	else
-		IOLog("Error while lauch timer thread\n");
-}
 
 void
 IOPCCardAddTimer(struct timer_list2 * timer)
 {
 IM_HERE_NOW();
+	if (!timer_func[timer->vv]) return;
     uint64_t deadline, timei;
 	if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=0;
+	else timei=10;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
-	if (!timer_func[timer->vv])
-	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
-	return thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
+	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
+}
+
+void test_timer(struct timer_list2 * timer,unsigned long data){
+IM_HERE_NOW();	
+	if(timer && data)
+	{
+		(timer->function)((unsigned long)data);
+		IOPCCardAddTimer(timer);
+	}
+	else
+		IOLog("Error while lauch timer thread\n");
 }
 
 int
 IOPCCardDeleteTimer(struct timer_list2 * timer)
 {
+IM_HERE_NOW();
 	if (!timer_func[timer->vv]) return 0;
-	return thread_call_cancel(timer_func[timer->vv]);
+	thread_call_cancel(timer_func[timer->vv]);
+	timer_func[timer->vv]=NULL;
+	return 0;
 }
 
 int add_timer(struct timer_list2 *timer) {
@@ -877,6 +877,7 @@ IM_HERE_NOW();
 	timer=(struct timer_list2*)IOMalloc(sizeof(struct timer_list2*));
 	timer_func_count++;
 	timer->vv=timer_func_count;
+	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
 }
 
 int mod_timer(struct timer_list2 *timer, int length) {
@@ -5409,7 +5410,6 @@ IM_HERE_NOW();
 	init_timer(&local->sta_cleanup);
 	local->sta_cleanup.expires = jiffies + STA_INFO_CLEANUP_INTERVAL;
 	local->sta_cleanup.data = (unsigned long) local;
-	//FIXME: sta_info_cleanup
 	local->sta_cleanup.function = sta_info_cleanup;
 
 #ifdef CONFIG_MAC80211_DEBUGFS
