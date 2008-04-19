@@ -822,7 +822,7 @@ void spin_unlock_bh( spinlock_t *lock ) {
 #pragma mark -
 #pragma mark timer adaptation
 
-void
+/*void
 IOPCCardAddTimer(struct timer_list * timer)
 {
     uint64_t                    deadline;
@@ -834,29 +834,35 @@ int
 IOPCCardDeleteTimer(struct timer_list * timer)
 {
 	return thread_call_cancel((thread_call_t)timer->function);
-}
+}*/
 
 
 int add_timer(struct timer_list *timer) {
+IM_HERE_NOW();
 	IOPCCardAddTimer(timer);
 	return 0;
 }
 
 int del_timer(struct timer_list *timer) {
-	return IOPCCardDeleteTimer(timer);
+IM_HERE_NOW();
+	IOPCCardDeleteTimer(timer);
+	return 0;
 }
 
 void init_timer(struct timer_list *timer) {
+IM_HERE_NOW();
 	timer=(struct timer_list*)IOMalloc(sizeof(struct timer_list*));
 }
 
 int mod_timer(struct timer_list *timer, int length) {
+IM_HERE_NOW();
 	del_timer(timer);
 	timer->expires = length; 
 	add_timer(timer);
 }
 
 int del_timer_sync(struct timer_list *timer) {
+IM_HERE_NOW();
 	del_timer(timer);
 }
 
