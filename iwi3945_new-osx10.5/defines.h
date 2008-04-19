@@ -72,7 +72,7 @@ printk("BUG!"); \
 #include <IOKit/pccard/k_compat.h>
 #undef add_timer
 #undef del_timer
-#undef mod_timer	
+#undef mod_timer
 #include <IOKit/IOLocks.h>
 
 //#include <IOKit/network/IOPacketQueue.h>
@@ -105,6 +105,13 @@ typedef IOPhysicalAddress dma_addr_t;
 #define __constant_cpu_to_le16(x) cpu_to_le16(x)
 #define le64_to_cpu(x) OSSwapLittleToHostInt64(x)
 #define cpu_to_le64(x) OSSwapHostToLittleInt64(x)
+
+struct timer_list2 {
+        unsigned long expires;
+        void (*function)(unsigned long);
+        unsigned long data;
+		int vv;
+};
 
 //#include "iwi3945.h"
 #include "net/compat.h"
@@ -326,7 +333,7 @@ exec */
 
 struct delayed_work {
     struct work_struct work;
-    struct timer_list timer;
+    struct timer_list2 timer;
 };
 
 
@@ -441,7 +448,7 @@ struct ieee80211_passive_scan {
 	int rx_beacon;
 	int txrx_count;
     
-	struct timer_list timer;
+	struct timer_list2 timer;
     
 	struct sk_buff *skb; /* skb to transmit before changing channels,
      * maybe null for none */
@@ -558,7 +565,7 @@ struct ieee80211_local {
 	struct list_head sta_list;
 	struct list_head deleted_sta_list;
 	struct sta_info *sta_hash[STA_HASH_SIZE];
-	struct timer_list sta_cleanup;
+	struct timer_list2 sta_cleanup;
     
 	unsigned long state[NUM_TX_DATA_QUEUES];
 	struct ieee80211_tx_stored_packet pending_packet[NUM_TX_DATA_QUEUES];
@@ -654,7 +661,7 @@ struct ieee80211_local {
 	u32 channel_use;
 	u32 channel_use_raw;
 	u32 stat_time;
-	struct timer_list stat_timer;
+	struct timer_list2 stat_timer;
     
 	struct work_struct sta_proc_add;
     
@@ -1598,9 +1605,9 @@ struct sta_ts_data {
 #define IEEE80211_MAX_AID 2007
 struct ieee80211_if_sta {
 	enum ieee80211_state state;
-	struct timer_list timer;
+	struct timer_list2 timer;
 	struct work_struct work;
-	struct timer_list admit_timer; /* Recompute EDCA admitted time */
+	struct timer_list2 admit_timer; /* Recompute EDCA admitted time */
 	u8 bssid[ETH_ALEN], prev_bssid[ETH_ALEN];
 	u8 ssid[IEEE80211_MAX_SSID_LEN];
 	size_t ssid_len;
