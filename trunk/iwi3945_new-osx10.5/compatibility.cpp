@@ -7653,27 +7653,30 @@ IM_HERE_NOW();
 	while ((skb = skb_dequeue(&ifsta->skb_queue)))
 		ieee80211_sta_rx_queued_mgmt(dev, skb);
 
-clear_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);
+
 
 	if (ifsta->state != IEEE80211_AUTHENTICATE &&
 	    ifsta->state != IEEE80211_ASSOCIATE &&
 	   // test_and_clear_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request)
 		test_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request)) {
+		clear_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);
 		ieee80211_sta_start_scan(dev, NULL, 0);
 		return;
 	}
 
-clear_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request);
+
 	//if (test_and_clear_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request)) {
 	if (test_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request)) {
+	clear_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request);
 		if (ieee80211_sta_config_auth(dev, ifsta))
 			return;
 		clear_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
 	} else
 	{
-	clear_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
+	
 	// if (!test_and_clear_bit(IEEE80211_STA_REQ_RUN, &ifsta->request))
 	 if (!test_bit(IEEE80211_STA_REQ_RUN, &ifsta->request))
+	 clear_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
 		return;
 	}
 
