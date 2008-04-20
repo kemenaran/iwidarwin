@@ -7799,7 +7799,6 @@ int ieee80211_open(struct ieee80211_local *local)
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 	res = local->ops->add_interface(local_to_hw(local), &conf);
-	res=0;
 	if (res) {
 		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
 			ieee80211_start_hard_monitor(local);
@@ -7810,7 +7809,6 @@ int ieee80211_open(struct ieee80211_local *local)
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
-			res=0;
 		//IOSleep(500);//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
@@ -7819,14 +7817,12 @@ int ieee80211_open(struct ieee80211_local *local)
 					local->ops->stop(local_to_hw(local));
 			} else {
 				res = ieee80211_hw_config(local);
-				res=0;
 				if (res && local->ops->stop)
 					local->ops->stop(local_to_hw(local));
 				//else if (!res && local->apdev)
 				//	dev_open(local->apdev);
 			}
 		}
-		res=0;
 		if (res) {
 			if (local->ops->remove_interface)
 				local->ops->remove_interface(local_to_hw(local),
@@ -7834,7 +7830,6 @@ int ieee80211_open(struct ieee80211_local *local)
 			return res;
 		}
 	}
-	res=0;
 	local->open_count++;
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
