@@ -2209,6 +2209,7 @@ IM_HERE_NOW();
 
 	set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
 	//queue_work(local->hw.workqueue, &ifsta->work);
+	set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);//hack
 	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
 }
 
