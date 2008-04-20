@@ -207,6 +207,8 @@ int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf
 
 bool darwin_iwi3945::init(OSDictionary *dict)
 {
+	fakemac=OSDynamicCast(OSString,dict->getObject("p_mac"))->getCStringNoCopy();
+	
 	return super::init(dict);
 }
 
@@ -375,10 +377,11 @@ void darwin_iwi3945::check_firstup(void)
 	IOLog("check_firstup\n");
 	if (first_up==0) 
 	{
+		IOLog("goto system preferences -> networks and press apply if you keep seeing this\n");
 		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,2000,true);
 		return;
 	}
-	/*disable(fNetif);
+	//disable(fNetif);
 	u8 addr[6];
 	const char *buf=fakemac;
 	int i,n;
@@ -393,12 +396,13 @@ void darwin_iwi3945::check_firstup(void)
 				buf=buf+3;
 			}
 		}
-		IWI_LOG("Setting mac address from parameter to " MAC_FMT "\n",MAC_ARG(addr));
+		IOLog("Setting mac address from parameter to " MAC_FMT "\n",MAC_ARG(addr));
 		ifnet_set_lladdr(fifnet,addr,6);
-		bcopy(addr, priv->mac_addr, ETH_ALEN);
-		bcopy(addr, priv->net_dev->dev_addr, ETH_ALEN);
-		bcopy(addr, priv->ieee->dev->dev_addr,  ETH_ALEN);
-	}*/
+		bcopy(addr, my_mac_addr, ETH_ALEN);
+		struct net_device *dev=hw_to_local(get_my_hw())->mdev;
+		bcopy(addr, dev->dev_addr, ETH_ALEN);
+		setProperty(kIOMACAddress, my_mac_addr, kIOEthernetAddressSize);
+	}
 	queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
 }
 

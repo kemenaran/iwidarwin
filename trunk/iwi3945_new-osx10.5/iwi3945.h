@@ -396,5 +396,6 @@ class darwin_iwi3945 : public IOEthernetController
 	int userInterfaceLink; //this flag will be used to abort all non-necessary background operation while
 							//the user is connected to the driver.
 		struct iwl3945_priv *priv;
+		const char *fakemac;
 							
     };
