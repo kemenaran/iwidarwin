@@ -7811,7 +7811,7 @@ int ieee80211_open(struct ieee80211_local *local)
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
 			res=0;
-		IOSleep(500);//hack
+		//IOSleep(500);//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
