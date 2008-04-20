@@ -76,7 +76,7 @@ static int iwl3945_tx_queue_update_write_ptr(struct iwl3945_priv *priv,
 
 static int iwl3945_param_disable_hw_scan; /* def: 0 = use 3945's h/w scan */
 //static int iwl3945_param_debug;    /* def: 0 = minimal debug log messages */
-static int iwl3945_param_debug =  0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
+static int iwl3945_param_debug =  0;//0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
 /*
 #define IWL_DL_INFO          (1<<0)
 #define IWL_DL_MAC80211      (1<<1)
@@ -6868,7 +6868,7 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 //FIXME: Hack for restart
 	//run_add_interface();
 	priv->interface_id=0;
-	(hw_to_local(priv->hw))->open_count=0;
+	//(hw_to_local(priv->hw))->open_count=0;
 	ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
 	//queue_work(priv->workqueue, &priv->up); // maybe kp here
