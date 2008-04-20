@@ -265,7 +265,7 @@ static void iwl3945_bg_rate_scale_flush(unsigned long data)
 		IWL_DEBUG_RATE("new flush period: %d msec ave %d\n",
 			       duration, packet_count);
 
-		mod_timer(&rs_sta->rate_scale_flush, jiffies +
+		mod_timer(&rs_sta->rate_scale_flush, /*jiffies +*/
 			  rs_sta->flush_time);
 
 		rs_sta->last_partial_flush = jiffies;
@@ -553,7 +553,7 @@ static void rs_tx_status(void *priv_rate,
 
 		rs_sta->flush_pending = 1;
 		mod_timer(&rs_sta->rate_scale_flush,
-			  jiffies + rs_sta->flush_time);
+			  /*jiffies +*/ rs_sta->flush_time);
 	}
 
 	spin_unlock_irqrestore(&rs_sta->lock, flags);

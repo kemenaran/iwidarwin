@@ -829,7 +829,7 @@ void
 IOPCCardAddTimer(struct timer_list2 * timer)
 {
 IM_HERE_NOW();
-	if (!timer_func[timer->vv]) return;
+	if (!timer->on) return;
     uint64_t deadline, timei;
 	if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
@@ -843,8 +843,13 @@ void test_timer(struct timer_list2 * timer,unsigned long data){
 IM_HERE_NOW();	
 	if(timer && data)
 	{
+		if (timer->on)
+		{
 		(timer->function)((unsigned long)data);
 		IOPCCardAddTimer(timer);
+		}
+		else
+		IOLog("timer is off\n");
 	}
 	else
 		IOLog("Error while lauch timer thread\n");
@@ -854,9 +859,9 @@ int
 IOPCCardDeleteTimer(struct timer_list2 * timer)
 {
 IM_HERE_NOW();
-	if (!timer_func[timer->vv]) return 0;
+	if (timer->on) return 0;
 	thread_call_cancel(timer_func[timer->vv]);
-	timer_func[timer->vv]=NULL;
+	timer->on=0;
 	return 0;
 }
 
@@ -878,13 +883,14 @@ IM_HERE_NOW();
 	timer_func_count++;
 	timer->vv=timer_func_count;
 	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
+	timer->on=1;
 }
 
 int mod_timer(struct timer_list2 *timer, int length) {
 IM_HERE_NOW();
 	del_timer(timer);
 	timer->expires = length; 
-	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
+	timer->on=1;
 	add_timer(timer);
 }
 
@@ -3665,7 +3671,7 @@ IM_HERE_NOW();
 
 	ieee80211_send_assoc(dev, ifsta);
 
-	mod_timer(&ifsta->timer, jiffies + IEEE80211_ASSOC_TIMEOUT);
+	mod_timer(&ifsta->timer, /*jiffies +*/ IEEE80211_ASSOC_TIMEOUT);
 }
 
 static void ieee80211_auth_completed(struct net_device *dev,
@@ -4046,10 +4052,10 @@ IM_HERE_NOW();
 		memset(wrqu.ap_addr.sa_data, 0, ETH_ALEN);
 		wrqu.ap_addr.sa_family = ARPHRD_ETHER;
 		wireless_send_event(dev, SIOCGIWAP, &wrqu, NULL);*/
-		mod_timer(&ifsta->timer, jiffies +
+		mod_timer(&ifsta->timer, /*jiffies +*/
 				      IEEE80211_MONITORING_INTERVAL + 30 * HZ);
 	} else {
-		mod_timer(&ifsta->timer, jiffies +
+		mod_timer(&ifsta->timer, /*jiffies +*/
 				      IEEE80211_MONITORING_INTERVAL);
 	}
 }
@@ -6826,7 +6832,7 @@ IM_HERE_NOW();
 	    ifsta->state == IEEE80211_ASSOCIATE ||
 	    ifsta->state == IEEE80211_ASSOCIATED) {
 		ifsta->state = IEEE80211_AUTHENTICATE;
-		mod_timer(&ifsta->timer, jiffies +
+		mod_timer(&ifsta->timer, /*jiffies +*/
 				      IEEE80211_RETRY_AUTH_INTERVAL);
 	}
 
@@ -6867,7 +6873,7 @@ IM_HERE_NOW();
 
 	if (ifsta->state == IEEE80211_ASSOCIATED) {
 		ifsta->state = IEEE80211_ASSOCIATE;
-		mod_timer(&ifsta->timer, jiffies +
+		mod_timer(&ifsta->timer, /*jiffies +*/
 				      IEEE80211_RETRY_AUTH_INTERVAL);
 	}
 
@@ -7230,7 +7236,7 @@ static int ieee80211_sta_join_ibss(struct net_device *dev,
 	}
 
 	ifsta->state = IEEE80211_IBSS_JOINED;
-	mod_timer(&ifsta->timer, jiffies + IEEE80211_IBSS_MERGE_INTERVAL);
+	mod_timer(&ifsta->timer, /*jiffies +*/ IEEE80211_IBSS_MERGE_INTERVAL);
 
 	ieee80211_rx_bss_put(dev, bss);
 
@@ -7372,7 +7378,7 @@ int ieee80211_sta_find_ibss(struct net_device *dev,
 	/* Selected IBSS not found in current scan results - try to scan */
 	if (ifsta->state == IEEE80211_IBSS_JOINED &&
 	    !ieee80211_sta_active_ibss(dev)) {
-		mod_timer(&ifsta->timer, jiffies +
+		mod_timer(&ifsta->timer, /*jiffies +*/
 				      IEEE80211_IBSS_MERGE_INTERVAL);
 	} else if (time_after(jiffies, local->last_scan_completed +
 			      IEEE80211_SCAN_INTERVAL)) {
@@ -7401,7 +7407,7 @@ int ieee80211_sta_find_ibss(struct net_device *dev,
 		}
 
 		ifsta->state = IEEE80211_IBSS_SEARCH;
-		mod_timer(&ifsta->timer, jiffies + interval);
+		mod_timer(&ifsta->timer, /*jiffies +*/ interval);
 		return 0;
 	}
 
@@ -7587,7 +7593,7 @@ static void ieee80211_authenticate(struct net_device *dev,
 
 	ieee80211_send_auth(dev, ifsta, 1, NULL, 0, 0);
 
-	mod_timer(&ifsta->timer, jiffies + IEEE80211_AUTH_TIMEOUT);
+	mod_timer(&ifsta->timer, /*jiffies +*/ IEEE80211_AUTH_TIMEOUT);
 }
 
 static void ieee80211_sta_expire(struct net_device *dev)
@@ -7611,7 +7617,7 @@ static void ieee80211_sta_merge_ibss(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();
-	mod_timer(&ifsta->timer, jiffies + IEEE80211_IBSS_MERGE_INTERVAL);
+	mod_timer(&ifsta->timer, /*jiffies +*/ IEEE80211_IBSS_MERGE_INTERVAL);
 
 	ieee80211_sta_expire(dev);
 	if (ieee80211_sta_active_ibss(dev))
