@@ -2192,6 +2192,9 @@ static inline int identical_mac_addr_allowed(int type1, int type2)
 		  type2 == IEEE80211_IF_TYPE_VLAN)));
 }
 
+static u8 my_mac_addr[6];
+
+
 //this must be last lines in file. the includes are broken
 #include "compatibility.h"	
 

@@ -23,8 +23,8 @@
 		<key>com.apple.kpi.libkern</key>
 		<string>8.0.0b2</string>
 		<key>com.apple.kpi.iokit</key>
-		<string>8.0.0b2</string>
- */
+		<string>8.0.0b2</string>	
+		 	 */
 
 #define NO_SPIN_LOCKS 0
 #define NO_MUTEX_LOCKS 0
@@ -89,7 +89,7 @@ static pci_driver * my_drv;
 struct pci_dev* my_pci_dev;
 IOPCIDevice* my_pci_device;
 IOMemoryMap	*				my_map;
-u8 my_mac_addr[6];
+
 ifnet_t						my_fifnet;
 
 static int next_thread=0;
@@ -829,11 +829,15 @@ void
 IOPCCardAddTimer(struct timer_list2 * timer)
 {
 IM_HERE_NOW();
-	if (!timer->on) return;
+	if (!timer->on) 
+	{
+		IOLog("timer not on\n");
+		return;
+	}
     uint64_t deadline, timei;
 	if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=10;
+	else timei=1000;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
@@ -879,7 +883,7 @@ IM_HERE_NOW();
 
 void init_timer(struct timer_list2 *timer) {
 IM_HERE_NOW();
-	timer=(struct timer_list2*)IOMalloc(sizeof(struct timer_list2*));
+	//timer=(struct timer_list2*)IOMalloc(sizeof(struct timer_list2*));
 	timer_func_count++;
 	timer->vv=timer_func_count;
 	timer->on=1;
@@ -2187,14 +2191,16 @@ static inline void setup_timer(struct timer_list2 * timer,
                                  void (*function)(unsigned long),
                                  unsigned long data)
  {
-         init_timer(timer);
-		 timer->function = function;
-         timer->data = data;
-         add_timer(timer);
+ IM_HERE_NOW();
+	init_timer(timer);
+	timer->function = function;
+    timer->data = data;
+    add_timer(timer);
  }
 
 void ieee80211_sta_timer(unsigned long data)
 {
+IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata =
 		(struct ieee80211_sub_if_data *) data;
 	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
@@ -2279,7 +2285,7 @@ IM_HERE_NOW();
 	if (!ndev)
 		return -ENOMEM;
 
-	char ii[4] = "en1";
+	char ii[4]="en1";
 	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,ndev->name,sizeof(ii));
 	
@@ -2718,7 +2724,7 @@ IM_HERE_NOW();
 	if (result < 0) return -1;
 	//	goto fail_sta_info;
 
-	char ii[4] = "en1";
+	char ii[4]="en1";
 	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,local->mdev->name,sizeof(ii));
 	/*rtnl_lock();
@@ -2755,7 +2761,8 @@ IM_HERE_NOW();
 	//ieee80211_install_qdisc(local->mdev);
 
 	/* add one default STA interface */
-	result = ieee80211_if_add(local->mdev, "en1", NULL,
+
+	result = ieee80211_if_add(local->mdev, ii, NULL,
 				  IEEE80211_IF_TYPE_STA);
 	if (result)
 		printk(KERN_WARNING "%s: Failed to add default virtual iface\n",
@@ -5400,7 +5407,7 @@ IM_HERE_NOW();
 	}
 	spin_unlock_bh(&local->sta_lock);
 
-	local->sta_cleanup.expires = jiffies + STA_INFO_CLEANUP_INTERVAL;
+	local->sta_cleanup.expires = /*jiffies +*/ STA_INFO_CLEANUP_INTERVAL;
 	add_timer(&local->sta_cleanup);
 }
 
@@ -5415,7 +5422,7 @@ IM_HERE_NOW();
 	INIT_LIST_HEAD(&local->deleted_sta_list);
 
 	init_timer(&local->sta_cleanup);
-	local->sta_cleanup.expires = jiffies + STA_INFO_CLEANUP_INTERVAL;
+	local->sta_cleanup.expires = /*jiffies +*/ STA_INFO_CLEANUP_INTERVAL;
 	local->sta_cleanup.data = (unsigned long) local;
 	local->sta_cleanup.function = sta_info_cleanup;
 
@@ -6023,7 +6030,7 @@ IM_HERE_NOW();
          * scan to start only if the number of packets is below the
          * threshold. */
         local->scan.txrx_count = 0;
-        local->scan.timer.expires = jiffies + HZ;
+        local->scan.timer.expires = /*jiffies +*/ HZ;
         add_timer(&local->scan.timer);
         return;
     }
@@ -6075,21 +6082,21 @@ IM_HERE_NOW();
         local->scan.time;
         usec += 1000000L / HZ - 1;
         usec /= 1000000L / HZ;
-        local->scan.timer.expires = jiffies + usec;
+        local->scan.timer.expires = /*jiffies +*/ usec;
     } else {
         local->scan.in_scan = 0;
         if (conf->skb)
             dev_kfree_skb(conf->skb);
         ieee80211_netif_oper(local_to_hw(local), NETIF_WAKE);
         if (ret == -EAGAIN) {
-            local->scan.timer.expires = jiffies +
+            local->scan.timer.expires = /*jiffies +*/
             (local->scan.interval * HZ / 100);
             local->scan.mode = old_mode;
             local->scan.chan_idx = old_chan_idx;
         } else {
             printk(KERN_DEBUG "%s: Got unknown error from "
                    "passive_scan %d\n", local->mdev->name, ret);
-            local->scan.timer.expires = jiffies +
+            local->scan.timer.expires = /*jiffies +*/
             (local->scan.interval * HZ);
         }
         local->scan.in_scan = 0;
@@ -6137,7 +6144,7 @@ IM_HERE_NOW();
     /* Use random interval of scan.interval .. 2 * scan.interval */
     wait = (local->scan.interval * HZ * ((net_random() & 127) + 128)) /
     128;
-    local->scan.timer.expires = jiffies + wait;
+    local->scan.timer.expires = /*jiffies +*/ wait;
     
     add_timer(&local->scan.timer);
 }
@@ -6176,7 +6183,7 @@ IM_HERE_NOW();
     if (local->scan.interval == 0 && !local->scan.in_scan) {
         /* Passive scanning is disabled - keep the timer always
          * running to make code cleaner. */
-        local->scan.timer.expires = jiffies + 10 * HZ;
+        local->scan.timer.expires = /*jiffies +*/ 10 * HZ;
         add_timer(&local->scan.timer);
         return;
     }
@@ -6221,7 +6228,7 @@ IM_HERE_NOW();
     local->scan.time = 10000;
     local->scan.timer.function = ieee80211_scan_handler;
     local->scan.timer.data = (unsigned long) local;
-    local->scan.timer.expires = jiffies + local->scan.interval * HZ;
+    local->scan.timer.expires = /*jiffies +*/ local->scan.interval * HZ;
     add_timer(&local->scan.timer);
     
     /* Create a CTS from for broadcasting before
@@ -6498,7 +6505,6 @@ static thread_call_t tlink[256];//for the queue work...
 */
 void queue_td(int num , thread_call_func_t func)
 {
-IM_HERE_NOW();
 	if (tlink[num])
 	{
 		thread_call_cancel(tlink[num]);
@@ -6589,8 +6595,6 @@ int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay) {
 	struct work_struct tmp = work->work;
 	struct work_struct *tmp2 = &tmp;
-	//fix delay!!
-	delay=delay*10;
 	queue_te(tmp2->number,(thread_call_func_t)tmp2->func,my_hw->priv,delay,true);
     return 0;
 }
@@ -7788,6 +7792,7 @@ int ieee80211_open(struct ieee80211_local *local)
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 	res = local->ops->add_interface(local_to_hw(local), &conf);
+	res=0;
 	if (res) {
 		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
 			ieee80211_start_hard_monitor(local);
@@ -7798,6 +7803,7 @@ int ieee80211_open(struct ieee80211_local *local)
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
+			res=0;
 		IOSleep(500);//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
@@ -7806,12 +7812,14 @@ int ieee80211_open(struct ieee80211_local *local)
 					local->ops->stop(local_to_hw(local));
 			} else {
 				res = ieee80211_hw_config(local);
+				res=0;
 				if (res && local->ops->stop)
 					local->ops->stop(local_to_hw(local));
 				//else if (!res && local->apdev)
 				//	dev_open(local->apdev);
 			}
 		}
+		res=0;
 		if (res) {
 			if (local->ops->remove_interface)
 				local->ops->remove_interface(local_to_hw(local),
