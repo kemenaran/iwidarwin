@@ -859,7 +859,7 @@ int
 IOPCCardDeleteTimer(struct timer_list2 * timer)
 {
 IM_HERE_NOW();
-	if (timer->on) return 0;
+	if (!timer->on) return 0;
 	thread_call_cancel(timer_func[timer->vv]);
 	timer->on=0;
 	return 0;
@@ -882,8 +882,8 @@ IM_HERE_NOW();
 	timer=(struct timer_list2*)IOMalloc(sizeof(struct timer_list2*));
 	timer_func_count++;
 	timer->vv=timer_func_count;
-	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
 	timer->on=1;
+	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
 }
 
 int mod_timer(struct timer_list2 *timer, int length) {
@@ -6498,6 +6498,7 @@ static thread_call_t tlink[256];//for the queue work...
 */
 void queue_td(int num , thread_call_func_t func)
 {
+IM_HERE_NOW();
 	if (tlink[num])
 	{
 		thread_call_cancel(tlink[num]);
@@ -6505,6 +6506,7 @@ void queue_td(int num , thread_call_func_t func)
 }
 
 void test_function(work_func_t param0,thread_call_param_t param1){
+IM_HERE_NOW();
 	if(param0 && param1)
 		(param0)((work_struct*)param1);
 	else
@@ -6515,6 +6517,7 @@ void test_function(work_func_t param0,thread_call_param_t param1){
 */
 void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start)
 {
+IM_HERE_NOW();
 	//par=my_hw->priv;
 	//thread_call_func_t my_func;
 	if (tlink[num])
@@ -6523,7 +6526,10 @@ void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 
 		tlink[num]=thread_call_allocate((thread_call_func_t)test_function,(void*)func);
 	uint64_t timei2;
 	if (timei)
+	{
 		clock_interval_to_deadline(timei,kMillisecondScale,&timei2);
+		IOLog("timei %d timei2 %d\n",timei,timei2);
+	}
 	int r;
 	if (start==true && tlink[num])
 	{
