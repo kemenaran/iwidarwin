@@ -111,6 +111,7 @@ struct timer_list2 {
         void (*function)(unsigned long);
         unsigned long data;
 		int vv;
+		int on;
 };
 
 //#include "iwi3945.h"
