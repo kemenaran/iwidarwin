@@ -3609,7 +3609,7 @@ static void iwl3945_rx_reply_alive(struct iwl3945_priv *priv,
 	/* We delay the ALIVE response by 5ms to
 	 * give the HW RF Kill time to activate... */
 	if (palive->is_valid == UCODE_VALID_OK)
-		queue_delayed_work(priv->workqueue, pwork,50);//hack
+		queue_delayed_work(priv->workqueue, pwork,5/10);//hack
 				  // msecs_to_jiffies(5));
 	else
 		IWL_WARNING("uCode did not respond OK.\n");
@@ -6868,7 +6868,7 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 //FIXME: Hack for restart
 	//run_add_interface();
 	priv->interface_id=0;
-	//(hw_to_local(priv->hw))->open_count=0;
+	(hw_to_local(priv->hw))->open_count=0;
 	ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
 	//queue_work(priv->workqueue, &priv->up); // maybe kp here
