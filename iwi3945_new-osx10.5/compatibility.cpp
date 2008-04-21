@@ -7794,6 +7794,11 @@ int ieee80211_open(struct ieee80211_local *local)
 		return 0;
 	}
 
+	memcpy(dev->dev_addr, my_mac_addr, ETH_ALEN);//hack
+	char ii[4];
+	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
+	bcopy(ii,dev->name,sizeof(ii));
+	
 	//ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
 	conf.type = sdata->type;
