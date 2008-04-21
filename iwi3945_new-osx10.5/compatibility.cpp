@@ -2205,7 +2205,7 @@ IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata =
 		(struct ieee80211_sub_if_data *) data;
 	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
-	struct ieee80211_local *local = wdev_priv(&sdata->wdev);
+	struct ieee80211_local *local = wdev_priv(&sdata->dev);//wdev);
 
 	set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
 	//queue_work(local->hw.workqueue, &ifsta->work);
@@ -7814,7 +7814,7 @@ int ieee80211_open(struct ieee80211_local *local)
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
-		//IOSleep(500);//hack
+		IOSleep(50);//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {

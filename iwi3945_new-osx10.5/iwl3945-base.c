@@ -2470,7 +2470,8 @@ static int iwl3945_scan_initiate(struct iwl3945_priv *priv)
 
 	if (test_bit(STATUS_SCANNING, &priv->status)) {
 		IWL_DEBUG_SCAN("Scan already in progress.\n");
-		return -EAGAIN;
+		clear_bit(STATUS_SCANNING, &priv->status);//hack
+		//return -EAGAIN;
 	}
 
 	if (test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
@@ -3609,8 +3610,7 @@ static void iwl3945_rx_reply_alive(struct iwl3945_priv *priv,
 	/* We delay the ALIVE response by 5ms to
 	 * give the HW RF Kill time to activate... */
 	if (palive->is_valid == UCODE_VALID_OK)
-		queue_delayed_work(priv->workqueue, pwork,5/10);//hack
-				  // msecs_to_jiffies(5));
+		queue_delayed_work(priv->workqueue, pwork, msecs_to_jiffies(5));
 	else
 		IWL_WARNING("uCode did not respond OK.\n");
 }
