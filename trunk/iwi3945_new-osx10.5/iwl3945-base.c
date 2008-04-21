@@ -6868,7 +6868,7 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 //FIXME: Hack for restart
 	//run_add_interface();
 	priv->interface_id=0;
-	(hw_to_local(priv->hw))->open_count=0;
+	//(hw_to_local(priv->hw))->open_count=0;
 	ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
 	//queue_work(priv->workqueue, &priv->up); // maybe kp here
@@ -7426,7 +7426,8 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 	if (priv->interface_id != if_id) {
 		IWL_DEBUG_MAC80211("leave - interface_id != if_id\n");
 		mutex_unlock(&priv->mutex);
-		return 0;
+		//return 0;
+		priv->interface_id = if_id;//hack
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {

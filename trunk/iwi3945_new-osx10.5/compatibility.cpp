@@ -2282,11 +2282,14 @@ IM_HERE_NOW();
 	int ret;
 
 	//ASSERT_RTNL();
-	ndev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
-			    name, NULL);//ieee80211_if_setup);
+	ndev = dev;//hack
+	//alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+	//		    name, NULL);//ieee80211_if_setup);
 	if (!ndev)
+	{
+		IOLog("alloc_netdev failed\n");
 		return -ENOMEM;
-
+	}
 	char ii[4]="en1";
 	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,ndev->name,sizeof(ii));
@@ -2725,6 +2728,7 @@ IM_HERE_NOW();
 	result = sta_info_start(local);
 	if (result < 0) return -1;
 	//	goto fail_sta_info;
+
 
 	char ii[4]="en1";
 	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
@@ -7814,7 +7818,7 @@ int ieee80211_open(struct ieee80211_local *local)
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
-		IOSleep(50);//hack
+		IOSleep(300);//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
