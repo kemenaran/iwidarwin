@@ -2282,9 +2282,8 @@ IM_HERE_NOW();
 	int ret;
 
 	//ASSERT_RTNL();
-	ndev = dev;//hack
-	//alloc_netdev(sizeof(struct ieee80211_sub_if_data),
-	//		    name, NULL);//ieee80211_if_setup);
+	ndev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+			    name, NULL);//ieee80211_if_setup);
 	if (!ndev)
 	{
 		IOLog("alloc_netdev failed\n");
