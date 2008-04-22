@@ -32,10 +32,11 @@
 #ifndef __iwl_4965_h__
 #define __iwl_4965_h__
 
+#ifdef LINUX
 #include <linux/pci.h> /* for struct pci_device_id */
 #include <linux/kernel.h>
 #include <net/ieee80211_radiotap.h>
-
+#endif
 /* Hardware specific file defines the PCI IDs table for that hardware module */
 extern struct pci_device_id iwl4965_hw_card_ids[];
 

@@ -23,7 +23,9 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *
  *****************************************************************************/
+#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 
+#ifdef LINUX
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/version.h>
@@ -38,9 +40,11 @@
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/delay.h>
-
+#else
+#include "defines.h"
 #include "iwl-4965.h"
 #include "iwl-helpers.h"
+#endif
 
 static void iwl4965_hw_card_show_info(struct iwl4965_priv *priv);
 
@@ -294,7 +298,7 @@ static int iwl4965_kw_alloc(struct iwl4965_priv *priv)
 	struct iwl4965_kw *kw = &priv->kw;
 
 	kw->size = IWL4965_KW_SIZE;	/* TBW need set somewhere else */
-	kw->v_addr = pci_alloc_consistent(dev, kw->size, &kw->dma_addr);
+	kw->v_addr = pci_alloc_consistent(dev, kw->size, &kw->dma_addr, kw->size);
 	if (!kw->v_addr)
 		return -ENOMEM;
 
@@ -1755,7 +1759,7 @@ int iwl4965_hw_set_hw_setting(struct iwl4965_priv *priv)
 	priv->hw_setting.shared_virt =
 	    pci_alloc_consistent(priv->pci_dev,
 				 sizeof(struct iwl4965_shared),
-				 &priv->hw_setting.shared_phys);
+				 &priv->hw_setting.shared_phys,sizeof(struct iwl4965_shared*));
 
 	if (!priv->hw_setting.shared_virt)
 		return -1;
@@ -3446,7 +3450,7 @@ static void iwl4965_rx_calc_noise(struct iwl4965_priv *priv)
 
 void iwl4965_hw_rx_statistics(struct iwl4965_priv *priv, struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	int change;
 	s32 temp;
 
@@ -3513,7 +3517,7 @@ static void iwl4965_handle_data_packet(struct iwl4965_priv *priv, int is_data,
 				       struct iwl4965_rx_mem_buffer *rxb,
 				       struct ieee80211_rx_status *stats)
 {
-	struct iwl4965_rx_packet *pkt = (struct iwl4965_rx_packet *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (struct iwl4965_rx_packet *)skb_data(rxb->skb);
 	struct iwl4965_rx_phy_res *rx_start = (include_phy) ?
 	    (struct iwl4965_rx_phy_res *)&(pkt->u.raw[0]) : NULL;
 	struct ieee80211_hdr *hdr;
@@ -3578,7 +3582,7 @@ static void iwl4965_handle_data_packet(struct iwl4965_priv *priv, int is_data,
 	}
 
 	stats->flag = 0;
-	hdr = (struct ieee80211_hdr *)rxb->skb->data;
+	hdr = (struct ieee80211_hdr *)skb_data(rxb->skb);
 
 	if (iwl4965_param_hwcrypto)
 		iwl4965_set_decrypted_flag(priv, rxb->skb, ampdu_status, stats);
@@ -3739,7 +3743,7 @@ static void iwl4965_update_ps_mode(struct iwl4965_priv *priv, u16 ps_bit, u8 *ad
 static void iwl4965_rx_reply_rx(struct iwl4965_priv *priv,
 				struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	/* Use phy data (Rx signal strength, etc.) contained within
 	 *   this rx packet for legacy frames,
 	 *   or phy data cached from REPLY_RX_PHY_CMD for HT frames. */
@@ -4001,7 +4005,7 @@ static void iwl4965_rx_reply_rx(struct iwl4965_priv *priv,
 static void iwl4965_rx_reply_rx_phy(struct iwl4965_priv *priv,
 				    struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	priv->last_phy_res[0] = 1;
 	memcpy(&priv->last_phy_res[1], &(pkt->u.raw[0]),
 	       sizeof(struct iwl4965_rx_phy_res));
@@ -4764,10 +4768,10 @@ void iwl4965_hw_rx_handler_setup(struct iwl4965_priv *priv)
 
 void iwl4965_hw_setup_deferred_work(struct iwl4965_priv *priv)
 {
-	INIT_WORK(&priv->txpower_work, iwl4965_bg_txpower_work);
-	INIT_WORK(&priv->statistics_work, iwl4965_bg_statistics_work);
+	INIT_WORK(&priv->txpower_work, iwl4965_bg_txpower_work,20);
+	INIT_WORK(&priv->statistics_work, iwl4965_bg_statistics_work,22);
 #ifdef CONFIG_IWL4965_SENSITIVITY
-	INIT_WORK(&priv->sensitivity_work, iwl4965_bg_sensitivity_work);
+	INIT_WORK(&priv->sensitivity_work, iwl4965_bg_sensitivity_work,23);
 #endif
 #ifdef CONFIG_IWL4965_HT
 #ifdef CONFIG_IWL4965_HT_AGG

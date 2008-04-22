@@ -23,6 +23,7 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *
  *****************************************************************************/
+#ifdef LINUX 
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/skbuff.h>
@@ -40,7 +41,9 @@
 #include <linux/wireless.h>
 
 #include "../net/mac80211/ieee80211_rate.h"
-
+#else //defined LINUX
+#include "defines.h"
+#endif
 #include "iwl-4965.h"
 #include "iwl-helpers.h"
 
@@ -664,7 +667,7 @@ static void rs_tx_status(void *priv_rate, struct net_device *dev,
 	struct iwl4965_lq_sta *lq_sta;
 	struct iwl4965_link_quality_cmd *table;
 	struct sta_info *sta;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	struct iwl4965_priv *priv = (struct iwl4965_priv *)priv_rate;
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct iwl4965_rate_scale_data *window = NULL;
@@ -2023,7 +2026,7 @@ static struct ieee80211_rate *rs_get_rate(void *priv_rate,
 
 	int i;
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	struct sta_info *sta;
 	u16 fc;
 	struct iwl4965_priv *priv = (struct iwl4965_priv *)priv_rate;
