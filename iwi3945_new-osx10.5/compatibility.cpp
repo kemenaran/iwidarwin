@@ -7819,6 +7819,7 @@ IM_HERE_NOW();
 	
 	ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
+	sdata->type=IEEE80211_IF_TYPE_STA;//hack
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 	
