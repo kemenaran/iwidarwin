@@ -2460,7 +2460,8 @@ static int iwl3945_scan_initiate(struct iwl3945_priv *priv)
 {
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {
 		IWL_ERROR("APs don't scan.\n");
-		return 0;
+		priv->iw_mode = IEEE80211_IF_TYPE_STA;//hack
+		//return 0;
 	}
 
 	if (!iwl3945_is_ready_rf(priv)) {
@@ -7541,9 +7542,10 @@ static int iwl3945_mac_hw_scan(struct ieee80211_hw *hw, u8 *ssid, size_t len)
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {	/* APs don't scan */
-		rc = -EIO;
+		//rc = -EIO;
 		IWL_ERROR("ERROR: APs don't scan\n");
-		goto out_unlock;
+		priv->iw_mode = IEEE80211_IF_TYPE_STA;//hack
+		//goto out_unlock;
 	}
 
 	/* we don't schedule scan within next_scan_jiffies period */
