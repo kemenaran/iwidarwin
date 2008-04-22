@@ -4707,8 +4707,8 @@ IM_HERE_NOW();
 
 	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx->dev);
 	if ((sdata->type == IEEE80211_IF_TYPE_STA ||
-	     sdata->type == IEEE80211_IF_TYPE_IBSS) &&
-	    !rx->local->user_space_mlme) {
+	     sdata->type == IEEE80211_IF_TYPE_IBSS) /*&&
+	    !rx->local->user_space_mlme*/) {
 		ieee80211_sta_rx_mgmt(rx->dev, rx->skb, rx->u.rx.status);
 	} else {
 		/* Management frames are sent to hostapd for processing */
@@ -7765,8 +7765,24 @@ IM_HERE_NOW();
 
 }
 
+static inline void ieee80211_start_soft_monitor(struct ieee80211_local *local)
+{
+IM_HERE_NOW();
+	struct ieee80211_if_init_conf conf;
+
+	if (local->open_count && local->open_count == local->monitors &&
+	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER) &&
+	    local->ops->remove_interface) {
+		conf.if_id = -1;
+		conf.type = IEEE80211_IF_TYPE_MNTR;
+		conf.mac_addr = NULL;
+		local->ops->remove_interface(local_to_hw(local), &conf);
+	}
+}
+
 int ieee80211_open(struct ieee80211_local *local)
 {
+IM_HERE_NOW();
 	struct net_device *dev=local->mdev;
 	struct ieee80211_sub_if_data *sdata, *nsdata;
 	struct ieee80211_if_init_conf conf;
@@ -7801,7 +7817,7 @@ int ieee80211_open(struct ieee80211_local *local)
 	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,dev->name,sizeof(ii));
 	
-	//ieee80211_start_soft_monitor(local);
+	ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;

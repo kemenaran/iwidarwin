@@ -76,7 +76,7 @@ static int iwl3945_tx_queue_update_write_ptr(struct iwl3945_priv *priv,
 
 static int iwl3945_param_disable_hw_scan; /* def: 0 = use 3945's h/w scan */
 //static int iwl3945_param_debug;    /* def: 0 = minimal debug log messages */
-static int iwl3945_param_debug =  0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
+static int iwl3945_param_debug =  0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_TEMP);
 /*
 #define IWL_DL_INFO          (1<<0)
 #define IWL_DL_MAC80211      (1<<1)
@@ -5245,12 +5245,12 @@ static int iwl3945_init_channel_map(struct iwl3945_priv *priv)
 			ch_info->flags = eeprom_ch_info[ch].flags;
 
 			if (!(is_channel_valid(ch_info))) {
-//				IWL_DEBUG_INFO("Ch. %d Flags %x [%sGHz] - "
-//					       "No traffic\n",
-//					       ch_info->channel,
-//					       ch_info->flags,
-//					       is_channel_a_band(ch_info) ?
-//					       "5.2" : "2.4");
+				IWL_DEBUG_INFO("Ch. %d Flags %x [%sGHz] - "
+					       "No traffic\n",
+					       ch_info->channel,
+					       ch_info->flags,
+					       is_channel_a_band(ch_info) ?
+					       "5.2" : "2.4");
 				ch_info++;
 				continue;
 			}
@@ -5261,24 +5261,24 @@ static int iwl3945_init_channel_map(struct iwl3945_priv *priv)
 			ch_info->scan_power = eeprom_ch_info[ch].max_power_avg;
 			ch_info->min_power = 0;
 
-//			IWL_DEBUG_INFO("Ch. %d [%sGHz] %s%s%s%s%s%s(0x%02x"
-//				       " %ddBm): Ad-Hoc %ssupported\n",
-//				       ch_info->channel,
-//				       is_channel_a_band(ch_info) ?
-//				       "5.2" : "2.4",
-//				       CHECK_AND_PRINT(IBSS),
-//				       CHECK_AND_PRINT(ACTIVE),
-//				       CHECK_AND_PRINT(RADAR),
-//				       CHECK_AND_PRINT(WIDE),
-//				       CHECK_AND_PRINT(NARROW),
-//				       CHECK_AND_PRINT(DFS),
-//				       eeprom_ch_info[ch].flags,
-//				       eeprom_ch_info[ch].max_power_avg,
-//				       ((eeprom_ch_info[ch].
-//					 flags & EEPROM_CHANNEL_IBSS)
-//					&& !(eeprom_ch_info[ch].
-//					     flags & EEPROM_CHANNEL_RADAR))
-//				       ? "" : "not ");
+			IWL_DEBUG_INFO("Ch. %d [%sGHz] %s%s%s%s%s%s(0x%02x"
+				       " %ddBm): Ad-Hoc %ssupported\n",
+				       ch_info->channel,
+				       is_channel_a_band(ch_info) ?
+				       "5.2" : "2.4",
+				       CHECK_AND_PRINT(IBSS),
+				       CHECK_AND_PRINT(ACTIVE),
+				       CHECK_AND_PRINT(RADAR),
+				       CHECK_AND_PRINT(WIDE),
+				       CHECK_AND_PRINT(NARROW),
+				       CHECK_AND_PRINT(DFS),
+				       eeprom_ch_info[ch].flags,
+				       eeprom_ch_info[ch].max_power_avg,
+				       ((eeprom_ch_info[ch].
+					 flags & EEPROM_CHANNEL_IBSS)
+					&& !(eeprom_ch_info[ch].
+					     flags & EEPROM_CHANNEL_RADAR))
+				       ? "" : "not ");
 
 			/* Set the user_txpower_limit to the highest power
 			 * supported by any channel */
@@ -5552,10 +5552,10 @@ static int iwl3945_init_geos(struct iwl3945_priv *priv)
 		ch = &priv->channel_info[i];
 
 		if (!is_channel_valid(ch)) {
-//			IWL_DEBUG_INFO("Channel %d [%sGHz] is restricted -- "
-//				    "skipping.\n",
-//				    ch->channel, is_channel_a_band(ch) ?
-//				    "5.2" : "2.4");
+			IWL_DEBUG_INFO("Channel %d [%sGHz] is restricted -- "
+				    "skipping.\n",
+				    ch->channel, is_channel_a_band(ch) ?
+				    "5.2" : "2.4");
 			continue;
 		}
 
@@ -6292,8 +6292,10 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 	iwl3945_reset_channel_flag(priv);
 
 	if (iwl3945_is_rfkill(priv))
+	{
+		IWL_ERROR("rfkill disabled - restart card\n");
 		return;
-
+	}
 	ieee80211_start_queues(priv->hw);
 
 	priv->active_rate = priv->rates_mask;

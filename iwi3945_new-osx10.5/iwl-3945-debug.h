@@ -34,12 +34,12 @@
 extern u32 iwl3945_debug_level;
 #define IWL_DEBUG(level, fmt, args...) \
 do { if (iwl3945_debug_level & (level)) \
-  IOLog(KERN_ERR DRV_NAME": %c %s " fmt, \
+  IOLog( DRV_NAME": %c %s " fmt, \
 	 in_interrupt() ? 'I' : 'U', __FUNCTION__ , ## args); } while (0)
 
 #define IWL_DEBUG_LIMIT(level, fmt, args...) \
 do { if ((iwl3945_debug_level & (level)) && net_ratelimit()) \
-  IOLog(KERN_ERR DRV_NAME": %c %s " fmt, \
+  IOLog( DRV_NAME": %c %s " fmt, \
 	 in_interrupt() ? 'I' : 'U', __FUNCTION__ , ## args); } while (0)
 #else
 static inline void IWL_DEBUG(int level, const char *fmt, ...)
