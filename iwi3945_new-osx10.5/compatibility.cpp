@@ -7822,7 +7822,14 @@ IM_HERE_NOW();
 	sdata->type=IEEE80211_IF_TYPE_STA;//hack
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
-	
+
+	res = local->ops->add_interface(local_to_hw(local), &conf);
+	if (res) {
+	if (sdata->type == IEEE80211_IF_TYPE_MNTR)
+			ieee80211_start_hard_monitor(local);
+		return res;
+	}
+						
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
 		tasklet_enable(&local->tasklet);
@@ -7830,12 +7837,6 @@ IM_HERE_NOW();
 			res = local->ops->open(local_to_hw(local));
 		if (res == 0) {
 			//res = dev_open(local->mdev);
-			res = local->ops->add_interface(local_to_hw(local), &conf);
-			if (res) {
-				if (sdata->type == IEEE80211_IF_TYPE_MNTR)
-					ieee80211_start_hard_monitor(local);
-				return res;
-					}
 			if (res) {
 				if (local->ops->stop)
 					local->ops->stop(local_to_hw(local));
