@@ -5,11 +5,11 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>iwi3945</string>
+	<string>iwi4965</string>
 	<key>CFBundleGetInfoString</key>
 	<string>Copyright Joel Thomas 2005</string>
 	<key>CFBundleIdentifier</key>
-	<string>darwin.iwi3945</string>
+	<string>darwin.iwi4965</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -42,6 +42,27 @@
 			<integer>1</integer>
 			<key>p_mac</key>
 			<string></string>
+		</dict>
+		<key>iwi4965</key>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>darwin.iwi4965</string>
+			<key>IOClass</key>
+			<string>darwin_iwi4965</string>
+			<key>IOMatchCategory</key>
+			<string>iwi4965</string>
+			<key>IOPCIMatch</key>
+			<string>0x42298086 0x42308086</string>
+			<key>IOProviderClass</key>
+			<string>IOPCIDevice</string>
+			<key>p_disable</key>
+			<integer>1</integer>
+			<key>p_led</key>
+			<integer>1</integer>
+			<key>p_mac</key>
+			<string></string>
+			<key>p_mode</key>
+			<integer>1</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
