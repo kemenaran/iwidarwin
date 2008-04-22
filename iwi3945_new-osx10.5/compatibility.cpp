@@ -836,9 +836,9 @@ IM_HERE_NOW();
 	}
 	thread_call_cancel(timer_func[timer->vv]);
     uint64_t deadline, timei;
-	if (timer->expires>0)
+	//if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=5000;
+	//else timei=5000;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
@@ -2196,7 +2196,7 @@ static inline void setup_timer(struct timer_list2 * timer,
 	init_timer(timer);
 	timer->function = function;
     timer->data = data;
-    add_timer(timer);
+    //add_timer(timer);
  }
 
 void ieee80211_sta_timer(unsigned long data)
@@ -2209,7 +2209,6 @@ IM_HERE_NOW();
 
 	set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
 	//queue_work(local->hw.workqueue, &ifsta->work);
-	set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);//hack
 	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
 }
 
@@ -7806,20 +7805,20 @@ int ieee80211_open(struct ieee80211_local *local)
 	conf.if_id = dev->ifindex;
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
-	res = local->ops->add_interface(local_to_hw(local), &conf);
-	if (res) {
-		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
-			ieee80211_start_hard_monitor(local);
-		return res;
-	}
+	
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
-		IOSleep(300);//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
+			res = local->ops->add_interface(local_to_hw(local), &conf);
+			if (res) {
+				if (sdata->type == IEEE80211_IF_TYPE_MNTR)
+					ieee80211_start_hard_monitor(local);
+				return res;
+					}
 			if (res) {
 				if (local->ops->stop)
 					local->ops->stop(local_to_hw(local));
@@ -7853,12 +7852,11 @@ int ieee80211_open(struct ieee80211_local *local)
 		netif_carrier_on(dev);
 	netif_start_queue(dev);*/
 	
-	/*IOLog("1st scan\n");
+	IOLog("1st scan\n");
 	if (res==0)
-	//iwl_scan((struct iwl3945_priv*)get_my_priv());
-	//ieee80211_sta_start_scan(dev, NULL, 0);
+		iwl_scan((struct iwl3945_priv*)get_my_priv());
 	else
-	IOLog(" not ready for 1st scan\n");*/
+	IOLog(" not ready for 1st scan\n");
 	
 	return 0;
 }

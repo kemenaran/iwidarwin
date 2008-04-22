@@ -2470,8 +2470,7 @@ static int iwl3945_scan_initiate(struct iwl3945_priv *priv)
 
 	if (test_bit(STATUS_SCANNING, &priv->status)) {
 		IWL_DEBUG_SCAN("Scan already in progress.\n");
-		clear_bit(STATUS_SCANNING, &priv->status);//hack
-		//return -EAGAIN;
+		return -EAGAIN;
 	}
 
 	if (test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
@@ -6868,10 +6867,10 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 //FIXME: Hack for restart
 	//run_add_interface();
 	priv->interface_id=0;
-	//(hw_to_local(priv->hw))->open_count=0;
+	(hw_to_local(priv->hw))->open_count=0;
 	ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
-	queue_work(priv->workqueue, &priv->up); // maybe kp here
+	//queue_work(priv->workqueue, &priv->up); // maybe kp here
 
 }
 
