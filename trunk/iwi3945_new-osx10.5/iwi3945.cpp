@@ -329,7 +329,7 @@ bool darwin_iwi3945::start(IOService *provider)
 		errno_t error = ctl_register(&ep_ctl, &kctlref);
 
 		first_up=0;//ready for first load
-		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,2000,true);
+		//queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,2000,true);
 		
         return true;
     } while(false);
