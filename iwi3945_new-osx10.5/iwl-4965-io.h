@@ -28,11 +28,11 @@
 
 #ifndef __iwl4965_io_h__
 #define __iwl4965_io_h__
-
+#ifdef LINUX
 #include <linux/io.h>
-
+#endif
 #include "iwl-4965-debug.h"
-
+ 
 /*
  * IO, register, and NIC memory access functions
  *
@@ -59,7 +59,8 @@
  *
  */
 
-#define _iwl4965_write32(iwl, ofs, val) writel((val), (iwl)->hw_base + (ofs))
+#define _iwl4965_write32(iwl, ofs, val) OSWriteLittleInt32((iwl)->hw_base, ofs ,val) 
+//writel((val), (iwl)->hw_base + (ofs))
 #ifdef CONFIG_IWL4965_DEBUG
 static inline void __iwl4965_write32(const char *f, u32 l, struct iwl4965_priv *iwl,
 				 u32 ofs, u32 val)
@@ -73,7 +74,8 @@ static inline void __iwl4965_write32(const char *f, u32 l, struct iwl4965_priv *
 #define iwl4965_write32(iwl, ofs, val) _iwl4965_write32(iwl, ofs, val)
 #endif
 
-#define _iwl4965_read32(iwl, ofs) readl((iwl)->hw_base + (ofs))
+#define _iwl4965_read32(iwl, ofs) OSReadLittleInt32((iwl)->hw_base, ofs)
+//readl((iwl)->hw_base + (ofs))
 #ifdef CONFIG_IWL4965_DEBUG
 static inline u32 __iwl4965_read32(char *f, u32 l, struct iwl4965_priv *iwl, u32 ofs)
 {

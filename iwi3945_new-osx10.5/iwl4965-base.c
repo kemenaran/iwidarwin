@@ -26,7 +26,7 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *
  *****************************************************************************/
-
+#ifdef LINUX
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/version.h>
@@ -47,7 +47,9 @@
 #include <net/mac80211.h>
 
 #include <asm/div64.h>
-
+#else
+#include "defines.h"
+#endif
 #include "iwl-4965.h"
 #include "iwl-helpers.h"
 
@@ -66,11 +68,12 @@ static int iwl4965_tx_queue_update_write_ptr(struct iwl4965_priv *priv,
 
 /* module parameters */
 static int iwl4965_param_disable_hw_scan; /* def: 0 = use 4965's h/w scan */
-static int iwl4965_param_debug;    /* def: 0 = minimal debug log messages */
+//static int iwl4965_param_debug;    /* def: 0 = minimal debug log messages */
+static int iwl4965_param_debug = 0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
 static int iwl4965_param_disable;  /* def: enable radio */
 static int iwl4965_param_antenna;  /* def: 0 = both antennas (use diversity) */
 int iwl4965_param_hwcrypto;        /* def: using software encryption */
-static int iwl4965_param_qos_enable = 1; /* def: 1 = use quality of service */
+static int iwl4965_param_qos_enable = 0; /* def: 1 = use quality of service */
 int iwl4965_param_queues_num = IWL_MAX_NUM_QUEUES; /* def: 16 Tx queues */
 
 /*
@@ -316,7 +319,7 @@ static int iwl4965_tx_queue_alloc(struct iwl4965_priv *priv,
 	 * shared with device */
 	txq->bd = pci_alloc_consistent(dev,
 			sizeof(txq->bd[0]) * TFD_QUEUE_SIZE_MAX,
-			&txq->q.dma_addr);
+			&txq->q.dma_addr,sizeof(struct iwl4965_tfd_frame*));
 
 	if (!txq->bd) {
 		IWL_ERROR("pci_alloc_consistent(%zd) failed\n",
@@ -357,7 +360,7 @@ int iwl4965_tx_queue_init(struct iwl4965_priv *priv,
 	len = sizeof(struct iwl4965_cmd) * slots_num;
 	if (txq_id == IWL_CMD_QUEUE_NUM)
 		len +=  IWL_MAX_SCAN_SIZE;
-	txq->cmd = pci_alloc_consistent(dev, len, &txq->dma_addr_cmd);
+	txq->cmd = pci_alloc_consistent(dev, len, &txq->dma_addr_cmd, sizeof(struct iwl4965_cmd*));
 	if (!txq->cmd)
 		return -ENOMEM;
 
@@ -777,11 +780,11 @@ static int iwl4965_send_cmd_sync(struct iwl4965_priv *priv, struct iwl4965_host_
 	 /* A synchronous command can not have a callback set. */
 	BUG_ON(cmd->meta.u.callback != NULL);
 
-	if (atomic_xchg(&entry, 1)) {
+/*	if (atomic_xchg(&entry, 1)) {
 		IWL_ERROR("Error sending %s: Already sending a host command\n",
 			  get_cmd_string(cmd->id));
 		return -EBUSY;
-	}
+	}*/
 
 	set_bit(STATUS_HCMD_ACTIVE, &priv->status);
 
@@ -796,9 +799,18 @@ static int iwl4965_send_cmd_sync(struct iwl4965_priv *priv, struct iwl4965_host_
 		goto out;
 	}
 
-	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
+	/*ret = wait_event_interruptible_timeout(priv->wait_command_queue,
 			!test_bit(STATUS_HCMD_ACTIVE, &priv->status),
-			HOST_COMPLETE_TIMEOUT);
+			HOST_COMPLETE_TIMEOUT);*/
+	ret = HOST_COMPLETE_TIMEOUT;          
+	while(test_bit(STATUS_HCMD_ACTIVE, &priv->status)) {                  
+		IOSleep(1);                    
+		ret--;                            
+		if(ret==0)                          
+			break;  
+	}
+	
+	IWL_DEBUG_INFO("Wait %s Condition: %dms left\n",get_cmd_string(cmd->id),ret);	
 	if (!ret) {
 		if (test_bit(STATUS_HCMD_ACTIVE, &priv->status)) {
 			IWL_ERROR("Error sending %s: time out after %dms.\n",
@@ -1108,7 +1120,7 @@ static int iwl4965_send_rxon_assoc(struct iwl4965_priv *priv)
 	if (rc)
 		return rc;
 
-	res = (struct iwl4965_rx_packet *)cmd.meta.u.skb->data;
+	res = (struct iwl4965_rx_packet *)skb_data(cmd.meta.u.skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERROR("Bad return from REPLY_RXON_ASSOC command\n");
 		rc = -EIO;
@@ -1292,7 +1304,7 @@ static int iwl4965_send_scan_abort(struct iwl4965_priv *priv)
 		return rc;
 	}
 
-	res = (struct iwl4965_rx_packet *)cmd.meta.u.skb->data;
+	res = (struct iwl4965_rx_packet *)skb_data(cmd.meta.u.skb);
 	if (res->u.status != CAN_ABORT_STATUS) {
 		/* The scan abort will return 1 for success or
 		 * 2 for "failure".  A failure condition can be
@@ -1352,7 +1364,7 @@ static int iwl4965_add_sta_sync_callback(struct iwl4965_priv *priv,
 		return 1;
 	}
 
-	res = (struct iwl4965_rx_packet *)skb->data;
+	res = (struct iwl4965_rx_packet *)skb_data(skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERROR("Bad return from REPLY_ADD_STA (0x%08X)\n",
 			  res->hdr.flags);
@@ -1392,7 +1404,7 @@ int iwl4965_send_add_station(struct iwl4965_priv *priv,
 	if (rc || (flags & CMD_ASYNC))
 		return rc;
 
-	res = (struct iwl4965_rx_packet *)cmd.meta.u.skb->data;
+	res = (struct iwl4965_rx_packet *)skb_data(cmd.meta.u.skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERROR("Bad return from REPLY_ADD_STA (0x%08X)\n",
 			  res->hdr.flags);
@@ -1529,12 +1541,12 @@ unsigned int iwl4965_fill_beacon_frame(struct iwl4965_priv *priv,
 	     (priv->iw_mode != IEEE80211_IF_TYPE_AP)))
 		return 0;
 
-	if (priv->ibss_beacon->len > left)
+	if (skb_len(priv->ibss_beacon) > left)
 		return 0;
 
-	memcpy(hdr, priv->ibss_beacon->data, priv->ibss_beacon->len);
+	memcpy(hdr, skb_data(priv->ibss_beacon), skb_len(priv->ibss_beacon));
 
-	return priv->ibss_beacon->len;
+	return skb_len(priv->ibss_beacon);
 }
 
 int iwl4965_rate_index_from_plcp(int plcp)
@@ -2514,7 +2526,8 @@ static int iwl4965_scan_initiate(struct iwl4965_priv *priv)
 
 	if (test_bit(STATUS_SCANNING, &priv->status)) {
 		IWL_DEBUG_SCAN("Scan already in progress.\n");
-		return -EAGAIN;
+		clear_bit(STATUS_SCANNING, &priv->status);//hack
+		//return -EAGAIN;
 	}
 
 	if (test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
@@ -2530,7 +2543,6 @@ static int iwl4965_scan_initiate(struct iwl4965_priv *priv)
 	priv->scan_pass_start = priv->scan_start;
 
 	queue_work(priv->workqueue, &priv->request_scan);
-
 	return 0;
 }
 
@@ -2864,7 +2876,7 @@ static int iwl4965_get_sta_id(struct iwl4965_priv *priv,
 static int iwl4965_tx_skb(struct iwl4965_priv *priv,
 		      struct sk_buff *skb, struct ieee80211_tx_control *ctl)
 {
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	struct iwl4965_tfd_frame *tfd;
 	u32 *control_flags;
 	int txq_id = ctl->queue;
@@ -3023,9 +3035,9 @@ static int iwl4965_tx_skb(struct iwl4965_priv *priv,
 
 	/* Set up TFD's 2nd entry to point directly to remainder of skb,
 	 * if any (802.11 null frames have no payload). */
-	len = skb->len - hdr_len;
+	len = skb_len(skb) - hdr_len;
 	if (len) {
-		phys_addr = pci_map_single(priv->pci_dev, skb->data + hdr_len,
+		phys_addr = pci_map_single(priv->pci_dev, skb_data(skb) + hdr_len,
 					   len, PCI_DMA_TODEVICE);
 		iwl4965_hw_txq_attach_buf_to_tfd(priv, tfd, phys_addr, len);
 	}
@@ -3035,7 +3047,7 @@ static int iwl4965_tx_skb(struct iwl4965_priv *priv,
 		out_cmd->cmd.tx.tx_flags |= TX_CMD_FLG_MH_PAD_MSK;
 
 	/* Total # bytes to be transmitted */
-	len = (u16)skb->len;
+	len = (u16)skb_len(skb);
 	out_cmd->cmd.tx.len = cpu_to_le16(len);
 
 	/* TODO need this for burst mode later on */
@@ -3219,7 +3231,7 @@ void iwl4965_set_decrypted_flag(struct iwl4965_priv *priv, struct sk_buff *skb,
 			    u32 decrypt_res, struct ieee80211_rx_status *stats)
 {
 	u16 fc =
-	    le16_to_cpu(((struct ieee80211_hdr *)skb->data)->frame_control);
+	    le16_to_cpu(((struct ieee80211_hdr *)skb_data(skb))->frame_control);
 
 	if (priv->active_rxon.filter_flags & RXON_FILTER_DIS_DECRYPT_MSK)
 		return;
@@ -3270,7 +3282,7 @@ void iwl4965_handle_data_packet_monitor(struct iwl4965_priv *priv,
 	}
 
 	/* copy the frame data to write after where the radiotap header goes */
-	iwl4965_rt = (void *)rxb->skb->data;
+	iwl4965_rt = (void *)skb_data(rxb->skb);
 	memmove(iwl4965_rt->payload, data, len);
 
 	iwl4965_rt->rt_hdr.it_version = PKTHDR_RADIOTAP_VERSION;
@@ -3327,7 +3339,7 @@ void iwl4965_handle_data_packet_monitor(struct iwl4965_priv *priv,
 	if (phy_flags_hw & RX_RES_PHY_FLAGS_SHORT_PREAMBLE_MSK)
 		iwl4965_rt->rt_flags |= IEEE80211_RADIOTAP_F_SHORTPRE;
 
-	IWL_DEBUG_RX("Rx packet of %d bytes.\n", rxb->skb->len);
+	IWL_DEBUG_RX("Rx packet of %d bytes.\n", skb_len(rxb->skb));
 
 	stats->flag |= RX_FLAG_RADIOTAP;
 	ieee80211_rx_irqsafe(priv->hw, rxb->skb, stats);
@@ -3769,7 +3781,7 @@ static int iwl4965_tx_status_reply_tx(struct iwl4965_priv *priv,
 static void iwl4965_rx_reply_tx(struct iwl4965_priv *priv,
 			    struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	u16 sequence = le16_to_cpu(pkt->hdr.sequence);
 	int txq_id = SEQ_TO_QUEUE(sequence);
 	int index = SEQ_TO_INDEX(sequence);
@@ -3866,7 +3878,7 @@ static void iwl4965_rx_reply_tx(struct iwl4965_priv *priv,
 static void iwl4965_rx_reply_alive(struct iwl4965_priv *priv,
 			       struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl4965_alive_resp *palive;
 	struct delayed_work *pwork;
 
@@ -3893,8 +3905,7 @@ static void iwl4965_rx_reply_alive(struct iwl4965_priv *priv,
 	/* We delay the ALIVE response by 5ms to
 	 * give the HW RF Kill time to activate... */
 	if (palive->is_valid == UCODE_VALID_OK)
-		queue_delayed_work(priv->workqueue, pwork,
-				   msecs_to_jiffies(5));
+		queue_delayed_work(priv->workqueue, pwork, msecs_to_jiffies(5));
 	else
 		IWL_WARNING("uCode did not respond OK.\n");
 }
@@ -3902,7 +3913,7 @@ static void iwl4965_rx_reply_alive(struct iwl4965_priv *priv,
 static void iwl4965_rx_reply_add_sta(struct iwl4965_priv *priv,
 				 struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 
 	IWL_DEBUG_RX("Received REPLY_ADD_STA: 0x%02X\n", pkt->u.status);
 	return;
@@ -3911,7 +3922,7 @@ static void iwl4965_rx_reply_add_sta(struct iwl4965_priv *priv,
 static void iwl4965_rx_reply_error(struct iwl4965_priv *priv,
 			       struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 
 	IWL_ERROR("Error Reply type 0x%08X cmd %s (0x%02X) "
 		"seq 0x%04X ser 0x%08X\n",
@@ -3922,11 +3933,11 @@ static void iwl4965_rx_reply_error(struct iwl4965_priv *priv,
 		le32_to_cpu(pkt->u.err_resp.error_info));
 }
 
-#define TX_STATUS_ENTRY(x) case TX_STATUS_FAIL_ ## x: return #x
+//#define TX_STATUS_ENTRY(x) case TX_STATUS_FAIL_ ## x: return #x
 
 static void iwl4965_rx_csa(struct iwl4965_priv *priv, struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl4965_rxon_cmd *rxon = (void *)&priv->active_rxon;
 	struct iwl4965_csa_notification *csa = &(pkt->u.csa_notif);
 	IWL_DEBUG_11H("CSA notif: channel %d, status %d\n",
@@ -3957,7 +3968,7 @@ static void iwl4965_rx_pm_sleep_notif(struct iwl4965_priv *priv,
 				  struct iwl4965_rx_mem_buffer *rxb)
 {
 #ifdef CONFIG_IWL4965_DEBUG
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl4965_sleep_notification *sleep = &(pkt->u.sleep_notif);
 	IWL_DEBUG_RX("sleep mode: %d, src: %d\n",
 		     sleep->pm_sleep_mode, sleep->pm_wakeup_src);
@@ -3967,17 +3978,17 @@ static void iwl4965_rx_pm_sleep_notif(struct iwl4965_priv *priv,
 static void iwl4965_rx_pm_debug_statistics_notif(struct iwl4965_priv *priv,
 					     struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	IWL_DEBUG_RADIO("Dumping %d bytes of unhandled "
 			"notification for %s:\n",
 			le32_to_cpu(pkt->len), get_cmd_string(pkt->hdr.cmd));
 	iwl4965_print_hex_dump(IWL_DL_RADIO, pkt->u.raw, le32_to_cpu(pkt->len));
 }
 
-static void iwl4965_bg_beacon_update(struct work_struct *work)
+static void iwl4965_bg_beacon_update(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv =
-		container_of(work, struct iwl4965_priv, beacon_update);
+//	struct iwl4965_priv *priv =
+//		container_of(work, struct iwl4965_priv, beacon_update);
 	struct sk_buff *beacon;
 
 	/* Pull updated AP beacon from mac80211. will fail if not in AP mode */
@@ -4003,7 +4014,7 @@ static void iwl4965_rx_beacon_notif(struct iwl4965_priv *priv,
 				struct iwl4965_rx_mem_buffer *rxb)
 {
 #ifdef CONFIG_IWL4965_DEBUG
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl4965_beacon_notif *beacon = &(pkt->u.beacon_status);
 	u8 rate = iwl4965_hw_get_rate(beacon->beacon_notify_hdr.rate_n_flags);
 
@@ -4026,7 +4037,7 @@ static void iwl4965_rx_reply_scan(struct iwl4965_priv *priv,
 			      struct iwl4965_rx_mem_buffer *rxb)
 {
 #ifdef CONFIG_IWL4965_DEBUG
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl4965_scanreq_notification *notif =
 	    (struct iwl4965_scanreq_notification *)pkt->u.raw;
 
@@ -4038,7 +4049,7 @@ static void iwl4965_rx_reply_scan(struct iwl4965_priv *priv,
 static void iwl4965_rx_scan_start_notif(struct iwl4965_priv *priv,
 				    struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl4965_scanstart_notification *notif =
 	    (struct iwl4965_scanstart_notification *)pkt->u.raw;
 	priv->scan_start_tsf = le32_to_cpu(notif->tsf_low);
@@ -4055,7 +4066,7 @@ static void iwl4965_rx_scan_start_notif(struct iwl4965_priv *priv,
 static void iwl4965_rx_scan_results_notif(struct iwl4965_priv *priv,
 				      struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl4965_scanresults_notification *notif =
 	    (struct iwl4965_scanresults_notification *)pkt->u.raw;
 
@@ -4080,7 +4091,7 @@ static void iwl4965_rx_scan_results_notif(struct iwl4965_priv *priv,
 static void iwl4965_rx_scan_complete_notif(struct iwl4965_priv *priv,
 				       struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl4965_scancomplete_notification *scan_notif = (void *)pkt->u.raw;
 
 	IWL_DEBUG_SCAN("Scan complete: %d channels (TSF 0x%08X:%08X) - %d\n",
@@ -4138,7 +4149,7 @@ reschedule:
 static void iwl4965_rx_card_state_notif(struct iwl4965_priv *priv,
 				    struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (void *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	u32 flags = le32_to_cpu(pkt->u.card_state_notif.flags);
 	unsigned long status = priv->status;
 
@@ -4258,7 +4269,7 @@ static void iwl4965_setup_rx_handlers(struct iwl4965_priv *priv)
 static void iwl4965_tx_cmd_complete(struct iwl4965_priv *priv,
 				struct iwl4965_rx_mem_buffer *rxb)
 {
-	struct iwl4965_rx_packet *pkt = (struct iwl4965_rx_packet *)rxb->skb->data;
+	struct iwl4965_rx_packet *pkt = (struct iwl4965_rx_packet *)skb_data(rxb->skb);
 	u16 sequence = le16_to_cpu(pkt->hdr.sequence);
 	int txq_id = SEQ_TO_QUEUE(sequence);
 	int index = SEQ_TO_INDEX(sequence);
@@ -4522,7 +4533,7 @@ static void iwl4965_rx_allocate(struct iwl4965_priv *priv)
 
 		/* Get physical address of RB/SKB */
 		rxb->dma_addr =
-		    pci_map_single(priv->pci_dev, rxb->skb->data,
+		    pci_map_single(priv->pci_dev, skb_data(rxb->skb),
 				   IWL_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
 		list_add_tail(&rxb->list, &rxq->rx_free);
 		rxq->free_count++;
@@ -4587,7 +4598,7 @@ int iwl4965_rx_queue_alloc(struct iwl4965_priv *priv)
 	INIT_LIST_HEAD(&rxq->rx_used);
 
 	/* Alloc the circular buffer of Read Buffer Descriptors (RBDs) */
-	rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr);
+	rxq->bd = pci_alloc_consistent(dev, 4 * RX_QUEUE_SIZE, &rxq->dma_addr,sizeof(__le32*));
 	if (!rxq->bd)
 		return -ENOMEM;
 
@@ -4753,7 +4764,7 @@ static void iwl4965_rx_handle(struct iwl4965_priv *priv)
 		pci_dma_sync_single_for_cpu(priv->pci_dev, rxb->dma_addr,
 					    IWL_RX_BUF_SIZE,
 					    PCI_DMA_FROMDEVICE);
-		pkt = (struct iwl4965_rx_packet *)rxb->skb->data;
+		pkt = (struct iwl4965_rx_packet *)skb_data(rxb->skb);
 
 		/* Reclaim a command buffer only if this packet is a response
 		 *   to a (driver-originated) command.
@@ -5226,6 +5237,7 @@ static void iwl4965_irq_tasklet(struct iwl4965_priv *priv)
 		 *   iwl4965_rx_card_state_notif() */
 		if (!hw_rf_kill && !test_bit(STATUS_ALIVE, &priv->status)) {
 			clear_bit(STATUS_RF_KILL_HW, &priv->status);
+			IWL_DEBUG_INFO("Trying to restart.\n");
 			queue_work(priv->workqueue, &priv->restart);
 		}
 
@@ -6890,35 +6902,49 @@ static int __iwl4965_up(struct iwl4965_priv *priv)
  *
  *****************************************************************************/
 
-static void iwl4965_bg_init_alive_start(struct work_struct *data)
+static void iwl4965_bg_init_alive_start(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv =
-	    container_of(data, struct iwl4965_priv, init_alive_start.work);
+	if(!priv){
+		IWL_WARNING("No Priv defined\n");
+		return;
+	}
+
+//	struct iwl4965_priv *priv =
+//	    container_of(data, struct iwl4965_priv, init_alive_start.work);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
 
 	mutex_lock(&priv->mutex);
+	IWL_DEBUG_INFO("__ IN iwl4965_init_alive_start __\n");
 	iwl4965_init_alive_start(priv);
+	IWL_DEBUG_INFO("__ OUT iwl4965_init_alive_start __\n");	
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl4965_bg_alive_start(struct work_struct *data)
+static void iwl4965_bg_alive_start(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv =
-	    container_of(data, struct iwl4965_priv, alive_start.work);
+//	struct iwl4965_priv *priv =
+//	    container_of(data, struct iwl4965_priv, alive_start.work);
+
+	if(!priv){
+		IWL_WARNING("No Priv defined\n");
+		return;
+	}
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
 
 	mutex_lock(&priv->mutex);
+	IOLog("__ IN iwl4965_alive_start __\n");	
 	iwl4965_alive_start(priv);
+	IOLog("__ OUT iwl4965_alive_start __\n");	
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl4965_bg_rf_kill(struct work_struct *work)
+static void iwl4965_bg_rf_kill(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv = container_of(work, struct iwl4965_priv, rf_kill);
+//	struct iwl4965_priv *priv = container_of(work, struct iwl4965_priv, rf_kill);
 
 	wake_up_interruptible(&priv->wait_command_queue);
 
@@ -6948,10 +6974,10 @@ static void iwl4965_bg_rf_kill(struct work_struct *work)
 
 #define IWL_SCAN_CHECK_WATCHDOG (7 * HZ)
 
-static void iwl4965_bg_scan_check(struct work_struct *data)
+static void iwl4965_bg_scan_check(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv =
-	    container_of(data, struct iwl4965_priv, scan_check.work);
+//	struct iwl4965_priv *priv =
+//	    container_of(data, struct iwl4965_priv, scan_check.work);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
@@ -6969,10 +6995,10 @@ static void iwl4965_bg_scan_check(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl4965_bg_request_scan(struct work_struct *data)
+static void iwl4965_bg_request_scan(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv =
-	    container_of(data, struct iwl4965_priv, request_scan);
+//	struct iwl4965_priv *priv =
+//	    container_of(data, struct iwl4965_priv, request_scan);
 	struct iwl4965_host_cmd cmd = {
 		.id = REPLY_SCAN_CMD,
 		.len = sizeof(struct iwl4965_scan_cmd),
@@ -7176,9 +7202,9 @@ static void iwl4965_bg_request_scan(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl4965_bg_up(struct work_struct *data)
+static void iwl4965_bg_up(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv = container_of(data, struct iwl4965_priv, up);
+//	struct iwl4965_priv *priv = container_of(data, struct iwl4965_priv, up);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
@@ -7188,21 +7214,27 @@ static void iwl4965_bg_up(struct work_struct *data)
 	mutex_unlock(&priv->mutex);
 }
 
-static void iwl4965_bg_restart(struct work_struct *data)
+static void iwl4965_bg_restart(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv = container_of(data, struct iwl4965_priv, restart);
-
+//	struct iwl4965_priv *priv = container_of(data, struct iwl4965_priv, restart);
+IWL_DEBUG_INFO("Restarting...\n");
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
-
 	iwl4965_down(priv);
-	queue_work(priv->workqueue, &priv->up);
+//FIXME: Hack for restart
+	//run_add_interface();
+	priv->interface_id=0;
+	(hw_to_local(priv->hw))->open_count=0;
+	ieee80211_open(hw_to_local(priv->hw));
+//FIXME: End hack
+	//queue_work(priv->workqueue, &priv->up); // maybe kp here
+
 }
 
-static void iwl4965_bg_rx_replenish(struct work_struct *data)
+static void iwl4965_bg_rx_replenish(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv =
-	    container_of(data, struct iwl4965_priv, rx_replenish);
+//	struct iwl4965_priv *priv =
+//	    container_of(data, struct iwl4965_priv, rx_replenish);
 
 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
 		return;
@@ -7214,10 +7246,10 @@ static void iwl4965_bg_rx_replenish(struct work_struct *data)
 
 #define IWL_DELAY_NEXT_SCAN (HZ*2)
 
-static void iwl4965_bg_post_associate(struct work_struct *data)
+static void iwl4965_bg_post_associate(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv = container_of(data, struct iwl4965_priv,
-					     post_associate.work);
+//	struct iwl4965_priv *priv = container_of(data, struct iwl4965_priv,
+//					     post_associate.work);
 
 	int rc = 0;
 	struct ieee80211_conf *conf = NULL;
@@ -7349,10 +7381,10 @@ static void iwl4965_bg_abort_scan(struct work_struct *work)
 
 static int iwl4965_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf);
 
-static void iwl4965_bg_scan_completed(struct work_struct *work)
+static void iwl4965_bg_scan_completed(struct iwl4965_priv *priv)
 {
-	struct iwl4965_priv *priv =
-	    container_of(work, struct iwl4965_priv, scan_completed);
+//	struct iwl4965_priv *priv =
+//	    container_of(work, struct iwl4965_priv, scan_completed);
 
 	IWL_DEBUG(IWL_DL_INFO | IWL_DL_SCAN, "SCAN complete scan\n");
 
@@ -7430,9 +7462,19 @@ static int iwl4965_mac_open(struct ieee80211_hw *hw)
 
 	/* Wait for START_ALIVE from ucode. Otherwise callbacks from
 	 * mac80211 will not be run successfully. */
-	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
+	/*ret = wait_event_interruptible_timeout(priv->wait_command_queue,
 			test_bit(STATUS_READY, &priv->status),
-			UCODE_READY_TIMEOUT);
+			UCODE_READY_TIMEOUT);*/
+	
+	ret = UCODE_READY_TIMEOUT;          
+	while(!(test_bit(STATUS_READY, &priv->status))) {                  
+		IOSleep(1);                    
+		ret--;                            
+		if(ret==0)                          
+			break;  
+	}
+	
+    IWL_DEBUG_INFO("Wait START_ALIVE Condition: %dms left\n",ret);
 	if (!ret) {
 		if (!test_bit(STATUS_READY, &priv->status)) {
 			IWL_ERROR("Wait for START_ALIVE timeout after %dms.\n",
@@ -7503,7 +7545,7 @@ static int iwl4965_mac_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
 		return -1;
 	}
 
-	IWL_DEBUG_TX("dev->xmit(%d bytes) at rate 0x%02x\n", skb->len,
+	IWL_DEBUG_TX("dev->xmit(%d bytes) at rate 0x%02x\n", skb_len(skb),
 		     ctl->tx_rate);
 
 	if (iwl4965_tx_skb(priv, skb, ctl))
@@ -8423,8 +8465,8 @@ static ssize_t store_debug_level(struct device_driver *d,
 	return strnlen(buf, count);
 }
 
-static DRIVER_ATTR(debug_level, S_IWUSR | S_IRUGO,
-		   show_debug_level, store_debug_level);
+//static DRIVER_ATTR(debug_level, S_IWUSR | S_IRUGO,
+//		   show_debug_level, store_debug_level);
 
 #endif /* CONFIG_IWL4965_DEBUG */
 
@@ -8994,7 +9036,8 @@ static ssize_t dump_error_log(struct device *d,
 	if (p[0] == '1')
 		iwl4965_dump_nic_error_log((struct iwl4965_priv *)d->driver_data);
 
-	return strnlen(buf, count);
+	//return strnlen(buf, count);
+	return strlen(buf);
 }
 
 static DEVICE_ATTR(dump_errors, S_IWUSR, NULL, dump_error_log);
@@ -9008,7 +9051,8 @@ static ssize_t dump_event_log(struct device *d,
 	if (p[0] == '1')
 		iwl4965_dump_nic_event_log((struct iwl4965_priv *)d->driver_data);
 
-	return strnlen(buf, count);
+	//return strnlen(buf, count);
+        return strlen(buf);
 }
 
 static DEVICE_ATTR(dump_events, S_IWUSR, NULL, dump_event_log);
@@ -9025,18 +9069,18 @@ static void iwl4965_setup_deferred_work(struct iwl4965_priv *priv)
 
 	init_waitqueue_head(&priv->wait_command_queue);
 
-	INIT_WORK(&priv->up, iwl4965_bg_up);
-	INIT_WORK(&priv->restart, iwl4965_bg_restart);
-	INIT_WORK(&priv->rx_replenish, iwl4965_bg_rx_replenish);
-	INIT_WORK(&priv->scan_completed, iwl4965_bg_scan_completed);
-	INIT_WORK(&priv->request_scan, iwl4965_bg_request_scan);
-	INIT_WORK(&priv->abort_scan, iwl4965_bg_abort_scan);
-	INIT_WORK(&priv->rf_kill, iwl4965_bg_rf_kill);
-	INIT_WORK(&priv->beacon_update, iwl4965_bg_beacon_update);
-	INIT_DELAYED_WORK(&priv->post_associate, iwl4965_bg_post_associate);
-	INIT_DELAYED_WORK(&priv->init_alive_start, iwl4965_bg_init_alive_start);
-	INIT_DELAYED_WORK(&priv->alive_start, iwl4965_bg_alive_start);
-	INIT_DELAYED_WORK(&priv->scan_check, iwl4965_bg_scan_check);
+	INIT_WORK(&priv->up, iwl4965_bg_up, 0);
+	INIT_WORK(&priv->restart, iwl4965_bg_restart, 1);
+	INIT_WORK(&priv->rx_replenish, iwl4965_bg_rx_replenish, 2);
+	INIT_WORK(&priv->scan_completed, iwl4965_bg_scan_completed, 3);
+	INIT_WORK(&priv->request_scan, iwl4965_bg_request_scan, 4);
+	INIT_WORK(&priv->abort_scan, iwl4965_bg_abort_scan, 5);
+	INIT_WORK(&priv->rf_kill, iwl4965_bg_rf_kill, 6);
+	INIT_WORK(&priv->beacon_update, iwl4965_bg_beacon_update, 21);
+	INIT_DELAYED_WORK(&priv->post_associate, iwl4965_bg_post_associate, 7);
+	INIT_DELAYED_WORK(&priv->init_alive_start, iwl4965_bg_init_alive_start, 8);
+	INIT_DELAYED_WORK(&priv->alive_start, iwl4965_bg_alive_start, 9);
+	INIT_DELAYED_WORK(&priv->scan_check, iwl4965_bg_scan_check, 10);
 
 	iwl4965_hw_setup_deferred_work(priv);
 
@@ -9472,7 +9516,8 @@ static int __init iwl4965_init(void)
 		IWL_ERROR("Unable to initialize PCI module\n");
 		return ret;
 	}
-#ifdef CONFIG_IWL4965_DEBUG
+#if 0 	
+//def CONFIG_IWL4965_DEBUG
 	ret = driver_create_file(&iwl4965_driver.driver, &driver_attr_debug_level);
 	if (ret) {
 		IWL_ERROR("Unable to create driver sysfs file\n");
@@ -9486,7 +9531,8 @@ static int __init iwl4965_init(void)
 
 static void __exit iwl4965_exit(void)
 {
-#ifdef CONFIG_IWL4965_DEBUG
+#if 0
+//def CONFIG_IWL4965_DEBUG
 	driver_remove_file(&iwl4965_driver.driver, &driver_attr_debug_level);
 #endif
 	pci_unregister_driver(&iwl4965_driver);
@@ -9513,3 +9559,11 @@ MODULE_PARM_DESC(qos_enable, "enable all QoS functionality");
 
 module_exit(iwl4965_exit);
 module_init(iwl4965_init);
+
+//Hack
+module_associated(iwl4965_is_associated);
+module_mac_tx(iwl4965_mac_tx);
+module_down(iwl4965_down);
+module_up(iwl4965_bg_up);
+module_scan(iwl4965_scan_initiate);
+module_iwlready(iwl4965_is_ready);
