@@ -836,9 +836,9 @@ IM_HERE_NOW();
 	}
 	thread_call_cancel(timer_func[timer->vv]);
     uint64_t deadline, timei;
-	//if (timer->expires>0)
+	if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	//else timei=5000;
+	else timei=5000;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
@@ -2196,7 +2196,7 @@ static inline void setup_timer(struct timer_list2 * timer,
 	init_timer(timer);
 	timer->function = function;
     timer->data = data;
-    //add_timer(timer);
+    add_timer(timer);
  }
 
 void ieee80211_sta_timer(unsigned long data)
@@ -2208,6 +2208,7 @@ IM_HERE_NOW();
 	struct ieee80211_local *local = wdev_priv(&sdata->dev);//wdev);
 
 	set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
+	set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);//hack
 	//queue_work(local->hw.workqueue, &ifsta->work);
 	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
 }
@@ -6791,10 +6792,10 @@ int pci_register_driver(struct pci_driver * drv){
 	fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	/*struct ieee80211_local *local = hw_to_local(my_hw);
-	int result3 = ieee80211_open(local->mdev);//run_add_interface();
+	struct ieee80211_local *local = hw_to_local(my_hw);
+	int result3 = ieee80211_open(local);//run_add_interface();
 	if(result3)
-		IOLog("Error ieee80211_open\n");*/
+		IOLog("Error ieee80211_open\n");
     //hack
 	//ieee80211_sta_start_scan(local->mdev, NULL, 0);
 	return 0;
@@ -7835,6 +7836,7 @@ IM_HERE_NOW();
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
+			return 0;//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
@@ -7874,9 +7876,9 @@ IM_HERE_NOW();
 	if (res==0)
 	{
 		//iwl_scan((struct iwl3945_priv*)get_my_priv());
-		struct ieee80211_if_sta *ifsta;
+		/*struct ieee80211_if_sta *ifsta;
 		ifsta = &sdata->u.sta;
-		ieee80211_sta_req_scan(dev, ifsta->ssid, ifsta->ssid_len);
+		ieee80211_sta_req_scan(dev, ifsta->ssid, ifsta->ssid_len);*/
 		
 	}
 	else
