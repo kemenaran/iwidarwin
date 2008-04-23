@@ -7813,10 +7813,10 @@ IM_HERE_NOW();
 		return 0;
 	}
 
-	memcpy(dev->dev_addr, my_mac_addr, ETH_ALEN);//hack
+	/*memcpy(dev->dev_addr, my_mac_addr, ETH_ALEN);//hack
 	char ii[4];
 	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
-	bcopy(ii,dev->name,sizeof(ii));
+	bcopy(ii,dev->name,sizeof(ii));*/
 	
 	ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
