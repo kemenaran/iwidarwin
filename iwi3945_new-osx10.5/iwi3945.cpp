@@ -408,6 +408,8 @@ void darwin_iwi3945::check_firstup(void)
 	struct net_device *dev=local->mdev;
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+	bcopy( "<hidden>", ifsta->ssid,sizeof("<hidden>"));
+	ifsta->ssid_len=sizeof("<hidden>");
 	ieee80211_sta_start_scan(dev, ifsta->ssid, ifsta->ssid_len);
 	//struct iwl3945_priv *priv=(struct iwl3945_priv*)get_my_priv();
 	//iwl_scan(priv);
