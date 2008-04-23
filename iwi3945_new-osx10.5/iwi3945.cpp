@@ -1500,6 +1500,10 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		sprintf(ii,"%s%d" ,netif->getNamePrefix(), netif->getUnitNumber());
 		ifnet_find_by_name(ii,&fifnet);
 		setMyfifnet(fifnet);
+		struct ieee80211_local *local;
+		local=hw_to_local(get_my_hw());
+		struct net_device *dev=local->mdev;
+		bcopy(ii,dev->name,sizeof(ii));
 	}
     if (first_up==0)
 		{
