@@ -838,7 +838,7 @@ IM_HERE_NOW();
     uint64_t deadline, timei;
 	if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=5000;
+	else timei=3000;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
@@ -2196,7 +2196,7 @@ static inline void setup_timer(struct timer_list2 * timer,
 	init_timer(timer);
 	timer->function = function;
     timer->data = data;
-    add_timer(timer);
+    //add_timer(timer);
  }
 
 void ieee80211_sta_timer(unsigned long data)
@@ -2208,7 +2208,7 @@ IM_HERE_NOW();
 	struct ieee80211_local *local = wdev_priv(&sdata->dev);//wdev);
 
 	set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
-	set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);//hack
+	//set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);//hack
 	//queue_work(local->hw.workqueue, &ifsta->work);
 	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
 }

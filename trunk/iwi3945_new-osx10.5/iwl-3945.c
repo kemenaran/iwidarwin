@@ -389,9 +389,9 @@ static void iwl3945_rx_reply_rx(struct iwl3945_priv *priv,
 		     stats.channel, stats.ssi, stats.ssi,
 		     stats.ssi, stats.rate);
 
-	if (iwl3945_debug_level & (IWL_DL_RX))
+	//if (iwl3945_debug_level & (IWL_DL_RX))
 		/* Set "1" to report good data frames in groups of 100 */
-		iwl3945_report_frame(priv, pkt, header, 1);
+	//	iwl3945_report_frame(priv, pkt, header, 1);
 #endif
 
 	if (network_packet) {
