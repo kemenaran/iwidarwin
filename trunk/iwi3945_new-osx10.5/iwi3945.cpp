@@ -404,8 +404,13 @@ void darwin_iwi3945::check_firstup(void)
 		setProperty(kIOMACAddress, my_mac_addr, kIOEthernetAddressSize);
 	}
 	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
-	struct iwl3945_priv *priv=(struct iwl3945_priv*)get_my_priv();
-	iwl_scan(priv);
+	struct ieee80211_local *local =hw_to_local(get_my_hw());
+	struct net_device *dev=local->mdev;
+	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+	ieee80211_sta_start_scan(dev, ifsta->ssid, ifsta->ssid_len);
+	//struct iwl3945_priv *priv=(struct iwl3945_priv*)get_my_priv();
+	//iwl_scan(priv);
 }
 
 void darwin_iwi3945::adapter_start(void)
