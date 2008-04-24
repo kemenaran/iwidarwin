@@ -836,9 +836,9 @@ IM_HERE_NOW();
 	}
 	thread_call_cancel(timer_func[timer->vv]);
     uint64_t deadline, timei;
-	/*if (timer->expires>0)
+	//if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=5000;*/
+	//else timei=5000;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
@@ -5899,7 +5899,7 @@ int pci_enable_device (struct pci_dev * dev){
 
 //ok but nor realy that on linux kernel
 void pci_disable_device (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
 }
 
 /*
@@ -6362,14 +6362,14 @@ void pci_disable_msi(struct pci_dev* dev){
 }
 
 int pci_restore_state (	struct pci_dev *  	dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	fPCIDevice->restoreDeviceState();
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//fPCIDevice->restoreDeviceState();
 	return 0;
 }
 //ok but no saved_config_space in pci_dev struct
 int pci_save_state (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	fPCIDevice->saveDeviceState();
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//fPCIDevice->saveDeviceState();
 	return 0;
 }
 int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
@@ -7801,6 +7801,7 @@ int ieee80211_open(struct ieee80211_local *local)
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 	res = local->ops->add_interface(local_to_hw(local), &conf);
+	res=0;
 	if (res) {
 		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
 			ieee80211_start_hard_monitor(local);
@@ -7811,7 +7812,8 @@ int ieee80211_open(struct ieee80211_local *local)
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
-		IOSleep(50);//hack
+		//IOSleep(50);//hack
+		res=0;
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
@@ -7819,6 +7821,7 @@ int ieee80211_open(struct ieee80211_local *local)
 					local->ops->stop(local_to_hw(local));
 			} else {
 				res = ieee80211_hw_config(local);
+				res=0;
 				if (res && local->ops->stop)
 					local->ops->stop(local_to_hw(local));
 				//else if (!res && local->apdev)
