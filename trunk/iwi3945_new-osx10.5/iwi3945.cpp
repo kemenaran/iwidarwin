@@ -404,19 +404,11 @@ void darwin_iwi3945::check_firstup(void)
 		setProperty(kIOMACAddress, my_mac_addr, kIOEthernetAddressSize);
 	}
 	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
-	//IOSleep(500);
 	struct ieee80211_local *local =hw_to_local(get_my_hw());
-	ieee80211_hw_config(local);
-	struct net_device *dev=local->mdev;
-	ieee80211_if_config(dev);
-	//struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-	//struct ieee80211_if_sta *ifsta = &sdata->u.sta;
-	//bcopy( "<hidden>", ifsta->ssid,sizeof("<hidden>"));
-	//ifsta->ssid_len=sizeof("<hidden>");
-	//ieee80211_sta_start_scan(dev, ifsta->ssid, ifsta->ssid_len);
-	//ieee80211_sta_start_scan(dev, NULL,0);
-	struct iwl3945_priv *priv=(struct iwl3945_priv*)get_my_priv();
-	iwl_scan(priv);
+	if (local)
+	ieee80211_open(local);
+	else
+	IOLog("failed to start card\n");
 }
 
 void darwin_iwi3945::adapter_start(void)
