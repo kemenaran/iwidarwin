@@ -3610,7 +3610,7 @@ static void iwl3945_rx_reply_alive(struct iwl3945_priv *priv,
 	/* We delay the ALIVE response by 5ms to
 	 * give the HW RF Kill time to activate... */
 	if (palive->is_valid == UCODE_VALID_OK)
-		queue_delayed_work(priv->workqueue, pwork, msecs_to_jiffies(5));
+		queue_delayed_work(priv->workqueue, pwork, 5);//msecs_to_jiffies(5));
 	else
 		IWL_WARNING("uCode did not respond OK.\n");
 }
@@ -7117,9 +7117,9 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	
-	ret = UCODE_READY_TIMEOUT;          
+	ret = 10;//UCODE_READY_TIMEOUT;          
 	while(!(test_bit(STATUS_READY, &priv->status))) {                  
-		IOSleep(1);                    
+		IOSleep(UCODE_READY_TIMEOUT);//1);                    
 		ret--;                            
 		if(ret==0)                          
 			break;  
