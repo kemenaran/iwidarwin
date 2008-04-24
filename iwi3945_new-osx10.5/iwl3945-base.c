@@ -7217,8 +7217,7 @@ static int iwl3945_mac_add_interface(struct ieee80211_hw *hw,
 
 	if (priv->interface_id) {
 		IWL_DEBUG_MAC80211("leave - interface_id != 0\n");
-		priv->interface_id=0;
-		//return -EOPNOTSUPP;
+		return -EOPNOTSUPP;
 	}
 
 	spin_lock_irqsave(&priv->lock, flags);
@@ -7429,8 +7428,7 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 	if (priv->interface_id != if_id) {
 		IWL_DEBUG_MAC80211("leave - interface_id != if_id\n");
 		mutex_unlock(&priv->mutex);
-		//return 0;
-		priv->interface_id = if_id;//hack
+		return 0;
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {
