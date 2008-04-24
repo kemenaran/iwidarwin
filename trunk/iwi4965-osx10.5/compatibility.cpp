@@ -836,9 +836,9 @@ IM_HERE_NOW();
 	}
 	thread_call_cancel(timer_func[timer->vv]);
     uint64_t deadline, timei;
-	if (timer->expires>0)
+	/*if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=5000;
+	else timei=5000;*/
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
@@ -2196,7 +2196,7 @@ static inline void setup_timer(struct timer_list2 * timer,
 		init_timer(timer);
 		timer->function = function;
         timer->data = data;
-        add_timer(timer);
+        //add_timer(timer);
  }
 
 void ieee80211_sta_timer(unsigned long data)
