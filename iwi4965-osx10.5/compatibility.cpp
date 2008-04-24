@@ -839,7 +839,7 @@ IM_HERE_NOW();
 	/*if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
 	else timei=5000;*/
-	timei=timer->expires;
+	timei=timer->expires*10;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
