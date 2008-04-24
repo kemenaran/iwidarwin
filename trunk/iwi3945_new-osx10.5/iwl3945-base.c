@@ -7217,7 +7217,8 @@ static int iwl3945_mac_add_interface(struct ieee80211_hw *hw,
 
 	if (priv->interface_id) {
 		IWL_DEBUG_MAC80211("leave - interface_id != 0\n");
-		return -EOPNOTSUPP;
+		priv->interface_id=0;
+		//return -EOPNOTSUPP;
 	}
 
 	spin_lock_irqsave(&priv->lock, flags);
