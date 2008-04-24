@@ -5177,18 +5177,18 @@ IM_HERE_NOW();
 		chan = local->oper_channel;
 		mode = local->oper_hw_mode;
 	}
-if (chan)
-{
+
+
 	local->hw.conf.channel = chan->chan;
 	local->hw.conf.channel_val = chan->val;
 	local->hw.conf.power_level = chan->power_level;
 	local->hw.conf.freq = chan->freq;
-}
-if (mode)
-{
+
+
+
 	local->hw.conf.phymode = mode->mode;
 	local->hw.conf.antenna_max = chan->antenna_max;
-}
+
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 	printk(KERN_DEBUG "HW CONFIG: channel=%d freq=%d "
 	       "phymode=%d\n", local->hw.conf.channel, local->hw.conf.freq,
@@ -6352,8 +6352,8 @@ void pci_unregister_driver (struct pci_driver * drv){
 	set the device master of the bus
 */
 void pci_set_master (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	fPCIDevice->setBusMasterEnable(true);
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//fPCIDevice->setBusMasterEnable(true);
 	return;
 }
 
@@ -6365,14 +6365,14 @@ void pci_disable_msi(struct pci_dev* dev){
 }
 
 int pci_restore_state (	struct pci_dev *  	dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	fPCIDevice->restoreDeviceState();
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//fPCIDevice->restoreDeviceState();
 	return 0;
 }
 //ok but no saved_config_space in pci_dev struct
 int pci_save_state (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	fPCIDevice->saveDeviceState();
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//fPCIDevice->saveDeviceState();
 	return 0;
 }
 int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
@@ -6780,7 +6780,8 @@ int pci_register_driver(struct pci_driver * drv){
 
 	reg16 &= ~kIOPCICommandIOSpace;  // disable I/O space
 	fPCIDevice->configWrite16(kIOPCIConfigCommand,reg16);
-		fPCIDevice->configWrite8(kIOPCIConfigLatencyTimer,0x64);
+		
+	//fPCIDevice->configWrite8(kIOPCIConfigLatencyTimer,0x64);
 	
 	/* We disable the RETRY_TIMEOUT register (0x41) to keep
 	 * PCI Tx retries from interfering with C3 CPU state */
@@ -6788,16 +6789,16 @@ int pci_register_driver(struct pci_driver * drv){
 	if((reg & 0x0000ff00) != 0)
 		fPCIDevice->configWrite16(0x40, reg & 0xffff00ff);
 
-	fPCIDevice->setBusMasterEnable(true);
-	fPCIDevice->setMemoryEnable(true);
+	//fPCIDevice->setBusMasterEnable(true);
+	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	struct ieee80211_local *local = hw_to_local(my_hw);
+	/*struct ieee80211_local *local = hw_to_local(my_hw);
 	int result3 = ieee80211_open(local);//run_add_interface();
 	if(result3)
-		IOLog("Error ieee80211_open\n");
-    //hack
-	//ieee80211_sta_start_scan(local->mdev, NULL, 0);
+		IOLog("Error ieee80211_open\n");*/
+
+
 	return 0;
 }
 
@@ -7825,6 +7826,7 @@ IM_HERE_NOW();
 	conf.mac_addr = dev->dev_addr;
 
 	res = local->ops->add_interface(local_to_hw(local), &conf);
+	res=0;
 	if (res) {
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR)
 			ieee80211_start_hard_monitor(local);
@@ -7836,7 +7838,7 @@ IM_HERE_NOW();
 		tasklet_enable(&local->tasklet);
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
-			return 0;//hack
+			res=0;
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
@@ -7844,6 +7846,7 @@ IM_HERE_NOW();
 					local->ops->stop(local_to_hw(local));
 			} else {
 				res = ieee80211_hw_config(local);
+				res=0;
 				if (res && local->ops->stop)
 					local->ops->stop(local_to_hw(local));
 				//else if (!res && local->apdev)
@@ -7875,14 +7878,10 @@ IM_HERE_NOW();
 	IOLog("1st scan\n");
 	if (res==0)
 	{
-		//iwl_scan((struct iwl3945_priv*)get_my_priv());
-		/*struct ieee80211_if_sta *ifsta;
-		ifsta = &sdata->u.sta;
-		ieee80211_sta_req_scan(dev, ifsta->ssid, ifsta->ssid_len);*/
-		
+		ieee80211_sta_start_scan(dev, NULL,0);
 	}
 	else
-	IOLog(" not ready for 1st scan\n");
+	IOLog("not ready for 1st scan\n");
 	
 	return 0;
 }
