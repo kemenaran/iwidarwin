@@ -7875,13 +7875,13 @@ IM_HERE_NOW();
 		netif_carrier_on(dev);
 	netif_start_queue(dev);*/
 	
-	IOLog("1st scan\n");
+	/*IOLog("1st scan\n");
 	if (res==0)
 	{
 		ieee80211_sta_start_scan(dev, NULL,0);
 	}
 	else
-	IOLog("not ready for 1st scan\n");
+	IOLog("not ready for 1st scan\n");*/
 	
 	return 0;
 }
