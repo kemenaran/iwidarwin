@@ -405,7 +405,6 @@ void darwin_iwi4965::check_firstup(void)
 	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::adapter_start),NULL,NULL,true);
 	struct ieee80211_local *local=hw_to_local(get_my_hw());
 	ieee80211_open(local);
-	ieee80211_sta_start_scan(local->mdev, NULL, 0);
 }
 
 void darwin_iwi4965::adapter_start(void)
@@ -1503,6 +1502,10 @@ IOReturn darwin_iwi4965::enable( IONetworkInterface* netif )
 		sprintf(ii,"%s%d" ,netif->getNamePrefix(), netif->getUnitNumber());
 		ifnet_find_by_name(ii,&fifnet);
 		setMyfifnet(fifnet);
+		struct ieee80211_local *local;
+		local=hw_to_local(get_my_hw());
+		struct net_device *dev=local->mdev;
+		bcopy(ii,dev->name,sizeof(ii));
 	}
     if (first_up==0)
 		{

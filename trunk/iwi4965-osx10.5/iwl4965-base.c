@@ -2526,8 +2526,7 @@ static int iwl4965_scan_initiate(struct iwl4965_priv *priv)
 
 	if (test_bit(STATUS_SCANNING, &priv->status)) {
 		IWL_DEBUG_SCAN("Scan already in progress.\n");
-		clear_bit(STATUS_SCANNING, &priv->status);//hack
-		//return -EAGAIN;
+		return -EAGAIN;
 	}
 
 	if (test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
