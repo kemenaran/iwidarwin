@@ -4704,8 +4704,8 @@ IM_HERE_NOW();
 
 	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx->dev);
 	if ((sdata->type == IEEE80211_IF_TYPE_STA ||
-	     sdata->type == IEEE80211_IF_TYPE_IBSS) &&
-	    !rx->local->user_space_mlme) {
+	     sdata->type == IEEE80211_IF_TYPE_IBSS) /*&&
+	    !rx->local->user_space_mlme*/) {
 		ieee80211_sta_rx_mgmt(rx->dev, rx->skb, rx->u.rx.status);
 	} else {
 		/* Management frames are sent to hostapd for processing */
@@ -7858,7 +7858,8 @@ int ieee80211_open(struct ieee80211_local *local)
 	if (res==0)
 	//iwl_scan((struct iwl4965_priv*)get_my_priv());
 	//ieee80211_sta_start_scan(dev, (u8*)"<hidden>", sizeof("<hidden>"));
-	local->ops->hw_scan(local_to_hw(local),NULL,0);
+	//local->ops->hw_scan(local_to_hw(local),NULL,0);
+	ieee80211_sta_req_scan(dev,NULL,0);
 	else
 	IOLog(" not ready for 1st scan\n");
 	
