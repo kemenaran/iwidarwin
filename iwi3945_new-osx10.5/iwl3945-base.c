@@ -2460,8 +2460,8 @@ static int iwl3945_scan_initiate(struct iwl3945_priv *priv)
 {
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {
 		IWL_ERROR("APs don't scan.\n");
-		priv->iw_mode = IEEE80211_IF_TYPE_STA;//hack
-		//return 0;
+		//priv->iw_mode = IEEE80211_IF_TYPE_STA;//hack
+		return 0;
 	}
 
 	if (!iwl3945_is_ready_rf(priv)) {
@@ -6302,7 +6302,7 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 	priv->active_rate = priv->rates_mask;
 	priv->active_rate_basic = priv->rates_mask & IWL_BASIC_RATES_MASK;
 
-	//iwl3945_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode)); //hack
+	iwl3945_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode));
 
 	if (iwl3945_is_associated(priv)) {
 		struct iwl3945_rxon_cmd *active_rxon =
