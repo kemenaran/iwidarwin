@@ -6794,10 +6794,10 @@ int pci_register_driver(struct pci_driver * drv){
 	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	struct ieee80211_local *local = hw_to_local(my_hw);
+	/*struct ieee80211_local *local = hw_to_local(my_hw);
 	int result3 = ieee80211_open(local);//run_add_interface();
 	if(result3)
-		IOLog("Error ieee80211_open\n");
+		IOLog("Error ieee80211_open\n");*/
 
 
 	return 0;
@@ -7822,7 +7822,6 @@ IM_HERE_NOW();
 	
 	ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
-	sdata->type=IEEE80211_IF_TYPE_STA;//hack
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 
@@ -7876,13 +7875,14 @@ IM_HERE_NOW();
 		netif_carrier_on(dev);
 	netif_start_queue(dev);*/
 	
-	/*IOLog("1st scan\n");
+	IOLog("1st scan\n");
 	if (res==0)
 	{
-		ieee80211_sta_start_scan(dev, NULL,0);
+		//ieee80211_sta_start_scan(dev, NULL,0);
+		local->ops->hw_scan(local_to_hw(local),(u8*)"<hidden>", sizeof("<hidden>"));
 	}
 	else
-	IOLog("not ready for 1st scan\n");*/
+	IOLog("not ready for 1st scan\n");
 	
 	return 0;
 }
