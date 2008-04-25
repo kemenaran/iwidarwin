@@ -7801,6 +7801,7 @@ int ieee80211_open(struct ieee80211_local *local)
 	
 	//ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
+	sdata->type = IEEE80211_IF_TYPE_STA;//hack
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 	res = local->ops->add_interface(local_to_hw(local), &conf);
