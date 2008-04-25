@@ -6351,8 +6351,8 @@ void pci_unregister_driver (struct pci_driver * drv){
 	set the device master of the bus
 */
 void pci_set_master (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	fPCIDevice->setBusMasterEnable(true);
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//fPCIDevice->setBusMasterEnable(true);
 	return;
 }
 
@@ -6780,7 +6780,7 @@ int pci_register_driver(struct pci_driver * drv){
 
 	reg16 &= ~kIOPCICommandIOSpace;  // disable I/O space
 	fPCIDevice->configWrite16(kIOPCIConfigCommand,reg16);
-		fPCIDevice->configWrite8(kIOPCIConfigLatencyTimer,0x64);
+	//fPCIDevice->configWrite8(kIOPCIConfigLatencyTimer,0x64);
 	
 	/* We disable the RETRY_TIMEOUT register (0x41) to keep
 	 * PCI Tx retries from interfering with C3 CPU state */
