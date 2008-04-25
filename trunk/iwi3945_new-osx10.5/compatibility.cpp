@@ -2773,6 +2773,9 @@ IM_HERE_NOW();
 		printk(KERN_WARNING "%s: Failed to add default virtual iface\n",
 		       local->mdev->name);
 
+	//hack
+	local->ops->open(local_to_hw(local));
+	
 	(int)local->reg_state = 1;//IEEE80211_DEV_REGISTERED;//check this
 	/*rtnl_unlock();
 
@@ -7835,9 +7838,9 @@ IM_HERE_NOW();
 						
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
-		tasklet_enable(&local->tasklet);
-		if (local->ops->open)
-			res = local->ops->open(local_to_hw(local));
+		//tasklet_enable(&local->tasklet);
+		//if (local->ops->open)
+		//	res = local->ops->open(local_to_hw(local));
 			res=0;
 		if (res == 0) {
 			//res = dev_open(local->mdev);
@@ -7878,8 +7881,8 @@ IM_HERE_NOW();
 	IOLog("1st scan\n");
 	if (res==0)
 	{
-		//ieee80211_sta_start_scan(dev, NULL,0);
-		local->ops->hw_scan(local_to_hw(local),(u8*)"<hidden>", sizeof("<hidden>"));
+		ieee80211_sta_start_scan(dev, (u8*)"<hidden>", sizeof("<hidden>"));
+		//local->ops->hw_scan(local_to_hw(local),(u8*)"<hidden>", sizeof("<hidden>"));
 	}
 	else
 	IOLog("not ready for 1st scan\n");
