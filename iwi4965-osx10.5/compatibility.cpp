@@ -6786,8 +6786,8 @@ int pci_register_driver(struct pci_driver * drv){
 	if((reg & 0x0000ff00) != 0)
 		fPCIDevice->configWrite16(0x40, reg & 0xffff00ff);
 
-	fPCIDevice->setBusMasterEnable(true);
-	fPCIDevice->setMemoryEnable(true);
+	//fPCIDevice->setBusMasterEnable(true);
+	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
 	/*struct ieee80211_local *local = hw_to_local(my_hw);
@@ -7792,10 +7792,10 @@ int ieee80211_open(struct ieee80211_local *local)
 		return 0;
 	}
 
-	memcpy(dev->dev_addr, my_mac_addr, ETH_ALEN);//hack
+	/*memcpy(dev->dev_addr, my_mac_addr, ETH_ALEN);//hack
 	char ii[4];
 	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
-	bcopy(ii,dev->name,sizeof(ii));
+	bcopy(ii,dev->name,sizeof(ii));*/
 	
 	//ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
@@ -7851,12 +7851,13 @@ int ieee80211_open(struct ieee80211_local *local)
 		netif_carrier_on(dev);
 	netif_start_queue(dev);*/
 	
-	/*IOLog("1st scan\n");
+	IOLog("1st scan\n");
 	if (res==0)
 	//iwl_scan((struct iwl4965_priv*)get_my_priv());
 	//ieee80211_sta_start_scan(dev, NULL, 0);
+	local->ops->hw_scan(local_to_hw(local),(u8*)"<hidden>", sizeof("<hidden>"));
 	else
-	IOLog(" not ready for 1st scan\n");*/
+	IOLog(" not ready for 1st scan\n");
 	
 	return 0;
 }
