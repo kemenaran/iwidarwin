@@ -836,10 +836,9 @@ IM_HERE_NOW();
 	}
 	thread_call_cancel(timer_func[timer->vv]);
     uint64_t deadline, timei;
-	/*if (timer->expires>0)
+	if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=5000;*/
-	timei=timer->expires*10;
+	else timei=5000;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
@@ -5328,7 +5327,7 @@ IM_HERE_NOW();
 	}
 	//check this
 	if (local->sta_scanning)
-	queue_te(local->scan_work.work.number,(thread_call_func_t)local->scan_work.work.func,local,next_delay,true);
+	queue_te(local->scan_work.work.number,(thread_call_func_t)local->scan_work.work.func,local,jiffies_to_msecs(next_delay),true);
 		//queue_delayed_work(local->hw.workqueue, &local->scan_work,
 		//		   next_delay);
 }
@@ -6598,6 +6597,7 @@ int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay) {
 	struct work_struct tmp = work->work;
 	struct work_struct *tmp2 = &tmp;
+	delay=jiffies_to_msecs(delay);
 	queue_te(tmp2->number,(thread_call_func_t)tmp2->func,my_hw->priv,delay,true);
     return 0;
 }
@@ -6734,7 +6734,7 @@ IM_HERE_NOW();
 		       dev->name);
 
 	/* TODO: start scan as soon as all nullfunc frames are ACKed */
-	queue_te(local->scan_work.work.number,(thread_call_func_t)local->scan_work.work.func,local,IEEE80211_CHANNEL_TIME,true);
+	queue_te(local->scan_work.work.number,(thread_call_func_t)local->scan_work.work.func,local,jiffies_to_msecs(IEEE80211_CHANNEL_TIME),true);
 	//queue_delayed_work(local->hw.workqueue, &local->scan_work,
 	//		   IEEE80211_CHANNEL_TIME);
 
