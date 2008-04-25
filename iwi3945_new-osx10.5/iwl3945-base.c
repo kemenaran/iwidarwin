@@ -7541,10 +7541,9 @@ static int iwl3945_mac_hw_scan(struct ieee80211_hw *hw, u8 *ssid, size_t len)
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {	/* APs don't scan */
-		//rc = -EIO;
+		rc = -EIO;
 		IWL_ERROR("ERROR: APs don't scan\n");
-		priv->iw_mode = IEEE80211_IF_TYPE_STA;//hack
-		//goto out_unlock;
+		goto out_unlock;
 	}
 
 	/* we don't schedule scan within next_scan_jiffies period */
