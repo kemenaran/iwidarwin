@@ -2193,7 +2193,7 @@ static inline int identical_mac_addr_allowed(int type1, int type2)
 }
 
 static u8 my_mac_addr[6];
-
+#define kPCIPMCSR                   (pmPCICapPtr + 4)
 
 //this must be last lines in file. the includes are broken
 #include "compatibility.h"	
