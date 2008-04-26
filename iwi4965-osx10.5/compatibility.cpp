@@ -5268,8 +5268,6 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
-	else
-	ieee80211_sta_req_scan(dev,NULL,0);//hack
 }
 
 
@@ -7860,8 +7858,8 @@ int ieee80211_open(struct ieee80211_local *local)
 	
 	IOLog("1st scan\n");
 	if (res==0)
-	//ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
-	ieee80211_sta_req_scan(dev,NULL,0);//maybe this?
+	ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
+	//ieee80211_sta_req_scan(dev,NULL,0);//maybe this?
 	else
 	IOLog(" not ready for 1st scan\n");
 	
