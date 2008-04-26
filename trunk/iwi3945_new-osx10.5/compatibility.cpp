@@ -1736,7 +1736,8 @@ IM_HERE_NOW();
 						continue;
 					rx.u.rx.ra_match = 0;
 				}
-				if (sdata->dev == local->mdev &&
+				//hack
+				if (/*sdata->dev == local->mdev &&*/
 				    !rx.u.rx.in_scan)
 					/* do not receive anything via
 					 * master device when not scanning */
@@ -5232,8 +5233,9 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
 
 		/* No need to wake the master device. */
-		if (sdata->dev == local->mdev)
-			continue;
+		//hack
+		//if (sdata->dev == local->mdev)
+		//	continue;
 
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
@@ -6713,8 +6715,9 @@ IM_HERE_NOW();
 
 		/* Don't stop the master interface, otherwise we can't transmit
 		 * probes! */
-		if (sdata->dev == local->mdev)
-			continue;
+		//hack
+		//if (sdata->dev == local->mdev)
+		//	continue;
 
 		//netif_stop_queue(sdata->dev);
 		if (sdata->type == IEEE80211_IF_TYPE_STA &&
@@ -7883,9 +7886,8 @@ IM_HERE_NOW();
 	IOLog("1st scan\n");
 	if (res==0)
 	{
-		//ieee80211_sta_start_scan(dev, (u8*)"<hidden>", sizeof("<hidden>"));
-		//local->ops->hw_scan(local_to_hw(local),(u8*)"<hidden>", sizeof("<hidden>"));
 		ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
+		//ieee80211_sta_req_scan(dev,NULL,0);//maybe this?
 	}
 	else
 	IOLog("not ready for 1st scan\n");
