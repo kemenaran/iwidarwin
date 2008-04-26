@@ -6873,7 +6873,7 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 	//(hw_to_local(priv->hw))->open_count=0;
 	//ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
-	//queue_work(priv->workqueue, &priv->up); // maybe kp here
+	queue_work(priv->workqueue, &priv->up); // maybe kp here
 
 }
 
@@ -7117,7 +7117,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	
-	IOSleep(750);//hack
+	//IOSleep(750);//hack
 	ret = UCODE_READY_TIMEOUT;          
 	while(!(test_bit(STATUS_READY, &priv->status))) {                  
 		IOSleep(1);                    
