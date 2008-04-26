@@ -842,7 +842,7 @@ static int iwl3945_send_cmd_sync(struct iwl3945_priv *priv, struct iwl3945_host_
 			HOST_COMPLETE_TIMEOUT);*/
 	ret = HOST_COMPLETE_TIMEOUT;          
 	while(test_bit(STATUS_HCMD_ACTIVE, &priv->status)) {                  
-		IOSleep(1);                    
+		IOSleep(100);                    
 		ret--;                            
 		if(ret==0)                          
 			break;  
@@ -7117,10 +7117,9 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	
-	IOSleep(500);//hack
 	ret = UCODE_READY_TIMEOUT;          
 	while(!(test_bit(STATUS_READY, &priv->status))) {                  
-		IOSleep(1);                    
+		IOSleep(10);                    
 		ret--;                            
 		if(ret==0)                          
 			break;  
