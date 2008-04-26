@@ -13,6 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	extern int ieee80211_sta_req_scan(struct net_device *dev, u8 *ssid, size_t ssid_len);
 	extern void ieee80211_sta_scan_work(struct work_struct *work);
 	extern int ieee80211_open(struct ieee80211_local *local);
 	extern int ieee80211_hw_config(struct ieee80211_local *local);
