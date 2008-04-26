@@ -338,7 +338,9 @@ class darwin_iwi4965 : public IOEthernetController
 		virtual void getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const;
 		
 		virtual IOReturn registerWithPolicyMaker(IOService * policyMaker);
-		virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
+    virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService *policyMaker);
+    virtual void setPowerStateOff(void);
+    virtual void setPowerStateOn(void);
 		virtual IOReturn setMulticastMode(bool active);
 		virtual IOReturn setMulticastList(IOEthernetAddress * addrs, UInt32 count);
 		virtual UInt32	 outputPacket(mbuf_t m, void * param);
@@ -397,5 +399,11 @@ class darwin_iwi4965 : public IOEthernetController
 							//the user is connected to the driver.
 		struct iwl4965_priv *priv;
 		const char *fakemac;
+		IOService *             _pmPolicyMaker;
+	UInt32                  _pmPowerState;
+    thread_call_t           _powerOffThreadCall;
+    thread_call_t           _powerOnThreadCall;
+	UInt8                          pmPCICapPtr;	
+	bool                          magicPacketEnabled;
 							
     };
