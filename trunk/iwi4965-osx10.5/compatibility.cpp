@@ -1736,8 +1736,7 @@ IM_HERE_NOW();
 						continue;
 					rx.u.rx.ra_match = 0;
 				}
-				//hack
-				if (/*sdata->dev == local->mdev &&*/
+				if (sdata->dev == local->mdev &&
 				    !rx.u.rx.in_scan)
 					/* do not receive anything via
 					 * master device when not scanning */
@@ -2199,6 +2198,28 @@ static inline void setup_timer(struct timer_list2 * timer,
         timer->data = data;
         //add_timer(timer);
  }
+
+int ieee80211_sta_req_scan(struct net_device *dev, u8 *ssid, size_t ssid_len)
+{
+	IM_HERE_NOW();
+	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+
+	if (sdata->type != IEEE80211_IF_TYPE_STA)
+		return ieee80211_sta_start_scan(dev, ssid, ssid_len);
+
+	if (local->sta_scanning) {
+		if (local->scan_dev == dev)
+			return 0;
+		return -EBUSY;
+	}
+
+	set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);
+	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
+	//queue_work(local->hw.workqueue, &ifsta->work);
+	return 0;
+}
 
 void ieee80211_sta_timer(unsigned long data)
 {
@@ -5226,9 +5247,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
 
 		/* No need to wake the master device. */
-		//hack
-		//if (sdata->dev == local->mdev)
-		//	continue;
+		if (sdata->dev == local->mdev)
+			continue;
 
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
@@ -5248,6 +5268,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
+	else
+	ieee80211_sta_req_scan(dev,NULL,0);//hack
 }
 
 
@@ -6711,9 +6733,8 @@ IM_HERE_NOW();
 
 		/* Don't stop the master interface, otherwise we can't transmit
 		 * probes! */
-		//hack
-		//if (sdata->dev == local->mdev)
-		//	continue;
+		if (sdata->dev == local->mdev)
+			continue;
 
 		//netif_stop_queue(sdata->dev);
 		if (sdata->type == IEEE80211_IF_TYPE_STA &&
@@ -7260,27 +7281,6 @@ static int ieee80211_sta_join_ibss(struct net_device *dev,
 	return res;
 }
 
-int ieee80211_sta_req_scan(struct net_device *dev, u8 *ssid, size_t ssid_len)
-{
-	IM_HERE_NOW();
-	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
-	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
-
-	if (sdata->type != IEEE80211_IF_TYPE_STA)
-		return ieee80211_sta_start_scan(dev, ssid, ssid_len);
-
-	if (local->sta_scanning) {
-		if (local->scan_dev == dev)
-			return 0;
-		return -EBUSY;
-	}
-
-	set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);
-	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
-	//queue_work(local->hw.workqueue, &ifsta->work);
-	return 0;
-}
 
 static int ieee80211_sta_create_ibss(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta)
