@@ -10,6 +10,7 @@
 		32D94FC60562CBF700B6AF17 /* iwi4965.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A224C3EFF42367911CA2CB7 /* iwi4965.h */; };
 		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
 		32D94FCA0562CBF700B6AF17 /* iwi4965.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1A224C3FFF42367911CA2CB7 /* iwi4965.cpp */; settings = {ATTRIBUTES = (); }; };
+		61AB07CD0DC3ECDA000C81F9 /* WiFiPower.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61AB07CC0DC3ECDA000C81F9 /* WiFiPower.cpp */; };
 		9664E7310DAFEF62006F632B /* iwl-4965-commands.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6E40DAFEF62006F632B /* iwl-4965-commands.h */; };
 		9664E7320DAFEF62006F632B /* iwl-4965-debug.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6E50DAFEF62006F632B /* iwl-4965-debug.h */; };
 		9664E7330DAFEF62006F632B /* iwl-4965-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6E60DAFEF62006F632B /* iwl-4965-hw.h */; };
@@ -41,7 +42,8 @@
 		089C167EFE841241C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1A224C3EFF42367911CA2CB7 /* iwi4965.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iwi4965.h; sourceTree = "<group>"; };
 		1A224C3FFF42367911CA2CB7 /* iwi4965.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = iwi4965.cpp; sourceTree = "<group>"; };
-		32D94FCF0562CBF700B6AF17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		32D94FCF0562CBF700B6AF17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
+		61AB07CC0DC3ECDA000C81F9 /* WiFiPower.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = WiFiPower.cpp; sourceTree = "<group>"; };
 		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
 		965A45D00DB54C4A00C9925A /* iwi4965.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwi4965.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		9664E6E40DAFEF62006F632B /* iwl-4965-commands.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-commands.h"; sourceTree = "<group>"; };
@@ -113,6 +115,7 @@
 		247142CAFF3F8F9811CA285C /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				61AB07CC0DC3ECDA000C81F9 /* WiFiPower.cpp */,
 				9664E8880DAFF0DD006F632B /* firmware */,
 				9664E8350DAFF0B6006F632B /* mac80211 */,
 				9664E85F0DAFF0B6006F632B /* net */,
@@ -196,7 +199,6 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 1DEB91DD08733DB10010E9CD /* Build configuration list for PBXProject "iwi4965" */;
-			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 089C166AFE841209C02AAC07 /* iwi4965 */;
 			projectDirPath = "";
@@ -247,6 +249,7 @@
 				9664E7390DAFEF62006F632B /* iwl4965-base.c in Sources */,
 				9664ECC60DAFF8B5006F632B /* compatibility.cpp in Sources */,
 				9664ECCD0DAFF8B5006F632B /* rc80211_simple.c in Sources */,
+				61AB07CD0DC3ECDA000C81F9 /* WiFiPower.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
