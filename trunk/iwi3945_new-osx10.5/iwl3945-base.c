@@ -6302,7 +6302,7 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 	priv->active_rate = priv->rates_mask;
 	priv->active_rate_basic = priv->rates_mask & IWL_BASIC_RATES_MASK;
 
-	iwl3945_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode));
+	//iwl3945_send_power_mode(priv, IWL_POWER_LEVEL(priv->power_mode));
 
 	if (iwl3945_is_associated(priv)) {
 		struct iwl3945_rxon_cmd *active_rxon =
