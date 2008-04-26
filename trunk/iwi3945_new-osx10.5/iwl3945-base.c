@@ -842,7 +842,7 @@ static int iwl3945_send_cmd_sync(struct iwl3945_priv *priv, struct iwl3945_host_
 			HOST_COMPLETE_TIMEOUT);*/
 	ret = HOST_COMPLETE_TIMEOUT;          
 	while(test_bit(STATUS_HCMD_ACTIVE, &priv->status)) {                  
-		IOSleep(100);                    
+		IOSleep(1);                    
 		ret--;                            
 		if(ret==0)                          
 			break;  
@@ -6873,7 +6873,7 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 	//(hw_to_local(priv->hw))->open_count=0;
 	//ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
-	queue_work(priv->workqueue, &priv->up); // maybe kp here
+	//queue_work(priv->workqueue, &priv->up); // maybe kp here
 
 }
 
