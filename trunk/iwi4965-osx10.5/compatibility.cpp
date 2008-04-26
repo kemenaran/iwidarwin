@@ -7860,7 +7860,8 @@ int ieee80211_open(struct ieee80211_local *local)
 	//iwl_scan((struct iwl4965_priv*)get_my_priv());
 	//ieee80211_sta_start_scan(dev, (u8*)"<hidden>", sizeof("<hidden>"));
 	//local->ops->hw_scan(local_to_hw(local),NULL,0);
-	ieee80211_sta_req_scan(dev,NULL,0);
+	//ieee80211_sta_req_scan(dev,NULL,0);
+	ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
 	else
 	IOLog(" not ready for 1st scan\n");
 	
