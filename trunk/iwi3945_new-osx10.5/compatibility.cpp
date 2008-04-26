@@ -7883,8 +7883,9 @@ IM_HERE_NOW();
 	IOLog("1st scan\n");
 	if (res==0)
 	{
-		ieee80211_sta_start_scan(dev, (u8*)"<hidden>", sizeof("<hidden>"));
+		//ieee80211_sta_start_scan(dev, (u8*)"<hidden>", sizeof("<hidden>"));
 		//local->ops->hw_scan(local_to_hw(local),(u8*)"<hidden>", sizeof("<hidden>"));
+		ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
 	}
 	else
 	IOLog("not ready for 1st scan\n");
