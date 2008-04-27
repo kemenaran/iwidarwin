@@ -828,7 +828,6 @@ int timer_func_count=0;
 void
 IOPCCardAddTimer(struct timer_list2 * timer)
 {
-IM_HERE_NOW();
 	if (!timer->on)
 	{
 		IOLog("timer not on\n");
@@ -838,14 +837,13 @@ IM_HERE_NOW();
     uint64_t deadline, timei;
 	if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=5000;
+	else timei=3000;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
-	IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
+	//IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
 }
 
 void test_timer(struct timer_list2 * timer,unsigned long data){
-IM_HERE_NOW();	
 	if(timer && data)
 	{
 		if(timer->on)
@@ -863,7 +861,6 @@ IM_HERE_NOW();
 int
 IOPCCardDeleteTimer(struct timer_list2 * timer)
 {
-IM_HERE_NOW();
 	if (!timer->on) return 0;
 	thread_call_cancel(timer_func[timer->vv]);
 	timer->on=0;
@@ -871,19 +868,16 @@ IM_HERE_NOW();
 }
 
 int add_timer(struct timer_list2 *timer) {
-IM_HERE_NOW();
 	IOPCCardAddTimer(timer);
 	return 0;
 }
 
 int del_timer(struct timer_list2 *timer) {
-IM_HERE_NOW();
 	IOPCCardDeleteTimer(timer);
 	return 0;
 }
 
 void init_timer(struct timer_list2 *timer) {
-IM_HERE_NOW();
 	//timer=(struct timer_list2*)IOMalloc(sizeof(struct timer_list2*));
 	timer_func_count++;
 	timer->vv=timer_func_count;
@@ -892,7 +886,6 @@ IM_HERE_NOW();
 }
 
 int mod_timer(struct timer_list2 *timer, int length) {
-IM_HERE_NOW();
 	del_timer(timer);
 	timer->expires = length;
 	timer->on=1; 
@@ -900,7 +893,6 @@ IM_HERE_NOW();
 }
 
 int del_timer_sync(struct timer_list2 *timer) {
-IM_HERE_NOW();
 	del_timer(timer);
 }
 
@@ -2196,7 +2188,7 @@ static inline void setup_timer(struct timer_list2 * timer,
 		init_timer(timer);
 		timer->function = function;
         timer->data = data;
-        //add_timer(timer);
+        add_timer(timer);
  }
 
 int ieee80211_sta_req_scan(struct net_device *dev, u8 *ssid, size_t ssid_len)
