@@ -1631,7 +1631,7 @@ copy_packet:
 	
 	if(get_my_hw()){
 		if((fNetif->getFlags() & IFF_RUNNING)==0
-			|| !is_associated((struct iwl4965_priv*)get_my_hw()->priv))
+			/*|| !is_associated((struct iwl4965_priv*)get_my_hw()->priv)*/)
 		{
 			netStats->outputPackets++;
 			IOLog("tx pkt with net down\n");
