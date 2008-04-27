@@ -1676,7 +1676,7 @@ copy_packet:
 	}
 	
 
-	struct sk_buff *skb=dev_alloc_skb(mbuf_pkthdr_len(m));//TODO: make this work better
+	struct sk_buff *skb=dev_alloc_skb(mbuf_len(m));//TODO: make this work better
 	//skb->mac_data=m;
 	skb_set_data(skb,mbuf_data(m),mbuf_len(m));
 	int ret  = mac_tx(get_my_hw(),skb,&tx_ctrl);//check tx_ctrl setup
