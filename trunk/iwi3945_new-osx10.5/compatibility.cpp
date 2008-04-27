@@ -302,18 +302,7 @@ static inline struct sk_buff *skb_peek(struct sk_buff_head *list_)
          return list;
  }
 
-static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
-{
-	//need to change skb->mac_data
-	//skb_reset_mac_header(skb);
-        //skb->mac_header += offset;
-}
 
-static inline void skb_set_network_header(struct sk_buff *skb, const int offset)
-{
-        //need to change skb->mac_data
-	//skb->network_header = skb->data + offset;
-}
 
 
 void *skb_push(const struct sk_buff *skb, unsigned int len) {
@@ -321,6 +310,24 @@ void *skb_push(const struct sk_buff *skb, unsigned int len) {
 	return mbuf_data(skb->mac_data);
 }
 
+static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
+{
+	//need to change skb->mac_data
+	//skb_reset_mac_header(skb);
+        //skb->mac_header += offset;
+		u8 et[ETH_ALEN];
+		memset(et,0,sizeof(et));
+		bcopy(et, skb_push(skb, ETH_ALEN), ETH_ALEN);
+}
+
+static inline void skb_set_network_header(struct sk_buff *skb, const int offset)
+{
+        //need to change skb->mac_data
+	//skb->network_header = skb->data + offset;
+	u8 et[ETH_ALEN];
+		memset(et,0,sizeof(et));
+		bcopy(et, skb_push(skb, ETH_ALEN), ETH_ALEN);
+}
 
 int skb_tailroom(const struct sk_buff *skb) {
     return mbuf_trailingspace(skb->mac_data);
@@ -4902,8 +4909,8 @@ IM_HERE_NOW();
 		/* send to wireless media */
 		//FIXME: SEND
 		//skb2->protocol = __constant_htons(ETH_P_802_3);
-		//skb_set_network_header(skb2, 0);
-		//skb_set_mac_header(skb2, 0);
+		skb_set_network_header(skb2, 0);
+		skb_set_mac_header(skb2, 0);
 		//dev_queue_xmit(skb2);
 		currentController->outputPacket(skb2->mac_data,NULL);
 	}
