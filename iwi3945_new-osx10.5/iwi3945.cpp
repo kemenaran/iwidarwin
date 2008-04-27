@@ -150,15 +150,15 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}	
 	}
 	if(opt == 2){
-		IOLog("request scan!\n");
-		struct ieee80211_local *local=hw_to_local(get_my_hw());
+		IOLog("request scan - disabled!\n");
+		/*struct ieee80211_local *local=hw_to_local(get_my_hw());
 		if (local)
 		{
 			struct net_device *dev=local->mdev;
 			ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
 		}
 		else
-			IOLog("not ready to scan \n");
+			IOLog("not ready to scan \n");*/
 	}
 
 	return(0);
@@ -403,10 +403,9 @@ void darwin_iwi3945::check_firstup(void)
 		setProperty(kIOMACAddress, my_mac_addr, kIOEthernetAddressSize);
 	}
 	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
-	struct ieee80211_local *local =hw_to_local(get_my_hw());
+	/*struct ieee80211_local *local =hw_to_local(get_my_hw());
 	struct net_device *dev=local->mdev;
-	ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
-	//ieee80211_open(local);
+	ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));*/
 }
 
 void darwin_iwi3945::adapter_start(void)
@@ -1631,7 +1630,7 @@ copy_packet:
 	
 	if(get_my_hw()){
 		if((fNetif->getFlags() & IFF_RUNNING)==0
-			|| !is_associated((struct iwl3945_priv*)get_my_hw()->priv))
+			/*|| !is_associated((struct iwl3945_priv*)get_my_hw()->priv)*/)
 		{
 			netStats->outputPackets++;
 			IOLog("tx pkt with net down\n");
