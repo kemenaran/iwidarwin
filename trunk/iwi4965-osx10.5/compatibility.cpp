@@ -2304,9 +2304,8 @@ IM_HERE_NOW();
 	int ret;
 
 	//ASSERT_RTNL();
-	ndev = dev;//hack
-	//alloc_netdev(sizeof(struct ieee80211_sub_if_data),
-	//		    name, NULL);//ieee80211_if_setup);
+	ndev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+			    name, NULL);//ieee80211_if_setup);
 	if (!ndev)
 		return -ENOMEM;
 
@@ -2329,7 +2328,7 @@ IM_HERE_NOW();
 	
 	ndev->ieee80211_ptr = hw_to_local(my_hw);//&sdata->wdev;
 	//sdata->wdev.wiphy = local->hw.wiphy;
-	sdata->type = IEEE80211_IF_TYPE_AP;
+	sdata->type = IEEE80211_IF_TYPE_STA;//IEEE80211_IF_TYPE_AP;
 	sdata->dev = ndev;
 	sdata->local = local;
 	ieee80211_if_sdata_init(sdata);
@@ -2791,8 +2790,7 @@ IM_HERE_NOW();
 	if (result)
 		printk(KERN_WARNING "%s: Failed to add default virtual iface\n",
 		       local->mdev->name);
-	//hack
-	local->ops->open(local_to_hw(local));
+
 			
 	(int)local->reg_state = 1;//IEEE80211_DEV_REGISTERED;//check this
 	/*rtnl_unlock();
@@ -6721,7 +6719,7 @@ IM_HERE_NOW();
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;
+		//return rc;
 	}
 
 	local->sta_scanning = 1;
@@ -6815,10 +6813,10 @@ int pci_register_driver(struct pci_driver * drv){
 	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	/*struct ieee80211_local *local = hw_to_local(my_hw);
-	int result3 = ieee80211_open(local->mdev);//run_add_interface();
+	struct ieee80211_local *local = hw_to_local(my_hw);
+	int result3 = ieee80211_open(local);//run_add_interface();
 	if(result3)
-		IOLog("Error ieee80211_open\n");*/
+		IOLog("Error ieee80211_open\n");
     //hack
 	//ieee80211_sta_start_scan(local->mdev, NULL, 0);
 	return 0;
@@ -7803,7 +7801,7 @@ int ieee80211_open(struct ieee80211_local *local)
 	
 	//ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
-	sdata->type = IEEE80211_IF_TYPE_STA;//hack
+	//sdata->type = IEEE80211_IF_TYPE_STA;//hack
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
 	res = local->ops->add_interface(local_to_hw(local), &conf);
@@ -7815,9 +7813,9 @@ int ieee80211_open(struct ieee80211_local *local)
 	}
 	if (local->open_count == 0) {
 		tasklet_enable(&local->tx_pending_tasklet);
-		//tasklet_enable(&local->tasklet);
-		//if (local->ops->open)
-		//	res = local->ops->open(local_to_hw(local));
+		tasklet_enable(&local->tasklet);
+		if (local->ops->open)
+			res = local->ops->open(local_to_hw(local));
 		//IOSleep(50);//hack
 		res=0;
 		if (res == 0) {
@@ -7856,12 +7854,12 @@ int ieee80211_open(struct ieee80211_local *local)
 		netif_carrier_on(dev);
 	netif_start_queue(dev);*/
 	
-	IOLog("1st scan\n");
+	/*IOLog("1st scan\n");
 	if (res==0)
 	ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
 	//ieee80211_sta_req_scan(dev,NULL,0);//maybe this?
 	else
-	IOLog(" not ready for 1st scan\n");
+	IOLog(" not ready for 1st scan\n");*/
 	
 	return 0;
 }
