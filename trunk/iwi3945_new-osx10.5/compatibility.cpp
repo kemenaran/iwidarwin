@@ -351,7 +351,10 @@ void *skb_data(const struct sk_buff *skb) {
 }
 
 int skb_set_data(const struct sk_buff *skb, void *data, size_t len) {
-   return mbuf_setdata(skb->mac_data,data,len);
+   mbuf_setdata(skb->mac_data,data,len);
+   mbuf_pkthdr_setlen(skb->mac_data,len);
+   mbuf_setlen(skb->mac_data,len);
+   return 0;
 }
 
 int skb_len(const struct sk_buff *skb) {
