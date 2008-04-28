@@ -7616,9 +7616,9 @@ static int iwl4965_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *co
 	if (unlikely(!iwl4965_param_disable_hw_scan &&
 		     test_bit(STATUS_SCANNING, &priv->status))) {
 		IWL_DEBUG_MAC80211("leave - scanning\n");
-		set_bit(STATUS_CONF_PENDING, &priv->status);
+		//set_bit(STATUS_CONF_PENDING, &priv->status);
 		mutex_unlock(&priv->mutex);
-		return 0;
+		//return 0;
 	}
 
 	spin_lock_irqsave(&priv->lock, flags);
@@ -7785,13 +7785,14 @@ static int iwl4965_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 	    !(priv->hw->flags & IEEE80211_HW_NO_PROBE_FILTERING)) {
 		IWL_DEBUG_MAC80211("leave - scanning\n");
 		mutex_unlock(&priv->mutex);
-		return 0;
+		//return 0;
 	}
 
 	if (priv->interface_id != if_id) {
 		IWL_DEBUG_MAC80211("leave - interface_id != if_id\n");
 		mutex_unlock(&priv->mutex);
-		return 0;
+		priv->interface_id = if_id;
+		//return 0;
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {
