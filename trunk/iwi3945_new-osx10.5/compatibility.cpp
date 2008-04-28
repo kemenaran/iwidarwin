@@ -315,20 +315,20 @@ static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
 	//need to change skb->mac_data
 	//skb_reset_mac_header(skb);
         //skb->mac_header += offset;
-		u8 et[ETH_ALEN];
+		/*u8 et[ETH_ALEN];
 		memset(et,0,sizeof(et));
 		mbuf_adj(skb->mac_data, ETH_ALEN);
-		bcopy(et, skb_push(skb, ETH_ALEN), ETH_ALEN);
+		bcopy(et, skb_push(skb, ETH_ALEN), ETH_ALEN);*/
 }
 
 static inline void skb_set_network_header(struct sk_buff *skb, const int offset)
 {
         //need to change skb->mac_data
 	//skb->network_header = skb->data + offset;
-	u8 et[ETH_ALEN];
+	/*u8 et[ETH_ALEN];
 		memset(et,0,sizeof(et));
 		mbuf_adj(skb->mac_data, ETH_ALEN);
-		bcopy(et, skb_push(skb, ETH_ALEN), ETH_ALEN);
+		bcopy(et, skb_push(skb, ETH_ALEN), ETH_ALEN);*/
 }
 
 int skb_tailroom(const struct sk_buff *skb) {
