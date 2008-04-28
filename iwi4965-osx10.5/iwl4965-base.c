@@ -69,7 +69,7 @@ static int iwl4965_tx_queue_update_write_ptr(struct iwl4965_priv *priv,
 /* module parameters */
 static int iwl4965_param_disable_hw_scan; /* def: 0 = use 4965's h/w scan */
 //static int iwl4965_param_debug;    /* def: 0 = minimal debug log messages */
-static int iwl4965_param_debug = 0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP);
+static int iwl4965_param_debug = 0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP | IWL_DL_TXPOWER);
 static int iwl4965_param_disable;  /* def: enable radio */
 static int iwl4965_param_antenna;  /* def: 0 = both antennas (use diversity) */
 int iwl4965_param_hwcrypto;        /* def: using software encryption */
