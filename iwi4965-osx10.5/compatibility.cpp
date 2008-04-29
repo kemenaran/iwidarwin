@@ -2305,8 +2305,9 @@ IM_HERE_NOW();
 	int ret;
 
 	//ASSERT_RTNL();
-	ndev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
-			    name, NULL);//ieee80211_if_setup);
+	ndev = local->mdev;//hack
+	//alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+	//		    name, NULL);//ieee80211_if_setup);
 	if (!ndev)
 		return -ENOMEM;
 
@@ -6538,7 +6539,6 @@ void queue_td(int num , thread_call_func_t func)
 }
 
 void test_function(work_func_t param0,thread_call_param_t param1){
-IM_HERE_NOW();
 	if(param0 && param1)
 		(param0)((work_struct*)param1);
 	else
@@ -6549,7 +6549,6 @@ IM_HERE_NOW();
 */
 void queue_te(int num, thread_call_func_t func, thread_call_param_t par, UInt32 timei, bool start)
 {
-IM_HERE_NOW();
 	//par=my_hw->priv;
 	//thread_call_func_t my_func;
 	if (tlink[num])
