@@ -6318,7 +6318,7 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 	}
 
 	/* Configure Bluetooth device coexistence support */
-	iwl3945_send_bt_config(priv);
+	//iwl3945_send_bt_config(priv);
 
 	/* Configure the adapter for unassociated operation */
 	iwl3945_commit_rxon(priv);
