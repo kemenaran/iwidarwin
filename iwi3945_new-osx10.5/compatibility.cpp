@@ -849,7 +849,7 @@ IOPCCardAddTimer(struct timer_list2 * timer)
     uint64_t deadline, timei;
 	if (timer->expires>0)
 	timei=jiffies_to_msecs(timer->expires);
-	else timei=3000;
+	else timei=0;
 	clock_interval_to_deadline(timei,kMillisecondScale,&deadline);
 	//IOLog("timer->expires %d timei %d deadline %d\n",timer->expires,timei,deadline);
 	thread_call_enter1_delayed(timer_func[timer->vv],(void*)timer->data,deadline);
@@ -2200,7 +2200,7 @@ static inline void setup_timer(struct timer_list2 * timer,
 	init_timer(timer);
 	timer->function = function;
     timer->data = data;
-    add_timer(timer);
+    //add_timer(timer);//hack
  }
 
 void ieee80211_sta_timer(unsigned long data)
@@ -2212,7 +2212,7 @@ IM_HERE_NOW();
 	struct ieee80211_local *local = wdev_priv(&sdata->dev);//wdev);
 
 	set_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
-	set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);//hack
+	//set_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);//hack
 	//queue_work(local->hw.workqueue, &ifsta->work);
 	queue_te(ifsta->work.number,(thread_call_func_t)ifsta->work.func,sdata,NULL,true);
 }
@@ -5229,15 +5229,17 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	//wireless_send_event(dev, SIOCGIWSCAN, &wrqu, NULL);
 
 	//read_lock(&local->sub_if_lock);
+	IOLog("scanend stations\n");
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
-
+IOLog("1\n");
 		/* No need to wake the master device. */
 		if (sdata->dev == local->mdev)
 			continue;
-
+IOLog("2\n");
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
 				ieee80211_send_nullfunc(local, sdata, 0);
+				IOLog("3\n");
 			ieee80211_sta_timer((unsigned long)sdata);
 		}
 
@@ -5253,6 +5255,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
+	else
+	ieee80211_sta_req_scan(local->mdev,NULL,0);//hack
 }
 
 
@@ -6671,8 +6675,10 @@ IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata;
 
 	if (ssid_len > IEEE80211_MAX_SSID_LEN)
+	{
+		IOLog("ssid_len > IEEE80211_MAX_SSID_LEN\n");
 		return -EINVAL;
-
+	}
 	/* MLME-SCAN.request (page 118)  page 144 (11.1.3.1)
 	 * BSSType: INFRASTRUCTURE, INDEPENDENT, ANY_BSS
 	 * BSSID: MACAddress
@@ -6692,7 +6698,11 @@ IM_HERE_NOW();
 
 	if (local->sta_scanning) {
 		if (local->scan_dev == dev)
+		{
+			IOLog("local->scan_dev == dev\n");
 			return 0;
+		}
+		IOLog("local->scan_dev EBUSY\n");
 		return -EBUSY;
 	}
 
@@ -6703,7 +6713,7 @@ IM_HERE_NOW();
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		//return rc;
+		return rc;
 	}
 
 	local->sta_scanning = 1;
@@ -7737,7 +7747,7 @@ IM_HERE_NOW();
 	 clear_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
 		return;
 	}
-
+IOLog("ifsta->state %d\n",ifsta->state);
 	switch (ifsta->state) {
 	case IEEE80211_DISABLED:
 		break;
