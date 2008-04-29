@@ -5472,7 +5472,7 @@ static inline void ieee80211_dump_frame(const char *ifname, const char *title,
 {
 }
 
-static int __ieee80211_tx(struct ieee80211_local *local, struct sk_buff *skb,
+int __ieee80211_tx(struct ieee80211_local *local, struct sk_buff *skb,
 			  struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();	
