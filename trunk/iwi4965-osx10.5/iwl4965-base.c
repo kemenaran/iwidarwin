@@ -6681,7 +6681,7 @@ static void iwl4965_alive_start(struct iwl4965_priv *priv)
 	}
 
 	/* Configure Bluetooth device coexistence support */
-	iwl4965_send_bt_config(priv);
+	//iwl4965_send_bt_config(priv);
 
 	/* Configure the adapter for unassociated operation */
 	iwl4965_commit_rxon(priv);
@@ -7465,6 +7465,7 @@ static int iwl4965_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	
+	IOSleep(2000);//hack
 	ret = UCODE_READY_TIMEOUT;          
 	while(!(test_bit(STATUS_READY, &priv->status))) {                  
 		IOSleep(1);                    
