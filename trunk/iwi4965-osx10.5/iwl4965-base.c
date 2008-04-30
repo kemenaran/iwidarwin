@@ -7921,14 +7921,19 @@ static int iwl4965_mac_hw_scan(struct ieee80211_hw *hw, u8 *ssid, size_t len)
 	/* we don't schedule scan within next_scan_jiffies period */
 	if (priv->next_scan_jiffies &&
 			time_after(priv->next_scan_jiffies, jiffies)) {
-		rc = -EAGAIN;
-		goto out_unlock;
+		IOLog("next_scan_jiffies\n");
+		while (time_after(priv->next_scan_jiffies, jiffies)) {IOSleep(1);}
+		//rc = -EAGAIN;
+		//goto out_unlock;
 	}
 	/* if we just finished scan ask for delay */
 	if (priv->last_scan_jiffies && time_after(priv->last_scan_jiffies +
 				IWL_DELAY_NEXT_SCAN, jiffies)) {
-		rc = -EAGAIN;
-		goto out_unlock;
+				IOLog("last_scan_jiffies\n");
+				while (time_after(priv->last_scan_jiffies +
+				IWL_DELAY_NEXT_SCAN, jiffies)) {IOSleep(1);}
+		//rc = -EAGAIN;
+		//goto out_unlock;
 	}
 	if (len) {
 		IWL_DEBUG_SCAN("direct scan for %s [%d]\n ",
