@@ -20,7 +20,6 @@
 		9664E7370DAFEF62006F632B /* iwl-4965.c in Sources */ = {isa = PBXBuildFile; fileRef = 9664E6EA0DAFEF62006F632B /* iwl-4965.c */; };
 		9664E7380DAFEF62006F632B /* iwl-4965.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6EB0DAFEF62006F632B /* iwl-4965.h */; };
 		9664E7390DAFEF62006F632B /* iwl4965-base.c in Sources */ = {isa = PBXBuildFile; fileRef = 9664E6EC0DAFEF62006F632B /* iwl4965-base.c */; };
-		9664E8820DAFF0B6006F632B /* mac80211 in Resources */ = {isa = PBXBuildFile; fileRef = 9664E8350DAFF0B6006F632B /* mac80211 */; };
 		9664E8830DAFF0B6006F632B /* net in Resources */ = {isa = PBXBuildFile; fileRef = 9664E85F0DAFF0B6006F632B /* net */; };
 		9664E8840DAFF0B6006F632B /* networkSelector in Resources */ = {isa = PBXBuildFile; fileRef = 9664E8650DAFF0B6006F632B /* networkSelector */; };
 		9664E8850DAFF0B6006F632B /* pkgscripts in Resources */ = {isa = PBXBuildFile; fileRef = 9664E87E0DAFF0B6006F632B /* pkgscripts */; };
@@ -55,7 +54,6 @@
 		9664E6EA0DAFEF62006F632B /* iwl-4965.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-4965.c"; sourceTree = "<group>"; };
 		9664E6EB0DAFEF62006F632B /* iwl-4965.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-4965.h"; sourceTree = "<group>"; };
 		9664E6EC0DAFEF62006F632B /* iwl4965-base.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl4965-base.c"; sourceTree = "<group>"; };
-		9664E8350DAFF0B6006F632B /* mac80211 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = mac80211; sourceTree = "<group>"; };
 		9664E85F0DAFF0B6006F632B /* net */ = {isa = PBXFileReference; lastKnownFileType = folder; path = net; sourceTree = "<group>"; };
 		9664E8650DAFF0B6006F632B /* networkSelector */ = {isa = PBXFileReference; lastKnownFileType = folder; path = networkSelector; sourceTree = "<group>"; };
 		9664E87E0DAFF0B6006F632B /* pkgscripts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = pkgscripts; sourceTree = "<group>"; };
@@ -117,7 +115,6 @@
 			children = (
 				61AB07CC0DC3ECDA000C81F9 /* WiFiPower.cpp */,
 				9664E8880DAFF0DD006F632B /* firmware */,
-				9664E8350DAFF0B6006F632B /* mac80211 */,
 				9664E85F0DAFF0B6006F632B /* net */,
 				9664E8650DAFF0B6006F632B /* networkSelector */,
 				9664E87E0DAFF0B6006F632B /* pkgscripts */,
@@ -182,6 +179,7 @@
 				32D94FC90562CBF700B6AF17 /* Sources */,
 				32D94FCB0562CBF700B6AF17 /* Frameworks */,
 				32D94FCC0562CBF700B6AF17 /* Rez */,
+				61F1A7B20DC8B0B000B63F43 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -215,7 +213,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */,
-				9664E8820DAFF0B6006F632B /* mac80211 in Resources */,
 				9664E8830DAFF0B6006F632B /* net in Resources */,
 				9664E8840DAFF0B6006F632B /* networkSelector in Resources */,
 				9664E8850DAFF0B6006F632B /* pkgscripts in Resources */,
@@ -237,6 +234,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXRezBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		61F1A7B20DC8B0B000B63F43 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#exit 0\n\nsudo xcodebuild -project networkSelector/networkSelector.xcodeproj\n#xcodebuild -project nsGUI/nsGUI.xcodeproj\n\nsudo chown -R root:wheel build/Debug/iwi4965.kext\n\n#rm -rf /System/Library/Extensions/iwi4965.kext\n\nsudo cp -rf build/Debug/iwi4965.kext /System/Library/Extensions\n\n# build only if no .dmg exists\nif [ -e iwi4965.dmg ] ; then\n\texit 0\nfi\n\nsudo rm -rf iwi4965.pkg\nsudo cp -rf build/Debug/iwi4965.kext iwi4965/System/Library/Extensions\n#cp -rf nsGUI/build/Release/nsGUI.app iwi4965/Applications\nsudo cp -f networkSelector/build/Release/networkSelector iwi4965/Applications\nsudo rm -f iwi4965.dmg\n\nsudo /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi4965.pkg -proj iwi4965.pmproj\n\nsudo hdiutil create -format UDZO -srcfolder iwi4965.pkg iwi4965.dmg\n\nsudo rm -rf iwi4965/System/Library/Extensions/iwi4965.kext\n#rm -rf iwi4965/Applications/nsGUI.app\nsudo rm -f iwi4965/Applications/networkSelector\n\nsleep 1\n\nsudo rm -rf iwi4965.pkg\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		32D94FC90562CBF700B6AF17 /* Sources */ = {
