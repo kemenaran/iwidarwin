@@ -817,12 +817,11 @@ static int iwl3945_send_cmd_sync(struct iwl3945_priv *priv, struct iwl3945_host_
 	 /* A synchronous command can not have a callback set. */
 	BUG_ON(cmd->meta.u.callback != NULL);
 
-	//FIXME
-	/*if (atomic_xchg(&entry, 1)) {
+	if (atomic_xchg(&entry, 1)) {
 		IWL_ERROR("Error sending %s: Already sending a host command\n",
 			  get_cmd_string(cmd->id));
 		return -EBUSY;
-	}*/
+	}
 
 	set_bit(STATUS_HCMD_ACTIVE, &priv->status);
 
