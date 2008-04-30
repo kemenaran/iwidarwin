@@ -7557,15 +7557,18 @@ static int iwl3945_mac_hw_scan(struct ieee80211_hw *hw, u8 *ssid, size_t len)
 	if (priv->next_scan_jiffies &&
 			time_after(priv->next_scan_jiffies, jiffies)) {
 			IOLog("scan next_scan_jiffies not ready?\n");
-		rc = -EAGAIN;
-		goto out_unlock;
+			while (time_after(priv->next_scan_jiffies, jiffies)) {IOSleep(1);}
+		//rc = -EAGAIN;
+		//goto out_unlock;
 	}
 	/* if we just finished scan ask for delay */
 	if (priv->last_scan_jiffies && time_after(priv->last_scan_jiffies +
 				IWL_DELAY_NEXT_SCAN, jiffies)) {
 				IOLog("scan last_scan_jiffies not ready?\n");
-		rc = -EAGAIN;
-		goto out_unlock;
+				while (time_after(priv->last_scan_jiffies +
+				IWL_DELAY_NEXT_SCAN, jiffies)) {IOSleep(1);}
+		//rc = -EAGAIN;
+		//goto out_unlock;
 	}
 	if (len) {
 		IWL_DEBUG_SCAN("direct scan for %s [%d]\n ",
