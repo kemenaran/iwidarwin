@@ -2908,7 +2908,8 @@ static int iwl4965_tx_skb(struct iwl4965_priv *priv,
 
 	if ((ctl->tx_rate & 0xFF) == IWL_INVALID_RATE) {
 		IWL_ERROR("ERROR: No TX rate available.\n");
-		goto drop_unlock;
+		ctl->tx_rate=IWL_RATE_1M_INDEX;//hack
+		//goto drop_unlock;
 	}
 
 	unicast = !is_multicast_ether_addr(hdr->addr1);
@@ -3029,6 +3030,7 @@ static int iwl4965_tx_skb(struct iwl4965_priv *priv,
 	 * first entry */
 	iwl4965_hw_txq_attach_buf_to_tfd(priv, tfd, txcmd_phys, len);
 
+	ctl->key_idx = -1;//hack
 	if (ctl->key_idx != -1)
 		iwl4965_build_tx_cmd_hwcrypto(priv, ctl, out_cmd, skb, 0);
 
