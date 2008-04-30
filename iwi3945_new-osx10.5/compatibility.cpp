@@ -6607,7 +6607,7 @@ int queue_work(struct workqueue_struct *wq, struct work_struct *work) {
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay) {
 	struct work_struct tmp = work->work;
 	struct work_struct *tmp2 = &tmp;
-	delay=jiffies_to_msecs(delay);
+	delay=jiffies_to_msecs(delay)/10;
 	queue_te(tmp2->number,(thread_call_func_t)tmp2->func,my_hw->priv,delay,true);
     return 0;
 }
