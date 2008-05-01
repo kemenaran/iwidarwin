@@ -5247,8 +5247,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
 
 		/* No need to wake the master device. */
-		if (sdata->dev == local->mdev)
-			continue;
+		//if (sdata->dev == local->mdev)
+		//	continue;
 
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
@@ -5268,6 +5268,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
+	else
+	ieee80211_sta_req_scan(local->mdev,NULL,0);//hack
 }
 
 
@@ -7760,8 +7762,22 @@ IM_HERE_NOW();
 		ieee80211_send_disassoc(dev, ifsta, WLAN_REASON_UNSPECIFIED);
 		ieee80211_set_disassoc(dev, ifsta, 0);
 	}
-	else
-	ieee80211_sta_req_scan(local->mdev,NULL,0);//hack
+	
+}
+
+static inline void ieee80211_start_soft_monitor(struct ieee80211_local *local)
+{
+IM_HERE_NOW();
+	struct ieee80211_if_init_conf conf;
+
+	if (local->open_count && local->open_count == local->monitors &&
+	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER) &&
+	    local->ops->remove_interface) {
+		conf.if_id = -1;
+		conf.type = IEEE80211_IF_TYPE_MNTR;
+		conf.mac_addr = NULL;
+		local->ops->remove_interface(local_to_hw(local), &conf);
+	}
 }
 
 int ieee80211_open(struct ieee80211_local *local)
@@ -7799,8 +7815,8 @@ int ieee80211_open(struct ieee80211_local *local)
 	char ii[4];
 	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,dev->name,sizeof(ii));*/
-	
-	//ieee80211_start_soft_monitor(local);
+	dev->ifindex=my_fNetif->getUnitNumber();
+	ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
 	//sdata->type = IEEE80211_IF_TYPE_STA;//hack
 	conf.type = sdata->type;
