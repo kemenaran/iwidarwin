@@ -6332,16 +6332,16 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 
 	IWL_DEBUG_INFO("ALIVE processing complete.\n");
 	
-	struct ieee80211_local *local =hw_to_local(priv->hw);
-	struct net_device *dev=local->mdev;
+	//struct ieee80211_local *local =hw_to_local(priv->hw);
+	//struct net_device *dev=local->mdev;
 	
 	
 	wake_up_interruptible(&priv->wait_command_queue);
 
 	if (priv->error_recovering)
 		iwl3945_error_recovery(priv);
-	else
-		ieee80211_sta_req_scan(dev,NULL,0);
+	//else
+	//	ieee80211_sta_req_scan(dev,NULL,0);
 		
 	return;
 
