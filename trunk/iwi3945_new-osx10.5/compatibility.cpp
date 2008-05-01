@@ -5234,8 +5234,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
 IOLog("1\n");
 		/* No need to wake the master device. */
-		if (sdata->dev == local->mdev)
-			continue;
+		//if (sdata->dev == local->mdev)
+		//	continue;
 IOLog("2\n");
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
@@ -7832,7 +7832,7 @@ IM_HERE_NOW();
 	char ii[4];
 	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,dev->name,sizeof(ii));*/
-	
+	dev->ifindex=my_fNetif->getUnitNumber();
 	ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
 	//sdata->type = IEEE80211_IF_TYPE_STA;//hack

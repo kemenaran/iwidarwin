@@ -6334,13 +6334,15 @@ static void iwl3945_alive_start(struct iwl3945_priv *priv)
 	
 	struct ieee80211_local *local =hw_to_local(priv->hw);
 	struct net_device *dev=local->mdev;
-	ieee80211_sta_req_scan(dev,NULL,0);
+	
 	
 	wake_up_interruptible(&priv->wait_command_queue);
 
 	if (priv->error_recovering)
 		iwl3945_error_recovery(priv);
-
+	else
+		ieee80211_sta_req_scan(dev,NULL,0);
+		
 	return;
 
  restart:
@@ -7122,7 +7124,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	
-	IOSleep(2000);//hack
+	IOSleep(6000);//hack
 	ret = UCODE_READY_TIMEOUT;          
 	while(!(test_bit(STATUS_READY, &priv->status))) {                  
 		IOSleep(1);                    
@@ -7276,9 +7278,9 @@ static int iwl3945_mac_config(struct ieee80211_hw *hw, struct ieee80211_conf *co
 	if (unlikely(!iwl3945_param_disable_hw_scan &&
 		     test_bit(STATUS_SCANNING, &priv->status))) {
 		IWL_DEBUG_MAC80211("leave - scanning\n");
-		//set_bit(STATUS_CONF_PENDING, &priv->status);
+		set_bit(STATUS_CONF_PENDING, &priv->status);
 		mutex_unlock(&priv->mutex);
-		//return 0;
+		return 0;
 	}
 
 	spin_lock_irqsave(&priv->lock, flags);
@@ -7428,14 +7430,13 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 	    !(priv->hw->flags & IEEE80211_HW_NO_PROBE_FILTERING)) {
 		IWL_DEBUG_MAC80211("leave - scanning\n");
 		mutex_unlock(&priv->mutex);
-		//return 0;
+		return 0;
 	}
 
 	if (priv->interface_id != if_id) {
 		IWL_DEBUG_MAC80211("leave - interface_id != if_id\n");
 		mutex_unlock(&priv->mutex);
-		priv->interface_id = if_id;//hack
-		//return 0;
+		return 0;
 	}
 
 	if (priv->iw_mode == IEEE80211_IF_TYPE_AP) {
@@ -7557,7 +7558,7 @@ static int iwl3945_mac_hw_scan(struct ieee80211_hw *hw, u8 *ssid, size_t len)
 	if (priv->next_scan_jiffies &&
 			time_after(priv->next_scan_jiffies, jiffies)) {
 			IOLog("scan next_scan_jiffies not ready?\n");
-			while (time_after(priv->next_scan_jiffies, jiffies)) {IOSleep(1);}
+			while (time_after(priv->next_scan_jiffies, jiffies)) {IOSleep(10);}
 		//rc = -EAGAIN;
 		//goto out_unlock;
 	}
@@ -7566,7 +7567,7 @@ static int iwl3945_mac_hw_scan(struct ieee80211_hw *hw, u8 *ssid, size_t len)
 				IWL_DELAY_NEXT_SCAN, jiffies)) {
 				IOLog("scan last_scan_jiffies not ready?\n");
 				while (time_after(priv->last_scan_jiffies +
-				IWL_DELAY_NEXT_SCAN, jiffies)) {IOSleep(1);}
+				IWL_DELAY_NEXT_SCAN, jiffies)) {IOSleep(10);}
 		//rc = -EAGAIN;
 		//goto out_unlock;
 	}
