@@ -7871,11 +7871,11 @@ int ieee80211_open(struct ieee80211_local *local)
 		netif_carrier_on(dev);
 	netif_start_queue(dev);*/
 	
-	IOLog("1st scan\n");
+	/*IOLog("1st scan\n");
 	if (res==0)
 	ieee80211_sta_req_scan(dev,NULL,0);
 	else
-	IOLog(" not ready for 1st scan\n");
+	IOLog(" not ready for 1st scan\n");*/
 	
 	return 0;
 }
