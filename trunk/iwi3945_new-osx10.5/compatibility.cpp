@@ -7803,22 +7803,25 @@ IM_HERE_NOW();
 	struct ieee80211_sub_if_data *sdata, *nsdata;
 	struct ieee80211_if_init_conf conf;
 	int res;
+
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-	//read_lock(&local->sub_if_lock);
-	/*list_for_each_entry(nsdata, &local->sub_if_list, list) {
+	/*read_lock(&local->sub_if_lock);
+	list_for_each_entry(nsdata, &local->sub_if_list, list) {
 		struct net_device *ndev = nsdata->dev;
+
 		if (ndev != dev && ndev != local->mdev && netif_running(ndev) &&
 		    compare_ether_addr(dev->dev_addr, ndev->dev_addr) == 0 &&
 		    !identical_mac_addr_allowed(sdata->type, nsdata->type)) {
-			//read_unlock(&local->sub_if_lock);
-			return -1;//-ENOTUNIQ;
+			read_unlock(&local->sub_if_lock);
+			return -ENOTUNIQ;
 		}
-	}*/
+	}
+	read_unlock(&local->sub_if_lock);*/
 
-	//read_unlock(&local->sub_if_lock);
 	if (sdata->type == IEEE80211_IF_TYPE_WDS &&
 	    is_zero_ether_addr(sdata->u.wds.remote_addr))
 		return -ENOLINK;
+
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR && local->open_count &&
 	    !(local->hw.flags & IEEE80211_HW_MONITOR_DURING_OPER)) {
 		/* run the interface in a "soft monitor" mode */
@@ -7827,32 +7830,24 @@ IM_HERE_NOW();
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 		return 0;
 	}
-
-	/*memcpy(dev->dev_addr, my_mac_addr, ETH_ALEN);//hack
-	char ii[4];
-	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
-	bcopy(ii,dev->name,sizeof(ii));*/
-	//dev->ifindex=my_fNetif->getUnitNumber();
 	ieee80211_start_soft_monitor(local);
+
 	conf.if_id = dev->ifindex;
-	//sdata->type = IEEE80211_IF_TYPE_STA;//hack
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
-
 	res = local->ops->add_interface(local_to_hw(local), &conf);
-	res=0;
+	res=0;//hack
 	if (res) {
-	if (sdata->type == IEEE80211_IF_TYPE_MNTR)
+		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
 			ieee80211_start_hard_monitor(local);
 		return res;
 	}
-						
+
 	if (local->open_count == 0) {
-		tasklet_enable(&local->tx_pending_tasklet);
-		tasklet_enable(&local->tasklet);
+		res = 0;
 		if (local->ops->open)
 			res = local->ops->open(local_to_hw(local));
-			res=0;
+			res=0;//hack
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
@@ -7860,7 +7855,7 @@ IM_HERE_NOW();
 					local->ops->stop(local_to_hw(local));
 			} else {
 				res = ieee80211_hw_config(local);
-				res=0;
+				res=0;//hack
 				if (res && local->ops->stop)
 					local->ops->stop(local_to_hw(local));
 				//else if (!res && local->apdev)
@@ -7873,29 +7868,24 @@ IM_HERE_NOW();
 							    &conf);
 			return res;
 		}
+		/* enable tasklets only if all callbacks return correctly */
+		tasklet_enable(&local->tx_pending_tasklet);
+		tasklet_enable(&local->tasklet);
 	}
 	local->open_count++;
+
 	if (sdata->type == IEEE80211_IF_TYPE_MNTR) {
 		local->monitors++;
 		//local->hw.conf.flags |= IEEE80211_CONF_RADIOTAP;
 	} else
-	{
-		res=ieee80211_if_config(dev);
-	}
+		ieee80211_if_config(dev);
+
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
 	else
-		netif_carrier_on(dev);
-	netif_start_queue(dev);*/
-	
-	/*IOLog("1st scan\n");
-	if (res==0)
-	{
-		ieee80211_sta_req_scan(dev,NULL,0);
-	}
-	else
-	IOLog("not ready for 1st scan\n");*/
-	
+		netif_carrier_on(dev);*/
+
+	netif_start_queue(dev);
 	return 0;
 }
