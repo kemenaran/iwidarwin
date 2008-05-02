@@ -30,6 +30,11 @@ ieee80211_rx_h_parse_qos(struct ieee80211_txrx_data *rx);
 ieee80211_txrx_result
 ieee80211_rx_h_remove_qos_control(struct ieee80211_txrx_data *rx);
 
+#define AGG_BASE_QUEUE 7  // TODO - remove when switching to dynamic queues
+
+int ieee80211_ht_agg_queue_add(struct ieee80211_local *local, struct sta_info *sta, u16 tid);
+int ieee80211_ht_agg_queue_remove(struct ieee80211_local *local, struct sta_info *sta, u16 tid);
+
 #ifdef CONFIG_NET_SCHED
 void ieee80211_install_qdisc(struct net_device *dev);
 int ieee80211_qdisc_installed(struct net_device *dev);

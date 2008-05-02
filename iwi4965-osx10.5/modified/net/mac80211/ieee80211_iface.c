@@ -184,13 +184,30 @@ void ieee80211_if_set_type(struct net_device *dev, int type)
 			    (unsigned long) sdata);
 		skb_queue_head_init(&ifsta->skb_queue);
 
+		init_timer(&ifsta->admit_timer);
+		ifsta->admit_timer.data = (unsigned long) dev;
+		ifsta->admit_timer.function = ieee80211_admit_refresh;
+
 		ifsta->capab = WLAN_CAPABILITY_ESS;
 		ifsta->auth_algs = IEEE80211_AUTH_ALG_OPEN |
 			IEEE80211_AUTH_ALG_SHARED_KEY;
 		ifsta->create_ibss = 1;
 		ifsta->wmm_enabled = 1;
+		ifsta->ht_enabled = 1;
 		ifsta->auto_channel_sel = 1;
 		ifsta->auto_bssid_sel = 1;
+
+		/* Initialize non-AP QSTA QoS Params */
+		ifsta->dot11EDCAAveragingPeriod = 5;
+		ifsta->MPDUExchangeTime = 0;
+#ifdef CONFIG_MAC80211_DEBUGFS
+		ifsta->tspec.nominal_msdu_size = cpu_to_le16(200),
+		ifsta->tspec.inactivity_interval = cpu_to_le32(40),
+		ifsta->tspec.mean_data_rate = cpu_to_le32(40000),
+		ifsta->tspec.min_phy_rate = cpu_to_le32(6000000),
+		ifsta->tspec.surplus_band_allow = cpu_to_le16(8192),
+		ifsta->tspec.medium_time = cpu_to_le16(30),
+#endif
 
 		msdata = IEEE80211_DEV_TO_SUB_IF(sdata->local->mdev);
 		sdata->bss = &msdata->u.ap;

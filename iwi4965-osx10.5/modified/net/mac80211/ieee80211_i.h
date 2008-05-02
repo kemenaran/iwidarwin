@@ -59,6 +59,10 @@ struct ieee80211_local;
  * increased memory use (about 2 kB of RAM per entry). */
 #define IEEE80211_FRAGMENT_MAX 4
 
+/* Minimum and Maximum TSID used by EDCA. EDCA uses 0~7; HCCA uses 8~15 */
+#define EDCA_TSID_MIN 0
+#define EDCA_TSID_MAX 7
+
 struct ieee80211_fragment_entry {
 	unsigned long first_frag_time;
 	unsigned int seq;
@@ -90,6 +94,8 @@ struct ieee80211_sta_bss {
 	size_t rsn_ie_len;
 	u8 *wmm_ie;
 	size_t wmm_ie_len;
+	u8 *ht_ie;
+	size_t ht_ie_len;
 #define IEEE80211_MAX_SUPP_RATES 32
 	u8 supp_rates[IEEE80211_MAX_SUPP_RATES];
 	size_t supp_rates_len;
@@ -147,10 +153,12 @@ struct ieee80211_txrx_data {
 			int sent_ps_buffered;
 			int queue;
 			int load;
+			u16 qos_control;
 			unsigned int in_scan:1;
 			/* frame is destined to interface currently processed
 			 * (including multicast frames) */
 			unsigned int ra_match:1;
+			unsigned int is_agg_frame:1;
 		} rx;
 	} u;
 };
@@ -164,6 +172,7 @@ struct ieee80211_tx_packet_data {
 	unsigned int requeue:1;
 	unsigned int mgmt_iface:1;
 	unsigned int queue:4;
+	unsigned int ht_queue:1;
 };
 
 struct ieee80211_tx_stored_packet {
@@ -177,9 +186,24 @@ struct ieee80211_tx_stored_packet {
 	unsigned int last_frag_rate_ctrl_probe:1;
 };
 
-typedef ieee80211_txrx_result (*ieee80211_tx_handler)(struct ieee80211_txrx_data *tx);
+struct sta_ts_data {
+	enum {
+		TS_STATUS_UNUSED	= 0,
+		TS_STATUS_ACTIVE	= 1,
+		TS_STATUS_INACTIVE	= 2,
+		TS_STATUS_THROTTLING	= 3,
+	} status;
+	u8 dialog_token;
+	u8 up;
+	u32 admitted_time_usec;
+	u32 used_time_usec;
+};
 
-typedef ieee80211_txrx_result (*ieee80211_rx_handler)(struct ieee80211_txrx_data *rx);
+typedef ieee80211_txrx_result (*ieee80211_tx_handler)
+(struct ieee80211_txrx_data *tx);
+
+typedef ieee80211_txrx_result (*ieee80211_rx_handler)
+(struct ieee80211_txrx_data *rx);
 
 struct ieee80211_if_ap {
 	u8 *beacon_head, *beacon_tail;
@@ -215,10 +239,12 @@ struct ieee80211_if_sta {
 	enum {
 		IEEE80211_DISABLED, IEEE80211_AUTHENTICATE,
 		IEEE80211_ASSOCIATE, IEEE80211_ASSOCIATED,
-		IEEE80211_IBSS_SEARCH, IEEE80211_IBSS_JOINED
+		IEEE80211_IBSS_SEARCH, IEEE80211_IBSS_JOINED,
+		IEEE80211_CHANNEL_SWITCH
 	} state;
 	struct timer_list timer;
 	struct work_struct work;
+	struct timer_list admit_timer; /* Recompute EDCA admitted time */
 	u8 bssid[ETH_ALEN], prev_bssid[ETH_ALEN];
 	u8 ssid[IEEE80211_MAX_SSID_LEN];
 	size_t ssid_len;
@@ -226,6 +252,7 @@ struct ieee80211_if_sta {
 	u16 ap_capab, capab;
 	u8 *extra_ie; /* to be added to the end of AssocReq */
 	size_t extra_ie_len;
+	u8 nick[IW_ESSID_MAX_SIZE];
 
 	/* The last AssocReq/Resp IEs */
 	u8 *assocreq_ies, *assocresp_ies;
@@ -242,6 +269,7 @@ struct ieee80211_if_sta {
 	unsigned int create_ibss:1;
 	unsigned int mixed_cell:1;
 	unsigned int wmm_enabled:1;
+	unsigned int ht_enabled:1;
 	unsigned int auto_ssid_sel:1;
 	unsigned int auto_bssid_sel:1;
 	unsigned int auto_channel_sel:1;
@@ -265,7 +293,22 @@ struct ieee80211_if_sta {
 	struct sk_buff *probe_resp; /* ProbeResp template for IBSS */
 	u32 supp_rates_bits;
 
+	u32 last_rate; /* last tx data rate value. management and multi cast frame
+			* wont be used. */
+
 	int wmm_last_param_set;
+
+	u32 dot11EDCAAveragingPeriod;
+	u32 MPDUExchangeTime;
+#define STA_TSID_NUM   16
+#define STA_TSDIR_NUM  2
+	/* EDCA: 0~7, HCCA: 8~15 */
+	struct sta_ts_data ts_data[STA_TSID_NUM][STA_TSDIR_NUM];
+#ifdef CONFIG_MAC80211_DEBUGFS
+	struct ieee80211_elem_tspec tspec;
+	u8 dls_mac[ETH_ALEN];
+#endif
+	struct ieee80211_channel *switch_channel;
 };
 
 
@@ -334,6 +377,39 @@ struct ieee80211_sub_if_data {
 			struct dentry *auth_alg;
 			struct dentry *auth_transaction;
 			struct dentry *flags;
+			struct dentry *qos_dir;
+			struct {
+				struct dentry *addts_11e;
+				struct dentry *addts_wmm;
+				struct dentry *delts_11e;
+				struct dentry *delts_wmm;
+				struct dentry *dls_mac;
+				struct dentry *dls_op;
+			} qos;
+			struct dentry *tsinfo_dir;
+			struct {
+				struct dentry *tsid;
+				struct dentry *direction;
+				struct dentry *up;
+			} tsinfo;
+			struct dentry *tspec_dir;
+			struct {
+				struct dentry *nominal_msdu_size;
+				struct dentry *max_msdu_size;
+				struct dentry *min_service_interval;
+				struct dentry *max_service_interval;
+				struct dentry *inactivity_interval;
+				struct dentry *suspension_interval;
+				struct dentry *service_start_time;
+				struct dentry *min_data_rate;
+				struct dentry *mean_data_rate;
+				struct dentry *peak_data_rate;
+				struct dentry *burst_size;
+				struct dentry *delay_bound;
+				struct dentry *min_phy_rate;
+				struct dentry *surplus_band_allow;
+				struct dentry *medium_time;
+			} tspec;
 		} sta;
 		struct {
 			struct dentry *channel_use;
@@ -421,8 +497,8 @@ struct ieee80211_local {
 	struct sta_info *sta_hash[STA_HASH_SIZE];
 	struct timer_list sta_cleanup;
 
-	unsigned long state[NUM_TX_DATA_QUEUES];
-	struct ieee80211_tx_stored_packet pending_packet[NUM_TX_DATA_QUEUES];
+	unsigned long state[NUM_TX_DATA_QUEUES_11N];
+	struct ieee80211_tx_stored_packet pending_packet[NUM_TX_DATA_QUEUES_11N];
 	struct tasklet_struct tx_pending_tasklet;
 
 	int mc_count;	/* total count of multicast entries in all interfaces */
@@ -465,7 +541,8 @@ struct ieee80211_local {
 	rwlock_t sub_if_lock; /* Protects sub_if_list. Cannot be taken under
 			       * sta_bss_lock or sta_lock. */
 	struct list_head sub_if_list;
-	int sta_scanning;
+	int sta_sw_scanning;
+	int sta_hw_scanning;
 	int scan_channel_idx;
 	enum { SCAN_SET_CHANNEL, SCAN_SEND_PROBE } scan_state;
 	unsigned long last_scan_completed;
@@ -475,6 +552,8 @@ struct ieee80211_local {
 	struct ieee80211_hw_mode *oper_hw_mode, *scan_hw_mode;
 	u8 scan_ssid[IEEE80211_MAX_SSID_LEN];
 	size_t scan_ssid_len;
+#define IEEE80211_MAX_TXPOWER 50
+	u8 user_txpow;
 	struct list_head sta_bss_list;
 	struct ieee80211_sta_bss *sta_bss_hash[STA_HASH_SIZE];
 	spinlock_t sta_bss_lock;
@@ -631,6 +710,11 @@ struct ieee80211_local {
 #endif
 };
 
+enum sta_link_direction {
+	STA_TS_UPLINK = 0,
+	STA_TS_DOWNLINK = 1,
+};
+
 static inline struct ieee80211_local *hw_to_local(
 	struct ieee80211_hw *hw)
 {
@@ -646,6 +730,7 @@ static inline struct ieee80211_hw *local_to_hw(
 enum ieee80211_link_state_t {
 	IEEE80211_LINK_STATE_XOFF = 0,
 	IEEE80211_LINK_STATE_PENDING,
+	IEEE80211_LINK_STATE_AGGREGATED,
 };
 
 struct sta_attribute {
@@ -761,6 +846,7 @@ int ieee80211_set_channel(struct ieee80211_local *local, int channel, int freq);
 /* ieee80211_sta.c */
 void ieee80211_sta_timer(unsigned long data);
 void ieee80211_sta_work(struct work_struct *work);
+void ieee80211_admit_refresh(unsigned long ptr);
 void ieee80211_sta_scan_work(struct work_struct *work);
 void ieee80211_sta_rx_mgmt(struct net_device *dev, struct sk_buff *skb,
 			   struct ieee80211_rx_status *rx_status);
@@ -771,7 +857,8 @@ int ieee80211_sta_req_scan(struct net_device *dev, u8 *ssid, size_t ssid_len);
 void ieee80211_sta_req_auth(struct net_device *dev,
 			    struct ieee80211_if_sta *ifsta);
 int ieee80211_sta_scan_results(struct net_device *dev, char *buf, size_t len);
-void ieee80211_sta_rx_scan(struct net_device *dev, struct sk_buff *skb,
+ieee80211_txrx_result ieee80211_sta_rx_scan(struct net_device *dev,
+					    struct sk_buff *skb,
 			   struct ieee80211_rx_status *rx_status);
 void ieee80211_rx_bss_list_init(struct net_device *dev);
 void ieee80211_rx_bss_list_deinit(struct net_device *dev);
@@ -781,6 +868,44 @@ struct sta_info * ieee80211_ibss_add_sta(struct net_device *dev,
 					 u8 *addr);
 int ieee80211_sta_deauthenticate(struct net_device *dev, u16 reason);
 int ieee80211_sta_disassociate(struct net_device *dev, u16 reason);
+void ieee80211_send_addba_request(struct net_device *dev, u8 *da, u16 tid,
+					u8 dialog_token, u16 start_seq_num,
+					u16 agg_size,u16 timeout);
+void ieee80211_send_delba(struct net_device *dev, u8 *da, u16 tid,
+				u16 initiator, u16 reason_code);
+void ieee80211_send_addts(struct net_device *dev,
+			  struct ieee80211_if_sta *ifsta,
+			  struct ieee80211_elem_tspec *tspec);
+void wmm_send_addts(struct net_device *dev,
+		    struct ieee80211_if_sta *ifsta,
+		    struct ieee80211_elem_tspec *tspec);
+void ieee80211_send_delts(struct net_device *dev,
+			  struct ieee80211_if_sta *ifsta,
+			  struct ieee80211_elem_tspec *tp);
+void wmm_send_delts(struct net_device *dev,
+		    struct ieee80211_if_sta *ifsta,
+		    struct ieee80211_elem_tspec *tp);
+void ieee80211_send_dls_req(struct net_device *dev,
+			    struct ieee80211_if_sta *ifsta,
+			    u8 *addr, u16 timeout);
+void ieee80211_send_dls_teardown(struct net_device *dev,
+				 struct ieee80211_if_sta *ifsta,
+				 u8 *mac, u16 reason);
+struct sta_info *dls_info_get(struct ieee80211_local *local, u8 *addr);
+void dls_info_add(struct ieee80211_if_sta *ifsta, struct sta_info *dls);
+void dls_info_stop(struct ieee80211_if_sta *ifsta);
+int dls_link_status(struct ieee80211_local *local, u8 *addr);
+void ieee80211_sta_stop_rx_BA_session(struct net_device *dev,u8 *da,
+				      u16 tid, u16 initiator, u16 reason);
+ieee80211_txrx_result ieee80211_sta_manage_reorder_buf(struct ieee80211_hw *hw,
+	struct ieee80211_txrx_data *rx, struct tid_ht_agg_info_rx *tid_rx_info,
+	struct sk_buff *skb, u16 mpdu_seq_num, int bar_req);
+
+
+void ieee80211_rx_mgmt_action(struct net_device *dev,
+			struct ieee80211_if_sta *ifsta,
+                        struct ieee80211_mgmt *mgmt,
+                        size_t len);
 
 /* ieee80211_iface.c */
 int ieee80211_if_add(struct net_device *dev, const char *name,

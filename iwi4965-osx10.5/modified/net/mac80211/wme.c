@@ -29,12 +29,18 @@ ieee80211_rx_h_parse_qos(struct ieee80211_txrx_data *rx)
 {
 	u8 *data = rx->skb->data;
 	int tid;
+	unsigned int is_agg_frame = 0;
 
 	/* does the frame have a qos control field? */
 	if (WLAN_FC_IS_QOS_DATA(rx->fc)) {
 		u8 *qc = data + ieee80211_get_hdrlen(rx->fc) - QOS_CONTROL_LEN;
+
 		/* frame has qos control */
-		tid = qc[0] & QOS_CONTROL_TID_MASK;
+		rx->u.rx.qos_control = le16_to_cpu(*((__le16*)qc));
+		tid = rx->u.rx.qos_control & QOS_CONTROL_TID_MASK;
+		if (rx->u.rx.qos_control &
+		    IEEE80211_QOS_CONTROL_A_MSDU_PRESENT)
+			is_agg_frame = 1;
 	} else {
 		if (unlikely((rx->fc & IEEE80211_FCTL_FTYPE) == IEEE80211_FTYPE_MGMT)) {
 			/* Separate TID for management frames */
@@ -43,6 +49,7 @@ ieee80211_rx_h_parse_qos(struct ieee80211_txrx_data *rx)
 			/* no qos control present */
 			tid = 0; /* 802.1d - Best Effort */
 		}
+		rx->u.rx.qos_control = 0;
 	}
 #ifdef CONFIG_MAC80211_DEBUG_COUNTERS
 	I802_DEBUG_INC(rx->local->wme_rx_queue[tid]);
@@ -52,6 +59,7 @@ ieee80211_rx_h_parse_qos(struct ieee80211_txrx_data *rx)
 #endif /* CONFIG_MAC80211_DEBUG_COUNTERS */
 
 	rx->u.rx.queue = tid;
+	rx->u.rx.is_agg_frame = is_agg_frame;
 	/* Set skb->priority to 1d tag if highest order bit of TID is not set.
 	 * For now, set skb->priority to 0 for other cases. */
 	rx->skb->priority = (tid > 7) ? 0 : tid;
@@ -83,13 +91,14 @@ ieee80211_rx_h_remove_qos_control(struct ieee80211_txrx_data *rx)
 
 #ifdef CONFIG_NET_SCHED
 /* maximum number of hardware queues we support. */
-#define TC_80211_MAX_QUEUES 8
+#define TC_80211_MAX_QUEUES 16
 
 struct ieee80211_sched_data
 {
 	struct tcf_proto *filter_list;
 	struct Qdisc *queues[TC_80211_MAX_QUEUES];
 	struct sk_buff_head requeued[TC_80211_MAX_QUEUES];
+	unsigned long qdisc_pool;
 };
 
 
@@ -158,11 +167,13 @@ static inline int wme_downgrade_ac(struct sk_buff *skb)
 static inline int classify80211(struct sk_buff *skb, struct Qdisc *qd)
 {
 	struct ieee80211_local *local = wdev_priv(qd->dev->ieee80211_ptr);
+	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(qd->dev);
+	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 	struct ieee80211_tx_packet_data *pkt_data =
 		(struct ieee80211_tx_packet_data *) skb->cb;
 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->data;
 	unsigned short fc = le16_to_cpu(hdr->frame_control);
-	int qos;
+	int qos, tsid, dir;
 	const int ieee802_1d_to_ac[8] = { 2, 3, 3, 2, 1, 1, 0, 0 };
 
 	/* see if frame is data or non data frame */
@@ -189,14 +200,38 @@ static inline int classify80211(struct sk_buff *skb, struct Qdisc *qd)
 	}
 
 	/* use the data classifier to determine what 802.1d tag the
-	* data frame has */
+	 * data frame has */
 	skb->priority = classify_1d(skb, qd);
+	tsid = 8 + skb->priority;
 
-	/* incase we are a client verify acm is not set for this ac */
-	while (unlikely(local->wmm_acm & BIT(skb->priority))) {
+	/* FIXME: only uplink needs to be checked for Tx */
+	dir = STA_TS_UPLINK;
+
+	if ((sdata->type == IEEE80211_IF_TYPE_STA) &&
+	    (local->wmm_acm & BIT(skb->priority))) {
+		switch (ifsta->ts_data[tsid][dir].status) {
+		case TS_STATUS_ACTIVE:
+			/* if TS Management is enabled, update used_time */
+			ifsta->ts_data[tsid][dir].used_time_usec +=
+				ifsta->MPDUExchangeTime;
+			break;
+		case TS_STATUS_THROTTLING:
+			/* if admitted time is used up, refuse to send more */
+			if (net_ratelimit())
+				printk(KERN_DEBUG "QoS packet throttling\n");
+			break;
+		default:
+			break;
+		}
+	}
+
+	/* in case we are a client verify acm is not set for this ac */
+	while ((local->wmm_acm & BIT(skb->priority)) &&
+	       !((sdata->type == IEEE80211_IF_TYPE_STA) &&
+		 (ifsta->ts_data[skb->priority + EDCA_TSID_MIN][dir].status
+			== TS_STATUS_ACTIVE))) {
 		if (wme_downgrade_ac(skb)) {
-			/* No AC with lower priority has acm=0,
-			* drop packet. */
+			/* No AC with lower priority has acm=0, drop packet. */
 			return -1;
 		}
 	}
@@ -228,15 +263,33 @@ static int wme_qdiscop_enqueue(struct sk_buff *skb, struct Qdisc* qd)
 	/* now we know the 1d priority, fill in the QoS header if there is one
 	 */
 	if (WLAN_FC_IS_QOS_DATA(fc)) {
+		struct sta_info *sta;
 		u8 *p = skb->data + ieee80211_get_hdrlen(fc) - 2;
-		u8 qos_hdr = skb->priority & QOS_CONTROL_TAG1D_MASK;
+		u8 tid = skb->priority & QOS_CONTROL_TAG1D_MASK;
+		u8 ack_policy = 0;
 		if (local->wifi_wme_noack_test)
-			qos_hdr |= QOS_CONTROL_ACK_POLICY_NOACK <<
+			ack_policy |= QOS_CONTROL_ACK_POLICY_NOACK <<
 					QOS_CONTROL_ACK_POLICY_SHIFT;
 		/* qos header is 2 bytes, second reserved */
-		*p = qos_hdr;
+		*p = ack_policy|tid;
 		p++;
 		*p = 0;
+
+		sta = sta_info_get(local, hdr->addr1);
+		if (sta) {
+			int ht_queue = sta->tx_queue_id[tid];
+			if ((ht_queue < local->hw.queues) &&
+				test_bit(ht_queue, &q->qdisc_pool)) {
+				queue = ht_queue;
+				pkt_data->ht_queue = 1;
+			}
+			printk(KERN_DEBUG "wme:%s ht_queue=%d,queue=%d pool=0x%lX qdisc=%p\n",
+				 __func__,ht_queue,queue,q->qdisc_pool,q);
+
+			sta_info_put(sta);
+		}
+
+
 	}
 
 	if (unlikely(queue >= local->hw.queues)) {
@@ -254,6 +307,7 @@ static int wme_qdiscop_enqueue(struct sk_buff *skb, struct Qdisc* qd)
 			kfree_skb(skb);
 			err = NET_XMIT_DROP;
 	} else {
+
 		pkt_data->queue = (unsigned int) queue;
 		qdisc = q->queues[queue];
 		err = qdisc->enqueue(skb, qdisc);
@@ -305,10 +359,9 @@ static struct sk_buff *wme_qdiscop_dequeue(struct Qdisc* qd)
 	/* check all the h/w queues in numeric/priority order */
 	for (queue = 0; queue < hw->queues; queue++) {
 		/* see if there is room in this hardware queue */
-		if (test_bit(IEEE80211_LINK_STATE_XOFF,
-			     &local->state[queue]) ||
-		    test_bit(IEEE80211_LINK_STATE_PENDING,
-			     &local->state[queue]))
+		if ((test_bit(IEEE80211_LINK_STATE_XOFF,&local->state[queue])) ||
+		    (test_bit(IEEE80211_LINK_STATE_PENDING,&local->state[queue])) ||
+			 (!test_bit(queue,&q->qdisc_pool)))
 			continue;
 
 		/* there is space - try and get a frame */
@@ -429,6 +482,10 @@ static int wme_qdiscop_init(struct Qdisc *qd, struct rtattr *opt)
 			printk(KERN_ERR "%s child qdisc %i creation failed", dev->name, i);
 		}
 	}
+
+	for (i = 0; i < 4; i++)
+		set_bit(i,&q->qdisc_pool);
+
 
 	return err;
 }
@@ -676,3 +733,51 @@ void ieee80211_wme_unregister(void)
 	unregister_qdisc(&wme_qdisc_ops);
 }
 #endif /* CONFIG_NET_SCHED */
+
+int ieee80211_ht_agg_queue_add(struct ieee80211_local *local, struct sta_info *sta, u16 tid)
+{
+#ifdef CONFIG_NET_SCHED
+	int i;
+	struct ieee80211_sched_data *q = qdisc_priv(local->mdev->qdisc_sleeping);
+
+	/* prepare the filter and save it for the SW queue
+	* matching the recieved HW queue
+	* (TODO - policy should be replaced for AP)*/
+
+	/* try to get a Qdisc from a pool */
+	/* FIXME: use test and set command */
+	for (i=7; i < local->hw.queues; i++)
+		if (!test_and_set_bit(i, &q->qdisc_pool)) {
+			sta->tx_queue_id[tid] = i;
+
+			/* IF there are already pending packets
+			 * on this tid first we need to drain them
+			 * on the previous queue
+			 * since HT is strict in order */
+#ifdef CONFIG_MAC80211_DEBUG
+			printk(KERN_ERR "mac80211:wme allocated ht agg queue %d"
+				"for tid=%d and sta " MAC_FMT "pool=0x%lX qdisc=%p\n",
+				i,tid,MAC_ARG(sta->addr),q->qdisc_pool,q);
+#endif /* CONFIG_MAC80211_DEBUG */
+			return 0;
+		}
+
+#endif /* CONFIG_NET_SCHED */
+	return -EAGAIN;
+}
+
+int ieee80211_ht_agg_queue_remove(struct ieee80211_local *local, struct sta_info *sta, u16 tid)
+{
+#ifdef CONFIG_NET_SCHED
+       	int i;
+	struct ieee80211_sched_data *q = qdisc_priv(local->mdev->qdisc_sleeping);
+
+	/* return the qdisc to the pool */
+	i = sta->tx_queue_id[tid];
+	clear_bit(i, &q->qdisc_pool);
+	sta->tx_queue_id[tid] = local->hw.queues;
+
+#endif /* CONFIG_NET_SCHED */
+	return 0;
+}
+
