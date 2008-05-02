@@ -3075,6 +3075,18 @@ IM_HERE_NOW();
 	printk(KERN_DEBUG "%s: RX %s from " MAC_FMT " to " MAC_FMT "\n",
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
+	if (!beacon)
+	{
+		IOLog("hacking association\n");
+		struct net_device *dev = local->scan_dev;
+		if (dev)
+		{
+			struct ieee80211_sub_if_data *sdata=(struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+			struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+			if (!ifsta->associated)
+			bcopy(mgmt->sa,sdata->u.sta.bssid,ETH_ALEN);
+		}
+	}
 #endif
 
 	baselen = (u8 *) mgmt->u.beacon.variable - (u8 *) mgmt;
@@ -5261,14 +5273,16 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	//read_unlock(&local->sub_if_lock);
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 	if (sdata->type == IEEE80211_IF_TYPE_IBSS) {
-		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+		
 		if (!ifsta->bssid_set ||
 		    (!ifsta->state == IEEE80211_IBSS_JOINED &&
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
 	else
+	if (!ifsta->associated)
 	ieee80211_sta_req_scan(local->mdev,NULL,0);//hack
 }
 
