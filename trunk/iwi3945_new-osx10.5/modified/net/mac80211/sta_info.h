@@ -27,7 +27,50 @@
 				    */
 #define WLAN_STA_SHORT_PREAMBLE BIT(7)
 #define WLAN_STA_WME BIT(9)
+#define WLAN_STA_HT  BIT(10)
 #define WLAN_STA_WDS BIT(27)
+
+#define STA_TID_NUM 16
+#define ADDBA_RESP_INTERVAL HZ
+
+enum ht_agg_state {
+	HT_AGG_STATE_IDLE = 0,
+	HT_AGG_STATE_START_BA,
+	HT_AGG_STATE_ADDBA_REQUESTED,
+	HT_AGG_STATE_OPERATIONAL,
+	HT_AGG_STATE_INITIATOR_REQ_STOP_BA,
+	HT_AGG_STATE_RECIPIENT_REQ_STOP_BA
+};
+
+struct tid_ht_agg_info_tx {
+	enum ht_agg_state state;
+	u8 dialog_token;
+	u16 start_seq_num;
+	struct timer_list addba_resp_timer; /* check if peer responds to addba request */
+};
+
+struct tid_ht_agg_info_rx {
+	enum ht_agg_state state;
+	u8 dialog_token;
+	u16 start_seq_num;
+	u16 head_seq_num;
+	u16 buf_size;
+	struct sk_buff** reordering_buf;
+	u16 stored_mpdu_num;			   /* number of mpdus in reordering buffer */
+	struct timer_list session_timer;   /* check if peer keeps Tx-ing on the TID */
+	u16 timeout;
+};
+
+struct sta_ht_agg_info {
+	u8 dialog_token_allocator;
+	struct tid_ht_agg_info_tx tid_agg_info_tx[STA_TID_NUM];
+	struct tid_ht_agg_info_rx tid_agg_info_rx[STA_TID_NUM];
+	spinlock_t agg_data_lock_tx;
+	spinlock_t agg_data_lock_rx;
+};
+
+
+
 
 
 struct sta_info {
@@ -82,9 +125,12 @@ struct sta_info {
 	unsigned long rx_fragments; /* number of received MPDUs */
 	unsigned long rx_dropped; /* number of dropped MPDUs from this STA */
 
-	int last_rssi; /* RSSI of last received frame from this STA */
-	int last_signal; /* signal of last received frame from this STA */
-	int last_noise; /* noise of last received frame from this STA */
+	int accum_rssi; /* hi-precision running average (rssi * 16) */
+	int accum_signal; /* hi-precision average (signal-quality * 16) */
+	int accum_noise; /* hi-precision running average (noise * 16) */
+	int last_rssi; /* average RSSI of recent frames from this STA */
+	int last_signal; /* average sig-qual of recent frames from this STA */
+	int last_noise; /* average noise of recent frames from this STA */
 	int last_ack_rssi[3]; /* RSSI of last received ACKs from this STA */
 	unsigned long last_ack;
 	int channel_use;
@@ -103,6 +149,12 @@ struct sta_info {
 #endif
 	int assoc_ap; /* whether this is an AP that we are
 		       * associated with as a client */
+	int dls_sta; /* whether this stations is a DLS peer of us */
+
+#define DLS_STATUS_OK		0
+#define DLS_STATUS_NOLINK	1
+	int dls_status;
+	u32 dls_timeout;
 
 #ifdef CONFIG_MAC80211_DEBUG_COUNTERS
 	unsigned int wme_rx_queue[NUM_RX_DATA_QUEUES];
@@ -112,6 +164,10 @@ struct sta_info {
 	int vlan_id;
 
 	u16 listen_interval;
+	struct sta_ht_agg_info ht_ba_mlme;
+	int timer_to_tid[STA_TID_NUM]; /* converts expired addba response timer */
+	int tx_queue_id[STA_TID_NUM];
+
 
 #ifdef CONFIG_MAC80211_DEBUGFS
 	struct sta_info_debugfsdentries {
@@ -122,6 +178,7 @@ struct sta_info {
 		struct dentry *last_ack_ms;
 		struct dentry *inactive_ms;
 		struct dentry *last_seq_ctrl;
+		struct dentry *agg_status;
 #ifdef CONFIG_MAC80211_DEBUG_COUNTERS
 		struct dentry *wme_rx_queue;
 		struct dentry *wme_tx_queue;

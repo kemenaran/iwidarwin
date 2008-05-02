@@ -97,7 +97,10 @@ static int ieee80211_set_encryption(struct net_device *dev, u8 *sta_addr,
 			return -EINVAL;
 		}
 
-		sta = sta_info_get(local, sta_addr);
+		if (is_zero_ether_addr(sta_addr))
+			sta = sta_info_get(local, sdata->u.sta.bssid);
+		else
+			sta = sta_info_get(local, sta_addr);
 		if (!sta) {
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 			printk(KERN_DEBUG "%s: set_encrypt - unknown addr "
@@ -493,7 +496,7 @@ int ieee80211_set_channel(struct ieee80211_local *local, int channel, int freq)
 	}
 
 	if (set) {
-		if (local->sta_scanning)
+		if (local->sta_sw_scanning)
 			ret = 0;
 		else
 			ret = ieee80211_hw_config(local);
@@ -693,6 +696,7 @@ static int ieee80211_ioctl_siwscan(struct net_device *dev,
 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
 	u8 *ssid = NULL;
 	size_t ssid_len = 0;
+	struct iw_scan_req* scan = (struct iw_scan_req*) extra;
 
 	if (!netif_running(dev))
 		return -ENETDOWN;
@@ -700,9 +704,16 @@ static int ieee80211_ioctl_siwscan(struct net_device *dev,
 	switch (sdata->type) {
 	case IEEE80211_IF_TYPE_STA:
 	case IEEE80211_IF_TYPE_IBSS:
-		if (local->scan_flags & IEEE80211_SCAN_MATCH_SSID) {
+		if (data->flags & IW_SCAN_THIS_ESSID) {
+			ssid = scan->essid;
+			ssid_len = scan->essid_len;
+			local->scan_ssid_len = ssid_len;
+			memcpy(local->scan_ssid, ssid, ssid_len);
+		} else if (local->scan_flags & IEEE80211_SCAN_MATCH_SSID) {
 			ssid = sdata->u.sta.ssid;
 			ssid_len = sdata->u.sta.ssid_len;
+			local->scan_ssid_len = ssid_len;
+			memcpy(local->scan_ssid, ssid, ssid_len);
 		}
 		break;
 	case IEEE80211_IF_TYPE_AP:
@@ -725,7 +736,7 @@ static int ieee80211_ioctl_giwscan(struct net_device *dev,
 {
 	int res;
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
-	if (local->sta_scanning)
+	if (local->sta_sw_scanning || local->sta_hw_scanning)
 		return -EAGAIN;
 	res = ieee80211_sta_scan_results(dev, extra, data->length);
 	if (res >= 0) {
@@ -875,6 +886,125 @@ static int ieee80211_ioctl_giwfrag(struct net_device *dev,
 	return 0;
 }
 
+static int ieee80211_ioctl_giwtxpow(struct net_device *dev,
+				    struct iw_request_info *info,
+				    union iwreq_data *wrqu,
+				    char *extra)
+{
+        struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+        struct ieee80211_conf *conf = &local->hw.conf;
+
+	wrqu->txpower.flags = IW_TXPOW_DBM;
+	wrqu->txpower.fixed = 1;
+	wrqu->txpower.disabled = (conf->radio_enabled) ? 0 : 1;
+	wrqu->txpower.value = conf->power_level;
+	return 0;
+}
+
+static int ieee80211_ioctl_siwtxpow(struct net_device *dev,
+				    struct iw_request_info *info,
+				    union iwreq_data *wrqu,
+				    char *extra)
+{
+	int rc = 0;
+        struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+
+
+	if (wrqu->txpower.flags != IW_TXPOW_DBM)
+		rc = -EINVAL;
+	else if (!wrqu->txpower.disabled) {
+		if (wrqu->txpower.value < 0)
+			return -EINVAL;
+		local->user_txpow = wrqu->txpower.value;
+	}
+
+
+	ieee80211_ioctl_set_radio_enabled(dev, !wrqu->txpower.disabled);
+	return rc;
+}
+
+static int ieee80211_ioctl_siwpower(struct net_device *dev,
+				    struct iw_request_info *info,
+				    union iwreq_data *wrqu,
+				    char *extra)
+{
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_conf *conf = &local->hw.conf;
+
+	if (wrqu->power.disabled) {
+		conf->power_management_enable = 0;
+		if (ieee80211_hw_config(local))
+			return -EINVAL;
+		return 0;
+	}
+
+	if (wrqu->power.flags & IW_POWER_TYPE)
+		return -EINVAL;
+
+	switch (wrqu->power.flags & IW_POWER_MODE) {
+	case IW_POWER_ON:       /* If not specified */
+	case IW_POWER_MODE:     /* If set all mask */
+	case IW_POWER_ALL_R:    /* If explicitely state all */
+		break;
+	default:                /* Otherwise we don't support it */
+		return -EINVAL;
+	}
+
+	conf->power_management_enable = 1;
+
+	if (ieee80211_hw_config(local))
+		return -EINVAL;
+
+	return 0;
+}
+
+static int ieee80211_ioctl_giwpower(struct net_device *dev,
+				    struct iw_request_info *info,
+				    union iwreq_data *wrqu,
+				    char *extra)
+{
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_conf *conf = &local->hw.conf;
+
+	if (!conf->power_management_enable)
+		wrqu->power.disabled = 1;
+	else
+		wrqu->power.disabled = 0;
+	return 0;
+}
+
+static int ieee80211_ioctl_siwnick(struct net_device *dev,
+				   struct iw_request_info *info,
+				   union iwreq_data *wrqu, char *extra)
+{
+	struct ieee80211_sub_if_data *sdata;
+	struct ieee80211_if_sta *ifsta;
+
+	sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	ifsta = &sdata->u.sta;
+	if (wrqu->data.length >= IW_ESSID_MAX_SIZE)
+		return -E2BIG;
+
+	memset(ifsta->nick, 0, sizeof(ifsta->nick));
+	memcpy(ifsta->nick, extra, wrqu->data.length);
+	return 0;
+}
+
+static int ieee80211_ioctl_giwnick(struct net_device *dev,
+				   struct iw_request_info *info,
+				   union iwreq_data *wrqu, char *extra)
+{
+	struct ieee80211_sub_if_data *sdata;
+	struct ieee80211_if_sta *ifsta;
+
+	sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	ifsta = &sdata->u.sta;
+
+	wrqu->data.length = strlen(ifsta->nick) + 1;
+	memcpy(extra, ifsta->nick, wrqu->data.length);
+	wrqu->data.flags = 1;   /* active */
+	return 0;
+}
 
 static int ieee80211_ioctl_siwretry(struct net_device *dev,
 				    struct iw_request_info *info,
@@ -1569,8 +1699,8 @@ static const iw_handler ieee80211_handler[] =
 	(iw_handler) ieee80211_ioctl_giwscan,		/* SIOCGIWSCAN */
 	(iw_handler) ieee80211_ioctl_siwessid,		/* SIOCSIWESSID */
 	(iw_handler) ieee80211_ioctl_giwessid,		/* SIOCGIWESSID */
-	(iw_handler) NULL,				/* SIOCSIWNICKN */
-	(iw_handler) NULL,				/* SIOCGIWNICKN */
+	(iw_handler) ieee80211_ioctl_siwnick,		/* SIOCSIWNICKN */
+	(iw_handler) ieee80211_ioctl_giwnick,		/* SIOCGIWNICKN */
 	(iw_handler) NULL,				/* -- hole -- */
 	(iw_handler) NULL,				/* -- hole -- */
 	(iw_handler) ieee80211_ioctl_siwrate,		/* SIOCSIWRATE */
@@ -1579,14 +1709,14 @@ static const iw_handler ieee80211_handler[] =
 	(iw_handler) ieee80211_ioctl_giwrts,		/* SIOCGIWRTS */
 	(iw_handler) ieee80211_ioctl_siwfrag,		/* SIOCSIWFRAG */
 	(iw_handler) ieee80211_ioctl_giwfrag,		/* SIOCGIWFRAG */
-	(iw_handler) NULL,				/* SIOCSIWTXPOW */
-	(iw_handler) NULL,				/* SIOCGIWTXPOW */
+	(iw_handler) ieee80211_ioctl_siwtxpow,		/* SIOCSIWTXPOW */
+	(iw_handler) ieee80211_ioctl_giwtxpow,		/* SIOCGIWTXPOW */
 	(iw_handler) ieee80211_ioctl_siwretry,		/* SIOCSIWRETRY */
 	(iw_handler) ieee80211_ioctl_giwretry,		/* SIOCGIWRETRY */
 	(iw_handler) ieee80211_ioctl_siwencode,		/* SIOCSIWENCODE */
 	(iw_handler) ieee80211_ioctl_giwencode,		/* SIOCGIWENCODE */
-	(iw_handler) NULL,				/* SIOCSIWPOWER */
-	(iw_handler) NULL,				/* SIOCGIWPOWER */
+	(iw_handler) ieee80211_ioctl_siwpower,		/* SIOCSIWPOWER */
+	(iw_handler) ieee80211_ioctl_giwpower,		/* SIOCGIWPOWER */
 	(iw_handler) NULL,				/* -- hole -- */
 	(iw_handler) NULL,				/* -- hole -- */
 	(iw_handler) ieee80211_ioctl_siwgenie,		/* SIOCSIWGENIE */
