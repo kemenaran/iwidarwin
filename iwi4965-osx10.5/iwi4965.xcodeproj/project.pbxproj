@@ -21,8 +21,6 @@
 		9664E7380DAFEF62006F632B /* iwl-4965.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6EB0DAFEF62006F632B /* iwl-4965.h */; };
 		9664E7390DAFEF62006F632B /* iwl4965-base.c in Sources */ = {isa = PBXBuildFile; fileRef = 9664E6EC0DAFEF62006F632B /* iwl4965-base.c */; };
 		9664E8830DAFF0B6006F632B /* net in Resources */ = {isa = PBXBuildFile; fileRef = 9664E85F0DAFF0B6006F632B /* net */; };
-		9664E8840DAFF0B6006F632B /* networkSelector in Resources */ = {isa = PBXBuildFile; fileRef = 9664E8650DAFF0B6006F632B /* networkSelector */; };
-		9664E8850DAFF0B6006F632B /* pkgscripts in Resources */ = {isa = PBXBuildFile; fileRef = 9664E87E0DAFF0B6006F632B /* pkgscripts */; };
 		9664E88D0DAFF0DD006F632B /* firmware in Resources */ = {isa = PBXBuildFile; fileRef = 9664E8880DAFF0DD006F632B /* firmware */; };
 		9664ECB80DAFF844006F632B /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664ECB70DAFF844006F632B /* defines.h */; };
 		9664ECC60DAFF8B5006F632B /* compatibility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9664ECBC0DAFF8B5006F632B /* compatibility.cpp */; };
@@ -55,8 +53,6 @@
 		9664E6EB0DAFEF62006F632B /* iwl-4965.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-4965.h"; sourceTree = "<group>"; };
 		9664E6EC0DAFEF62006F632B /* iwl4965-base.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl4965-base.c"; sourceTree = "<group>"; };
 		9664E85F0DAFF0B6006F632B /* net */ = {isa = PBXFileReference; lastKnownFileType = folder; path = net; sourceTree = "<group>"; };
-		9664E8650DAFF0B6006F632B /* networkSelector */ = {isa = PBXFileReference; lastKnownFileType = folder; path = networkSelector; sourceTree = "<group>"; };
-		9664E87E0DAFF0B6006F632B /* pkgscripts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = pkgscripts; sourceTree = "<group>"; };
 		9664E8880DAFF0DD006F632B /* firmware */ = {isa = PBXFileReference; lastKnownFileType = folder; path = firmware; sourceTree = "<group>"; };
 		9664ECB70DAFF844006F632B /* defines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
 		9664ECBC0DAFF8B5006F632B /* compatibility.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compatibility.cpp; sourceTree = "<group>"; };
@@ -116,8 +112,6 @@
 				61AB07CC0DC3ECDA000C81F9 /* WiFiPower.cpp */,
 				9664E8880DAFF0DD006F632B /* firmware */,
 				9664E85F0DAFF0B6006F632B /* net */,
-				9664E8650DAFF0B6006F632B /* networkSelector */,
-				9664E87E0DAFF0B6006F632B /* pkgscripts */,
 				9664E6E40DAFEF62006F632B /* iwl-4965-commands.h */,
 				9664E6E50DAFEF62006F632B /* iwl-4965-debug.h */,
 				9664E6E60DAFEF62006F632B /* iwl-4965-hw.h */,
@@ -214,8 +208,6 @@
 			files = (
 				32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */,
 				9664E8830DAFF0B6006F632B /* net in Resources */,
-				9664E8840DAFF0B6006F632B /* networkSelector in Resources */,
-				9664E8850DAFF0B6006F632B /* pkgscripts in Resources */,
 				9664E88D0DAFF0DD006F632B /* firmware in Resources */,
 				9664ECCB0DAFF8B5006F632B /* load.command in Resources */,
 				9664ECCC0DAFF8B5006F632B /* myload.command in Resources */,
@@ -317,6 +309,7 @@
 		1DEB91DE08733DB10010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = i386;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -339,10 +332,7 @@
 		1DEB91DF08733DB10010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					ppc,
-					i386,
-				);
+				ARCHS = i386;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
