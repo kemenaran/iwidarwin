@@ -7482,6 +7482,26 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 			//if ((priv->iw_mode == IEEE80211_IF_TYPE_STA) && rc)
 				iwl3945_add_station(priv,
 					priv->active_rxon.bssid_addr, 1, 0);
+			
+			struct ieee80211_local *local = hw_to_local(hw);
+			struct ieee80211_sub_if_data *sdata=NULL;
+			list_for_each_entry(sdata, &local->sub_if_list, list) 
+			{
+				u8 sta_id = 1;
+				sta_id=iwl3945_hw_find_station(priv, sdata->u.sta.bssid);
+				if (sta_id==0) break;
+				sdata=NULL;
+			}		
+			struct net_device *dev = local->scan_dev;
+			if (sdata)
+			{
+				struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+				if (!ifsta->associated)
+				{
+				IOLog("hacking associate stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
+				ieee80211_associate(dev,ifsta);
+				}
+			}
 		}
 
 	} else {
