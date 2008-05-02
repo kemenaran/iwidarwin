@@ -5710,7 +5710,7 @@ IM_HERE_NOW();
 	mdev->type = ARPHRD_IEEE80211;
 	mdev->hard_header_parse = header_parse_80211;*/
 
-	sdata->type = IEEE80211_IF_TYPE_AP;
+	sdata->type = IEEE80211_IF_TYPE_STA;//IEEE80211_IF_TYPE_AP;
 	sdata->dev = mdev;
 	sdata->local = local;
 	sdata->u.ap.force_unicast_rateidx = -1;
@@ -7815,7 +7815,7 @@ int ieee80211_open(struct ieee80211_local *local)
 	char ii[4];
 	sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
 	bcopy(ii,dev->name,sizeof(ii));*/
-	dev->ifindex=my_fNetif->getUnitNumber();
+	//dev->ifindex=my_fNetif->getUnitNumber();
 	ieee80211_start_soft_monitor(local);
 	conf.if_id = dev->ifindex;
 	//sdata->type = IEEE80211_IF_TYPE_STA;//hack
