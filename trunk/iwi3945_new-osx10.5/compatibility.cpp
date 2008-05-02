@@ -1414,7 +1414,7 @@ IM_HERE_NOW();
 	rx->skb = NULL;
 }
 
-static inline int ieee80211_bssid_match(const u8 *raddr, const u8 *addr)
+inline int ieee80211_bssid_match(const u8 *raddr, const u8 *addr)
 {
 IM_HERE_NOW();
 	return compare_ether_addr(raddr, addr) == 0 ||
@@ -3062,7 +3062,7 @@ IM_HERE_NOW();
 #endif
 if (!beacon)
 	{
-		IOLog("hacking association\n");
+		IOLog("hacking add station\n");
 		struct net_device *dev = local->scan_dev;
 		if (dev)
 		{
@@ -3675,7 +3675,7 @@ IM_HERE_NOW();
 	ieee80211_sta_tx(dev, skb, 0);
 }
 
-static void ieee80211_associate(struct net_device *dev,
+void ieee80211_associate(struct net_device *dev,
 				struct ieee80211_if_sta *ifsta)
 {
 IM_HERE_NOW();
