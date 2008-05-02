@@ -22,6 +22,10 @@
 #include "debugfs_key.h"
 #include "debugfs_sta.h"
 
+/* Need to find a better place for this */
+extern void sta_addba_resp_timer_expired(unsigned long data);
+extern void sta_rx_agg_session_timer_expired(unsigned long data);
+
 /* Caller must hold local->sta_lock */
 static void sta_info_hash_add(struct ieee80211_local *local,
 			      struct sta_info *sta)
@@ -33,7 +37,7 @@ static void sta_info_hash_add(struct ieee80211_local *local,
 
 /* Caller must hold local->sta_lock */
 static void sta_info_hash_del(struct ieee80211_local *local,
-			      struct sta_info *sta)
+			      struct sta_info *sta, int dls)
 {
 	struct sta_info *s;
 
@@ -41,15 +45,19 @@ static void sta_info_hash_del(struct ieee80211_local *local,
 	if (!s)
 		return;
 	if (memcmp(s->addr, sta->addr, ETH_ALEN) == 0) {
+		if (dls && !s->dls_sta)
+			return;
 		local->sta_hash[STA_HASH(sta->addr)] = s->hnext;
 		return;
 	}
 
 	while (s->hnext && memcmp(s->hnext->addr, sta->addr, ETH_ALEN) != 0)
 		s = s->hnext;
-	if (s->hnext)
+	if (s->hnext) {
+		if (dls && !s->hnext->dls_sta)
+			return;
 		s->hnext = s->hnext->hnext;
-	else
+	} else
 		printk(KERN_ERR "%s: could not remove STA " MAC_FMT " from "
 		       "hash table\n", local->mdev->name, MAC_ARG(sta->addr));
 }
@@ -77,6 +85,28 @@ struct sta_info *sta_info_get(struct ieee80211_local *local, u8 *addr)
 	return sta;
 }
 EXPORT_SYMBOL(sta_info_get);
+
+struct sta_info *dls_info_get(struct ieee80211_local *local, u8 *addr)
+{
+	struct sta_info *sta;
+
+	spin_lock_bh(&local->sta_lock);
+	sta = local->sta_hash[STA_HASH(addr)];
+	while (sta) {
+		if (memcmp(sta->addr, addr, ETH_ALEN) == 0) {
+			if (!sta->dls_sta) {
+				sta = NULL;
+				break;
+			}
+			__sta_info_get(sta);
+			break;
+		}
+		sta = sta->hnext;
+	}
+	spin_unlock_bh(&local->sta_lock);
+
+	return sta;
+}
 
 int sta_info_min_txrate_get(struct ieee80211_local *local)
 {
@@ -108,6 +138,7 @@ static void sta_info_release(struct kref *kref)
 	struct sta_info *sta = container_of(kref, struct sta_info, kref);
 	struct ieee80211_local *local = sta->local;
 	struct sk_buff *skb;
+	int i;
 
 	/* free sta structure; it has already been removed from
 	 * hash table etc. external structures. Make sure that all
@@ -120,6 +151,12 @@ static void sta_info_release(struct kref *kref)
 	while ((skb = skb_dequeue(&sta->tx_filtered)) != NULL) {
 		dev_kfree_skb_any(skb);
 	}
+
+	for (i=0; i< STA_TID_NUM; i++) {
+		del_timer_sync(&sta->ht_ba_mlme.tid_agg_info_tx[i].addba_resp_timer);
+		del_timer_sync(&sta->ht_ba_mlme.tid_agg_info_rx[i].session_timer);
+	}
+
 	rate_control_free_sta(sta->rate_ctrl, sta->rate_ctrl_priv);
 	rate_control_put(sta->rate_ctrl);
 	if (sta->key)
@@ -139,6 +176,7 @@ struct sta_info * sta_info_add(struct ieee80211_local *local,
 			       struct net_device *dev, u8 *addr, gfp_t gfp)
 {
 	struct sta_info *sta;
+	int i;
 
 	sta = kzalloc(sizeof(*sta), gfp);
 	if (!sta)
@@ -158,6 +196,27 @@ struct sta_info * sta_info_add(struct ieee80211_local *local,
 	memcpy(sta->addr, addr, ETH_ALEN);
 	sta->local = local;
 	sta->dev = dev;
+	spin_lock_init(&sta->ht_ba_mlme.agg_data_lock_tx);
+	spin_lock_init(&sta->ht_ba_mlme.agg_data_lock_rx);
+	for (i=0; i< STA_TID_NUM; i++) {
+		sta->timer_to_tid[i] = i;
+		/* tx timers */
+		sta->ht_ba_mlme.tid_agg_info_tx[i].addba_resp_timer.function = sta_addba_resp_timer_expired;
+		sta->ht_ba_mlme.tid_agg_info_tx[i].addba_resp_timer.data = (unsigned long)&sta->timer_to_tid[i];
+		init_timer(&sta->ht_ba_mlme.tid_agg_info_tx[i].addba_resp_timer);
+
+		sta->ht_ba_mlme.tid_agg_info_tx[i].state = HT_AGG_STATE_IDLE;
+		/* net sched tx queue id: initialize to max (0 is valid one)*/
+       		sta->tx_queue_id[i] = local->hw.queues;
+
+		/* rx timers */
+		sta->ht_ba_mlme.tid_agg_info_rx[i].session_timer.function = sta_rx_agg_session_timer_expired;
+		sta->ht_ba_mlme.tid_agg_info_rx[i].session_timer.data = (unsigned long)&sta->timer_to_tid[i];
+		init_timer(&sta->ht_ba_mlme.tid_agg_info_rx[i].session_timer);
+
+		sta->ht_ba_mlme.tid_agg_info_rx[i].state = HT_AGG_STATE_IDLE;
+	}
+
 	skb_queue_head_init(&sta->ps_tx_buf);
 	skb_queue_head_init(&sta->tx_filtered);
 	__sta_info_get(sta);	/* sta used by caller, decremented by
@@ -218,7 +277,7 @@ static void sta_info_remove(struct sta_info *sta)
 	struct ieee80211_local *local = sta->local;
 	struct ieee80211_sub_if_data *sdata;
 
-	sta_info_hash_del(local, sta);
+	sta_info_hash_del(local, sta, 0);
 	list_del(&sta->list);
 	sdata = IEEE80211_DEV_TO_SUB_IF(sta->dev);
 	if (sta->flags & WLAN_STA_PS) {
