@@ -13,6 +13,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	extern void ieee80211_associate(struct net_device *dev,
+				struct ieee80211_if_sta *ifsta);
+	extern inline int ieee80211_bssid_match(const u8 *raddr, const u8 *addr);
 	extern int __ieee80211_tx(struct ieee80211_local *local, struct sk_buff *skb,
 			  struct ieee80211_txrx_data *tx);
 	extern int ieee80211_sta_req_scan(struct net_device *dev, u8 *ssid, size_t ssid_len);
