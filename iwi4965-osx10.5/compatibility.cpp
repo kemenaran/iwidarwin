@@ -5208,18 +5208,15 @@ IM_HERE_NOW();
 		chan = local->oper_channel;
 		mode = local->oper_hw_mode;
 	}
-if (chan)
-{
+
 	local->hw.conf.channel = chan->chan;
 	local->hw.conf.channel_val = chan->val;
 	local->hw.conf.power_level = chan->power_level;
 	local->hw.conf.freq = chan->freq;
-}
-if (mode)
-{
+
 	local->hw.conf.phymode = mode->mode;
 	local->hw.conf.antenna_max = chan->antenna_max;
-}
+
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 	printk(KERN_DEBUG "HW CONFIG: channel=%d freq=%d "
 	       "phymode=%d\n", local->hw.conf.channel, local->hw.conf.freq,
@@ -5260,8 +5257,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 
 		IOLog("scan_complete stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
 		/* No need to wake the master device. */
-		if (sdata->dev == local->mdev)
-			continue;
+		//if (sdata->dev == local->mdev)
+		//	continue;
 
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
