@@ -5259,8 +5259,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
 
 		/* No need to wake the master device. */
-		//if (sdata->dev == local->mdev)
-		//	continue;
+		if (sdata->dev == local->mdev)
+			continue;
 
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
@@ -6403,14 +6403,14 @@ void pci_disable_msi(struct pci_dev* dev){
 }
 
 int pci_restore_state (	struct pci_dev *  	dev){
-	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	//fPCIDevice->restoreDeviceState();
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	fPCIDevice->restoreDeviceState();
 	return 0;
 }
 //ok but no saved_config_space in pci_dev struct
 int pci_save_state (struct pci_dev * dev){
-	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	//fPCIDevice->saveDeviceState();
+	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	fPCIDevice->saveDeviceState();
 	return 0;
 }
 int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
