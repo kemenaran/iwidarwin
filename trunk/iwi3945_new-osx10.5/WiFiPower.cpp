@@ -263,7 +263,7 @@ void darwin_iwi3945::setPowerStateOn() {
     {
          fPCIDevice->saveDeviceState();
         fPCIDevice->configWrite16( kPCIPMCSR, 0x8000 );
-        IOSleep(10);  // wait for internal reset completion
+        IOSleep(100);  // wait for internal reset completion
         fPCIDevice->restoreDeviceState();
     }
     // Since the driver returned a non-acknowledgement when called at
