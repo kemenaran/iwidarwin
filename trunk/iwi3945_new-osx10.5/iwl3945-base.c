@@ -7492,14 +7492,16 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				if (sta_id==0) break;
 				sdata=NULL;
 			}		
-			struct net_device *dev = local->scan_dev;
+			//struct net_device *dev = local->scan_dev;
 			if (sdata)
 			{
 				struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 				if (!ifsta->associated)
 				{
 				IOLog("hacking authenticate stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
-				ieee80211_authenticate(dev,ifsta);
+				//ieee80211_authenticate(dev,ifsta);
+				sdata->type = IEEE80211_IF_TYPE_STA;
+				ifsta->state=IEEE80211_AUTHENTICATE;
 				}
 			}
 		}
