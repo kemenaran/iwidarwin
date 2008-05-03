@@ -7744,7 +7744,7 @@ IM_HERE_NOW();
 	 clear_bit(IEEE80211_STA_REQ_RUN, &ifsta->request);
 		return;
 	}
-
+IOLog("ifsta->state %d\n",ifsta->state);
 	switch (ifsta->state) {
 	case IEEE80211_DISABLED:
 		break;
