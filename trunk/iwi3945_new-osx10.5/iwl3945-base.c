@@ -841,7 +841,7 @@ static int iwl3945_send_cmd_sync(struct iwl3945_priv *priv, struct iwl3945_host_
 			HOST_COMPLETE_TIMEOUT);*/
 	ret = HOST_COMPLETE_TIMEOUT;          
 	while(test_bit(STATUS_HCMD_ACTIVE, &priv->status)) {                  
-		IOSleep(10);                    
+		IOSleep(1);                    
 		ret--;                            
 		if(ret==0)                          
 			break;  
