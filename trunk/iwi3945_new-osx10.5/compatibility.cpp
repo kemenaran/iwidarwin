@@ -5243,10 +5243,9 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 
 	//read_lock(&local->sub_if_lock);
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
-		IOLog("scan_complete stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
 		/* No need to wake the master device. */
-		//if (sdata->dev == local->mdev)
-		//	continue;
+		if (sdata->dev == local->mdev)
+			continue;
 		
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
@@ -5267,7 +5266,7 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
 	else
-	if (!ifsta->associated)
+	//if (!ifsta->associated)
 	ieee80211_sta_req_scan(local->mdev,NULL,0);//hack
 }
 
