@@ -7862,8 +7862,8 @@ static int iwl4965_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 				if (!ifsta->associated)
 				{
-				IOLog("hacking associate stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
-				ieee80211_associate(dev,ifsta);
+				IOLog("hacking authenticate stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
+				ieee80211_authenticate(dev,ifsta);
 				}
 			}
 		
