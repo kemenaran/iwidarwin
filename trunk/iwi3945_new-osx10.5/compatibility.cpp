@@ -7617,7 +7617,7 @@ static int ieee80211_sta_config_auth(struct net_device *dev,
 	return -1;
 }
 
-static void ieee80211_authenticate(struct net_device *dev,
+void ieee80211_authenticate(struct net_device *dev,
 				   struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();

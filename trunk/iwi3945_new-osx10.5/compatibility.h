@@ -13,6 +13,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	extern void ieee80211_authenticate(struct net_device *dev,
+				   struct ieee80211_if_sta *ifsta);
 	extern void ieee80211_associate(struct net_device *dev,
 				struct ieee80211_if_sta *ifsta);
 	extern inline int ieee80211_bssid_match(const u8 *raddr, const u8 *addr);
