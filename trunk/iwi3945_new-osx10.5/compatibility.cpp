@@ -5243,9 +5243,10 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 
 	//read_lock(&local->sub_if_lock);
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
+		IOLog("scan_complete stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
 		/* No need to wake the master device. */
-		if (sdata->dev == local->mdev)
-			continue;
+		//if (sdata->dev == local->mdev)
+		//	continue;
 		
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
