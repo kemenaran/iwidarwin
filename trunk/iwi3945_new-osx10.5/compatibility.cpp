@@ -5242,17 +5242,14 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	//wireless_send_event(dev, SIOCGIWSCAN, &wrqu, NULL);
 
 	//read_lock(&local->sub_if_lock);
-	IOLog("scanend stations\n");
 	list_for_each_entry(sdata, &local->sub_if_list, list) {
-IOLog("1\n");
 		/* No need to wake the master device. */
-		//if (sdata->dev == local->mdev)
-		//	continue;
-IOLog("2\n");
+		if (sdata->dev == local->mdev)
+			continue;
+		
 		if (sdata->type == IEEE80211_IF_TYPE_STA) {
 			if (sdata->u.sta.associated)
 				ieee80211_send_nullfunc(local, sdata, 0);
-				IOLog("3\n");
 			ieee80211_sta_timer((unsigned long)sdata);
 		}
 
