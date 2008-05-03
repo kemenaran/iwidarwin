@@ -6403,14 +6403,14 @@ void pci_disable_msi(struct pci_dev* dev){
 }
 
 int pci_restore_state (	struct pci_dev *  	dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	fPCIDevice->restoreDeviceState();
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//fPCIDevice->restoreDeviceState();
 	return 0;
 }
 //ok but no saved_config_space in pci_dev struct
 int pci_save_state (struct pci_dev * dev){
-	IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
-	fPCIDevice->saveDeviceState();
+	//IOPCIDevice *fPCIDevice = (IOPCIDevice *)dev->dev.kobj.ptr;
+	//fPCIDevice->saveDeviceState();
 	return 0;
 }
 int pci_set_dma_mask(struct pci_dev *dev, u64 mask){
