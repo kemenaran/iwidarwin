@@ -374,8 +374,8 @@ void darwin_iwi3945::queue_te2(int num, thread_call_func_t func, thread_call_par
 void darwin_iwi3945::check_firstup(void)
 {
 	IOLog("check_firstup\n");
-	//if (first_up==0) 
-	if (_pmPowerState != 1)
+	if (first_up==0) 
+	//if (_pmPowerState != 1)
 	{
 		IOLog("goto system preferences -> networks and press apply if you keep seeing this\n");
 		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,2000,true);
@@ -405,7 +405,7 @@ void darwin_iwi3945::check_firstup(void)
 	}
 	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
 	struct ieee80211_local *local =hw_to_local(get_my_hw());
-	ieee80211_open(local);
+	//ieee80211_open(local);
 	struct net_device *dev=local->mdev;
 	ieee80211_sta_req_scan(dev,NULL,0);
 }

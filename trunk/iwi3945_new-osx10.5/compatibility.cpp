@@ -6724,7 +6724,7 @@ IM_HERE_NOW();
 		}
 		return rc;
 	}*/
-
+	local->scan_dev = dev;//hack
 	local->sta_scanning = 1;
 
 	//read_lock(&local->sub_if_lock);
@@ -6817,10 +6817,10 @@ int pci_register_driver(struct pci_driver * drv){
 	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	/*struct ieee80211_local *local = hw_to_local(my_hw);
+	struct ieee80211_local *local = hw_to_local(my_hw);
 	int result3 = ieee80211_open(local);//run_add_interface();
 	if(result3)
-		IOLog("Error ieee80211_open\n");*/
+		IOLog("Error ieee80211_open\n");
 
 
 	return 0;
