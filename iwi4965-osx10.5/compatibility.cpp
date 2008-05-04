@@ -5204,14 +5204,18 @@ IM_HERE_NOW();
 		mode = local->oper_hw_mode;
 	}
 
+if (chan)
+{
 	local->hw.conf.channel = chan->chan;
 	local->hw.conf.channel_val = chan->val;
 	local->hw.conf.power_level = chan->power_level;
 	local->hw.conf.freq = chan->freq;
-
+}
+if (mode)
+{
 	local->hw.conf.phymode = mode->mode;
 	local->hw.conf.antenna_max = chan->antenna_max;
-
+}
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 	printk(KERN_DEBUG "HW CONFIG: channel=%d freq=%d "
 	       "phymode=%d\n", local->hw.conf.channel, local->hw.conf.freq,
