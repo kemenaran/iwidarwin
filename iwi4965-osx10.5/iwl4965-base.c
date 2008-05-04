@@ -2908,8 +2908,7 @@ static int iwl4965_tx_skb(struct iwl4965_priv *priv,
 
 	if ((ctl->tx_rate & 0xFF) == IWL_INVALID_RATE) {
 		IWL_ERROR("ERROR: No TX rate available.\n");
-		ctl->tx_rate=IWL_RATE_1M_INDEX;//hack
-		//goto drop_unlock;
+		goto drop_unlock;
 	}
 
 	unicast = !is_multicast_ether_addr(hdr->addr1);
@@ -7474,10 +7473,10 @@ static int iwl4965_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	
-	IOSleep(6000);//hack
-	ret = UCODE_READY_TIMEOUT;          
+	//IOSleep(6000);//hack
+	ret = UCODE_READY_TIMEOUT/10;          
 	while(!(test_bit(STATUS_READY, &priv->status))) {                  
-		IOSleep(1);                    
+		IOSleep(100);                    
 		ret--;                            
 		if(ret==0)                          
 			break;  
