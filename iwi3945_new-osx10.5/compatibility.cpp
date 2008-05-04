@@ -6715,16 +6715,15 @@ IM_HERE_NOW();
 		return -EBUSY;
 	}
 
-	/*if (local->ops->hw_scan) {
+	if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
 		if (!rc) {
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;
-	}*/
-	local->scan_dev = dev;//hack
+		//return rc;
+	}
 	local->sta_scanning = 1;
 
 	//read_lock(&local->sub_if_lock);
