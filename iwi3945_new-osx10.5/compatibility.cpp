@@ -2205,7 +2205,7 @@ static inline void setup_timer(struct timer_list2 * timer,
 
 void ieee80211_sta_timer(unsigned long data)
 {
-IM_HERE_NOW();
+
 	struct ieee80211_sub_if_data *sdata =
 		(struct ieee80211_sub_if_data *) data;
 	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
@@ -3060,17 +3060,17 @@ IM_HERE_NOW();
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
 #endif
-if (!beacon)
+if (1)//!beacon)
 	{
 		IOLog("hacking add station\n");
-		struct net_device *dev = local->scan_dev;
-		if (dev)
-		{
-			struct ieee80211_sub_if_data *sdata=(struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+		//struct net_device *dev = local->scan_dev;
+		//if (dev)
+		//{
+			//struct ieee80211_sub_if_data *sdata=(struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 			struct ieee80211_if_sta *ifsta = &sdata->u.sta;
-			if (!ifsta->associated)
+			//if (!ifsta->associated)
 			bcopy(mgmt->sa,sdata->u.sta.bssid,ETH_ALEN);
-		}
+		//}
 	}
 	
 	baselen = (u8 *) mgmt->u.beacon.variable - (u8 *) mgmt;
@@ -5267,7 +5267,7 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	}
 	else
 	//if (!ifsta->associated)
-	ieee80211_sta_req_scan(local->mdev,NULL,0);//hack
+	ieee80211_sta_req_scan(dev,NULL,0);//hack
 }
 
 
@@ -7699,7 +7699,7 @@ static void ieee80211_send_disassoc(struct net_device *dev,
 
 void ieee80211_sta_work(struct work_struct *work)
 {
-IM_HERE_NOW();
+
 	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)work;//check this
 	//	container_of(work, struct ieee80211_sub_if_data, u.sta.work);
 
