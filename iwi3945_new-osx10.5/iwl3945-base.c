@@ -7139,8 +7139,8 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
         if (!test_bit(STATUS_READY, &priv->status)) {
             IWL_DEBUG_INFO("Wait for START_ALIVE timeout after %dms.\n",
 				  jiffies_to_msecs(UCODE_READY_TIMEOUT));
-			//ret = -ETIMEDOUT;
-			//goto out_release_irq;
+			ret = -ETIMEDOUT;
+			goto out_release_irq;
 		}
 	}
 
