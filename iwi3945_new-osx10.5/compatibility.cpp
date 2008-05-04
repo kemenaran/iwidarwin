@@ -6715,7 +6715,7 @@ IM_HERE_NOW();
 		return -EBUSY;
 	}
 
-	if (local->ops->hw_scan) {
+	/*if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
 		if (!rc) {
@@ -6723,7 +6723,7 @@ IM_HERE_NOW();
 			local->scan_dev = dev;
 		}
 		return rc;
-	}
+	}*/
 
 	local->sta_scanning = 1;
 
