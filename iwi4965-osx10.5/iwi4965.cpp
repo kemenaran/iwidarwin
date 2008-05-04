@@ -404,9 +404,9 @@ void darwin_iwi4965::check_firstup(void)
 	}
 	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi4965::adapter_start),NULL,NULL,true);
 	struct ieee80211_local *local=hw_to_local(get_my_hw());
-	ieee80211_open(local);
+	int r=ieee80211_open(local);
 	struct net_device *dev=local->mdev;
-	ieee80211_sta_req_scan(dev,NULL,0);
+	if (!r) ieee80211_sta_req_scan(dev,NULL,0);
 	//ieee80211_open(local);
 }
 
