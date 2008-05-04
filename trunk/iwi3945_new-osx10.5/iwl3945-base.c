@@ -7125,7 +7125,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	
-	IOSleep(4000);//hack
+	IOSleep(6000);//hack
 	ret = UCODE_READY_TIMEOUT;          
 	while(!(test_bit(STATUS_READY, &priv->status))) {                  
 		IOSleep(1);                    
@@ -7483,7 +7483,7 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				iwl3945_add_station(priv,
 					priv->active_rxon.bssid_addr, 1, 0);
 			
-			struct ieee80211_local *local = hw_to_local(hw);
+			/*struct ieee80211_local *local = hw_to_local(hw);
 			struct ieee80211_sub_if_data *sdata=NULL;
 			list_for_each_entry(sdata, &local->sub_if_list, list) 
 			{
@@ -7504,7 +7504,7 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				//sdata->type = IEEE80211_IF_TYPE_STA;
 				//ifsta->state=IEEE80211_AUTHENTICATE;
 				}
-			}
+			}*/
 		}
 
 	} else {
