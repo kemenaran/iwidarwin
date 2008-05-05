@@ -6816,15 +6816,16 @@ int pci_register_driver(struct pci_driver * drv){
 
 	//fPCIDevice->setBusMasterEnable(true);
 	//fPCIDevice->setMemoryEnable(true);
-	int result2 = (drv->probe) (test_pci,test);
+	int r = (drv->probe) (test_pci,test);
 	
-	/*struct ieee80211_local *local = hw_to_local(my_hw);
-	int result3 = ieee80211_open(local);//run_add_interface();
-	if(result3)
-		IOLog("Error ieee80211_open\n");*/
+	struct ieee80211_local *local = hw_to_local(my_hw);
+	if (!r)
+	r = ieee80211_open(local);//run_add_interface();
+	if(r)
+		IOLog("Error ieee80211_open\n");
 
 
-	return 0;
+	return r;
 }
 
 static void ieee80211_set_disassoc(struct net_device *dev,
@@ -7712,7 +7713,7 @@ void ieee80211_sta_work(struct work_struct *work)
 	if (!netif_running(dev))
 	{
 		IOLog("en1 not running\n");
-		return;
+		//return;
 	}
 	if (local->sta_scanning)
 	{
@@ -7887,6 +7888,7 @@ IM_HERE_NOW();
 	} else
 		ieee80211_if_config(dev);
 
+	if (!res) ieee80211_sta_req_scan(dev,NULL,0);
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
