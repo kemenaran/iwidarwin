@@ -3075,7 +3075,7 @@ IM_HERE_NOW();
 	printk(KERN_DEBUG "%s: RX %s from " MAC_FMT " to " MAC_FMT "\n",
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
-	if (1)//!beacon)
+	if (0)//!beacon)
 	{
 		IOLog("hacking add station\n");
 		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
@@ -3309,6 +3309,9 @@ static void ieee80211_rx_mgmt_probe_resp(struct net_device *dev,
 {
 IM_HERE_NOW();	
 	ieee80211_rx_bss_info(dev, mgmt, len, rx_status, 0);
+	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+	ieee80211_associate(dev,ifsta);//hack
 }
 
 static void ieee80211_handle_erp_ie(struct net_device *dev, u8 erp_value)
