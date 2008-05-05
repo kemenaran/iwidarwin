@@ -6824,10 +6824,10 @@ int pci_register_driver(struct pci_driver * drv){
 	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	/*struct ieee80211_local *local = hw_to_local(my_hw);
+	struct ieee80211_local *local = hw_to_local(my_hw);
 	int result3 = ieee80211_open(local);//run_add_interface();
 	if(result3)
-		IOLog("Error ieee80211_open\n");*/
+		IOLog("Error ieee80211_open\n");
     //hack
 	//ieee80211_sta_start_scan(local->mdev, NULL, 0);
 	return 0;
@@ -7869,6 +7869,7 @@ IM_HERE_NOW();
 	} else
 		ieee80211_if_config(dev);
 
+	if (!res) ieee80211_sta_req_scan(dev,NULL,0);
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
