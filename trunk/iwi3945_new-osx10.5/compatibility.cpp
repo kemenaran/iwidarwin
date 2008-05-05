@@ -3300,7 +3300,10 @@ IM_HERE_NOW();
 	ieee80211_rx_bss_info(dev, mgmt, len, rx_status, 0);
 	struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 	struct ieee80211_if_sta *ifsta = &sdata->u.sta;
-	ieee80211_associate(dev,ifsta);//hack
+	if (ifsta->state != IEEE80211_AUTHENTICATE &&
+	    ifsta->state != IEEE80211_ASSOCIATE &&
+	    ifsta->state != IEEE80211_ASSOCIATED)
+	ieee80211_authenticate(dev,ifsta);//hack
 	
 }
 
@@ -5273,7 +5276,8 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 	}
 	else
 	//if (!ifsta->associated)
-	ieee80211_sta_req_scan(dev,NULL,0);//hack
+	//ieee80211_sta_req_scan(dev,NULL,0);//hack
+	ieee80211_sta_start_scan(dev, NULL, 0);
 }
 
 
