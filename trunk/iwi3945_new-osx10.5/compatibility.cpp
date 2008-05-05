@@ -6724,7 +6724,7 @@ IM_HERE_NOW();
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		//return rc;
+		return rc;
 	}
 	local->sta_scanning = 1;
 
