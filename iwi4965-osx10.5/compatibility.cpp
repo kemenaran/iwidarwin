@@ -3075,7 +3075,7 @@ IM_HERE_NOW();
 	printk(KERN_DEBUG "%s: RX %s from " MAC_FMT " to " MAC_FMT "\n",
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
-	if (0)//!beacon)
+	if (!beacon)
 	{
 		IOLog("hacking add station\n");
 		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
