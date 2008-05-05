@@ -3060,7 +3060,7 @@ IM_HERE_NOW();
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
 #endif
-if (0)//!beacon)
+if (!beacon)
 	{
 		IOLog("hacking add station\n");
 		//struct net_device *dev = local->scan_dev;
