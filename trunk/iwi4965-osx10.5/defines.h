@@ -347,54 +347,56 @@ struct workqueue_struct {
 
 
 struct ieee80211_tx_control {
-    int tx_rate; /* Transmit rate, given as the hw specific value for the
-     * rate (from struct ieee80211_rate) */
-    int rts_cts_rate; /* Transmit rate for RTS/CTS frame, given as the hw
-     * specific value for the rate (from
-     * struct ieee80211_rate) */
-    
-#define IEEE80211_TXCTL_REQ_TX_STATUS   (1<<0)/* request TX status callback for
-* this frame */
-#define IEEE80211_TXCTL_DO_NOT_ENCRYPT  (1<<1) /* send this frame without
-* encryption; e.g., for EAPOL
-* frames */
-#define IEEE80211_TXCTL_USE_RTS_CTS (1<<2) /* use RTS-CTS before sending
-* frame */
-#define IEEE80211_TXCTL_USE_CTS_PROTECT (1<<3) /* use CTS protection for the
-* frame (e.g., for combined
-* 802.11g / 802.11b networks) */
-#define IEEE80211_TXCTL_NO_ACK      (1<<4) /* tell the low level not to
-* wait for an ack */
-#define IEEE80211_TXCTL_RATE_CTRL_PROBE (1<<5)
-#define IEEE80211_TXCTL_CLEAR_DST_MASK  (1<<6)
-#define IEEE80211_TXCTL_REQUEUE     (1<<7)
-#define IEEE80211_TXCTL_FIRST_FRAGMENT  (1<<8) /* this is a first fragment of
-* the frame */
+	int tx_rate; /* Transmit rate, given as the hw specific value for the
+		      * rate (from struct ieee80211_rate) */
+	int rts_cts_rate; /* Transmit rate for RTS/CTS frame, given as the hw
+			   * specific value for the rate (from
+			   * struct ieee80211_rate) */
+
+#define IEEE80211_TXCTL_REQ_TX_STATUS	(1<<0)/* request TX status callback for
+						* this frame */
+#define IEEE80211_TXCTL_DO_NOT_ENCRYPT	(1<<1) /* send this frame without
+						* encryption; e.g., for EAPOL
+						* frames */
+#define IEEE80211_TXCTL_USE_RTS_CTS	(1<<2) /* use RTS-CTS before sending
+						* frame */
+#define IEEE80211_TXCTL_USE_CTS_PROTECT	(1<<3) /* use CTS protection for the
+						* frame (e.g., for combined
+						* 802.11g / 802.11b networks) */
+#define IEEE80211_TXCTL_NO_ACK		(1<<4) /* tell the low level not to
+						* wait for an ack */
+#define IEEE80211_TXCTL_RATE_CTRL_PROBE	(1<<5)
+#define IEEE80211_TXCTL_CLEAR_DST_MASK	(1<<6)
+#define IEEE80211_TXCTL_REQUEUE		(1<<7)
+#define IEEE80211_TXCTL_FIRST_FRAGMENT	(1<<8) /* this is a first fragment of
+						* the frame */
 #define IEEE80211_TXCTL_TKIP_NEW_PHASE1_KEY (1<<9)
-    u32 flags;                 /* tx control flags defined
-     * above */
-    u8 retry_limit;     /* 1 = only first attempt, 2 = one retry, .. */
-    u8 power_level;     /* per-packet transmit power level, in dBm */
-    u8 antenna_sel_tx;  /* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
-    s8 key_idx;     /* -1 = do not encrypt, >= 0 keyidx from
-     * hw->set_key() */
-    u8 icv_len;     /* length of the ICV/MIC field in octets */
-    u8 iv_len;      /* length of the IV field in octets */
-    u8 tkip_key[16];    /* generated phase2/phase1 key for hw TKIP */
-    u8 queue;       /* hardware queue to use for this frame;
-     * 0 = highest, hw->queues-1 = lowest */
-    u8 sw_retry_attempt;    /* number of times hw has tried to
-     * transmit frame (not incl. hw retries) */
-    
-    int rateidx;        /* internal 80211.o rateidx */
-    int rts_rateidx;    /* internal 80211.o rateidx for RTS/CTS */
-    int alt_retry_rate; /* retry rate for the last retries, given as the
-     * hw specific value for the rate (from
-     * struct ieee80211_rate). To be used to limit
-     * packet dropping when probing higher rates, if hw
-     * supports multiple retry rates. -1 = not used */
-    int type;   /* internal */
-    int ifindex;    /* internal */
+#define IEEE80211_TXCTL_HT_MPDU_AGG	(1<<10) /* MPDU aggregation */
+	u32 flags;			       /* tx control flags defined
+						* above */
+	u8 retry_limit;		/* 1 = only first attempt, 2 = one retry, .. */
+	u8 power_level;		/* per-packet transmit power level, in dBm */
+	u8 antenna_sel_tx; 	/* 0 = default/diversity, 1 = Ant0, 2 = Ant1 */
+	s8 key_idx;		/* -1 = do not encrypt, >= 0 keyidx from
+				 * hw->set_key() */
+	u8 icv_len;		/* length of the ICV/MIC field in octets */
+	u8 iv_len;		/* length of the IV field in octets */
+	u8 tkip_key[16];	/* generated phase2/phase1 key for hw TKIP */
+	u8 queue;		/* hardware queue to use for this frame;
+				 * 0 = highest, hw->queues-1 = lowest */
+	u8 sw_retry_attempt;	/* number of times hw has tried to
+				 * transmit frame (not incl. hw retries) */
+
+	struct ieee80211_rate *rate;		/* internal 80211.o rate */
+	struct ieee80211_rate *rts_rate;	/* internal 80211.o rate
+						 * for RTS/CTS */
+	int alt_retry_rate; /* retry rate for the last retries, given as the
+			     * hw specific value for the rate (from
+			     * struct ieee80211_rate). To be used to limit
+			     * packet dropping when probing higher rates, if hw
+			     * supports multiple retry rates. -1 = not used */
+	int type;	/* internal */
+	int ifindex;	/* internal */
 };
 
 struct ieee80211_tx_status {
@@ -2007,6 +2009,7 @@ struct ieee80211_tx_packet_data {
 	unsigned int requeue:1;
 	unsigned int mgmt_iface:1;
 	unsigned int queue:4;
+	unsigned int ht_queue:1;
 };
 
 struct ieee80211_msg_key_notification {
@@ -2194,7 +2197,10 @@ static inline int identical_mac_addr_allowed(int type1, int type2)
 
 static u8 my_mac_addr[6];
 #define kPCIPMCSR                   (pmPCICapPtr + 4)
-
+#define IEEE80211_ENCRYPT_HEADROOM 8
+#define IEEE80211_ENCRYPT_TAILROOM 12
+#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
 
 //this must be last lines in file. the includes are broken
 #include "compatibility.h"	
