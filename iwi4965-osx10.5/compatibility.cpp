@@ -3314,8 +3314,7 @@ IM_HERE_NOW();
 	/*if (ifsta->state != IEEE80211_AUTHENTICATE &&
 	    ifsta->state != IEEE80211_ASSOCIATE &&
 	    ifsta->state != IEEE80211_ASSOCIATED)*/
-		ifsta->state = IEEE80211_AUTHENTICATE;
-		set_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request);
+		ieee80211_sta_config_auth(dev, ifsta);
 	//ieee80211_authenticate(dev,ifsta);//hack
 }
 
@@ -7537,7 +7536,7 @@ int ieee80211_sta_set_bssid(struct net_device *dev, u8 *bssid)
 	return 0;
 }
 
-static int ieee80211_sta_config_auth(struct net_device *dev,
+int ieee80211_sta_config_auth(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();
