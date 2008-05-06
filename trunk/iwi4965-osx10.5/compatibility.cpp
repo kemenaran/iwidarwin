@@ -3314,7 +3314,9 @@ IM_HERE_NOW();
 	/*if (ifsta->state != IEEE80211_AUTHENTICATE &&
 	    ifsta->state != IEEE80211_ASSOCIATE &&
 	    ifsta->state != IEEE80211_ASSOCIATED)*/
-	ieee80211_authenticate(dev,ifsta);//hack
+		ifsta->state = IEEE80211_AUTHENTICATE;
+		set_bit(IEEE80211_STA_REQ_AUTH, &ifsta->request);
+	//ieee80211_authenticate(dev,ifsta);//hack
 }
 
 static void ieee80211_handle_erp_ie(struct net_device *dev, u8 erp_value)
@@ -5286,7 +5288,7 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
 	else
-	//if (!ifsta->associated)
+	if (!ifsta->associated)
 	//ieee80211_sta_req_scan(dev,NULL,0);//hack
 	ieee80211_sta_start_scan(dev, NULL, 0);
 }
