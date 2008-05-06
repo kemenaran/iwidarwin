@@ -3692,6 +3692,7 @@ IM_HERE_NOW();
 		       " timed out\n",
 		       dev->name, MAC_ARG(ifsta->bssid));
 		ifsta->state = IEEE80211_DISABLED;
+		del_timer(&ifsta->timer);//hack
 		return;
 	}
 
@@ -7634,6 +7635,7 @@ void ieee80211_authenticate(struct net_device *dev,
 		       " timed out\n",
 		       dev->name, MAC_ARG(ifsta->bssid));
 		ifsta->state = IEEE80211_DISABLED;
+		del_timer(&ifsta->timer);//hack
 		return;
 	}
 
@@ -7726,7 +7728,7 @@ void ieee80211_sta_work(struct work_struct *work)
 	if (local->sta_scanning)
 	{
 		IOLog("sta_scanning=1\n");
-		return;
+		//return;
 	}
 
 	if (sdata->type != IEEE80211_IF_TYPE_STA &&
