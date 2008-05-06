@@ -1895,7 +1895,7 @@ IM_HERE_NOW();
 
 void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue) {
 IM_HERE_NOW();	
-    fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+   // fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 	return;
 }
 
