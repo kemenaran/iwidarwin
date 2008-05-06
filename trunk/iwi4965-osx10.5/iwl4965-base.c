@@ -7846,7 +7846,7 @@ static int iwl4965_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				iwl4965_rxon_add_station(
 					priv, priv->active_rxon.bssid_addr, 1);
 			
-			/*struct ieee80211_local *local = hw_to_local(hw);
+			struct ieee80211_local *local = hw_to_local(hw);
 			struct ieee80211_sub_if_data *sdata=NULL;
 			list_for_each_entry(sdata, &local->sub_if_list, list) 
 			{
@@ -7855,19 +7855,23 @@ static int iwl4965_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				if (sta_id==0) break;
 				sdata=NULL;
 			}		
-			struct net_device *dev = local->mdev;
+			//struct net_device *dev = local->mdev;
 			if (sdata)
 			{
 				struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 				if (!ifsta->associated)
 				{
 				IOLog("hacking authenticate stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
-				ieee80211_authenticate(dev,ifsta);
-				ieee80211_associate(dev,ifsta);
+				/*if (ifsta->state != IEEE80211_AUTHENTICATE &&
+	    ifsta->state != IEEE80211_ASSOCIATE &&
+	    ifsta->state != IEEE80211_ASSOCIATED)*/
+				ieee80211_sta_config_auth(sdata->dev, ifsta);
+				//ieee80211_authenticate(dev,ifsta);
+				//ieee80211_associate(dev,ifsta);
 				//sdata->type = IEEE80211_IF_TYPE_STA;
 				//ifsta->state=IEEE80211_AUTHENTICATE;
 				}
-			}*/
+			}
 		
 		}
 
