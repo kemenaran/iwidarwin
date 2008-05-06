@@ -7910,3 +7910,423 @@ IM_HERE_NOW();
 	netif_start_queue(dev);
 	return res;
 }
+
+static ieee80211_txrx_result inline
+__ieee80211_tx_prepare(struct ieee80211_txrx_data *tx,
+		       struct sk_buff *skb,
+		       struct net_device *dev,
+		       struct ieee80211_tx_control *control)
+{
+IM_HERE_NOW();
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->mac_data;
+	struct ieee80211_sub_if_data *sdata;
+	ieee80211_txrx_result res = TXRX_CONTINUE;
+
+	int hdrlen;
+
+	memset(tx, 0, sizeof(*tx));
+	tx->skb = skb;
+	tx->dev = dev; /* use original interface */
+	tx->local = local;
+	tx->sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	tx->sta = sta_info_get(local, hdr->addr1);
+	tx->fc = le16_to_cpu(hdr->frame_control);
+
+	/*
+	 * set defaults for things that can be set by
+	 * injected radiotap headers
+	 */
+	control->power_level = local->hw.conf.power_level;
+	control->antenna_sel_tx = local->hw.conf.antenna_sel_tx;
+	if (local->sta_antenna_sel != 0 && tx->sta)
+		control->antenna_sel_tx = tx->sta->antenna_sel_tx;
+
+	/* process and remove the injection radiotap header */
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	if (unlikely(sdata->type == IEEE80211_IF_TYPE_MNTR)) {
+		/*if (__ieee80211_parse_tx_radiotap(tx, skb, control) ==
+								TXRX_DROP) {
+			return TXRX_DROP;
+		}*/
+		/*
+		 * we removed the radiotap header after this point,
+		 * we filled control with what we could use
+		 * set to the actual ieee header now
+		 */
+		hdr = (struct ieee80211_hdr *) skb->mac_data;
+		res = TXRX_QUEUED; /* indication it was monitor packet */
+	}
+
+	tx->u.tx.control = control;
+	tx->u.tx.unicast = !is_multicast_ether_addr(hdr->addr1);
+	if (is_multicast_ether_addr(hdr->addr1))
+		control->flags |= IEEE80211_TXCTL_NO_ACK;
+	else
+		control->flags &= ~IEEE80211_TXCTL_NO_ACK;
+	tx->fragmented = local->fragmentation_threshold <
+		IEEE80211_MAX_FRAG_THRESHOLD && tx->u.tx.unicast &&
+		skb_len(skb) + FCS_LEN > local->fragmentation_threshold &&
+		(!local->ops->set_frag_threshold);
+	if (!tx->sta)
+		control->flags |= IEEE80211_TXCTL_CLEAR_DST_MASK;
+	else if (tx->sta->clear_dst_mask) {
+		control->flags |= IEEE80211_TXCTL_CLEAR_DST_MASK;
+		tx->sta->clear_dst_mask = 0;
+	}
+	hdrlen = ieee80211_get_hdrlen(tx->fc);
+	if (skb_len(skb) > hdrlen + sizeof(rfc1042_header) + 2) {
+		//u8 *pos = &skb->data[hdrlen + sizeof(rfc1042_header)];
+		u8 *pos = (u8*)skb->mac_data+hdrlen + sizeof(rfc1042_header);
+		tx->ethertype = (pos[0] << 8) | pos[1];
+	}
+	control->flags |= IEEE80211_TXCTL_FIRST_FRAGMENT;
+
+	return res;
+}
+
+static int ieee80211_frame_duration(struct ieee80211_local *local, size_t len,
+				    int rate, int erp, int short_preamble)
+{
+IM_HERE_NOW();
+	int dur;
+
+	/* calculate duration (in microseconds, rounded up to next higher
+	 * integer if it includes a fractional microsecond) to send frame of
+	 * len bytes (does not include FCS) at the given rate. Duration will
+	 * also include SIFS.
+	 *
+	 * rate is in 100 kbps, so divident is multiplied by 10 in the
+	 * DIV_ROUND_UP() operations.
+	 */
+
+	if (local->hw.conf.phymode == MODE_IEEE80211A || erp ||
+	    local->hw.conf.phymode == MODE_ATHEROS_TURBO) {
+		/*
+		 * OFDM:
+		 *
+		 * N_DBPS = DATARATE x 4
+		 * N_SYM = Ceiling((16+8xLENGTH+6) / N_DBPS)
+		 *	(16 = SIGNAL time, 6 = tail bits)
+		 * TXTIME = T_PREAMBLE + T_SIGNAL + T_SYM x N_SYM + Signal Ext
+		 *
+		 * T_SYM = 4 usec
+		 * 802.11a - 17.5.2: aSIFSTime = 16 usec
+		 * 802.11g - 19.8.4: aSIFSTime = 10 usec +
+		 *	signal ext = 6 usec
+		 */
+		/* FIX: Atheros Turbo may have different (shorter) duration? */
+		dur = 16; /* SIFS + signal ext */
+		dur += 16; /* 17.3.2.3: T_PREAMBLE = 16 usec */
+		dur += 4; /* 17.3.2.3: T_SIGNAL = 4 usec */
+		dur += 4 * DIV_ROUND_UP((16 + 8 * (len + 4) + 6) * 10,
+					4 * rate); /* T_SYM x N_SYM */
+	} else {
+		/*
+		 * 802.11b or 802.11g with 802.11b compatibility:
+		 * 18.3.4: TXTIME = PreambleLength + PLCPHeaderTime +
+		 * Ceiling(((LENGTH+PBCC)x8)/DATARATE). PBCC=0.
+		 *
+		 * 802.11 (DS): 15.3.3, 802.11b: 18.3.4
+		 * aSIFSTime = 10 usec
+		 * aPreambleLength = 144 usec or 72 usec with short preamble
+		 * aPLCPHeaderLength = 48 usec or 24 usec with short preamble
+		 */
+		dur = 10; /* aSIFSTime = 10 usec */
+		dur += short_preamble ? (72 + 24) : (144 + 48);
+
+		dur += DIV_ROUND_UP(8 * (len + 4) * 10, rate);
+	}
+
+	return dur;
+}
+
+static u16 ieee80211_duration(struct ieee80211_txrx_data *tx, int group_addr,
+			      int next_frag_len)
+{
+IM_HERE_NOW();
+	int rate, mrate, erp, dur, i;
+	struct ieee80211_rate *txrate = tx->u.tx.rate;
+	struct ieee80211_local *local = tx->local;
+	struct ieee80211_hw_mode *mode = tx->u.tx.mode;
+
+	erp = txrate->flags & IEEE80211_RATE_ERP;
+
+	/*
+	 * data and mgmt (except PS Poll):
+	 * - during CFP: 32768
+	 * - during contention period:
+	 *   if addr1 is group address: 0
+	 *   if more fragments = 0 and addr1 is individual address: time to
+	 *      transmit one ACK plus SIFS
+	 *   if more fragments = 1 and addr1 is individual address: time to
+	 *      transmit next fragment plus 2 x ACK plus 3 x SIFS
+	 *
+	 * IEEE 802.11, 9.6:
+	 * - control response frame (CTS or ACK) shall be transmitted using the
+	 *   same rate as the immediately previous frame in the frame exchange
+	 *   sequence, if this rate belongs to the PHY mandatory rates, or else
+	 *   at the highest possible rate belonging to the PHY rates in the
+	 *   BSSBasicRateSet
+	 */
+
+	if ((tx->fc & IEEE80211_FCTL_FTYPE) == IEEE80211_FTYPE_CTL) {
+		/* TODO: These control frames are not currently sent by
+		 * 80211.o, but should they be implemented, this function
+		 * needs to be updated to support duration field calculation.
+		 *
+		 * RTS: time needed to transmit pending data/mgmt frame plus
+		 *    one CTS frame plus one ACK frame plus 3 x SIFS
+		 * CTS: duration of immediately previous RTS minus time
+		 *    required to transmit CTS and its SIFS
+		 * ACK: 0 if immediately previous directed data/mgmt had
+		 *    more=0, with more=1 duration in ACK frame is duration
+		 *    from previous frame minus time needed to transmit ACK
+		 *    and its SIFS
+		 * PS Poll: BIT(15) | BIT(14) | aid
+		 */
+		return 0;
+	}
+
+	/* data/mgmt */
+	if (0 /* FIX: data/mgmt during CFP */)
+		return 32768;
+
+	if (group_addr) /* Group address as the destination - no ACK */
+		return 0;
+
+	/* Individual destination address:
+	 * IEEE 802.11, Ch. 9.6 (after IEEE 802.11g changes)
+	 * CTS and ACK frames shall be transmitted using the highest rate in
+	 * basic rate set that is less than or equal to the rate of the
+	 * immediately previous frame and that is using the same modulation
+	 * (CCK or OFDM). If no basic rate set matches with these requirements,
+	 * the highest mandatory rate of the PHY that is less than or equal to
+	 * the rate of the previous frame is used.
+	 * Mandatory rates for IEEE 802.11g PHY: 1, 2, 5.5, 11, 6, 12, 24 Mbps
+	 */
+	rate = -1;
+	mrate = 10; /* use 1 Mbps if everything fails */
+	for (i = 0; i < mode->num_rates; i++) {
+		struct ieee80211_rate *r = &mode->rates[i];
+		if (r->rate > txrate->rate)
+			break;
+
+		if (IEEE80211_RATE_MODULATION(txrate->flags) !=
+		    IEEE80211_RATE_MODULATION(r->flags))
+			continue;
+
+		if (r->flags & IEEE80211_RATE_BASIC)
+			rate = r->rate;
+		else if (r->flags & IEEE80211_RATE_MANDATORY)
+			mrate = r->rate;
+	}
+	if (rate == -1) {
+		/* No matching basic rate found; use highest suitable mandatory
+		 * PHY rate */
+		rate = mrate;
+	}
+
+	/* Time needed to transmit ACK
+	 * (10 bytes + 4-byte FCS = 112 bits) plus SIFS; rounded up
+	 * to closest integer */
+
+	dur = ieee80211_frame_duration(local, 10, rate, erp,
+				       local->short_preamble);
+
+	if (next_frag_len) {
+		/* Frame is fragmented: duration increases with time needed to
+		 * transmit next fragment plus ACK and 2 x SIFS. */
+		dur *= 2; /* ACK + SIFS */
+		/* next fragment */
+		dur += ieee80211_frame_duration(local, next_frag_len,
+						txrate->rate, erp,
+						local->short_preamble);
+	}
+
+	return dur;
+}
+
+
+static int ieee80211_tx(struct net_device *dev, struct sk_buff *skb,
+			struct ieee80211_tx_control *control, int mgmt)
+{
+IM_HERE_NOW();
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+	struct sta_info *sta;
+	ieee80211_tx_handler *handler;
+	struct ieee80211_txrx_data tx;
+	ieee80211_txrx_result res = TXRX_DROP, res_prepare;
+	int ret, i;
+
+	//WARN_ON(__ieee80211_queue_pending(local, control->queue));
+
+	if (unlikely(skb_len(skb) < 10)) {
+		dev_kfree_skb(skb);
+		return 0;
+	}
+
+	res_prepare = __ieee80211_tx_prepare(&tx, skb, dev, control);
+
+	if (res_prepare == TXRX_DROP) {
+		dev_kfree_skb(skb);
+		return 0;
+	}
+
+	sta = tx.sta;
+	tx.u.tx.mgmt_interface = mgmt;
+	tx.u.tx.mode = local->hw.conf.mode;
+
+	if (res_prepare == TXRX_QUEUED) { /* if it was an injected packet */
+		res = TXRX_CONTINUE;
+	} else {
+		for (handler = local->tx_handlers; *handler != NULL;
+		     handler++) {
+			res = (*handler)(&tx);
+			if (res != TXRX_CONTINUE)
+				break;
+		}
+	}
+
+	skb = tx.skb; /* handlers are allowed to change skb */
+
+	if (sta)
+		sta_info_put(sta);
+
+	if (unlikely(res == TXRX_DROP)) {
+		I802_DEBUG_INC(local->tx_handlers_drop);
+		goto drop;
+	}
+
+	if (unlikely(res == TXRX_QUEUED)) {
+		I802_DEBUG_INC(local->tx_handlers_queued);
+		return 0;
+	}
+
+	if (tx.u.tx.extra_frag) {
+		for (i = 0; i < tx.u.tx.num_extra_frag; i++) {
+			int next_len, dur;
+			struct ieee80211_hdr *hdr =
+				(struct ieee80211_hdr *)
+				tx.u.tx.extra_frag[i]->mac_data;
+
+			if (i + 1 < tx.u.tx.num_extra_frag) {
+				next_len = skb_len(tx.u.tx.extra_frag[i + 1]);
+			} else {
+				next_len = 0;
+				tx.u.tx.rate = tx.u.tx.last_frag_rate;
+				tx.u.tx.last_frag_hwrate = tx.u.tx.rate->val;
+			}
+			dur = ieee80211_duration(&tx, 0, next_len);
+			hdr->duration_id = cpu_to_le16(dur);
+		}
+	}
+
+retry:
+	ret = __ieee80211_tx(local, skb, &tx);
+	if (ret) {
+		struct ieee80211_tx_stored_packet *store =
+			&local->pending_packet[control->queue];
+
+		if (ret == IEEE80211_TX_FRAG_AGAIN)
+			skb = NULL;
+		set_bit(IEEE80211_LINK_STATE_PENDING,
+			&local->state[control->queue]);
+		//smp_mb();
+		/* When the driver gets out of buffers during sending of
+		 * fragments and calls ieee80211_stop_queue, there is
+		 * a small window between IEEE80211_LINK_STATE_XOFF and
+		 * IEEE80211_LINK_STATE_PENDING flags are set. If a buffer
+		 * gets available in that window (i.e. driver calls
+		 * ieee80211_wake_queue), we would end up with ieee80211_tx
+		 * called with IEEE80211_LINK_STATE_PENDING. Prevent this by
+		 * continuing transmitting here when that situation is
+		 * possible to have happened. */
+		if (!__ieee80211_queue_stopped(local, control->queue)) {
+			clear_bit(IEEE80211_LINK_STATE_PENDING,
+				  &local->state[control->queue]);
+			goto retry;
+		}
+		memcpy(&store->control, control,
+		       sizeof(struct ieee80211_tx_control));
+		store->skb = skb;
+		store->extra_frag = tx.u.tx.extra_frag;
+		store->num_extra_frag = tx.u.tx.num_extra_frag;
+		store->last_frag_hwrate = tx.u.tx.last_frag_hwrate;
+		store->last_frag_rate = tx.u.tx.last_frag_rate;
+		store->last_frag_rate_ctrl_probe = tx.u.tx.probe_last_frag;
+	}
+	return 0;
+
+ drop:
+	if (skb)
+		dev_kfree_skb(skb);
+	for (i = 0; i < tx.u.tx.num_extra_frag; i++)
+		if (tx.u.tx.extra_frag[i])
+			dev_kfree_skb(tx.u.tx.extra_frag[i]);
+	kfree(tx.u.tx.extra_frag);
+	return 0;
+}
+
+int ieee80211_master_start_xmit(struct sk_buff *skb,
+				       struct net_device *dev)
+{
+IM_HERE_NOW();
+	struct ieee80211_tx_control control;
+	struct ieee80211_tx_packet_data *pkt_data;
+	struct net_device *odev = NULL;
+	struct ieee80211_sub_if_data *osdata;
+	int headroom;
+	int ret;
+
+	/*
+	 * copy control out of the skb so other people can use skb->cb
+	 */
+	pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
+	memset(&control, 0, sizeof(struct ieee80211_tx_control));
+
+	if (pkt_data->ifindex)
+		odev = dev;//dev_get_by_index(pkt_data->ifindex);
+	if (unlikely(odev) /*&& !is_ieee80211_device(odev, dev))*/) {
+		//dev_put(odev);
+		odev = NULL;
+	}
+	if (unlikely(!odev)) {
+#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+		printk(KERN_DEBUG "%s: Discarded packet with nonexistent "
+		       "originating device\n", dev->name);
+#endif
+		dev_kfree_skb(skb);
+		return 0;
+	}
+	osdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(odev);
+
+	headroom = osdata->local->tx_headroom + IEEE80211_ENCRYPT_HEADROOM;
+	if (skb_headroom(skb) < headroom) {
+	IOLog("todo pskb_expand_head\n");
+		/*if (pskb_expand_head(skb, headroom, 0, GFP_ATOMIC)) {
+			dev_kfree_skb(skb);
+			dev_put(odev);
+			return 0;
+		}*/
+	}
+
+	control.ifindex = odev->ifindex;
+	control.type = osdata->type;
+	if (pkt_data->req_tx_status)
+		control.flags |= IEEE80211_TXCTL_REQ_TX_STATUS;
+	if (pkt_data->do_not_encrypt)
+		control.flags |= IEEE80211_TXCTL_DO_NOT_ENCRYPT;
+	if (pkt_data->requeue)
+		control.flags |= IEEE80211_TXCTL_REQUEUE;
+	if (pkt_data->ht_queue)
+		control.flags |= IEEE80211_TXCTL_HT_MPDU_AGG;
+
+	control.queue = pkt_data->queue;
+
+	ret = ieee80211_tx(odev, skb, &control,
+			   control.type == IEEE80211_IF_TYPE_MGMT);
+	//dev_put(odev);
+
+	return ret;
+}
