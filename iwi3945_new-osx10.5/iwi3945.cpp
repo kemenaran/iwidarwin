@@ -1680,28 +1680,11 @@ copy_packet:
 	
 	struct ieee80211_local *local=hw_to_local(get_my_hw());
 	if (!local) return kIOReturnOutputSuccess;
-	struct ieee80211_tx_stored_packet *store;
-	struct ieee80211_txrx_data tx;
-	
-	store = (struct ieee80211_tx_stored_packet*)mbuf_data(m);//&local->pending_packet[i];
-	tx.u.tx.control = &store->control;
-	tx.u.tx.extra_frag = store->extra_frag;
-	tx.u.tx.num_extra_frag = store->num_extra_frag;
-	tx.u.tx.last_frag_hwrate = store->last_frag_hwrate;
-	tx.u.tx.last_frag_rate = store->last_frag_rate;
-	tx.u.tx.probe_last_frag = store->last_frag_rate_ctrl_probe;
 	struct sk_buff *skb=dev_alloc_skb(mbuf_len(m));//TODO: make this work better
 	skb_set_data(skb,mbuf_data(m),mbuf_len(m));
-	int ret = __ieee80211_tx(local, skb, &tx);
+	int ret = ieee80211_master_start_xmit(skb,local->mdev);
 	if (ret==0) netStats->outputPackets++;	
 
-	/*struct sk_buff *skb=dev_alloc_skb(mbuf_len(m));//TODO: make this work better
-	skb_set_data(skb,mbuf_data(m),mbuf_len(m));
-	int ret  = mac_tx(get_my_hw(),skb,&tx_ctrl);//check tx_ctrl setup
-	IOLog("iwl3945_mac_tx result %d\n",ret);
-	if (ret==0) netStats->outputPackets++;
-	dev_kfree_skb(skb);*/
-	
 finish:	
 	//spin_unlock_irqrestore(spin, flags);
 

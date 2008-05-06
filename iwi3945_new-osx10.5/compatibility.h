@@ -13,6 +13,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	extern int ieee80211_master_start_xmit(struct sk_buff *skb,
+				       struct net_device *dev);
 	extern void ieee80211_authenticate(struct net_device *dev,
 				   struct ieee80211_if_sta *ifsta);
 	extern void ieee80211_associate(struct net_device *dev,
