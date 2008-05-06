@@ -3702,6 +3702,7 @@ IM_HERE_NOW();
 		       " timed out\n",
 		       dev->name, MAC_ARG(ifsta->bssid));
 		ifsta->state = IEEE80211_DISABLED;
+		ifsta->assoc_tries=0;//hack
 		del_timer(&ifsta->timer);//hack
 		return;
 	}
@@ -7615,6 +7616,7 @@ void ieee80211_authenticate(struct net_device *dev,
 		       " timed out\n",
 		       dev->name, MAC_ARG(ifsta->bssid));
 		ifsta->state = IEEE80211_DISABLED;
+		ifsta->auth_tries=0;//hack
 		del_timer(&ifsta->timer);//hack
 		return;
 	}
