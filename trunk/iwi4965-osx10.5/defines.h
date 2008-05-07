@@ -2201,6 +2201,12 @@ static u8 my_mac_addr[6];
 #define IEEE80211_ENCRYPT_TAILROOM 12
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 #define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
+#define TOTAL_MAX_TX_BUFFER 512
+#define STA_MAX_TX_BUFFER 128
+#define AP_MAX_BC_BUFFER 128
+
+
+
 
 //this must be last lines in file. the includes are broken
 #include "compatibility.h"	
