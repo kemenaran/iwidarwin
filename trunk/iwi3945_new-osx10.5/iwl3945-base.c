@@ -6876,11 +6876,11 @@ static void iwl3945_bg_restart(struct iwl3945_priv *priv)
 	iwl3945_down(priv);
 //FIXME: Hack for restart
 	//run_add_interface();
-	priv->interface_id=0;
-	(hw_to_local(priv->hw))->open_count=0;
-	ieee80211_open(hw_to_local(priv->hw));
+	//priv->interface_id=0;
+	//(hw_to_local(priv->hw))->open_count=0;
+	//ieee80211_open(hw_to_local(priv->hw));
 //FIXME: End hack
-	//queue_work(priv->workqueue, &priv->up); // maybe kp here
+	queue_work(priv->workqueue, &priv->up); // maybe kp here
 
 }
 
@@ -7478,11 +7478,11 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 			iwl3945_config_ap(priv);
 		else {
 			rc = iwl3945_commit_rxon(priv);
-			//if ((priv->iw_mode == IEEE80211_IF_TYPE_STA) && rc)
+			if ((priv->iw_mode == IEEE80211_IF_TYPE_STA) && rc)
 				iwl3945_add_station(priv,
 					priv->active_rxon.bssid_addr, 1, 0);
 			
-			struct ieee80211_local *local = hw_to_local(hw);
+		/*	struct ieee80211_local *local = hw_to_local(hw);
 			struct ieee80211_sub_if_data *sdata=NULL;
 			list_for_each_entry(sdata, &local->sub_if_list, list) 
 			{
@@ -7498,16 +7498,14 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				if (!ifsta->associated)
 				{
 				IOLog("hacking authenticate stabssid=" MAC_FMT "\n", MAC_ARG(sdata->u.sta.bssid));
-				/*if (ifsta->state != IEEE80211_AUTHENTICATE &&
-	    ifsta->state != IEEE80211_ASSOCIATE &&
-	    ifsta->state != IEEE80211_ASSOCIATED)*/
+
 				//ieee80211_sta_config_auth(sdata->dev, ifsta);
-				ieee80211_authenticate(sdata->dev,ifsta);
+			//	ieee80211_authenticate(sdata->dev,ifsta);
 				//ieee80211_associate(dev,ifsta);
 				//sdata->type = IEEE80211_IF_TYPE_STA;
 				//ifsta->state=IEEE80211_AUTHENTICATE;
 				}
-			}
+			}*/
 		}
 
 	} else {
