@@ -150,15 +150,15 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}	
 	}
 	if(opt == 2){
-		IOLog("request scan - disabled!\n");
-		/*struct ieee80211_local *local=hw_to_local(get_my_hw());
+		IOLog("request scan!\n");
+		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		if (local)
 		{
 			struct net_device *dev=local->mdev;
-			ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
+			ieee80211_sta_req_scan(dev,NULL,0);
 		}
 		else
-			IOLog("not ready to scan \n");*/
+			IOLog("not ready to scan \n");
 	}
 
 	return(0);
