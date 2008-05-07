@@ -7501,8 +7501,8 @@ static int iwl3945_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				/*if (ifsta->state != IEEE80211_AUTHENTICATE &&
 	    ifsta->state != IEEE80211_ASSOCIATE &&
 	    ifsta->state != IEEE80211_ASSOCIATED)*/
-				ieee80211_sta_config_auth(sdata->dev, ifsta);
-				//ieee80211_authenticate(dev,ifsta);
+				//ieee80211_sta_config_auth(sdata->dev, ifsta);
+				ieee80211_authenticate(sdata->dev,ifsta);
 				//ieee80211_associate(dev,ifsta);
 				//sdata->type = IEEE80211_IF_TYPE_STA;
 				//ifsta->state=IEEE80211_AUTHENTICATE;
