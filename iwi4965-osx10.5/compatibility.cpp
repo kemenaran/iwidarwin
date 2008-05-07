@@ -6350,7 +6350,7 @@ IM_HERE_NOW();
 	if (!local->ops->config_interface || !netif_running(dev))
 	{
 		IOLog("no netif_running\n");
-		//return 0;
+		return 0;
 	}
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
@@ -7711,7 +7711,7 @@ IM_HERE_NOW();
 	if (local->sta_scanning)
 	{
 		IOLog("sta_scanning=1\n");
-		//return;
+		return;
 	}
 
 	if (sdata->type != IEEE80211_IF_TYPE_STA &&
