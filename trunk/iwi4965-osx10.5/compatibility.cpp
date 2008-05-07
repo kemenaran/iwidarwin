@@ -2305,9 +2305,8 @@ IM_HERE_NOW();
 	int ret;
 
 	//ASSERT_RTNL();
-	ndev = local->mdev;//hack
-	//alloc_netdev(sizeof(struct ieee80211_sub_if_data),
-	//		    name, NULL);//ieee80211_if_setup);
+	ndev = alloc_netdev(sizeof(struct ieee80211_sub_if_data),
+			    name, NULL);//ieee80211_if_setup);
 	if (!ndev)
 		return -ENOMEM;
 
@@ -2330,7 +2329,7 @@ IM_HERE_NOW();
 	
 	ndev->ieee80211_ptr = hw_to_local(my_hw);//&sdata->wdev;
 	//sdata->wdev.wiphy = local->hw.wiphy;
-	sdata->type = IEEE80211_IF_TYPE_STA;//IEEE80211_IF_TYPE_AP;
+	sdata->type = IEEE80211_IF_TYPE_AP;
 	sdata->dev = ndev;
 	sdata->local = local;
 	ieee80211_if_sdata_init(sdata);
@@ -2342,13 +2341,15 @@ IM_HERE_NOW();
 	//ieee80211_debugfs_add_netdev(sdata);
 	ieee80211_if_set_type(ndev, type);
 
+	ieee80211_open(ndev);
 	//write_lock_bh(&local->sub_if_lock);
 	//if (unlikely(local->reg_state == IEEE80211_DEV_UNREGISTERED)) {
 	if (unlikely(local->reg_state == 0)) {
 		//write_unlock_bh(&local->sub_if_lock);
 		//__ieee80211_if_del(local, sdata);
-		return 0;//-ENODEV;
+		//return 0;//-ENODEV;
 	}
+	IOLog("listadd\n");
 	list_add(&sdata->list, &local->sub_if_list);
 	if (new_dev)
 		*new_dev = ndev;
@@ -3075,13 +3076,13 @@ IM_HERE_NOW();
 	printk(KERN_DEBUG "%s: RX %s from " MAC_FMT " to " MAC_FMT "\n",
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
-	if (!beacon)
+	/*if (!beacon)
 	{
 		IOLog("hacking add station\n");
 		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 		//if (!ifsta->associated)
 		bcopy(mgmt->sa,sdata->u.sta.bssid,ETH_ALEN);
-	}
+	}*/
 #endif
 
 	baselen = (u8 *) mgmt->u.beacon.variable - (u8 *) mgmt;
@@ -3703,8 +3704,8 @@ IM_HERE_NOW();
 		       " timed out\n",
 		       dev->name, MAC_ARG(ifsta->bssid));
 		ifsta->state = IEEE80211_DISABLED;
-		ifsta->assoc_tries=0;//hack
-		del_timer(&ifsta->timer);//hack
+		//ifsta->assoc_tries=0;//hack
+		//del_timer(&ifsta->timer);//hack
 		return;
 	}
 
@@ -5269,10 +5270,10 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
-	else
+	/*else
 	if (!ifsta->associated)
 	//ieee80211_sta_req_scan(dev,NULL,0);//hack
-	ieee80211_sta_start_scan(dev, NULL, 0);
+	ieee80211_sta_start_scan(dev, NULL, 0);*/
 }
 
 
@@ -6203,7 +6204,7 @@ IM_HERE_NOW();
 	if (!local->ops->config_interface || !netif_running(dev))
 	{
 		IOLog("no netif_running\n");
-		return 0;
+		//return 0;
 	}
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
@@ -6687,10 +6688,10 @@ int pci_register_driver(struct pci_driver * drv){
 	//fPCIDevice->setMemoryEnable(true);
 	int result2 = (drv->probe) (test_pci,test);
 	
-	struct ieee80211_local *local = hw_to_local(my_hw);
+	/*struct ieee80211_local *local = hw_to_local(my_hw);
 	int result3 = ieee80211_open(local);//run_add_interface();
 	if(result3)
-		IOLog("Error ieee80211_open\n");
+		IOLog("Error ieee80211_open\n");*/
     //hack
 	//ieee80211_sta_start_scan(local->mdev, NULL, 0);
 	return 0;
@@ -7470,8 +7471,8 @@ void ieee80211_authenticate(struct net_device *dev,
 		       " timed out\n",
 		       dev->name, MAC_ARG(ifsta->bssid));
 		ifsta->state = IEEE80211_DISABLED;
-		ifsta->auth_tries=0;//hack
-		del_timer(&ifsta->timer);//hack
+		//ifsta->auth_tries=0;//hack
+		//del_timer(&ifsta->timer);//hack
 		return;
 	}
 
@@ -7654,10 +7655,10 @@ IM_HERE_NOW();
 	}
 }
 
-int ieee80211_open(struct ieee80211_local *local)
+int ieee80211_open(struct net_device *dev)
 {
 IM_HERE_NOW();
-	struct net_device *dev=local->mdev;
+	struct ieee80211_local *local =  wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata, *nsdata;
 	struct ieee80211_if_init_conf conf;
 	int res;
@@ -7734,7 +7735,7 @@ IM_HERE_NOW();
 	} else
 		ieee80211_if_config(dev);
 
-	if (!res) ieee80211_sta_req_scan(dev,NULL,0);
+	//if (!res) ieee80211_sta_req_scan(dev,NULL,0);
 	/*if (sdata->type == IEEE80211_IF_TYPE_STA &&
 	    !local->user_space_mlme)
 		netif_carrier_off(dev);
@@ -9002,7 +9003,7 @@ IM_HERE_NOW();
 	mdev->type = ARPHRD_IEEE80211;
 	mdev->hard_header_parse = header_parse_80211;*/
 
-	sdata->type = IEEE80211_IF_TYPE_STA;//IEEE80211_IF_TYPE_AP;
+	sdata->type = IEEE80211_IF_TYPE_AP;
 	sdata->dev = mdev;
 	sdata->local = local;
 	sdata->u.ap.force_unicast_rateidx = -1;
