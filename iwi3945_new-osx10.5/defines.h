@@ -2204,7 +2204,8 @@ static u8 my_mac_addr[6];
 #define TOTAL_MAX_TX_BUFFER 512
 #define STA_MAX_TX_BUFFER 128
 #define AP_MAX_BC_BUFFER 128
-
+#define ETH_HLEN        14              /* Total octets in header.       */
+ 
 
 
 
