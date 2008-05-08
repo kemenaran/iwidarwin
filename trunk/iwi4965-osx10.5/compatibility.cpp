@@ -9262,27 +9262,35 @@ int ieee80211_subif_start_xmit(struct sk_buff *skb,
 	return ret;
 }
 
+struct net_device * dev_get_by_index(int index)
+{
+	struct ieee80211_local *local=hw_to_local(get_my_hw());
+	if (!local) return NULL;
+	struct net_device *dev=NULL;
+	if (index==1) dev=local->mdev;
+	if (index==2) dev=local->scan_dev;
+	if (index==3) dev=local->apdev;
+	return dev;
+}
+
 int dev_queue_xmit(struct sk_buff *skb)
 {
 IM_HERE_NOW();	
 	int ret=0;
 	struct ieee80211_tx_packet_data *pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
-	struct ieee80211_local *local=hw_to_local(get_my_hw());
-	struct net_device *dev=NULL;
-	if (pkt_data->ifindex==1) dev=local->mdev;
-	if (pkt_data->ifindex==2) dev=local->scan_dev;
-	if (pkt_data->ifindex==3) dev=local->apdev;
-	if (!dev)
-	{
+	struct net_device *dev=dev_get_by_index(pkt_data->ifindex);
+	if (!dev) return 1;
+	/*{
 		memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
 		pkt_data->ifindex=1;
 		dev=local->mdev;
-	}
+	}*/
 	if (pkt_data->ifindex==1) ret=ieee80211_master_start_xmit(skb,dev);
 	if (pkt_data->ifindex==2) ret=ieee80211_subif_start_xmit(skb,dev);
 	if (pkt_data->ifindex==3) ret=ieee80211_mgmt_start_xmit(skb,dev);
 	return ret;
 }
+
 
 int
 ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev)
