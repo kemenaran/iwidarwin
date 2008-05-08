@@ -1997,7 +1997,7 @@ IM_HERE_NOW();
 	u8 *b_head, *b_tail;
 	int bh_len, bt_len;
 
-	bdev = local->mdev;//dev_get_by_index(if_id); //check if work
+	bdev = dev_get_by_index(if_id);
 	if (bdev) {
 		sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(bdev);
 		ap = &sdata->u.ap;
@@ -8841,12 +8841,7 @@ IM_HERE_NOW();
 IOLog("pkt_data->ifindex %d\n",pkt_data->ifindex);
 	if (pkt_data->ifindex)
 	{
-		//odev = dev_get_by_index(pkt_data->ifindex);
-		struct ieee80211_local *local=hw_to_local(get_my_hw());
-		odev=local->mdev;
-		if (pkt_data->ifindex==1) odev=local->mdev;
-		if (pkt_data->ifindex==2) odev=local->scan_dev;
-		if (pkt_data->ifindex==2) odev=local->apdev;
+		odev = dev_get_by_index(pkt_data->ifindex);
 	}
 //	if (unlikely(odev) /*&& !is_ieee80211_device(odev, dev))*/) {
 		//dev_put(odev);
