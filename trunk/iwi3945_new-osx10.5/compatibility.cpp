@@ -8856,14 +8856,15 @@ IM_HERE_NOW();
 	 */
 	pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
 	memset(&control, 0, sizeof(struct ieee80211_tx_control));
-
-	if (1)//pkt_data->ifindex)
+IOLog("pkt_data->ifindex %d\n",pkt_data->ifindex);
+	if (pkt_data->ifindex)
 	{
 		//odev = dev_get_by_index(pkt_data->ifindex);
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		odev=local->mdev;
 		if (pkt_data->ifindex==1) odev=local->mdev;
 		if (pkt_data->ifindex==2) odev=local->scan_dev;
+		if (pkt_data->ifindex==3) odev=local->apdev;
 	}
 	//if (unlikely(odev) /*&& !is_ieee80211_device(odev, dev))*/) {
 		//dev_put(odev);
@@ -8884,6 +8885,7 @@ IM_HERE_NOW();
 		if (pskb_expand_head(skb, headroom, 0)) {
 			dev_kfree_skb(skb);
 			//dev_put(odev);
+			IOLog("pskb_expand_head failed\n");
 			return 0;
 		}
 	}
@@ -9289,8 +9291,7 @@ IM_HERE_NOW();
 	if (pkt_data->ifindex==3) dev=local->apdev;
 	if (!dev)
 	{
-		memset(skb->cb, 0, sizeof(skb->cb));
-		pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
+		memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
 		pkt_data->ifindex=1;
 		dev=local->mdev;
 	}
@@ -9404,6 +9405,7 @@ fail:
 
 int pskb_expand_head(struct sk_buff *skb, int size, int reserve)
 {
+IM_HERE_NOW();
 	if (size==0) return 1;
 	int ret=mbuf_prepend(&skb->mac_data, size, MBUF_WAITOK);
 	IOLog("mbuf_prepend =%d\n",ret);
