@@ -13,6 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	extern int pskb_expand_head(struct sk_buff *skb, int size, int reserve);
 	extern int ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev);
 	extern int ieee80211_if_add_mgmt(struct ieee80211_local *local);
 	extern int dev_queue_xmit(struct sk_buff *skb);
