@@ -2114,9 +2114,8 @@ IM_HERE_NOW();
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 	pkt_data->do_not_encrypt = !encrypt;
 
-	//dev_queue_xmit(skb);
+	dev_queue_xmit(skb);
 	//currentController->outputPacket(skb->mac_data,NULL);
-	ieee80211_master_start_xmit(skb,sdata->dev);
 }
 
 static void ieee80211_rx_mgmt_probe_req(struct net_device *dev,
@@ -4589,9 +4588,8 @@ IM_HERE_NOW();
 		pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 		sent++;
 		pkt_data->requeue = 1;
-		//dev_queue_xmit(skb);
+		dev_queue_xmit(skb);
 		//currentController->outputPacket(skb->mac_data,NULL);
-		ieee80211_master_start_xmit(skb,sdata->dev);
 	}
 	while ((skb = skb_dequeue(&sta->ps_tx_buf)) != NULL) {
 		pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
@@ -4603,9 +4601,8 @@ IM_HERE_NOW();
 		       MAC_ARG(sta->addr), sta->aid);
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 		pkt_data->requeue = 1;
-		//dev_queue_xmit(skb);
+		dev_queue_xmit(skb);
 		//currentController->outputPacket(skb->mac_data,NULL);
-		ieee80211_master_start_xmit(skb,sdata->dev);
 	}
 
 	return sent;
@@ -4952,9 +4949,8 @@ IM_HERE_NOW();
 		//skb2->protocol = __constant_htons(ETH_P_802_3);
 		skb_set_network_header(skb2, 0);
 		skb_set_mac_header(skb2, 0);
-		//dev_queue_xmit(skb2);
+		dev_queue_xmit(skb2);
 		//currentController->outputPacket(skb2->mac_data,NULL);
-		ieee80211_master_start_xmit(skb2,sdata->dev);
 	}
 
 	return TXRX_QUEUED;
@@ -5087,9 +5083,8 @@ IM_HERE_NOW();
 		} else
 			hdr->frame_control |= cpu_to_le16(IEEE80211_FCTL_MOREDATA);
 
-		//dev_queue_xmit(skb);
+		dev_queue_xmit(skb);
 		//currentController->outputPacket(skb->mac_data,NULL);
-		ieee80211_master_start_xmit(skb,rx->dev);
 		
 		if (no_pending_pkts) {
 			if (rx->local->ops->set_tim)
@@ -9044,4 +9039,246 @@ IM_HERE_NOW();
 	
 	return my_hw;
 
+}
+
+struct sta_info *dls_info_get(struct ieee80211_local *local, u8 *addr)
+{
+	struct sta_info *sta;
+
+	spin_lock_bh(&local->sta_lock);
+	sta = local->sta_hash[STA_HASH(addr)];
+	while (sta) {
+		if (memcmp(sta->addr, addr, ETH_ALEN) == 0) {
+			/*if (!sta->dls_sta) {
+				sta = NULL;
+				break;
+			}*/
+			__sta_info_get(sta);
+			break;
+		}
+		sta = sta->hnext;
+	}
+	spin_unlock_bh(&local->sta_lock);
+
+	return sta;
+}
+
+int dls_link_status(struct ieee80211_local *local, u8 *addr)
+{
+	struct sta_info *dls;
+	int ret = 1;//DLS_STATUS_NOLINK;
+
+	if ((dls = dls_info_get(local, addr)) != NULL) {
+		ret = 0;//dls->dls_status;
+		sta_info_put(dls);
+	}
+	return ret;
+}
+
+int ieee80211_subif_start_xmit(struct sk_buff *skb,
+			       struct net_device *dev)
+{
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_tx_packet_data *pkt_data;
+	struct ieee80211_sub_if_data *sdata;
+	int ret = 1, head_need;
+	u16 ethertype, hdrlen, fc;
+	struct ieee80211_hdr hdr;
+	const u8 *encaps_data;
+	int encaps_len, skip_header_bytes;
+	int nh_pos, h_pos, no_encrypt = 0;
+	struct sta_info *sta;
+
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+	if (unlikely(skb_len(skb) < ETH_HLEN)) {
+		printk(KERN_DEBUG "%s: short skb (len=%d)\n",
+		       dev->name, skb_len(skb));
+		ret = 0;
+		goto fail;
+	}
+
+	nh_pos = 0;//skb_network_header(skb) - (u8*)skb->mac_data;
+	h_pos = 0;//skb_transport_header(skb) - (u8*)skb->mac_data;
+
+	/* convert Ethernet header to proper 802.11 header (based on
+	 * operation mode) */
+	//ethertype = (skb->data[12] << 8) | skb->data[13];
+	u8 *p0,*p1;
+	p0=(u8*)skb->mac_data +12;
+	p1=(u8*)skb->mac_data+13;
+	ethertype = (*p0 << 8) | *p1;
+	/* TODO: handling for 802.1x authorized/unauthorized port */
+	fc = IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA;
+
+	if (likely(sdata->type == IEEE80211_IF_TYPE_AP ||
+		   sdata->type == IEEE80211_IF_TYPE_VLAN)) {
+		fc |= IEEE80211_FCTL_FROMDS;
+		/* DA BSSID SA */
+		memcpy(hdr.addr1, skb->mac_data, ETH_ALEN);
+		memcpy(hdr.addr2, dev->dev_addr, ETH_ALEN);
+		memcpy(hdr.addr3, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+		hdrlen = 24;
+	} else if (sdata->type == IEEE80211_IF_TYPE_WDS) {
+		fc |= IEEE80211_FCTL_FROMDS | IEEE80211_FCTL_TODS;
+		/* RA TA DA SA */
+		memcpy(hdr.addr1, sdata->u.wds.remote_addr, ETH_ALEN);
+		memcpy(hdr.addr2, dev->dev_addr, ETH_ALEN);
+		memcpy(hdr.addr3, skb->mac_data, ETH_ALEN);
+		memcpy(hdr.addr4, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+		hdrlen = 30;
+	} else if (sdata->type == IEEE80211_IF_TYPE_STA) {
+		if (dls_link_status(local, (u8*)skb->mac_data) == 0) {
+			/* DA SA BSSID */
+			memcpy(hdr.addr1, skb->mac_data, ETH_ALEN);
+			memcpy(hdr.addr2, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+			memcpy(hdr.addr3, sdata->u.sta.bssid, ETH_ALEN);
+		} else {
+			fc |= IEEE80211_FCTL_TODS;
+			/* BSSID SA DA */
+			memcpy(hdr.addr1, sdata->u.sta.bssid, ETH_ALEN);
+			memcpy(hdr.addr2, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+			memcpy(hdr.addr3, skb->mac_data, ETH_ALEN);
+		}
+		hdrlen = 24;
+	} else if (sdata->type == IEEE80211_IF_TYPE_IBSS) {
+		/* DA SA BSSID */
+		memcpy(hdr.addr1, skb->mac_data, ETH_ALEN);
+		memcpy(hdr.addr2, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+		memcpy(hdr.addr3, sdata->u.sta.bssid, ETH_ALEN);
+		hdrlen = 24;
+	} else {
+		ret = 0;
+		goto fail;
+	}
+
+	/* receiver is QoS enabled, use a QoS type frame */
+	sta = sta_info_get(local, hdr.addr1);
+	if (sta) {
+		if (sta->flags & WLAN_STA_WME) {
+			fc |= IEEE80211_STYPE_QOS_DATA;
+			hdrlen += 2;
+		}
+		sta_info_put(sta);
+	}
+
+	hdr.frame_control = cpu_to_le16(fc);
+	hdr.duration_id = 0;
+	hdr.seq_ctrl = 0;
+
+	skip_header_bytes = ETH_HLEN;
+	if (ethertype == ETH_P_AARP || ethertype == ETH_P_IPX) {
+		encaps_data = bridge_tunnel_header;
+		encaps_len = sizeof(bridge_tunnel_header);
+		skip_header_bytes -= 2;
+	} else if (ethertype >= 0x600) {
+		encaps_data = rfc1042_header;
+		encaps_len = sizeof(rfc1042_header);
+		skip_header_bytes -= 2;
+	} else {
+		encaps_data = NULL;
+		encaps_len = 0;
+	}
+
+	skb_pull(skb, skip_header_bytes);
+	nh_pos -= skip_header_bytes;
+	h_pos -= skip_header_bytes;
+
+	/* TODO: implement support for fragments so that there is no need to
+	 * reallocate and copy payload; it might be enough to support one
+	 * extra fragment that would be copied in the beginning of the frame
+	 * data.. anyway, it would be nice to include this into skb structure
+	 * somehow
+	 *
+	 * There are few options for this:
+	 * use skb->cb as an extra space for 802.11 header
+	 * allocate new buffer if not enough headroom
+	 * make sure that there is enough headroom in every skb by increasing
+	 * build in headroom in __dev_alloc_skb() (linux/skbuff.h) and
+	 * alloc_skb() (net/core/skbuff.c)
+	 */
+	head_need = hdrlen + encaps_len + local->tx_headroom;
+	head_need -= skb_headroom(skb);
+
+	/* We are going to modify skb data, so make a copy of it if happens to
+	 * be cloned. This could happen, e.g., with Linux bridge code passing
+	 * us broadcast frames. */
+
+	if (head_need > 0 /*|| skb_cloned(skb)*/) {
+#if 1
+		printk(KERN_DEBUG "%s: need to reallocate buffer for %d bytes "
+		       "of headroom\n", dev->name, head_need);
+#endif
+
+		if (1)//skb_cloned(skb))
+			I802_DEBUG_INC(local->tx_expand_skb_head_cloned);
+		else
+			I802_DEBUG_INC(local->tx_expand_skb_head);
+		/* Since we have to reallocate the buffer, make sure that there
+		 * is enough room for possible WEP IV/ICV and TKIP (8 bytes
+		 * before payload and 12 after). */
+		//if (pskb_expand_head(skb, (head_need > 0 ? head_need + 8 : 8),
+		//		     12, GFP_ATOMIC)) {
+			printk(KERN_DEBUG "%s: failed to reallocate TX buffer"
+			       "\n", dev->name);
+			goto fail;
+		//}
+	}
+
+	if (encaps_data) {
+		memcpy(skb_push(skb, encaps_len), encaps_data, encaps_len);
+		nh_pos += encaps_len;
+		h_pos += encaps_len;
+	}
+	memcpy(skb_push(skb, hdrlen), &hdr, hdrlen);
+	nh_pos += hdrlen;
+	h_pos += hdrlen;
+
+	pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
+	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	pkt_data->ifindex = dev->ifindex;
+	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
+	pkt_data->do_not_encrypt = no_encrypt;
+
+	//skb->dev = local->mdev;
+	sdata->stats.tx_packets++;
+	sdata->stats.tx_bytes += skb_len(skb);
+
+	/* Update skb pointers to various headers since this modified frame
+	 * is going to go through Linux networking code that may potentially
+	 * need things like pointer to IP header. */
+	//skb_set_mac_header(skb, 0);
+	//skb_set_network_header(skb, nh_pos);
+	//skb_set_transport_header(skb, h_pos);
+
+	dev->trans_start = jiffies;
+	//dev_queue_xmit(skb);
+	ieee80211_master_start_xmit(skb,local->mdev);
+	return 0;
+
+ fail:
+	if (!ret)
+		dev_kfree_skb(skb);
+
+	return ret;
+}
+
+int dev_queue_xmit(struct sk_buff *skb)
+{
+IM_HERE_NOW();	
+	int ret=0;
+	struct ieee80211_tx_packet_data *pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
+	struct ieee80211_local *local=hw_to_local(get_my_hw());
+	struct net_device *dev=NULL;
+	dev=local->mdev;
+	if (pkt_data->ifindex==1) dev=local->mdev;
+	if (pkt_data->ifindex==2) dev=local->scan_dev;
+	if (!dev)
+	{
+		memset(skb->cb, 0, sizeof(skb->cb));
+		pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
+		pkt_data->ifindex=1;
+		dev=local->mdev;
+	}
+	if (pkt_data->ifindex==1) ret=ieee80211_master_start_xmit(skb,dev);
+	if (pkt_data->ifindex==2) ret=ieee80211_subif_start_xmit(skb,dev);
 }

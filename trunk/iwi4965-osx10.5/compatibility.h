@@ -13,6 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	extern int dev_queue_xmit(struct sk_buff *skb);
 	extern inline __u32 skb_queue_len(const struct sk_buff_head *list_);
 	extern int ieee80211_sta_config_auth(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta);
