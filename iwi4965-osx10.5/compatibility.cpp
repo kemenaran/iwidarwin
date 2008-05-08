@@ -8124,7 +8124,7 @@ ieee80211_tx_h_rate_ctrl(struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();
 if (unlikely(!tx->sta))
-		return TXRX_CONTINUE;
+		return TXRX_DROP;
 		
 	struct rate_control_extra extra;
 
