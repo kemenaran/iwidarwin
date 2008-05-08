@@ -6586,11 +6586,11 @@ IM_HERE_NOW();
 	if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
-		if (!rc) {
+		/*if (!rc) {
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;
+		return rc;*/
 	}
 	local->sta_scanning = 1;
 
