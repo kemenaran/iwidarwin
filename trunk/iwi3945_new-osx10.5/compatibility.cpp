@@ -9291,7 +9291,6 @@ IM_HERE_NOW();
 	struct ieee80211_tx_packet_data *pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
 	struct ieee80211_local *local=hw_to_local(get_my_hw());
 	struct net_device *dev=NULL;
-	dev=local->mdev;
 	if (pkt_data->ifindex==1) dev=local->mdev;
 	if (pkt_data->ifindex==2) dev=local->scan_dev;
 	if (!dev)
@@ -9303,4 +9302,5 @@ IM_HERE_NOW();
 	}
 	if (pkt_data->ifindex==1) ret=ieee80211_master_start_xmit(skb,dev);
 	if (pkt_data->ifindex==2) ret=ieee80211_subif_start_xmit(skb,dev);
+	return ret;
 }
