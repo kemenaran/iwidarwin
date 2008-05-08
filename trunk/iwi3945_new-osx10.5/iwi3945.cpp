@@ -1682,7 +1682,9 @@ copy_packet:
 	
 	struct ieee80211_local *local=hw_to_local(get_my_hw());
 	if (!local) return kIOReturnOutputSuccess;
+	if(!local->mdev) return kIOReturnOutputSuccess;
 	struct sk_buff *skb=dev_alloc_skb(mbuf_len(m));//TODO: make this work better
+	memset(skb->cb, 0, sizeof(skb->cb));
 	skb_set_data(skb,mbuf_data(m),mbuf_len(m));
 	int ret = ieee80211_master_start_xmit(skb,local->mdev);
 	if (ret==0) netStats->outputPackets++;	
