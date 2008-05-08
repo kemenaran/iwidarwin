@@ -2333,12 +2333,11 @@ IM_HERE_NOW();
 		//__ieee80211_if_del(local, sdata);
 		//return 0;//-ENODEV;
 	}
-	IOLog("listadd\n");
 	list_add(&sdata->list, &local->sub_if_list);
 	if (new_dev)
 		*new_dev = ndev;
 	//write_unlock_bh(&local->sub_if_lock);
-
+	local->scan_dev=dev;
 	//ieee80211_update_default_wep_only(local);
 
 	return 0;
