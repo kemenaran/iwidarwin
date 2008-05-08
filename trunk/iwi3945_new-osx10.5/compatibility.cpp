@@ -2337,7 +2337,7 @@ IM_HERE_NOW();
 	if (new_dev)
 		*new_dev = ndev;
 	//write_unlock_bh(&local->sub_if_lock);
-	local->scan_dev=dev;
+	local->scan_dev=ndev;
 	//ieee80211_update_default_wep_only(local);
 
 	return 0;
