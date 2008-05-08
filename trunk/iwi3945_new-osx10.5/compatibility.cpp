@@ -1292,6 +1292,7 @@ IM_HERE_NOW();
 			dev_kfree_skb(skb);
 			return;
 		}*/
+		return;
 	}
 
 	fi = (struct ieee80211_frame_info *) skb_push(skb, hlen);
@@ -8891,6 +8892,7 @@ IM_HERE_NOW();
 			dev_put(odev);
 			return 0;
 		}*/
+		return 0;
 	}
 
 	control.ifindex = odev->ifindex;
