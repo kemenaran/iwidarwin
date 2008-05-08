@@ -2802,10 +2802,6 @@ IM_HERE_NOW();
 
 	ieee80211_led_init(local);*/
 	
-		   
-	//fix for local->apdev ????
-	local->apdev=local->mdev;
-	
 	return 0;
 
 /*fail_wep:
@@ -7715,6 +7711,8 @@ IM_HERE_NOW();
 				res = ieee80211_hw_config(local);
 				if (res && local->ops->stop)
 					local->ops->stop(local_to_hw(local));
+				else
+				ieee80211_if_add_mgmt(local);	
 				//else if (!res && local->apdev)
 				//	dev_open(local->apdev);
 			}
@@ -9273,6 +9271,7 @@ IM_HERE_NOW();
 	struct net_device *dev=NULL;
 	if (pkt_data->ifindex==1) dev=local->mdev;
 	if (pkt_data->ifindex==2) dev=local->scan_dev;
+	if (pkt_data->ifindex==3) dev=local->apdev;
 	if (!dev)
 	{
 		memset(skb->cb, 0, sizeof(skb->cb));
@@ -9282,5 +9281,108 @@ IM_HERE_NOW();
 	}
 	if (pkt_data->ifindex==1) ret=ieee80211_master_start_xmit(skb,dev);
 	if (pkt_data->ifindex==2) ret=ieee80211_subif_start_xmit(skb,dev);
+	if (pkt_data->ifindex==3) ret=ieee80211_mgmt_start_xmit(skb,dev);
+	return ret;
+}
+
+int
+ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev)
+{
+	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+	struct ieee80211_sub_if_data *sdata;
+	struct ieee80211_tx_packet_data *pkt_data;
+	struct ieee80211_hdr *hdr;
+	u16 fc;
+
+	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+
+	if (skb_len(skb) < 10) {
+		dev_kfree_skb(skb);
+		return 0;
+	}
+
+	if (skb_headroom(skb) < sdata->local->tx_headroom) {
+		/*if (pskb_expand_head(skb, sdata->local->tx_headroom,
+				     0, GFP_ATOMIC)) {
+			dev_kfree_skb(skb);*/
+			return 0;
+		//}
+	}
+
+	hdr = (struct ieee80211_hdr *) skb->mac_data;
+	fc = le16_to_cpu(hdr->frame_control);
+
+	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
+	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	pkt_data->ifindex = sdata->dev->ifindex;
+	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
+
+	//skb->priority = 20; /* use hardcoded priority for mgmt TX queue */
+	//skb->dev = sdata->local->mdev;
+
+	/*
+	 * We're using the protocol field of the the frame control header
+	 * to request TX callback for hostapd. BIT(1) is checked.
+	 */
+	if ((fc & BIT(1)) == BIT(1)) {
+		pkt_data->req_tx_status = 1;
+		fc &= ~BIT(1);
+		hdr->frame_control = cpu_to_le16(fc);
+	}
+
+	pkt_data->do_not_encrypt = !(fc & IEEE80211_FCTL_PROTECTED);
+
+	sdata->stats.tx_packets++;
+	sdata->stats.tx_bytes += skb_len(skb);
+
+	//dev_queue_xmit(skb);
+	ieee80211_master_start_xmit(skb,local->mdev);
+	
+	return 0;
+}
+
+int ieee80211_if_add_mgmt(struct ieee80211_local *local)
+{
+IM_HERE_NOW();
+	struct net_device *ndev;
+	struct ieee80211_sub_if_data *nsdata;
+	int ret;
+
+	//ASSERT_RTNL();
+
+	ndev = alloc_netdev(sizeof(struct ieee80211_sub_if_data), "wmgmt%d",NULL);//,ieee80211_if_mgmt_setup);
+	if (!ndev)
+		return -ENOMEM;
+	/*ret = dev_alloc_name(ndev, ndev->name);
+	if (ret < 0)
+		goto fail;*/
+	
+	//memcpy(ndev->dev_addr, local->hw.wiphy->perm_addr, ETH_ALEN);
+	memcpy(ndev->dev_addr, my_mac_addr, ETH_ALEN);
+	//SET_NETDEV_DEV(ndev, wiphy_dev(local->hw.wiphy));
+
+	ndev->ifindex=3;//hack
+	nsdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(ndev);
+	//ndev->ieee80211_ptr = &nsdata->wdev;
+	ndev->ieee80211_ptr = hw_to_local(my_hw);
+	//nsdata->wdev.wiphy = local->hw.wiphy;
+	nsdata->type = IEEE80211_IF_TYPE_MGMT;
+	nsdata->dev = ndev;
+	nsdata->local = local;
+	ieee80211_if_sdata_init(nsdata);
+
+	/*ret = register_netdevice(ndev);
+	if (ret)
+		goto fail;*/
+
+	//ieee80211_debugfs_add_netdev(nsdata);
+
+	//if (local->open_count > 0)
+	//	dev_open(ndev);
+	local->apdev = ndev;
+	return 0;
+
+fail:
+	//free_netdev(ndev);
 	return ret;
 }
