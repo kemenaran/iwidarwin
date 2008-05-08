@@ -2118,7 +2118,8 @@ IM_HERE_NOW();
 	pkt_data->do_not_encrypt = !encrypt;
 
 	//dev_queue_xmit(skb);
-	currentController->outputPacket(skb->mac_data,NULL);
+	ieee80211_master_start_xmit(skb,sdata->dev);
+	//currentController->outputPacket(skb->mac_data,NULL);
 }
 
 static void ieee80211_rx_mgmt_probe_req(struct net_device *dev,
@@ -4580,7 +4581,8 @@ IM_HERE_NOW();
 		sent++;
 		pkt_data->requeue = 1;
 		//dev_queue_xmit(skb);
-		currentController->outputPacket(skb->mac_data,NULL);
+		//currentController->outputPacket(skb->mac_data,NULL);
+		ieee80211_master_start_xmit(skb,sdata->dev);
 	}
 	while ((skb = skb_dequeue(&sta->ps_tx_buf)) != NULL) {
 		pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
@@ -4593,7 +4595,8 @@ IM_HERE_NOW();
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 		pkt_data->requeue = 1;
 		//dev_queue_xmit(skb);
-		currentController->outputPacket(skb->mac_data,NULL);
+		//currentController->outputPacket(skb->mac_data,NULL);
+		ieee80211_master_start_xmit(skb,sdata->dev);
 	}
 
 	return sent;
@@ -4941,7 +4944,8 @@ IM_HERE_NOW();
 		skb_set_network_header(skb2, 0);
 		skb_set_mac_header(skb2, 0);
 		//dev_queue_xmit(skb2);
-		currentController->outputPacket(skb2->mac_data,NULL);
+		//currentController->outputPacket(skb2->mac_data,NULL);
+		ieee80211_master_start_xmit(skb2,sdata->dev);
 	}
 
 	return TXRX_QUEUED;
@@ -5075,7 +5079,8 @@ IM_HERE_NOW();
 			hdr->frame_control |= cpu_to_le16(IEEE80211_FCTL_MOREDATA);
 
 		//dev_queue_xmit(skb);
-		currentController->outputPacket(skb->mac_data,NULL);
+		//currentController->outputPacket(skb->mac_data,NULL);
+		ieee80211_master_start_xmit(skb,rx->dev);
 		
 		if (no_pending_pkts) {
 			if (rx->local->ops->set_tim)
@@ -8867,10 +8872,10 @@ IM_HERE_NOW();
 		odev = NULL;
 	}
 	if (unlikely(!odev)) {
-#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+//#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 		printk(KERN_DEBUG "%s: Discarded packet with nonexistent "
 		       "originating device\n", dev->name);
-#endif
+//#endif
 		dev_kfree_skb(skb);
 		return 0;
 	}
