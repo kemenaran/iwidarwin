@@ -8144,6 +8144,10 @@ static ieee80211_txrx_result
 ieee80211_tx_h_rate_ctrl(struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();
+	
+	if (unlikely(!tx->sta))
+		return TXRX_CONTINUE;
+		
 	struct rate_control_extra extra;
 
 	memset(&extra, 0, sizeof(extra));
