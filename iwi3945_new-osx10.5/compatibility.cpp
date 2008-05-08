@@ -8866,17 +8866,18 @@ IM_HERE_NOW();
 	pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
 	memset(&control, 0, sizeof(struct ieee80211_tx_control));
 
-	if (pkt_data->ifindex)
+	if (1)//pkt_data->ifindex)
 	{
 		//odev = dev_get_by_index(pkt_data->ifindex);
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
+		odev=local->mdev;
 		if (pkt_data->ifindex==1) odev=local->mdev;
 		if (pkt_data->ifindex==2) odev=local->scan_dev;
 	}
-	if (unlikely(odev) /*&& !is_ieee80211_device(odev, dev))*/) {
+	//if (unlikely(odev) /*&& !is_ieee80211_device(odev, dev))*/) {
 		//dev_put(odev);
-		odev = NULL;
-	}
+	//	odev = NULL;
+	//}
 	if (unlikely(!odev)) {
 //#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 		printk(KERN_DEBUG "%s: Discarded packet with nonexistent "
