@@ -2307,6 +2307,7 @@ IM_HERE_NOW();
 	ndev->irq = dev->irq;
 	ndev->mem_start = dev->mem_start;
 	ndev->mem_end = dev->mem_end;
+	ndev->ifindex=2;//hack
 	//SET_NETDEV_DEV(ndev, wiphy_dev(local->hw.wiphy));
 
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(ndev);
@@ -8866,7 +8867,12 @@ IM_HERE_NOW();
 	memset(&control, 0, sizeof(struct ieee80211_tx_control));
 
 	if (pkt_data->ifindex)
-		odev = dev;//dev_get_by_index(pkt_data->ifindex);
+	{
+		//odev = dev_get_by_index(pkt_data->ifindex);
+		struct ieee80211_local *local=hw_to_local(get_my_hw());
+		if (pkt_data->ifindex==1) odev=local->mdev;
+		if (pkt_data->ifindex==2) odev=local->scan_dev;
+	}
 	if (unlikely(odev) /*&& !is_ieee80211_device(odev, dev))*/) {
 		//dev_put(odev);
 		odev = NULL;
@@ -8986,7 +8992,7 @@ IM_HERE_NOW();
 		//wiphy_free(wiphy);
 		return NULL;
 	}
-
+	mdev->ifindex=1;//hack
 	sdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(mdev);
 	mdev->ieee80211_ptr = hw_to_local(my_hw);//sdata->wdev;
 	//sdata->wdev.wiphy = wiphy;
