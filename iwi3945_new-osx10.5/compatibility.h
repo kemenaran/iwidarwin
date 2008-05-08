@@ -13,6 +13,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	extern int ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev);
+	extern int ieee80211_if_add_mgmt(struct ieee80211_local *local);
 	extern int dev_queue_xmit(struct sk_buff *skb);
 	extern inline __u32 skb_queue_len(const struct sk_buff_head *list_);
 	extern int ieee80211_sta_config_auth(struct net_device *dev,
