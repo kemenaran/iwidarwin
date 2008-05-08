@@ -1283,13 +1283,10 @@ IM_HERE_NOW();
 
 	if (skb_headroom(skb) < hlen) {
 		I802_DEBUG_INC(local->rx_expand_skb_head);
-		//FIXME: !!
-		IOLog("todo pskb_expand_head\n");
-		/*if (pskb_expand_head(skb, hlen, 0, GFP_ATOMIC)) {
+		if (pskb_expand_head(skb, hlen, 0)) {
 			dev_kfree_skb(skb);
 			return;
-		}*/
-		return;
+		}
 	}
 
 	fi = (struct ieee80211_frame_info *) skb_push(skb, hlen);
@@ -8863,12 +8860,11 @@ IM_HERE_NOW();
 
 	headroom = osdata->local->tx_headroom + IEEE80211_ENCRYPT_HEADROOM;
 	if (skb_headroom(skb) < headroom) {
-	IOLog("todo pskb_expand_head\n");
-		/*if (pskb_expand_head(skb, headroom, 0, GFP_ATOMIC)) {
+		if (pskb_expand_head(skb, headroom, 0)) {
 			dev_kfree_skb(skb);
-			dev_put(odev);
+			//dev_put(odev);
 			return 0;
-		}*/
+		}
 		return 0;
 	}
 
@@ -9216,12 +9212,12 @@ int ieee80211_subif_start_xmit(struct sk_buff *skb,
 		/* Since we have to reallocate the buffer, make sure that there
 		 * is enough room for possible WEP IV/ICV and TKIP (8 bytes
 		 * before payload and 12 after). */
-		//if (pskb_expand_head(skb, (head_need > 0 ? head_need + 8 : 8),
-		//		     12, GFP_ATOMIC)) {
+		if (pskb_expand_head(skb, (head_need > 0 ? head_need + 8 : 8),
+				     12)) {
 			printk(KERN_DEBUG "%s: failed to reallocate TX buffer"
 			       "\n", dev->name);
 			goto fail;
-		//}
+		}
 	}
 
 	if (encaps_data) {
@@ -9302,11 +9298,11 @@ ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	}
 
 	if (skb_headroom(skb) < sdata->local->tx_headroom) {
-		/*if (pskb_expand_head(skb, sdata->local->tx_headroom,
-				     0, GFP_ATOMIC)) {
-			dev_kfree_skb(skb);*/
+		if (pskb_expand_head(skb, sdata->local->tx_headroom,
+				     0)) {
+			dev_kfree_skb(skb);
 			return 0;
-		//}
+		}
 	}
 
 	hdr = (struct ieee80211_hdr *) skb->mac_data;
@@ -9385,4 +9381,14 @@ IM_HERE_NOW();
 fail:
 	//free_netdev(ndev);
 	return ret;
+}
+
+int pskb_expand_head(struct sk_buff *skb, int size, int reserve)
+{
+	if (size==0) return 1;
+	int ret=mbuf_prepend(&skb->mac_data, size, MBUF_WAITOK);
+	IOLog("mbuf_prepend =%d\n",ret);
+	if (ret!=0) return 1;
+	if (reserve>0) skb_reserve(skb,reserve);
+	return 0;
 }
