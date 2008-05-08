@@ -1684,7 +1684,9 @@ copy_packet:
 	if (!local) return kIOReturnOutputSuccess;
 	if(!local->mdev) return kIOReturnOutputSuccess;
 	struct sk_buff *skb=dev_alloc_skb(mbuf_len(m));//TODO: make this work better
-	memset(skb->cb, 0, sizeof(skb->cb));
+	struct ieee80211_tx_packet_data *pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
+	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	pkt_data->ifindex=1;
 	skb_set_data(skb,mbuf_data(m),mbuf_len(m));
 	int ret = ieee80211_master_start_xmit(skb,local->mdev);
 	if (ret==0) netStats->outputPackets++;	
