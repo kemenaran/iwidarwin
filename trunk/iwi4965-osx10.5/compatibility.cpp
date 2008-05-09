@@ -5265,10 +5265,10 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
-	/*else
+	else
 	if (!ifsta->associated)
 	//ieee80211_sta_req_scan(dev,NULL,0);//hack
-	ieee80211_sta_start_scan(dev, NULL, 0);*/
+	ieee80211_sta_start_scan(dev, NULL, 0);
 }
 
 
@@ -6586,11 +6586,11 @@ IM_HERE_NOW();
 	if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
-		if (!rc) {
+		/*if (!rc) {
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;
+		return rc;*/
 	}
 	local->sta_scanning = 1;
 
