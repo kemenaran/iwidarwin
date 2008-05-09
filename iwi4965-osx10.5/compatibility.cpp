@@ -6199,7 +6199,7 @@ IM_HERE_NOW();
 	if (!local->ops->config_interface || !netif_running(dev))
 	{
 		IOLog("no netif_running\n");
-		//return 0;
+		return 0;
 	}
 	memset(&conf, 0, sizeof(conf));
 	conf.type = sdata->type;
@@ -6586,11 +6586,11 @@ IM_HERE_NOW();
 	if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
-		/*if (!rc) {
+		if (!rc) {
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;*/
+		return rc;
 	}
 	local->sta_scanning = 1;
 
