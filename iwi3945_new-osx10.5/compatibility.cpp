@@ -8873,12 +8873,11 @@ IOLog("pkt_data->ifindex %d\n",pkt_data->ifindex);
 	//}
 	if (unlikely(!odev)) {
 //#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
-		/*printk(KERN_DEBUG "%s: Discarded packet with nonexistent "
+		printk(KERN_DEBUG "%s: Discarded packet with nonexistent "
 		       "originating device\n", dev->name);
 //#endif
 		dev_kfree_skb(skb);
-		return 0;*/
-		odev=dev_get_by_index(2);//hack
+		return 0;
 	}
 	osdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(odev);
 
