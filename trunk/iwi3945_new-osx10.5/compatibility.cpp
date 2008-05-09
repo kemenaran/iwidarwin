@@ -8873,11 +8873,12 @@ IOLog("pkt_data->ifindex %d\n",pkt_data->ifindex);
 	//}
 	if (unlikely(!odev)) {
 //#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
-		printk(KERN_DEBUG "%s: Discarded packet with nonexistent "
+		/*printk(KERN_DEBUG "%s: Discarded packet with nonexistent "
 		       "originating device\n", dev->name);
 //#endif
 		dev_kfree_skb(skb);
-		return 0;
+		return 0;*/
+		odev=dev_get_by_index(2);//hack
 	}
 	osdata = (struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(odev);
 
@@ -9253,6 +9254,7 @@ int ieee80211_subif_start_xmit(struct sk_buff *skb,
 
 	pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	dev->ifindex=2;//hack
 	pkt_data->ifindex = dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 	pkt_data->do_not_encrypt = no_encrypt;
@@ -9302,7 +9304,7 @@ IM_HERE_NOW();
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		//memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
 		pkt_data->ifindex=2;
-		dev=local->mdev;
+		dev=local->scan_dev;
 	}
 	if (pkt_data->ifindex==1) ret=ieee80211_master_start_xmit(skb,dev);
 	if (pkt_data->ifindex==2) ret=ieee80211_subif_start_xmit(skb,dev);
@@ -9339,6 +9341,7 @@ ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	sdata->dev->ifindex=3;//hack
 	pkt_data->ifindex = sdata->dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 
