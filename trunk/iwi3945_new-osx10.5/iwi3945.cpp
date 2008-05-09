@@ -156,7 +156,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		{
 			struct net_device *dev=local->scan_dev;
 			if (dev)
-			ieee80211_sta_req_scan(dev,NULL,0);
+			ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
 			IOLog("not ready to scan \n");
 		}
 		else
@@ -410,7 +410,7 @@ void darwin_iwi3945::check_firstup(void)
 	//int r=ieee80211_open(local);
 	struct net_device *dev=local->scan_dev;
 	if (dev) 
-	ieee80211_sta_req_scan(dev,NULL,0);
+	ieee80211_sta_req_scan(dev,(u8*)"<hidden>", sizeof("<hidden>"));
 }
 
 void darwin_iwi3945::adapter_start(void)
