@@ -2111,6 +2111,7 @@ IM_HERE_NOW();
 
 	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	sdata->dev->ifindex=2;//hack
 	pkt_data->ifindex = sdata->dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 	pkt_data->do_not_encrypt = !encrypt;
@@ -9297,12 +9298,13 @@ IM_HERE_NOW();
 	int ret=0;
 	struct ieee80211_tx_packet_data *pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
 	struct net_device *dev=dev_get_by_index(pkt_data->ifindex);
-	if (!dev) return 1;
-	/*{
-		memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
-		pkt_data->ifindex=1;
+	if (!dev);
+	{
+		struct ieee80211_local *local=hw_to_local(get_my_hw());
+		//memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+		pkt_data->ifindex=2;
 		dev=local->mdev;
-	}*/
+	}
 	if (pkt_data->ifindex==1) ret=ieee80211_master_start_xmit(skb,dev);
 	if (pkt_data->ifindex==2) ret=ieee80211_subif_start_xmit(skb,dev);
 	if (pkt_data->ifindex==3) ret=ieee80211_mgmt_start_xmit(skb,dev);
