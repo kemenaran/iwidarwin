@@ -499,14 +499,15 @@ struct ieee80211_txrx_data {
 			int sent_ps_buffered;
 			int queue;
 			int load;
+			u16 qos_control;
 			unsigned int in_scan:1;
 			/* frame is destined to interface currently processed
 			 * (including multicast frames) */
 			unsigned int ra_match:1;
+			unsigned int is_agg_frame:1;
 		} rx;
 	} u;
 };
-
 
 typedef ieee80211_txrx_result (*ieee80211_tx_handler)(struct ieee80211_txrx_data *tx);
 typedef ieee80211_txrx_result (*ieee80211_rx_handler)(struct ieee80211_txrx_data *rx);
