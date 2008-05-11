@@ -370,7 +370,7 @@ void *skb_put(struct sk_buff *skb, unsigned int len) {
      skb->tail += len;
      skb->len  += len;
      return tmp;*/
-    void *data = (UInt8*)mbuf_data(skb_data(skb)) + mbuf_len(skb_data(skb));
+    void *data = (UInt8*)skb_data(skb) + mbuf_len(skb->mac_data);
     //mbuf_prepend(&skb,len,1); /* no prepend work */
     //IWI_DUMP_MBUF(1,skb,len);  
     if(mbuf_trailingspace(skb->mac_data) > len ){
@@ -3681,7 +3681,7 @@ IM_HERE_NOW();
 	}
 
 	kfree(ifsta->assocreq_ies);
-	ifsta->assocreq_ies_len = ((u8*)skb_data(skb) + mbuf_len(skb_data(skb))) - ies;
+	ifsta->assocreq_ies_len = ((u8*)skb_data(skb) + mbuf_len(skb->mac_data)) - ies;
 	ifsta->assocreq_ies = (u8*)kmalloc(ifsta->assocreq_ies_len, GFP_ATOMIC);
 	if (ifsta->assocreq_ies)
 		memcpy(ifsta->assocreq_ies, ies, ifsta->assocreq_ies_len);
@@ -6586,11 +6586,11 @@ IM_HERE_NOW();
 	if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
-		if (!rc) {
+		/*if (!rc) {
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;
+		return rc;*/
 	}
 	local->sta_scanning = 1;
 
@@ -8041,7 +8041,7 @@ static ieee80211_txrx_result
 ieee80211_tx_h_misc(struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) tx->skb_data(skb);
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(tx->skb);
 	u16 dur;
 	struct ieee80211_tx_control *control = tx->u.tx.control;
 	struct ieee80211_hw_mode *mode = tx->u.tx.mode;
@@ -8174,7 +8174,7 @@ if (unlikely(!tx->sta))
 		struct ieee80211_hdr *hdr;
 		u16 fc;
 
-		hdr = (struct ieee80211_hdr *) tx->skb_data(skb);
+		hdr = (struct ieee80211_hdr *) skb_data(tx->skb);
 		fc = le16_to_cpu(hdr->frame_control);
 
 		if ((fc & IEEE80211_FCTL_FTYPE) == IEEE80211_FTYPE_DATA)
@@ -8306,7 +8306,7 @@ static ieee80211_txrx_result
 ieee80211_tx_h_fragment(struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) tx->skb_data(skb);
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(tx->skb);
 	size_t hdrlen, per_fragm, num_fragm, payload_len, left;
 	struct sk_buff **frags, *first, *frag;
 	int i;
@@ -8634,7 +8634,7 @@ static ieee80211_txrx_result
 ieee80211_tx_h_sequence(struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb_data(skb);
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(tx->skb);
 
 	if (ieee80211_get_hdrlen(le16_to_cpu(hdr->frame_control)) >= 24)
 		ieee80211_include_sequence(tx->sdata, hdr);
@@ -9395,6 +9395,7 @@ fail:
 int pskb_expand_head(struct sk_buff *skb, int size, int reserve)
 {
 IM_HERE_NOW();
+	return 0;
 	if (size==0) return 1;
 	int ret=mbuf_prepend(&skb->mac_data, size, MBUF_WAITOK);
 	IOLog("mbuf_prepend =%d\n",ret);
