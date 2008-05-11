@@ -5505,7 +5505,7 @@ IM_HERE_NOW();
 				return IEEE80211_TX_FRAG_AGAIN;
 			if (i == tx->u.tx.num_extra_frag) {
 				control->tx_rate = tx->u.tx.last_frag_hwrate;
-				//control->rate = tx->u.tx.last_frag_rate;//FIXME
+				control->rate = tx->u.tx.last_frag_rate;
 				if (tx->u.tx.probe_last_frag)
 					control->flags |=
 						IEEE80211_TXCTL_RATE_CTRL_PROBE;
