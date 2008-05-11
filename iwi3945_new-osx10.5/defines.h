@@ -129,7 +129,6 @@ struct sk_buff {
 //    void *data;
 //    unsigned int len;
     mbuf_t mac_data;
-    
     /*
      * This is the control buffer. It is free to use for every
      * layer. Please put your private variables there. If you

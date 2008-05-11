@@ -358,7 +358,7 @@ int skb_set_data(const struct sk_buff *skb, void *data, size_t len) {
 }
 
 int skb_len(const struct sk_buff *skb) {
-	return mbuf_pkthdr_len(skb->mac_data);
+	return mbuf_len(skb->mac_data);
 }
 
 void skb_reserve(struct sk_buff *skb, int len) {
@@ -2031,7 +2031,7 @@ IM_HERE_NOW();
 	skb_reserve(skb, local->tx_headroom);
 	memcpy(skb_put(skb, bh_len), b_head, bh_len);
 
-	ieee80211_include_sequence(sdata, (struct ieee80211_hdr *)skb->mac_data);
+	ieee80211_include_sequence(sdata, (struct ieee80211_hdr *)skb_data(skb));
 
 	ieee80211_beacon_add_tim(local, ap, skb);
 
@@ -2181,7 +2181,7 @@ IM_HERE_NOW();
 	if (!skb)
 		return;
 
-	resp = (struct ieee80211_mgmt *) skb->mac_data;
+	resp = (struct ieee80211_mgmt *) skb_data(skb);
 	memcpy(resp->da, mgmt->sa, ETH_ALEN);
 #ifdef CONFIG_MAC80211_IBSS_DEBUG
 	printk(KERN_DEBUG "%s: Sending ProbeResp to " MAC_FMT "\n",
@@ -3671,7 +3671,7 @@ IM_HERE_NOW();
 	}
 
 	kfree(ifsta->assocreq_ies);
-	ifsta->assocreq_ies_len = ((u8*)skb->mac_data + mbuf_len(skb->mac_data)) - ies;
+	ifsta->assocreq_ies_len = ((u8*)skb_data(skb) + mbuf_len(skb->mac_data)) - ies;
 	ifsta->assocreq_ies = (u8*)kmalloc(ifsta->assocreq_ies_len, GFP_ATOMIC);
 	if (ifsta->assocreq_ies)
 		memcpy(ifsta->assocreq_ies, ies, ifsta->assocreq_ies_len);
@@ -4265,7 +4265,7 @@ static ieee80211_txrx_result ieee80211_rx_h_load_stats(struct ieee80211_txrx_dat
 IM_HERE_NOW();	
 	struct ieee80211_local *local = rx->local;
 	struct sk_buff *skb = rx->skb;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
 	u32 load = 0, hdrtime;
 	struct ieee80211_rate *rate;
 	struct ieee80211_hw_mode *mode = local->hw.conf.mode;
@@ -4854,7 +4854,7 @@ IM_HERE_NOW();
 		break;
 	}
 
-	payload = ((u8*)skb->mac_data) + hdrlen;
+	payload = (u8*)skb_data(skb) + hdrlen;
 	if (unlikely(skb_len(skb) - hdrlen < 8)) {
 		if (net_ratelimit()) {
 			printk(KERN_DEBUG "%s: RX too short data frame "
@@ -5048,7 +5048,7 @@ IM_HERE_NOW();
 
 	if (skb) {
 		struct ieee80211_hdr *hdr =
-			(struct ieee80211_hdr *) skb->mac_data;
+			(struct ieee80211_hdr *) skb_data(skb);
 
 		/* tell TX path to send one frame even though the STA may
 		 * still remain is PS mode after this frame exchange */
@@ -6797,7 +6797,7 @@ IM_HERE_NOW();
 	ifsta = &sdata->u.sta;
 
 	rx_status = (struct ieee80211_rx_status *) skb->cb;
-	mgmt = (struct ieee80211_mgmt *) skb->mac_data;
+	mgmt = (struct ieee80211_mgmt *) skb_data(skb);
 	fc = le16_to_cpu(mgmt->frame_control);
 
 	switch (fc & IEEE80211_FCTL_STYPE) {
@@ -7102,7 +7102,7 @@ static int ieee80211_sta_join_ibss(struct net_device *dev,
 		ifsta->probe_resp = skb_copy(skb, GFP_ATOMIC);
 		if (ifsta->probe_resp) {
 			mgmt = (struct ieee80211_mgmt *)
-				ifsta->probe_resp->mac_data;
+				skb_data(ifsta->probe_resp);
 			mgmt->frame_control =
 				IEEE80211_FC(IEEE80211_FTYPE_MGMT,
 					     IEEE80211_STYPE_PROBE_RESP);
@@ -7772,7 +7772,7 @@ __ieee80211_tx_prepare(struct ieee80211_txrx_data *tx,
 {
 IM_HERE_NOW();
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
 	struct ieee80211_sub_if_data *sdata;
 	ieee80211_txrx_result res = TXRX_CONTINUE;
 
@@ -7807,7 +7807,7 @@ IM_HERE_NOW();
 		 * we filled control with what we could use
 		 * set to the actual ieee header now
 		 */
-		hdr = (struct ieee80211_hdr *) skb->mac_data;
+		hdr = (struct ieee80211_hdr *) skb_data(skb);
 		res = TXRX_QUEUED; /* indication it was monitor packet */
 	}
 
@@ -7830,7 +7830,7 @@ IM_HERE_NOW();
 	hdrlen = ieee80211_get_hdrlen(tx->fc);
 	if (skb_len(skb) > hdrlen + sizeof(rfc1042_header) + 2) {
 		//u8 *pos = &skb->data[hdrlen + sizeof(rfc1042_header)];
-		u8 *pos = (u8*)skb->mac_data+hdrlen + sizeof(rfc1042_header);
+		u8 *pos = (u8*)skb_data(skb)+hdrlen + sizeof(rfc1042_header);
 		tx->ethertype = (pos[0] << 8) | pos[1];
 	}
 	control->flags |= IEEE80211_TXCTL_FIRST_FRAGMENT;
@@ -8007,7 +8007,7 @@ IM_HERE_NOW();
 	struct ieee80211_local *local = tx->local;
 	struct ieee80211_hw_mode *mode = tx->u.tx.mode;
 	struct sk_buff *skb = tx->skb;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
 	u32 load = 0, hdrtime;
 
 	/* TODO: this could be part of tx_status handling, so that the number
@@ -8062,7 +8062,7 @@ static ieee80211_txrx_result
 ieee80211_tx_h_misc(struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) tx->skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(tx->skb);
 	u16 dur;
 	struct ieee80211_tx_control *control = tx->u.tx.control;
 	struct ieee80211_hw_mode *mode = tx->u.tx.mode;
@@ -8196,7 +8196,7 @@ IM_HERE_NOW();
 		struct ieee80211_hdr *hdr;
 		u16 fc;
 
-		hdr = (struct ieee80211_hdr *) tx->skb->mac_data;
+		hdr = (struct ieee80211_hdr *) skb_data(tx->skb);
 		fc = le16_to_cpu(hdr->frame_control);
 
 		if ((fc & IEEE80211_FCTL_FTYPE) == IEEE80211_FTYPE_DATA)
@@ -8328,7 +8328,7 @@ static ieee80211_txrx_result
 ieee80211_tx_h_fragment(struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) tx->skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(tx->skb);
 	size_t hdrlen, per_fragm, num_fragm, payload_len, left;
 	struct sk_buff **frags, *first, *frag;
 	int i;
@@ -8352,7 +8352,7 @@ IM_HERE_NOW();
 
 	hdr->frame_control |= cpu_to_le16(IEEE80211_FCTL_MOREFRAGS);
 	seq = le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_SEQ;
-	pos = (u8*)first->mac_data + hdrlen + per_fragm;
+	pos = (u8*)skb_data(first) + hdrlen + per_fragm;
 	left = payload_len - per_fragm;
 	for (i = 0; i < num_fragm - 1; i++) {
 		struct ieee80211_hdr *fhdr;
@@ -8376,7 +8376,7 @@ IM_HERE_NOW();
 		skb_reserve(frag, tx->local->tx_headroom +
 				  IEEE80211_ENCRYPT_HEADROOM);
 		fhdr = (struct ieee80211_hdr *) skb_put(frag, hdrlen);
-		memcpy(fhdr, first->mac_data, hdrlen);
+		memcpy(fhdr, skb_data(first), hdrlen);
 		if (i == num_fragm - 2)
 			fhdr->frame_control &= cpu_to_le16(~IEEE80211_FCTL_MOREFRAGS);
 		fhdr->seq_ctrl = cpu_to_le16(seq | ((i + 1) & IEEE80211_SCTL_FRAG));
@@ -8656,7 +8656,7 @@ static ieee80211_txrx_result
 ieee80211_tx_h_sequence(struct ieee80211_txrx_data *tx)
 {
 IM_HERE_NOW();
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(tx->skb);
 
 	if (ieee80211_get_hdrlen(le16_to_cpu(hdr->frame_control)) >= 24)
 		ieee80211_include_sequence(tx->sdata, hdr);
@@ -8784,7 +8784,7 @@ IM_HERE_NOW();
 			int next_len, dur;
 			struct ieee80211_hdr *hdr =
 				(struct ieee80211_hdr *)
-				tx.u.tx.extra_frag[i]->mac_data;
+				skb_data(tx.u.tx.extra_frag[i]);
 
 			if (i + 1 < tx.u.tx.num_extra_frag) {
 				next_len = skb_len(tx.u.tx.extra_frag[i + 1]);
@@ -9122,8 +9122,8 @@ int ieee80211_subif_start_xmit(struct sk_buff *skb,
 	 * operation mode) */
 	//ethertype = (skb->data[12] << 8) | skb->data[13];
 	u8 *p0,*p1;
-	p0=(u8*)skb->mac_data +12;
-	p1=(u8*)skb->mac_data+13;
+	p0=(u8*)skb_data(skb) +12;
+	p1=(u8*)skb_data(skb)+13;
 	ethertype = (*p0 << 8) | *p1;
 	/* TODO: handling for 802.1x authorized/unauthorized port */
 	fc = IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA;
@@ -9132,36 +9132,36 @@ int ieee80211_subif_start_xmit(struct sk_buff *skb,
 		   sdata->type == IEEE80211_IF_TYPE_VLAN)) {
 		fc |= IEEE80211_FCTL_FROMDS;
 		/* DA BSSID SA */
-		memcpy(hdr.addr1, skb->mac_data, ETH_ALEN);
+		memcpy(hdr.addr1, skb_data(skb), ETH_ALEN);
 		memcpy(hdr.addr2, dev->dev_addr, ETH_ALEN);
-		memcpy(hdr.addr3, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+		memcpy(hdr.addr3, (u8*)skb_data(skb) + ETH_ALEN, ETH_ALEN);
 		hdrlen = 24;
 	} else if (sdata->type == IEEE80211_IF_TYPE_WDS) {
 		fc |= IEEE80211_FCTL_FROMDS | IEEE80211_FCTL_TODS;
 		/* RA TA DA SA */
 		memcpy(hdr.addr1, sdata->u.wds.remote_addr, ETH_ALEN);
 		memcpy(hdr.addr2, dev->dev_addr, ETH_ALEN);
-		memcpy(hdr.addr3, skb->mac_data, ETH_ALEN);
-		memcpy(hdr.addr4, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+		memcpy(hdr.addr3, skb_data(skb), ETH_ALEN);
+		memcpy(hdr.addr4, (u8*)skb_data(skb) + ETH_ALEN, ETH_ALEN);
 		hdrlen = 30;
 	} else if (sdata->type == IEEE80211_IF_TYPE_STA) {
-		if (dls_link_status(local, (u8*)skb->mac_data) == 0) {
+		if (dls_link_status(local, (u8*)skb_data(skb)) == 0) {
 			/* DA SA BSSID */
-			memcpy(hdr.addr1, skb->mac_data, ETH_ALEN);
-			memcpy(hdr.addr2, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+			memcpy(hdr.addr1, skb_data(skb), ETH_ALEN);
+			memcpy(hdr.addr2, (u8*)skb_data(skb) + ETH_ALEN, ETH_ALEN);
 			memcpy(hdr.addr3, sdata->u.sta.bssid, ETH_ALEN);
 		} else {
 			fc |= IEEE80211_FCTL_TODS;
 			/* BSSID SA DA */
 			memcpy(hdr.addr1, sdata->u.sta.bssid, ETH_ALEN);
-			memcpy(hdr.addr2, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
-			memcpy(hdr.addr3, skb->mac_data, ETH_ALEN);
+			memcpy(hdr.addr2, (u8*)skb_data(skb) + ETH_ALEN, ETH_ALEN);
+			memcpy(hdr.addr3, skb_data(skb), ETH_ALEN);
 		}
 		hdrlen = 24;
 	} else if (sdata->type == IEEE80211_IF_TYPE_IBSS) {
 		/* DA SA BSSID */
-		memcpy(hdr.addr1, skb->mac_data, ETH_ALEN);
-		memcpy(hdr.addr2, (u8*)skb->mac_data + ETH_ALEN, ETH_ALEN);
+		memcpy(hdr.addr1, skb_data(skb), ETH_ALEN);
+		memcpy(hdr.addr2, (u8*)skb_data(skb) + ETH_ALEN, ETH_ALEN);
 		memcpy(hdr.addr3, sdata->u.sta.bssid, ETH_ALEN);
 		hdrlen = 24;
 	} else {
@@ -9335,7 +9335,7 @@ ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		}
 	}
 
-	hdr = (struct ieee80211_hdr *) skb->mac_data;
+	hdr = (struct ieee80211_hdr *) skb_data(skb);
 	fc = le16_to_cpu(hdr->frame_control);
 
 	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
