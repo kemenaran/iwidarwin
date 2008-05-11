@@ -6581,11 +6581,11 @@ IM_HERE_NOW();
 	if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
-		if (!rc) {
+		/*if (!rc) {
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;
+		return rc;*/
 	}
 	local->sta_scanning = 1;
 
@@ -9417,6 +9417,7 @@ fail:
 int pskb_expand_head(struct sk_buff *skb, int size, int reserve)
 {
 IM_HERE_NOW();
+	return 0;
 	if (size==0) return 1;
 	int ret=mbuf_prepend(&skb->mac_data, size, MBUF_WAITOK);
 	IOLog("mbuf_prepend =%d\n",ret);
