@@ -135,7 +135,7 @@ static void rate_control_simple_tx_status(void *priv, struct net_device *dev,
 					  struct ieee80211_tx_status *status)
 {
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
 	struct sta_info *sta;
 	struct sta_rate_control *srctrl;
 
@@ -233,7 +233,7 @@ rate_control_simple_get_rate(void *priv, struct net_device *dev,
 {
 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_sub_if_data *sdata;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb_data(skb);
 	struct ieee80211_hw_mode *mode = extra->mode;
 	struct sta_info *sta;
 	int rateidx, nonerp_idx;
