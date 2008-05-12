@@ -3371,18 +3371,12 @@ IM_HERE_NOW();
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
 #endif
-/*if (!beacon)
+if (!beacon)
 	{
 		IOLog("hacking add station\n");
-		//struct net_device *dev = local->scan_dev;
-		//if (dev)
-		//{
-			//struct ieee80211_sub_if_data *sdata=(struct ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
-			struct ieee80211_if_sta *ifsta = &sdata->u.sta;
-			//if (!ifsta->associated)
-			bcopy(mgmt->sa,sdata->u.sta.bssid,ETH_ALEN);
-		//}
-	}*/
+		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+		bcopy(mgmt->sa,sdata->u.sta.bssid,ETH_ALEN);
+	}
 	
 	baselen = (u8 *) mgmt->u.beacon.variable - (u8 *) mgmt;
 	if (baselen > len)
