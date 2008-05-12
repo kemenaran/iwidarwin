@@ -2206,7 +2206,21 @@ static u8 my_mac_addr[6];
 #define STA_MAX_TX_BUFFER 128
 #define AP_MAX_BC_BUFFER 128
 #define ETH_HLEN        14              /* Total octets in header.       */
+#define WEP_IV_LEN 4
+#define WEP_ICV_LEN 4 
+#define TKIP_IV_LEN 8
+#define TKIP_ICV_LEN 4
 
+#define ALG_CCMP_KEY_LEN 16
+#define CCMP_HDR_LEN 8
+#define CCMP_MIC_LEN 8
+#define IEEE80211_RADIOTAP_F_RX_BADFCS	0x0001	/* frame failed crc check */
+
+/* For IEEE80211_RADIOTAP_TX_FLAGS */
+#define IEEE80211_RADIOTAP_F_TX_FAIL	0x0001	/* failed due to excessive
+						 * retries */
+#define IEEE80211_RADIOTAP_F_TX_CTS	0x0002	/* used cts 'protection' */
+#define IEEE80211_RADIOTAP_F_TX_RTS	0x0004	/* used rts/cts handshake */
 
 
 
