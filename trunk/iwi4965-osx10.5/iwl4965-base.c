@@ -7843,12 +7843,10 @@ static int iwl4965_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 		else {
 			rc = iwl4965_commit_rxon(priv);
 			if ((priv->iw_mode == IEEE80211_IF_TYPE_STA) && !rc)
-			//	iwl4965_rxon_add_station(
-			//		priv, priv->active_rxon.bssid_addr, 1);
-			iwl4965_rxon_add_station(
-					priv, priv->active_rxon.bssid_addr, 0);
+				iwl4965_rxon_add_station(
+					priv, priv->active_rxon.bssid_addr, 1);
 					
-			/*struct ieee80211_local *local = hw_to_local(hw);
+			struct ieee80211_local *local = hw_to_local(hw);
 			struct ieee80211_sub_if_data *sdata=NULL;
 			list_for_each_entry(sdata, &local->sub_if_list, list) 
 			{
@@ -7870,7 +7868,7 @@ static int iwl4965_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 				//sdata->type = IEEE80211_IF_TYPE_STA;
 				//ifsta->state=IEEE80211_AUTHENTICATE;
 				//}
-			}*/
+			}
 		
 		}
 
