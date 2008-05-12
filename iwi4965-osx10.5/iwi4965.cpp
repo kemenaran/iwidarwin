@@ -1511,12 +1511,18 @@ IOReturn darwin_iwi4965::enable( IONetworkInterface* netif )
 		setMyfifnet(fifnet);
 		struct ieee80211_local *local;
 		local=hw_to_local(get_my_hw());
+		if (local)
+		{
 		struct net_device *dev=local->mdev;
+		if (dev)
 		bcopy(ii,dev->name,sizeof(ii));
 		dev=local->scan_dev;
+		if (dev)
 		bcopy(ii,dev->name,sizeof(ii));
 		dev=local->apdev;
+		if (dev)
 		bcopy(ii,dev->name,sizeof(ii));
+		}
 	}
     if (first_up==0)
 		{
