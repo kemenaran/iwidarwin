@@ -3434,8 +3434,9 @@ IM_HERE_NOW();
 	ieee80211_rx_bss_info(dev, mgmt, len, rx_status, 1);
 
 	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
-	if (sdata->type != IEEE80211_IF_TYPE_STA)
-		return;
+	if (sdata->type != IEEE80211_IF_TYPE_STA) sdata->type = IEEE80211_IF_TYPE_STA;//hack
+		//return;
+		
 	ifsta = &sdata->u.sta;
 
 	if (!ifsta->associated ||
