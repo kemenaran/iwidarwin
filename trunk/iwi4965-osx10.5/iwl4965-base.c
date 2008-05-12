@@ -7842,7 +7842,7 @@ static int iwl4965_mac_config_interface(struct ieee80211_hw *hw, int if_id,
 			iwl4965_config_ap(priv);
 		else {
 			rc = iwl4965_commit_rxon(priv);
-			if ((priv->iw_mode == IEEE80211_IF_TYPE_STA) && rc)
+			if ((priv->iw_mode == IEEE80211_IF_TYPE_STA) && !rc)
 				iwl4965_rxon_add_station(
 					priv, priv->active_rxon.bssid_addr, 1);
 			
