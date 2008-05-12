@@ -2291,9 +2291,9 @@ IM_HERE_NOW();
 		IOLog("alloc_netdev failed\n");
 		return -ENOMEM;
 	}
-	char ii[4]="en1";
+	//char ii[4]="en1";
 	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
-	bcopy(ii,ndev->name,sizeof(ii));
+	//bcopy(ii,ndev->name,sizeof(ii));
 	
 	/*ret = dev_alloc_name(ndev, ndev->name);
 	if (ret < 0)
@@ -2734,9 +2734,9 @@ IM_HERE_NOW();
 	//	goto fail_sta_info;
 
 
-	char ii[4]="en1";
+	//char ii[4]="en1";
 	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
-	bcopy(ii,local->mdev->name,sizeof(ii));
+	//bcopy(ii,local->mdev->name,sizeof(ii));
 	/*rtnl_lock();
 	result = dev_alloc_name(local->mdev, local->mdev->name);
 	if (result < 0)
@@ -2772,7 +2772,7 @@ IM_HERE_NOW();
 
 	/* add one default STA interface */
 
-	result = ieee80211_if_add(local->mdev, ii, NULL,
+	result = ieee80211_if_add(local->mdev, local->mdev->name, NULL,
 				  IEEE80211_IF_TYPE_STA);
 	if (result)
 		printk(KERN_WARNING "%s: Failed to add default virtual iface\n",
