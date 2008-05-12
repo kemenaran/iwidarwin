@@ -11,6 +11,11 @@
 		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
 		32D94FCA0562CBF700B6AF17 /* iwi4965.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1A224C3FFF42367911CA2CB7 /* iwi4965.cpp */; settings = {ATTRIBUTES = (); }; };
 		61AB07CD0DC3ECDA000C81F9 /* WiFiPower.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61AB07CC0DC3ECDA000C81F9 /* WiFiPower.cpp */; };
+		61CB63BD0DD8D3E10050515B /* compat.h in Headers */ = {isa = PBXBuildFile; fileRef = 61CB63B90DD8D3E10050515B /* compat.h */; };
+		61CB63BE0DD8D3E10050515B /* ieee80211.h in Headers */ = {isa = PBXBuildFile; fileRef = 61CB63BA0DD8D3E10050515B /* ieee80211.h */; };
+		61CB63BF0DD8D3E10050515B /* ieee80211_crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = 61CB63BB0DD8D3E10050515B /* ieee80211_crypt.h */; };
+		61CB63C00DD8D3E10050515B /* ieee80211_radiotap.h in Headers */ = {isa = PBXBuildFile; fileRef = 61CB63BC0DD8D3E10050515B /* ieee80211_radiotap.h */; };
+		61CB63C60DD8D3EB0050515B /* ipw4965.ucode.h in Headers */ = {isa = PBXBuildFile; fileRef = 61CB63C30DD8D3EB0050515B /* ipw4965.ucode.h */; };
 		9664E7310DAFEF62006F632B /* iwl-4965-commands.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6E40DAFEF62006F632B /* iwl-4965-commands.h */; };
 		9664E7320DAFEF62006F632B /* iwl-4965-debug.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6E50DAFEF62006F632B /* iwl-4965-debug.h */; };
 		9664E7330DAFEF62006F632B /* iwl-4965-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6E60DAFEF62006F632B /* iwl-4965-hw.h */; };
@@ -20,8 +25,6 @@
 		9664E7370DAFEF62006F632B /* iwl-4965.c in Sources */ = {isa = PBXBuildFile; fileRef = 9664E6EA0DAFEF62006F632B /* iwl-4965.c */; };
 		9664E7380DAFEF62006F632B /* iwl-4965.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664E6EB0DAFEF62006F632B /* iwl-4965.h */; };
 		9664E7390DAFEF62006F632B /* iwl4965-base.c in Sources */ = {isa = PBXBuildFile; fileRef = 9664E6EC0DAFEF62006F632B /* iwl4965-base.c */; };
-		9664E8830DAFF0B6006F632B /* net in Resources */ = {isa = PBXBuildFile; fileRef = 9664E85F0DAFF0B6006F632B /* net */; };
-		9664E88D0DAFF0DD006F632B /* firmware in Resources */ = {isa = PBXBuildFile; fileRef = 9664E8880DAFF0DD006F632B /* firmware */; };
 		9664ECB80DAFF844006F632B /* defines.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664ECB70DAFF844006F632B /* defines.h */; };
 		9664ECC60DAFF8B5006F632B /* compatibility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9664ECBC0DAFF8B5006F632B /* compatibility.cpp */; };
 		9664ECC70DAFF8B5006F632B /* compatibility.h in Headers */ = {isa = PBXBuildFile; fileRef = 9664ECBD0DAFF8B5006F632B /* compatibility.h */; };
@@ -41,6 +44,13 @@
 		1A224C3FFF42367911CA2CB7 /* iwi4965.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = iwi4965.cpp; sourceTree = "<group>"; };
 		32D94FCF0562CBF700B6AF17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
 		61AB07CC0DC3ECDA000C81F9 /* WiFiPower.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = WiFiPower.cpp; sourceTree = "<group>"; };
+		61CB63B90DD8D3E10050515B /* compat.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = compat.h; sourceTree = "<group>"; };
+		61CB63BA0DD8D3E10050515B /* ieee80211.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		61CB63BB0DD8D3E10050515B /* ieee80211_crypt.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_crypt.h; sourceTree = "<group>"; };
+		61CB63BC0DD8D3E10050515B /* ieee80211_radiotap.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ieee80211_radiotap.h; sourceTree = "<group>"; };
+		61CB63C20DD8D3EB0050515B /* hex2string */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = hex2string; sourceTree = "<group>"; };
+		61CB63C30DD8D3EB0050515B /* ipw4965.ucode.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ipw4965.ucode.h; sourceTree = "<group>"; };
+		61CB63C40DD8D3EB0050515B /* main.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
 		965A45D00DB54C4A00C9925A /* iwi4965.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwi4965.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		9664E6E40DAFEF62006F632B /* iwl-4965-commands.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-commands.h"; sourceTree = "<group>"; };
@@ -52,8 +62,6 @@
 		9664E6EA0DAFEF62006F632B /* iwl-4965.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-4965.c"; sourceTree = "<group>"; };
 		9664E6EB0DAFEF62006F632B /* iwl-4965.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-4965.h"; sourceTree = "<group>"; };
 		9664E6EC0DAFEF62006F632B /* iwl4965-base.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl4965-base.c"; sourceTree = "<group>"; };
-		9664E85F0DAFF0B6006F632B /* net */ = {isa = PBXFileReference; lastKnownFileType = folder; path = net; sourceTree = "<group>"; };
-		9664E8880DAFF0DD006F632B /* firmware */ = {isa = PBXFileReference; lastKnownFileType = folder; path = firmware; sourceTree = "<group>"; };
 		9664ECB70DAFF844006F632B /* defines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = defines.h; sourceTree = "<group>"; };
 		9664ECBC0DAFF8B5006F632B /* compatibility.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compatibility.cpp; sourceTree = "<group>"; };
 		9664ECBD0DAFF8B5006F632B /* compatibility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compatibility.h; sourceTree = "<group>"; };
@@ -109,9 +117,9 @@
 		247142CAFF3F8F9811CA285C /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				61CB63C10DD8D3EB0050515B /* firmware */,
+				61CB63B80DD8D3E10050515B /* net */,
 				61AB07CC0DC3ECDA000C81F9 /* WiFiPower.cpp */,
-				9664E8880DAFF0DD006F632B /* firmware */,
-				9664E85F0DAFF0B6006F632B /* net */,
 				9664E6E40DAFEF62006F632B /* iwl-4965-commands.h */,
 				9664E6E50DAFEF62006F632B /* iwl-4965-debug.h */,
 				9664E6E60DAFEF62006F632B /* iwl-4965-hw.h */,
@@ -138,6 +146,27 @@
 			name = Source;
 			sourceTree = "<group>";
 		};
+		61CB63B80DD8D3E10050515B /* net */ = {
+			isa = PBXGroup;
+			children = (
+				61CB63B90DD8D3E10050515B /* compat.h */,
+				61CB63BA0DD8D3E10050515B /* ieee80211.h */,
+				61CB63BB0DD8D3E10050515B /* ieee80211_crypt.h */,
+				61CB63BC0DD8D3E10050515B /* ieee80211_radiotap.h */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
+		61CB63C10DD8D3EB0050515B /* firmware */ = {
+			isa = PBXGroup;
+			children = (
+				61CB63C20DD8D3EB0050515B /* hex2string */,
+				61CB63C30DD8D3EB0050515B /* ipw4965.ucode.h */,
+				61CB63C40DD8D3EB0050515B /* main.c */,
+			);
+			path = firmware;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -158,6 +187,11 @@
 				9664ECC90DAFF8B5006F632B /* iwl-prph.h in Headers */,
 				9664ECCA0DAFF8B5006F632B /* iwl-spectrum.h in Headers */,
 				9664ECCF0DAFF8B5006F632B /* test-defines.h in Headers */,
+				61CB63BD0DD8D3E10050515B /* compat.h in Headers */,
+				61CB63BE0DD8D3E10050515B /* ieee80211.h in Headers */,
+				61CB63BF0DD8D3E10050515B /* ieee80211_crypt.h in Headers */,
+				61CB63C00DD8D3E10050515B /* ieee80211_radiotap.h in Headers */,
+				61CB63C60DD8D3EB0050515B /* ipw4965.ucode.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -207,8 +241,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */,
-				9664E8830DAFF0B6006F632B /* net in Resources */,
-				9664E88D0DAFF0DD006F632B /* firmware in Resources */,
 				9664ECCB0DAFF8B5006F632B /* load.command in Resources */,
 				9664ECCC0DAFF8B5006F632B /* myload.command in Resources */,
 				9664ECCE0DAFF8B5006F632B /* README.rtf in Resources */,
