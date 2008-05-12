@@ -2308,9 +2308,9 @@ IM_HERE_NOW();
 	if (!ndev)
 		return -ENOMEM;
 
-	char ii[4]="en1";
+	//char ii[4]="en1";
 	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
-	bcopy(ii,ndev->name,sizeof(ii));
+	//bcopy(ii,ndev->name,sizeof(ii));
 	
 	/*ret = dev_alloc_name(ndev, ndev->name);
 	if (ret < 0)
@@ -2750,9 +2750,9 @@ IM_HERE_NOW();
 	if (result < 0) return -1;
 	//	goto fail_sta_info;
 
-	char ii[4]="en1";
+	//char ii[4]="en1";
 	//sprintf(ii,"%s%d" ,my_fNetif->getNamePrefix(), my_fNetif->getUnitNumber());
-	bcopy(ii,local->mdev->name,sizeof(ii));
+	//bcopy(ii,local->mdev->name,sizeof(ii));
 	/*rtnl_lock();
 	result = dev_alloc_name(local->mdev, local->mdev->name);
 	if (result < 0)
@@ -2787,7 +2787,7 @@ IM_HERE_NOW();
 	//ieee80211_install_qdisc(local->mdev);
 
 	/* add one default STA interface */
-	result = ieee80211_if_add(local->mdev, ii, NULL,
+	result = ieee80211_if_add(local->mdev, local->mdev->name, NULL,
 				  IEEE80211_IF_TYPE_STA);
 	if (result)
 		printk(KERN_WARNING "%s: Failed to add default virtual iface\n",
@@ -9230,7 +9230,6 @@ int ieee80211_subif_start_xmit(struct sk_buff *skb,
 
 	pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
-	dev->ifindex=2;//hack
 	pkt_data->ifindex = dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 	pkt_data->do_not_encrypt = no_encrypt;
@@ -9277,9 +9276,10 @@ IM_HERE_NOW();
 	struct net_device *dev=dev_get_by_index(pkt_data->ifindex);
 	if (!dev) 
 	{
+		IOLog("no dev\n");
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		//memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
-		pkt_data->ifindex=2;
+		pkt_data->ifindex=1;
 		dev=local->mdev;
 	}
 	if (pkt_data->ifindex==1) ret=ieee80211_master_start_xmit(skb,dev);
@@ -9318,7 +9318,6 @@ ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
-	sdata->dev->ifindex=3;//hack
 	pkt_data->ifindex = sdata->dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 
