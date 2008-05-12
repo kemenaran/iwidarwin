@@ -2643,7 +2643,7 @@ IM_HERE_NOW();
 	
 	ndev->ieee80211_ptr = hw_to_local(my_hw);//&sdata->wdev;
 	//sdata->wdev.wiphy = local->hw.wiphy;
-	sdata->type = IEEE80211_IF_TYPE_AP;
+	sdata->type = IEEE80211_IF_TYPE_STA;//IEEE80211_IF_TYPE_AP;
 	sdata->dev = ndev;
 	sdata->local = local;
 	ieee80211_if_sdata_init(sdata);
@@ -3747,8 +3747,7 @@ IM_HERE_NOW();
 	ieee80211_rx_bss_info(dev, mgmt, len, rx_status, 1);
 
 	sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(dev);
-	if (sdata->type != IEEE80211_IF_TYPE_STA) sdata->type = IEEE80211_IF_TYPE_STA;//hack
-		//return;
+	if (sdata->type != IEEE80211_IF_TYPE_STA) return;
 		
 	ifsta = &sdata->u.sta;
 
