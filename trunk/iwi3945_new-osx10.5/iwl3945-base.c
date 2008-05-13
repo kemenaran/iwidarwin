@@ -7124,7 +7124,7 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 			test_bit(STATUS_READY, &priv->status),
 			UCODE_READY_TIMEOUT);*/
 	
-	IOSleep(2000);//hack
+	//IOSleep(2000);//hack
 	ret = UCODE_READY_TIMEOUT/10;          
 	while(!(test_bit(STATUS_READY, &priv->status))) {                  
 		IOSleep(100);                    
