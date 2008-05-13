@@ -9592,8 +9592,8 @@ IM_HERE_NOW();
 		IOLog("no dev\n");
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		//memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
-		pkt_data->ifindex=1;
-		dev=local->mdev;
+		pkt_data->ifindex=2;
+		dev=local->scan_dev;
 	}
 	if (pkt_data->ifindex==1) ret=ieee80211_master_start_xmit(skb,dev);
 	if (pkt_data->ifindex==2) ret=ieee80211_subif_start_xmit(skb,dev);
