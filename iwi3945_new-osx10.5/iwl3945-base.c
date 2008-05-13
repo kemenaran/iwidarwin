@@ -7108,8 +7108,8 @@ static int iwl3945_mac_open(struct ieee80211_hw *hw)
 
     mutex_unlock(&priv->mutex);
 
-	if (ret)
-		goto out_release_irq;
+	//if (ret)
+	//	goto out_release_irq;
 
 	IWL_DEBUG_INFO("Start UP work.\n");
 
