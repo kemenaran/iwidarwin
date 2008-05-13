@@ -1652,6 +1652,15 @@ IM_HERE_NOW();
 		sta = rx.sta = NULL;
 
 	if (sta) {
+		//hack
+		struct ieee80211_sub_if_data *sdata0=NULL;
+		list_for_each_entry(sdata0, &local->sub_if_list, list) 
+		{
+			if (!compare_ether_addr(hdr->addr2, sdata0->u.sta.bssid)) break;
+			sdata0=NULL;
+		}		
+		if (sdata0) sta->dev=sdata0->dev;	
+		//end hack
 		rx.dev = sta->dev;
 		rx.sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx.dev);
 	}
