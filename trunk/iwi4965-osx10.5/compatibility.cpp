@@ -1659,7 +1659,7 @@ IM_HERE_NOW();
 			if (!compare_ether_addr(hdr->addr2, sdata0->u.sta.bssid)) break;
 			sdata0=NULL;
 		}		
-		if (sdata0) sta->dev=sdata0->dev;	
+		if (sdata0) sta->dev=sdata0->dev; else IOLog("no sta\n");	
 		//end hack
 		rx.dev = sta->dev;
 		rx.sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx.dev);
@@ -2432,6 +2432,7 @@ IM_HERE_NOW();
 
 	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	sdata->dev->ifindex=2;//hack
 	pkt_data->ifindex = sdata->dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 	pkt_data->do_not_encrypt = !encrypt;
@@ -9552,6 +9553,7 @@ int ieee80211_subif_start_xmit(struct sk_buff *skb,
 
 	pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	sdata->dev->ifindex=2;//hack
 	pkt_data->ifindex = dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 	pkt_data->do_not_encrypt = no_encrypt;
@@ -9640,6 +9642,7 @@ ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	sdata->dev->ifindex=3;//hack
 	pkt_data->ifindex = sdata->dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 
