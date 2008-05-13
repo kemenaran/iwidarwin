@@ -1437,11 +1437,10 @@ IM_HERE_NOW();
 	local->sta_hash[STA_HASH(sta->addr)] = sta;
 }
 
-static void kref_init(struct kref *kref, void (*release)(struct kref *kref))
+static void kref_init(struct kref *kref)
   {
           //WARN_ON(release == NULL);
           atomic_set(&kref->refcount,1);
-          kref->release = release;
   }
 
 static  struct kref *kref_get(struct kref *kref)
@@ -1485,19 +1484,70 @@ IM_HERE_NOW();
    *
    * Decrement the refcount, and if 0, call kref->release().
    */
-static  void kref_put(struct kref *kref)
+static  void kref_put(struct kref *kref, void (*release)(struct kref *kref))
 {
   IM_HERE_NOW();
 		if (atomic_dec_and_test(&kref->refcount)) {
 			IOLog("kref cleaning up\n");
-			kref->release(kref);
+			release(kref);
 		} 
 } 
  
+ static inline void rate_control_free_sta(struct rate_control_ref *ref,
+					 void *priv)
+{
+	ref->ops->free_sta(ref->priv, priv);
+}
+
+void ieee80211_debugfs_key_sta_del(struct ieee80211_key *key,
+				   struct sta_info *sta)
+{
+	//debugfs_remove(key->debugfs.stalink);
+	//key->debugfs.stalink = NULL;
+}
+
+static void rate_control_put(struct rate_control_ref *ref)
+{
+IM_HERE_NOW();
+	kref_put(&ref->kref, rate_control_release);
+}
+
+ static void sta_info_release(struct kref *kref)
+{
+IM_HERE_NOW();
+	struct sta_info *sta = container_of(kref, struct sta_info, kref);
+	struct ieee80211_local *local = sta->local;
+	struct sk_buff *skb;
+	int i;
+
+	/* free sta structure; it has already been removed from
+	 * hash table etc. external structures. Make sure that all
+	 * buffered frames are release (one might have been added
+	 * after sta_info_free() was called). */
+	while ((skb = skb_dequeue(&sta->ps_tx_buf)) != NULL) {
+		local->total_ps_buffered--;
+		dev_kfree_skb_any(skb);
+	}
+	while ((skb = skb_dequeue(&sta->tx_filtered)) != NULL) {
+		dev_kfree_skb_any(skb);
+	}
+
+	/*for (i=0; i< STA_TID_NUM; i++) {
+		del_timer_sync(&sta->ht_ba_mlme.tid_agg_info_tx[i].addba_resp_timer);
+		del_timer_sync(&sta->ht_ba_mlme.tid_agg_info_rx[i].session_timer);
+	}*/
+
+	rate_control_free_sta(sta->rate_ctrl, sta->rate_ctrl_priv);
+	rate_control_put(sta->rate_ctrl);
+	if (sta->key)
+		ieee80211_debugfs_key_sta_del(sta->key, sta);
+	kfree(sta);
+}
+
 void sta_info_put(struct sta_info *sta)
 {
 IM_HERE_NOW();
-    kref_put(&sta->kref);
+    kref_put(&sta->kref,sta_info_release);
 }
 
 static struct rate_control_ref *rate_control_get(struct rate_control_ref *ref)
@@ -1507,11 +1557,20 @@ IM_HERE_NOW();
 	return ref;
 }
 
-static void rate_control_put(struct rate_control_ref *ref)
+
+
+void rate_control_release(struct kref *kref)
 {
 IM_HERE_NOW();
-	kref_put(&ref->kref);//, rate_control_release);
+	struct rate_control_ref *ctrl_ref;
+
+	ctrl_ref = container_of(kref, struct rate_control_ref, kref);
+	ctrl_ref->ops->free(ctrl_ref->priv);
+	//ieee80211_rate_control_ops_put(ctrl_ref->ops);
+	kfree(ctrl_ref);
 }
+
+
 
 static inline void *rate_control_alloc_sta(struct rate_control_ref *ref,
 					   gfp_t gfp)
@@ -1530,13 +1589,13 @@ IM_HERE_NOW();
 	if (!sta)
 		return NULL;
 
-	kref_init(&sta->kref,NULL);
+	kref_init(&sta->kref);
 
 	sta->rate_ctrl = rate_control_get(local->rate_ctrl);
 	sta->rate_ctrl_priv = rate_control_alloc_sta(sta->rate_ctrl, gfp);
 	if (!sta->rate_ctrl_priv) {
 		rate_control_put(sta->rate_ctrl);
-		kref_put(&sta->kref);//, sta_info_release);
+		kref_put(&sta->kref, sta_info_release);
 		kfree(sta);
 		return NULL;
 	}
@@ -2704,7 +2763,7 @@ IM_HERE_NOW();
 	ref = (struct rate_control_ref*)kmalloc(sizeof(struct rate_control_ref), GFP_KERNEL);
 	if (!ref)
 		goto fail_ref;
-	kref_init(&ref->kref,NULL);
+	kref_init(&ref->kref);
 	ref->ops = ieee80211_rate_control_ops_get(name);
 	if (!ref->ops)
 		goto fail_ops;

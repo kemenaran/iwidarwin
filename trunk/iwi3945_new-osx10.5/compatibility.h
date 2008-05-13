@@ -13,6 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif		
+	extern void rate_control_release(struct kref *kref);
 	extern struct net_device * dev_get_by_index(int index);
 	extern int pskb_expand_head(struct sk_buff *skb, int size, int reserve);
 	extern int ieee80211_mgmt_start_xmit(struct sk_buff *skb, struct net_device *dev);
