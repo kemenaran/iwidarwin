@@ -6893,7 +6893,7 @@ IM_HERE_NOW();
 					    ssid, ssid_len);
 		if (!rc) {
 			local->sta_scanning = 1;
-			local->scan_dev = dev;
+			//local->scan_dev = dev;
 		}
 		return rc;
 	}
