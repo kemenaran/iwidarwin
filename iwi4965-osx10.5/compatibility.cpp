@@ -8012,7 +8012,7 @@ IM_HERE_NOW();
 	conf.if_id = dev->ifindex;
 	conf.type = sdata->type;
 	conf.mac_addr = dev->dev_addr;
-	res = local->ops->open(local_to_hw(local));//local->ops->add_interface(local_to_hw(local), &conf);
+	res = local->ops->add_interface(local_to_hw(local), &conf);
 	if (res) {
 		if (sdata->type == IEEE80211_IF_TYPE_MNTR)
 			ieee80211_start_hard_monitor(local);
@@ -8020,8 +8020,8 @@ IM_HERE_NOW();
 	}
 
 	if (local->open_count == 0) {
-		//if (local->ops->open)
-			res = local->ops->add_interface(local_to_hw(local), &conf);//local->ops->open(local_to_hw(local));
+		if (local->ops->open)
+			res = local->ops->open(local_to_hw(local));
 		if (res == 0) {
 			//res = dev_open(local->mdev);
 			if (res) {
