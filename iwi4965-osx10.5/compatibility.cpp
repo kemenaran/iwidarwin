@@ -5638,10 +5638,10 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
-	else
+	/*else
 	if (!ifsta->associated)
 	//ieee80211_sta_req_scan(dev,NULL,0);//hack
-	ieee80211_sta_start_scan(dev, NULL, 0);
+	ieee80211_sta_start_scan(dev, NULL, 0);*/
 }
 
 
