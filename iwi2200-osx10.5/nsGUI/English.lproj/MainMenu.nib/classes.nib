@@ -1,0 +1,63 @@
+{
+    IBClasses = (
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            ACTIONS = {
+                CancelConnect = id; 
+                Cancelhidden = id; 
+                Connect = id; 
+                ConnectFromMenu = id; 
+                LEDAction = id; 
+                ModeAction = id; 
+                ModeChange = id; 
+                NetworkAction = id; 
+                PowerAction = id; 
+                cancelModeChange = id; 
+                createAdHoc = id; 
+                createAdHocSelected = id; 
+                createPassword = id; 
+                createPasswordSelected = id; 
+                createhidden = id; 
+                openAboutWindow = id; 
+                openMainWindow = id; 
+                quit = id; 
+            }; 
+            CLASS = MainController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                CancelButton = NSButton; 
+                ConnectButton = NSButton; 
+                Createibss = NSButton; 
+                DockMenu = NSMenu; 
+                LedButton = NSButton; 
+                ModeButton = NSButton; 
+                NetButton = NSButton; 
+                PowerButton = NSButton; 
+                ProgressAnim = NSProgressIndicator; 
+                about = NSWindow; 
+                appcontrol = id; 
+                cancelChangeButton = NSButton; 
+                changeModeButton = NSButton; 
+                "cr_hiddenDialog" = NSPanel; 
+                "cr_networkDialog" = NSPanel; 
+                "cr_passwordDialog" = NSPanel; 
+                createButton = NSButton; 
+                createNetworkTitle = NSTextField; 
+                dataOutlet = NSTableView; 
+                hexapassw = NSButton; 
+                hiddenessid = NSTextField; 
+                listWindow = id; 
+                mainWindow = NSWindow; 
+                modeChangeTitle = NSTextField; 
+                networkName = NSTextField; 
+                networksMenu = NSMenu; 
+                passwordName = NSTextField; 
+                selectedMode = NSMatrix; 
+                textOutlet = NSTextField; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = NSDatePicker; LANGUAGE = ObjC; SUPERCLASS = NSControl; }
+    ); 
+    IBVersion = 1; 
+}
