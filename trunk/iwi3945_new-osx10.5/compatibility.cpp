@@ -1708,6 +1708,11 @@ IM_HERE_NOW();
 		local->dot11ReceivedFragmentCount++;
 	multicast = is_multicast_ether_addr(hdr->addr1);
 
+	IOLog( "hdr->addr1=" MAC_FMT "\n", MAC_ARG(hdr->addr1));
+	IOLog( "hdr->addr2=" MAC_FMT "\n", MAC_ARG(hdr->addr2));
+	IOLog( "hdr->addr3=" MAC_FMT "\n", MAC_ARG(hdr->addr3));
+	IOLog( "hdr->addr4=" MAC_FMT "\n", MAC_ARG(hdr->addr4));
+
 	if (skb_len(skb) >= 16)
 		sta = rx.sta = sta_info_get(local, hdr->addr2);
 	else
