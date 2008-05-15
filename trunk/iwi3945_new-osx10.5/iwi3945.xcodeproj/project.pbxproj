@@ -216,6 +216,7 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 1DEB91DD08733DB10010E9CD /* Build configuration list for PBXProject "iwi3945" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 089C166AFE841209C02AAC07 /* iwi3945 */;
 			projectDirPath = "";
@@ -259,7 +260,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#exit 0\n\nsudo xcodebuild -project networkSelector/networkSelector.xcodeproj\n#xcodebuild -project nsGUI/nsGUI.xcodeproj\n\nsudo chown -R root:wheel build/Debug/iwi3945.kext\n\n#rm -rf /System/Library/Extensions/iwi3945.kext\n\nsudo cp -rf build/Debug/iwi3945.kext /System/Library/Extensions\n\n# build only if no .dmg exists\nif [ -e iwi3945.dmg ] ; then\n\texit 0\nfi\n\nsudo rm -rf iwi3945.pkg\nsudo cp -rf build/Debug/iwi3945.kext iwi3945/System/Library/Extensions\n#cp -rf nsGUI/build/Release/nsGUI.app iwi2200/Applications\nsudo cp -f networkSelector/build/Release/networkSelector iwi3945/Applications\nsudo rm -f iwi3945.dmg\n\nsudo /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker -build -p iwi3945.pkg -proj iwi3945.pmproj\n\nsudo hdiutil create -format UDZO -srcfolder iwi3945.pkg iwi3945.dmg\n\nsudo rm -rf iwi3945/System/Library/Extensions/iwi3945.kext\n#rm -rf iwi3945/Applications/nsGUI.app\nsudo rm -f iwi3945/Applications/networkSelector\n\nsleep 1\n\nsudo rm -rf iwi3945.pkg\n";
+			shellScript = "#exit 0\n\nxcodebuild -project networkSelector/networkSelector.xcodeproj\n#xcodebuild -project nsGUI/nsGUI.xcodeproj\n\nchown -R root:wheel build/Debug/iwi3945.kext\n\n#rm -rf /System/Library/Extensions/iwi3945.kext\n\n#cp -rf build/Debug/iwi3945.kext /System/Library/Extensions\n\n# build only if no .dmg exists\nif [ -e iwi3945.dmg ] ; then\n\texit 0\nfi\n\nrm -rf iwi3945.pkg\ncp -rf build/Debug/iwi3945.kext iwi3945/System/Library/Extensions\n#cp -rf nsGUI/build/Release/nsGUI.app iwi2200/Applications\ncp -f networkSelector/build/Release/networkSelector iwi3945/Applications\n\n/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker iwi3945.pmproj\n\nhdiutil create -format UDZO -srcfolder iwi3945.pkg iwi3945.dmg\n\nrm -rf iwi3945/System/Library/Extensions/iwi3945.kext\n#rm -rf iwi3945/Applications/nsGUI.app\nrm -f iwi3945/Applications/networkSelector\n\nsleep 1\n\nsudo rm -rf iwi3945.pkg\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
