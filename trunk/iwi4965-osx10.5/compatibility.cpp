@@ -3446,12 +3446,12 @@ IM_HERE_NOW();
 	printk(KERN_DEBUG "%s: RX %s from " MAC_FMT " to " MAC_FMT "\n",
 	       dev->name, beacon ? "Beacon" : "Probe Response",
 	       MAC_ARG(mgmt->sa), MAC_ARG(mgmt->da));
-	if (!beacon)
+	/*if (!beacon)
 	{
 		IOLog("hacking add station\n");
 		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 		bcopy(mgmt->sa,sdata->u.sta.bssid,ETH_ALEN);
-	}
+	}*/
 #endif
 
 	baselen = (u8 *) mgmt->u.beacon.variable - (u8 *) mgmt;
@@ -6961,7 +6961,7 @@ IM_HERE_NOW();
 					    ssid, ssid_len);
 		if (!rc) {
 			local->sta_scanning = 1;
-			//local->scan_dev = dev;
+			local->scan_dev = dev;
 		}
 		return rc;
 	}
