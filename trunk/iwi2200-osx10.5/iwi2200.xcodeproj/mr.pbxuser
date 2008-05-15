@@ -1,0 +1,150 @@
+// !$*UTF8*$!
+{
+	089C1669FE841209C02AAC07 /* Project object */ = {
+		activeArchitecture = i386;
+		activeBuildConfigurationName = Debug;
+		activeTarget = 32D94FC30562CBF700B6AF17 /* iwi2200 */;
+		codeSenseManager = 2E6F49780DDBD45F00033958 /* Code sense */;
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					577,
+					20,
+					48,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXConfiguration.PBXFileTableDataSource3.PBXSymbolsDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXSymbolsDataSource_SymbolNameID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					16,
+					200,
+					50,
+					517.20849609375,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXSymbolsDataSource_SymbolTypeIconID,
+					PBXSymbolsDataSource_SymbolNameID,
+					PBXSymbolsDataSource_SymbolTypeID,
+					PBXSymbolsDataSource_ReferenceNameID,
+				);
+			};
+			PBXConfiguration.PBXTargetDataSource.PBXTargetDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					537,
+					60,
+					20,
+					48,
+					43,
+					43,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXTargetDataSource_PrimaryAttribute,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 232520810;
+			PBXWorkspaceStateSaveDate = 232520810;
+		};
+		perUserProjectItems = {
+			2E25AF870DDBFC31008D2EDE /* PBXTextBookmark */ = 2E25AF870DDBFC31008D2EDE /* PBXTextBookmark */;
+			2E9320E20DDBFCE500F32CC2 /* PBXTextBookmark */ = 2E9320E20DDBFCE500F32CC2 /* PBXTextBookmark */;
+			2EB597370DDBD67000C390D3 /* PBXTextBookmark */ = 2EB597370DDBD67000C390D3 /* PBXTextBookmark */;
+			2EB597390DDBD67000C390D3 /* PBXTextBookmark */ = 2EB597390DDBD67000C390D3 /* PBXTextBookmark */;
+		};
+		sourceControlManager = 2E6F49770DDBD45F00033958 /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	1A224C3FFF42367911CA2CB7 /* iwi2200.cpp */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {755, 157654}}";
+			sepNavSelRange = "{21222, 0}";
+			sepNavVisRange = "{20851, 1057}";
+		};
+	};
+	2E25AF870DDBFC31008D2EDE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 32D94FCF0562CBF700B6AF17 /* Info.plist */;
+		name = "Info.plist: 37";
+		rLen = 0;
+		rLoc = 1352;
+		rType = 0;
+		vrLen = 913;
+		vrLoc = 819;
+	};
+	2E6F49770DDBD45F00033958 /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+		};
+	};
+	2E6F49780DDBD45F00033958 /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+	2E9320E20DDBFCE500F32CC2 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 32D94FCF0562CBF700B6AF17 /* Info.plist */;
+		name = "Info.plist: 37";
+		rLen = 0;
+		rLoc = 1352;
+		rType = 0;
+		vrLen = 913;
+		vrLoc = 819;
+	};
+	2EB597370DDBD67000C390D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 1A224C3FFF42367911CA2CB7 /* iwi2200.cpp */;
+		name = "iwi2200.cpp: 737";
+		rLen = 0;
+		rLoc = 21222;
+		rType = 0;
+		vrLen = 1057;
+		vrLoc = 20851;
+	};
+	2EB597390DDBD67000C390D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 1A224C3FFF42367911CA2CB7 /* iwi2200.cpp */;
+		name = "iwi2200.cpp: 737";
+		rLen = 0;
+		rLoc = 21222;
+		rType = 0;
+		vrLen = 1057;
+		vrLoc = 20851;
+	};
+	32D94FC30562CBF700B6AF17 /* iwi2200 */ = {
+		activeExec = 0;
+	};
+	32D94FCF0562CBF700B6AF17 /* Info.plist */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1496, 896}}";
+			sepNavSelRange = "{1352, 0}";
+			sepNavVisRange = "{819, 913}";
+		};
+	};
+}

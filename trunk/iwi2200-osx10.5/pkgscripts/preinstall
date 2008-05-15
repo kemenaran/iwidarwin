@@ -1,0 +1,9 @@
+#!/bin/sh
+rm -rf /System/Library/Extensions/iwi2200.kext
+rm -f /System/Library/Extensions.kextcache
+rm -f /System/Library/Extensions.mkext
+killall nsGUI
+killall networkSelector
+rm -rf /Applications/nsGUI.app
+rm -f /Applications/networkSelector
+exit 0
