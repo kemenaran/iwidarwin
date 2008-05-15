@@ -1205,11 +1205,11 @@ struct ieee80211_hw_mode {
 struct ieee80211_hdr {
 	__le16 frame_control;
 	__le16 duration_id;
-	__u8 addr1[6];
-	__u8 addr2[6];
-	__u8 addr3[6];
+	u8 addr1[6];
+	u8 addr2[6];
+	u8 addr3[6];
 	__le16 seq_ctrl;
-	__u8 addr4[6];
+	u8 addr4[6];
 } __attribute__ ((packed));
 
 struct ieee80211_hdr_1addr {
