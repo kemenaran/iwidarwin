@@ -1704,11 +1704,6 @@ IM_HERE_NOW();
 	if (type == IEEE80211_FTYPE_DATA || type == IEEE80211_FTYPE_MGMT)
 		local->dot11ReceivedFragmentCount++;
 	multicast = is_multicast_ether_addr(hdr->addr1);
-
-	IOLog( "hdr->addr1=" MAC_FMT "\n", MAC_ARG(hdr->addr1));
-	IOLog( "hdr->addr2=" MAC_FMT "\n", MAC_ARG(hdr->addr2));
-	IOLog( "hdr->addr3=" MAC_FMT "\n", MAC_ARG(hdr->addr3));
-	IOLog( "hdr->addr4=" MAC_FMT "\n", MAC_ARG(hdr->addr4));
 	
 	if (skb_len(skb) >= 16)
 		sta = rx.sta = sta_info_get(local, hdr->addr2);
@@ -1755,6 +1750,7 @@ IM_HERE_NOW();
 					continue;
 				if (!ieee80211_bssid_match(bssid,
 							sdata->u.sta.bssid)) {
+					sta_info_add(local, sta->dev, bssid, GFP_ATOMIC);//hack
 					if (!rx.u.rx.in_scan)
 						continue;
 					rx.u.rx.ra_match = 0;
