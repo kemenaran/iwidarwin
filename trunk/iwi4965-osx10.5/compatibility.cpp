@@ -1750,7 +1750,6 @@ IM_HERE_NOW();
 					continue;
 				if (!ieee80211_bssid_match(bssid,
 							sdata->u.sta.bssid)) {
-					sta_info_add(local, sta->dev, bssid, GFP_ATOMIC);//hack
 					if (!rx.u.rx.in_scan)
 						continue;
 					rx.u.rx.ra_match = 0;
@@ -2704,7 +2703,7 @@ IM_HERE_NOW();
 	
 	ndev->ieee80211_ptr = hw_to_local(my_hw);//&sdata->wdev;
 	//sdata->wdev.wiphy = local->hw.wiphy;
-	sdata->type = IEEE80211_IF_TYPE_STA;//IEEE80211_IF_TYPE_AP;
+	sdata->type = IEEE80211_IF_TYPE_AP;
 	sdata->dev = ndev;
 	sdata->local = local;
 	ieee80211_if_sdata_init(sdata);
@@ -6960,11 +6959,11 @@ IM_HERE_NOW();
 	if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
-		if (!rc) {
+		/*if (!rc) {
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;
+		return rc;*/
 	}
 	local->sta_scanning = 1;
 
