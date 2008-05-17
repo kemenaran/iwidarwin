@@ -406,11 +406,11 @@ void darwin_iwi3945::check_firstup(void)
 		setProperty(kIOMACAddress, my_mac_addr, kIOEthernetAddressSize);
 	}
 	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
-	/*struct ieee80211_local *local =hw_to_local(get_my_hw());
+	struct ieee80211_local *local =hw_to_local(get_my_hw());
 	//int r=ieee80211_open(local);
 	struct net_device *dev=local->scan_dev;
 	if (dev) 
-	ieee80211_sta_req_scan(dev,NULL,0);*/
+	ieee80211_sta_req_scan(dev,NULL,0);
 }
 
 void darwin_iwi3945::adapter_start(void)
