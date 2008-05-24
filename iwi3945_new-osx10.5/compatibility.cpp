@@ -8529,9 +8529,10 @@ IM_HERE_NOW();
 	extra.mgmt_data = tx->sdata &&
 		tx->sdata->type == IEEE80211_IF_TYPE_MGMT;
 	extra.ethertype = tx->ethertype;
-
+IOLog("1\n");
 	tx->u.tx.rate = rate_control_get_rate(tx->local, tx->dev, tx->skb,
 					      &extra);
+IOLog("2\n");
 	if (unlikely(extra.probe != NULL)) {
 		tx->u.tx.control->flags |= IEEE80211_TXCTL_RATE_CTRL_PROBE;
 		tx->u.tx.probe_last_frag = 1;
