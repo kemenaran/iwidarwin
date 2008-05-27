@@ -2482,7 +2482,7 @@ IM_HERE_NOW();
 
 	pkt_data = (struct ieee80211_tx_packet_data *) skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
-	sdata->dev->ifindex=1;//hack
+	sdata->dev->ifindex=2;//hack
 	pkt_data->ifindex = sdata->dev->ifindex;
 	pkt_data->mgmt_iface = (sdata->type == IEEE80211_IF_TYPE_MGMT);
 	pkt_data->do_not_encrypt = !encrypt;
@@ -6959,11 +6959,11 @@ IM_HERE_NOW();
 	if (local->ops->hw_scan) {
 		int rc = local->ops->hw_scan(local_to_hw(local),
 					    ssid, ssid_len);
-		/*if (!rc) {
+		if (!rc) {
 			local->sta_scanning = 1;
 			local->scan_dev = dev;
 		}
-		return rc;*/
+		return rc;
 	}
 	local->sta_scanning = 1;
 
