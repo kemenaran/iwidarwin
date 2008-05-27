@@ -3954,10 +3954,12 @@ static void iwl3945_tx_cmd_complete(struct iwl3945_priv *priv,
 	 * command queue then there a command routing bug has been introduced
 	 * in the queue management code. */
 	if (txq_id != IWL_CMD_QUEUE_NUM)
+	{
 		IWL_ERROR("Error wrong command queue %d command id 0x%X\n",
 			  txq_id, pkt->hdr.cmd);
 	BUG_ON(txq_id != IWL_CMD_QUEUE_NUM);
-
+		txq_id = IWL_CMD_QUEUE_NUM;//hack
+	}
 	cmd_index = get_cmd_index(&priv->txq[IWL_CMD_QUEUE_NUM].q, index, huge);
 	cmd = &priv->txq[IWL_CMD_QUEUE_NUM].cmd[cmd_index];
 
