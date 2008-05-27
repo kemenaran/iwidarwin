@@ -2749,7 +2749,7 @@ IM_HERE_NOW();
 	ops = ieee80211_try_rate_control_ops_get(name);
 	if (!ops) {
 		//request_module("rc80211_%s", name ? name : "default");
-		rate_control_simple_init();
+		//rate_control_simple_init();
 		ops = ieee80211_try_rate_control_ops_get(name);
 	}
 	return ops;
