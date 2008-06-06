@@ -1716,7 +1716,9 @@ IM_HERE_NOW();
 
 	if (sta) {
 		rx.dev = sta->dev;
-		rx.sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx.dev);			
+		rx.sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx.dev);	
+		printk("rxbssid=" MAC_FMT " ('%s')\n", MAC_ARG(rx.sdata->u.sta.bssid),
+		escape_essid((const char*)rx.sdata->u.sta.ssid, rx.sdata->u.sta.ssid_len));		
 	}
 
 	if ((status->flag & RX_FLAG_MMIC_ERROR)) {
@@ -1745,8 +1747,7 @@ IM_HERE_NOW();
 		//FIXME: read_lock
 		//read_lock(&local->sub_if_lock);
 		list_for_each_entry(sdata, &local->sub_if_list, list) {
-		printk( "bssid=" MAC_FMT " stabssid=" MAC_FMT " ('%s')\n", MAC_ARG(bssid),
-		       MAC_ARG(sdata->u.sta.bssid),escape_essid((const char*)sdata->u.sta.ssid, sdata->u.sta.ssid_len));
+		printk( "bssid=" MAC_FMT " stabssid=" MAC_FMT "\n", MAC_ARG(bssid),MAC_ARG(sdata->u.sta.bssid));
 			
 			rx.u.rx.ra_match = 1;
 			switch (sdata->type) {
