@@ -1745,7 +1745,6 @@ IM_HERE_NOW();
 		//FIXME: read_lock
 		//read_lock(&local->sub_if_lock);
 		list_for_each_entry(sdata, &local->sub_if_list, list) {
-		if (!multicast)
 		printk( "bssid=" MAC_FMT " stabssid=" MAC_FMT " ('%s')\n", MAC_ARG(bssid),
 		       MAC_ARG(sdata->u.sta.bssid),escape_essid((const char*)sdata->u.sta.ssid, sdata->u.sta.ssid_len));
 			
