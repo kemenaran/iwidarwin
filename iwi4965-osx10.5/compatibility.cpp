@@ -7956,7 +7956,7 @@ IM_HERE_NOW();
 	   // test_and_clear_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request)
 		test_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request)) {
 		clear_bit(IEEE80211_STA_REQ_SCAN, &ifsta->request);
-		ieee80211_sta_start_scan(dev, NULL, 0);
+		ieee80211_sta_start_scan(dev, ifsta->ssid, ifsta->ssid_len);//NULL, 0);
 		return;
 	}
 
