@@ -150,14 +150,21 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}	
 	}
 	if(opt == 2){
-		IOLog("request scan!\n");
+		IOLog("request scan - networks found:\n");
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		if (local)
 		{
-			struct net_device *dev=local->scan_dev;
-			if (dev)
+			//struct net_device *dev=local->scan_dev;
+			struct ieee80211_sta_bss *bss=NULL;
+			int i=0;
+			list_for_each_entry(bss, &local->sta_bss_list, list) {
+				i++;
+				printk("%d) " MAC_FMT " ('%s')\n", i,MAC_ARG(bss->bssid),
+				escape_essid((const char*)bss->ssid, bss->ssid_len));
+			}
+			/*if (dev)
 			ieee80211_sta_req_scan(dev,NULL,0);
-			IOLog("not ready to scan \n");
+			IOLog("not ready to scan \n");*/
 		}
 		else
 			IOLog("not ready to scan \n");
@@ -405,12 +412,12 @@ void darwin_iwi3945::check_firstup(void)
 		bcopy(addr, dev->dev_addr, ETH_ALEN);
 		setProperty(kIOMACAddress, my_mac_addr, kIOEthernetAddressSize);
 	}
-	/*//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
+	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
 	struct ieee80211_local *local =hw_to_local(get_my_hw());
 	//int r=ieee80211_open(local);
 	struct net_device *dev=local->scan_dev;
 	if (dev) 
-	ieee80211_sta_req_scan(dev,NULL,0);*/
+	ieee80211_sta_req_scan(dev,NULL,0);
 }
 
 void darwin_iwi3945::adapter_start(void)
