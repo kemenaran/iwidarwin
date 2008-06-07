@@ -1448,7 +1448,7 @@ IM_HERE_NOW();
           return kref;
 }
  
-static inline struct sta_info *__sta_info_get(struct sta_info *sta)
+static inline void __sta_info_get(struct sta_info *sta)
 {
 IM_HERE_NOW();
     kref_get(&sta->kref);
@@ -1710,6 +1710,10 @@ IM_HERE_NOW();
 	else
 		sta = rx.sta = NULL;
 
+	if (!sta)//hack
+	{
+		sta = rx.sta=sta_info_add(local, local->scan_dev, hdr->addr2, GFP_ATOMIC);
+	}
 	if (sta) {
 		rx.dev = sta->dev;
 		rx.sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx.dev);
