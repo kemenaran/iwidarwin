@@ -1714,10 +1714,6 @@ IM_HERE_NOW();
 	else
 		sta = rx.sta = NULL;
 
-	if (!sta)//hack
-	{
-		sta = rx.sta=sta_info_add(local, local->scan_dev, hdr->addr2, GFP_ATOMIC);
-	}
 	if (sta) {
 		rx.dev = sta->dev;
 		rx.sdata = (ieee80211_sub_if_data *)IEEE80211_DEV_TO_SUB_IF(rx.dev);	
@@ -3356,7 +3352,7 @@ IM_HERE_NOW();
 	if (!bss)
 		return NULL;
 	atomic_inc(&bss->users);
-	atomic_inc(&bss->users);
+	//atomic_inc(&bss->users);//hack
 	memcpy(bss->bssid, bssid, ETH_ALEN);
 
 	spin_lock_bh(&local->sta_bss_lock);
@@ -3364,6 +3360,10 @@ IM_HERE_NOW();
 	list_add_tail(&bss->list, &local->sta_bss_list);
 	__ieee80211_rx_bss_hash_add(dev, bss);
 	spin_unlock_bh(&local->sta_bss_lock);
+	
+	printk("bss_add= " MAC_FMT " ('%s')\n", MAC_ARG(bss->bssid),
+		escape_essid((const char*)bss->ssid, bss->ssid_len));	
+		
 	return bss;
 }
 
@@ -5634,10 +5634,9 @@ void ieee80211_scan_completed (	struct ieee80211_hw *  	hw){
 		    !ieee80211_sta_active_ibss(dev)))
 			ieee80211_sta_find_ibss(dev, ifsta);
 	}
-	/*else
+	else
 	if (!ifsta->associated)
-	//ieee80211_sta_req_scan(dev,NULL,0);//hack
-	ieee80211_sta_start_scan(dev, NULL, 0);*/
+	ieee80211_sta_start_scan(dev, ifsta->ssid, ifsta->ssid_len);
 }
 
 
