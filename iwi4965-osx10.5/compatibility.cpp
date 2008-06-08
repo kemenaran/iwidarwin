@@ -3367,7 +3367,7 @@ IM_HERE_NOW();
 	if (!bss)
 		return NULL;
 	atomic_inc(&bss->users);
-	atomic_inc(&bss->users);
+	//atomic_inc(&bss->users);//hack
 	memcpy(bss->bssid, bssid, ETH_ALEN);
 
 	spin_lock_bh(&local->sta_bss_lock);
