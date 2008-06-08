@@ -62,6 +62,7 @@ int main (int argc, char * const argv[]) {
 
 		cout<<"\n1) Turn card on/off ";
 		cout<<"\n2) Start scan ";
+		cout<<"\n3) Connect to unsecure network ";
 		cout<<"\n5) Close Program \n0) Refresh";
 		cout<<"\n\nEnter Option:  ";
 		cin>>sel;
@@ -74,6 +75,15 @@ int main (int argc, char * const argv[]) {
 			default:
 				break;
 			case 3:
+				printf("type unsecure network number or 0 to return\n");
+				cin>>sel0;
+				if (sel0>0)
+				{
+					int *i = (int*) malloc(sizeof (int));
+					*i=(int)sel0;
+					b=sizeof(int);
+					setsockopt(fd,SYSPROTO_CONTROL,3,i,b);
+				}
 				break;
 			case 4:
 
