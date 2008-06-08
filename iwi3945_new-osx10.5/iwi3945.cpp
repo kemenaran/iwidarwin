@@ -165,7 +165,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		struct net_device *dev=local->scan_dev;
 		struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
-		//bcopy(bss->bssid,ifsta->bssid,ETH_ALEN);
+		bcopy(bss->bssid,ifsta->bssid,ETH_ALEN);
 		bcopy(bss->ssid,ifsta->ssid,ETH_ALEN);
 		ifsta->ssid_len=bss->ssid_len;
 		ieee80211_sta_config_auth(dev, ifsta);	
