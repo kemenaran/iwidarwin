@@ -166,7 +166,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
 		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
 		bcopy(bss->bssid,ifsta->bssid,ETH_ALEN);
-		bcopy(bss->ssid,ifsta->ssid,ETH_ALEN);
+		bcopy(bss->ssid,ifsta->ssid,bss->ssid_len);
 		ifsta->ssid_len=bss->ssid_len;
 		ieee80211_sta_config_auth(dev, ifsta);	
 	}
@@ -177,7 +177,14 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		{
 			struct net_device *dev=local->scan_dev;
 			if (!local->sta_scanning)
-			ieee80211_sta_req_scan(dev,NULL,0);
+			{
+				struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+				struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+				bcopy(my_mac_addr,ifsta->bssid,ETH_ALEN);
+				bzero(ifsta->ssid,32);
+				ifsta->ssid_len=0;
+				ieee80211_sta_req_scan(dev,NULL,0);
+			}
 			int b=0;
 			while (local->sta_scanning) 
 			{
