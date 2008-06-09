@@ -172,6 +172,11 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		ieee80211_authenticate(dev, ifsta);
 		ieee80211_associate(dev, ifsta);	
 	}
+	return(0);
+}
+
+int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len)
+{
 	if(opt == 2){
 		IOLog("request scan\n");
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
@@ -202,16 +207,12 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 				printk("%d) " MAC_FMT " ('%s') cap %x hw %d ch %d\n", i,MAC_ARG(bss->bssid),
 				escape_essid((const char*)bss->ssid, bss->ssid_len),bss->capability,bss->hw_mode,bss->channel);
 			}
+			if (i==0) return 1;
+			memcpy(data,&local->sta_bss_list,*len);
 		}
 		else
-			IOLog("not ready to scan \n");
+			return 1;
 	}
-
-	return(0);
-}
-
-int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len)
-{
 	/*if (opt==0) memcpy(data,clone->priv,*len);
 	if (opt==1) memcpy(data,clone->priv->ieee,*len);
 	if (opt==2)
