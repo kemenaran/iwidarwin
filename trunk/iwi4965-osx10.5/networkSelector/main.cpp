@@ -193,18 +193,17 @@ int main (int argc, char * const argv[]) {
 				setsockopt(fd,SYSPROTO_CONTROL,1,NULL,0);
 				break;
 			case (2):
-				struct ieee80211_sta_bss *bss=NULL;
-				struct list_head sta_bss_list;
-				INIT_LIST_HEAD(&sta_bss_list);
-				socklen_t sp=sizeof(sta_bss_list);
-				int result = getsockopt( fd, SYSPROTO_CONTROL, 2, &sta_bss_list, &sp);
+				struct ieee80211_sta_bss bss[99];
+				socklen_t sp=sizeof(bss);
+				bss[0].ssid_len=0;
+				int result = getsockopt( fd, SYSPROTO_CONTROL, 2, bss, &sp);
 				printf("\nnetworks found:\n");
 				if (result) break;
 				int i=0;
-				list_for_each_entry(bss, &sta_bss_list, list) {
+				for (int ci=1;ci<=bss[0].ssid_len;ci++) {
 					i++;
-					printf("%d) " MAC_FMT " ('%s') cap %x hw %d ch %d\n", i,MAC_ARG(bss->bssid),
-					escape_essid((const char*)bss->ssid, bss->ssid_len),bss->capability,bss->hw_mode,bss->channel);
+					printf("%d) " MAC_FMT " ('%s') cap %x hw %d ch %d\n", i,MAC_ARG(bss[ci].bssid),
+					escape_essid((const char*)bss[ci].ssid, bss[ci].ssid_len),bss[ci].capability,bss[ci].hw_mode,bss[ci].channel);
 				}
 				if (i>0)
 				{
