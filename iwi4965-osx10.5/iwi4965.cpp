@@ -202,14 +202,16 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 			}
 			IOLog("networks found:\n");
 			struct ieee80211_sta_bss *bss=NULL;
+			struct list_head *sta_bss_list=(struct list_head*)data;
 			int i=0;
 			list_for_each_entry(bss, &local->sta_bss_list, list) {
 				i++;
+				list_add_tail(&bss->list, sta_bss_list);
 				printk("%d) " MAC_FMT " ('%s') cap %x hw %d ch %d\n", i,MAC_ARG(bss->bssid),
 				escape_essid((const char*)bss->ssid, bss->ssid_len),bss->capability,bss->hw_mode,bss->channel);
 			}
 			if (i==0) return 1;
-			memcpy(data,&local->sta_bss_list,*len);
+			//memcpy(data,&local->sta_bss_list,*len);
 		}
 		else
 			return 1;
