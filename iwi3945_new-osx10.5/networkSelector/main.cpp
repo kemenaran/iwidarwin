@@ -130,7 +130,13 @@ static inline const char *escape_essid(const char *essid, UInt8 essid_len)
 	*d = '\0';
 	return escaped;
 }
-		 
+
+static inline void INIT_LIST_HEAD(struct list_head *list)
+    {
+        list->next = list;
+        list->prev = list;
+    }
+			 
 using namespace std;
 int main (int argc, char * const argv[]) {
 	// insert code here...
@@ -189,9 +195,10 @@ int main (int argc, char * const argv[]) {
 			case (2):
 				struct ieee80211_sta_bss *bss=NULL;
 				struct list_head sta_bss_list;
+				INIT_LIST_HEAD(&sta_bss_list);
 				socklen_t sp=sizeof(sta_bss_list);
 				int result = getsockopt( fd, SYSPROTO_CONTROL, 2, &sta_bss_list, &sp);
-				printf("\networks found:\n");
+				printf("\nnetworks found:\n");
 				if (result) break;
 				int i=0;
 				list_for_each_entry(bss, &sta_bss_list, list) {
