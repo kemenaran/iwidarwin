@@ -151,14 +151,21 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 	}
 	if(opt == 3){
 		IOLog("request associate\n");
-		int a=*((int*)data);
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		struct ieee80211_sta_bss *bss=NULL;
+		u8 bssid[ETH_ALEN];
+		bcopy(data,bssid,6);
 		int i=0;
+		int f=0;
 		list_for_each_entry(bss, &local->sta_bss_list, list) {
 			i++;
-			if (i==a) break;
+			if (!memcmp(bss->bssid,bssid,6)) 
+			{
+				f=1;
+				break;
+			}
 		}
+		if (!f) return 1;
 		printk("%d) " MAC_FMT " ('%s') cap %x hw %d ch %d\n", i,MAC_ARG(bss->bssid),
 			escape_essid((const char*)bss->ssid, bss->ssid_len),bss->capability,bss->hw_mode,bss->channel);
 			
@@ -168,9 +175,10 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		bcopy(bss->bssid,ifsta->bssid,ETH_ALEN);
 		bcopy(bss->ssid,ifsta->ssid,bss->ssid_len);
 		ifsta->ssid_len=bss->ssid_len;
-		ieee80211_sta_config_auth(dev, ifsta);	
-		ieee80211_authenticate(dev, ifsta);
-		ieee80211_associate(dev, ifsta);
+		iwl4965_add_station((struct iwl4965_priv*)get_my_priv(), ifsta->bssid, 0);
+		ieee80211_sta_config_auth(dev, ifsta);
+		//ieee80211_authenticate(dev, ifsta);
+		//ieee80211_associate(dev, ifsta);
 	}
 	
 	return(0);
