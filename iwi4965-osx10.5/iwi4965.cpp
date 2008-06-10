@@ -175,7 +175,7 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		bcopy(bss->bssid,ifsta->bssid,ETH_ALEN);
 		bcopy(bss->ssid,ifsta->ssid,bss->ssid_len);
 		ifsta->ssid_len=bss->ssid_len;
-		iwl4965_add_station((struct iwl4965_priv*)get_my_priv(), ifsta->bssid, 0);
+		//iwl4965_add_station((struct iwl4965_priv*)get_my_priv(), ifsta->bssid, 0);
 		ieee80211_sta_config_auth(dev, ifsta);
 		//ieee80211_authenticate(dev, ifsta);
 		//ieee80211_associate(dev, ifsta);
