@@ -209,13 +209,11 @@ int main (int argc, char * const argv[]) {
 				{
 					printf("\ntype unsecure network number to associate or 0 to return\n");
 					cin>>sel0;
-					if (sel0>0)
+					if (sel0>0 && sel0<=i)
 					{
-					int *x = (int*) malloc(sizeof (int));
-					*x=(int)sel0;
-					b=sizeof(int);
+					b=6;
 					printf("trying to associate\n");
-					setsockopt(fd,SYSPROTO_CONTROL,3,x,b);
+					setsockopt(fd,SYSPROTO_CONTROL,3,bss[sel0].bssid,b);
 					}
 				}
 				break;
