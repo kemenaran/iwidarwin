@@ -4,12 +4,11 @@
 #include "firmware/ibss.h"
 #include "firmware/sniffer.h"
 // Define my superclass
-#define super IOEthernetController
-//IO80211Controller
+#define super IO80211Controller
 // REQUIRED! This macro defines the class's constructors, destructors,
 // and several other methods I/O Kit requires. Do NOT use super as the
 // second parameter. You must use the literal name of the superclass.
-OSDefineMetaClassAndStructors(darwin_iwi2200, IOEthernetController);//IO80211Controller);
+OSDefineMetaClassAndStructors(darwin_iwi2200, IO80211Controller);
 
 //clone of the driver class, used in all the kext control functions.
 
@@ -801,7 +800,7 @@ bool darwin_iwi2200::start(IOService *provider)
 		registerService();
 			
 		mediumDict = OSDictionary::withCapacity(MEDIUM_TYPE_INVALID + 1);
-		addMediumType( kIOMediumEthernetAuto, 0, MEDIUM_TYPE_AUTO);
+		addMediumType( kIOMediumIEEE80211Auto, 0, MEDIUM_TYPE_AUTO);
 		//addMediumType(kIOMediumEthernetNone,  0,  MEDIUM_TYPE_NONE);
 	
 
@@ -856,8 +855,9 @@ bool darwin_iwi2200::start(IOService *provider)
 		//_mbufCursor = IOMbufLittleMemoryCursor::withSpecification(IPW_RX_BUF_SIZE, 1);
 		//for (int i=0;i<20;i++) memset(&nonets[i],0,sizeof(struct ieee80211_network));
 		
-		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,2000,true);
-	
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,1000,true);
+		
+		setInterferenceRobustness(true);
 	return true;			// end start successfully
 	} while (false);
 		
@@ -870,7 +870,7 @@ void darwin_iwi2200::check_firstup()
 {
 	if (firstifup==0) 
 	{
-		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,2000,true);
+		queue_te(14,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::check_firstup),NULL,1000,true);
 		return;
 	}
 	disable(fNetif);
@@ -896,7 +896,7 @@ void darwin_iwi2200::check_firstup()
 	}
 	//pl=1;
 	//ipw_up();
-	queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),NULL,NULL,true);
+	//queue_te(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2200::ipw_adapter_restart),NULL,NULL,true);
 }
 
 IOReturn darwin_iwi2200::selectMedium(const IONetworkMedium * medium)
@@ -1816,8 +1816,8 @@ IOReturn darwin_iwi2200::disable( IONetworkInterface * netif )
 		IWI_DEBUG("ifconfig going down\n");
 		//super::disable(fNetif);
 		//fNetif->setPoweredOnByUser(false);
-		setLinkStatus(kIONetworkLinkValid);
-		//fNetif->setLinkState(kIO80211NetworkLinkDown);
+		//setLinkStatus(kIONetworkLinkValid);
+		fNetif->setLinkState(kIO80211NetworkLinkDown);
 		//fNetif->syncSIOCSIFFLAGS( /*IONetworkController * */this);
 		//(if_flags & ~mask) | (new_flags & mask) if mask has IFF_UP if_updown fires up (kpi_interface.c in xnu)
 		fTransmitQueue->stop();
@@ -1855,7 +1855,7 @@ IOReturn darwin_iwi2200::enable( IONetworkInterface * netif )
 		IWI_DEBUG("ifconfig going up\n ");
 		//super::enable(fNetif);
 		//fNetif->setPoweredOnByUser(true);
-		//fNetif->setLinkState(kIO80211NetworkLinkUp);
+		fNetif->setLinkState(kIO80211NetworkLinkUp);
 		
 		//(if_flags & ~mask) | (new_flags & mask) if mask has IFF_UP if_updown fires up (kpi_interface.c in xnu)	
 		//ifnet_set_flags(fifnet, IFF_UP|IFF_RUNNING|IFF_BROADCAST|IFF_SIMPLEX|IFF_MULTICAST|IFF_NOTRAILERS 		
@@ -6377,6 +6377,7 @@ void darwin_iwi2200::ipw_link_up()
 	ipw_reset_stats();
 	/* Ensure the rate is updated immediately */
 	priv->last_rate = ipw_get_current_rate();
+	fNetif->setLinkState(kIO80211NetworkLinkUp);
 	setLinkStatus(kIONetworkLinkValid | (priv->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_AUTO],priv->last_rate);
 
 	ipw_gather_stats();
@@ -6486,6 +6487,7 @@ void darwin_iwi2200::ipw_gather_stats()
 			beacon_quality, missed_beacons_percent);
 
 	priv->last_rate = ipw_get_current_rate();
+	fNetif->setLinkState(kIO80211NetworkLinkUp);
 	setLinkStatus(kIONetworkLinkValid | (priv->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_AUTO],priv->last_rate);
 	
 	if (netStats->inputPackets>0)
@@ -11323,5 +11325,327 @@ void __exit ieee80211_crypto_deinit(void)
 //	BUG_ON(!list_empty(&ieee80211_crypto_algs));
 }
 
+/*SInt32
+darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
+							 struct apple80211_status_dev_data *dd)
+{
+    dd->version = APPLE80211_VERSION;
+    bzero(dd->dev_name, sizeof(dd->dev_name));
+    strncpy((char*)dd->dev_name, "darwin_iwi2200", sizeof(dd->dev_name));
+	super::enable(interface);
+	interface->setEnabledBySystem(true);
+	interface->setPoweredOnByUser(true);
+		
+	return kIOReturnSuccess;
+}*/
+
+SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface * intf, void * data ) 
+{
+    SInt32 ret = 0;
+
+    // These two are defined in apple80211_ioctl.h, and ought to be the only
+    // two valies /req/ can take.  They specify that /data/ should be of type apple80211req.
+    // Note that SIOCGA80211 is sent to GET a value, and SIOCSA80211 is sent to SET a value.
+    if( req != SIOCGA80211 && req != SIOCSA80211 ) {
+        IWI_DEBUG("Don't know how to deal with a request on an object of type 0x%08x\n", req);
+        return 0;
+    }
+
+	
+    switch( type ) {
+		
+		default:
+		IWI_DEBUG("type %d\n",type);
+		break;
+		
+		case APPLE80211_IOC_HARDWARE_VERSION: //req_type
+            if( SIOCSA80211 == req ) {
+                IWI_DEBUG("Don't know how to SET hardware version!\n");
+            }
+            else {
+               struct apple80211_version_data *hv= (struct apple80211_version_data *)data;
+				hv->version = APPLE80211_VERSION;
+				hv->string_len = strlen("1.0");
+				strncpy(hv->string, "1.0", hv->string_len);
+            }
+		break;
+        case APPLE80211_IOC_DRIVER_VERSION: //req_type 
+            if( SIOCSA80211 == req ) {
+                IWI_DEBUG("Don't know how to SET driver version!\n");
+            }
+            else {
+                 struct apple80211_version_data *hv= (struct apple80211_version_data *)data;
+				hv->version = APPLE80211_VERSION;
+				hv->string_len = strlen("2.0");
+				strncpy(hv->string, "2.0", hv->string_len);
+            }
+		break;
+        case APPLE80211_IOC_LOCALE:  //req_type
+            if( SIOCSA80211 == req ) {
+               return 0;
+            }
+            else {
+                struct apple80211_locale_data *ld= (struct apple80211_locale_data *)data;
+				ld->version = APPLE80211_VERSION;
+				ld->locale  = APPLE80211_LOCALE_FCC;
+            }
+		break;
+        case APPLE80211_IOC_COUNTRY_CODE: //req_type
+            if( SIOCSA80211 == req ) {
+                IWI_DEBUG("Don't know how to SET country code!\n");
+            }
+            else {
+               struct apple80211_country_code_data *cd= (struct apple80211_country_code_data *)data;
+				cd->version = APPLE80211_VERSION;
+				strncpy((char*)cd->cc, "??", 3);
+            }
+		break;
+		case APPLE80211_IOC_MCS_INDEX_SET:
+            if( SIOCSA80211 == req ) {
+                IWI_DEBUG("Don't know how to SET MCS index!\n");
+            }
+            else {
+                struct apple80211_mcs_index_set_data *dd = (struct apple80211_mcs_index_set_data *)data;
+				dd->version = APPLE80211_VERSION;
+				int offset;
+				for(offset=0; offset<sizeof(dd->mcs_set_map); offset++) {
+				dd->mcs_set_map[offset] = offset;
+				}
+            }
+        break;
+		case APPLE80211_IOC_POWERSAVE: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_POWERSAVE\n");
+				struct apple80211_powersave_data *dd=(struct apple80211_powersave_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->powersave_level = APPLE80211_POWERSAVE_MODE_DISABLED;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_POWERSAVE\n");
+            }
+		break;
+		case APPLE80211_IOC_INT_MIT: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_INT_MIT\n");
+				struct apple80211_intmit_data *dd=(struct apple80211_intmit_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->int_mit = APPLE80211_INT_MIT_AUTO;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_INT_MIT\n");
+            }
+		break;
+		case APPLE80211_IOC_SUPPORTED_CHANNELS: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_SUPPORTED_CHANNELS\n");
+				struct apple80211_sup_channel_data *dd=(struct apple80211_sup_channel_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->num_channels = 13;
+				for(int i=1; i<=dd->num_channels; i++) {
+				dd->supported_channels[i-1].version = APPLE80211_VERSION;
+				dd->supported_channels[i-1].channel = i;
+				dd->supported_channels[i-1].flags   = 0;//APPLE80211_C_FLAG_2GHZ;
+				}
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_SUPPORTED_CHANNELS\n");
+            }
+		break;
+		case APPLE80211_IOC_RATE_SET: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_RATE_SET\n");
+				struct apple80211_rate_set_data *dd=(struct apple80211_rate_set_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->num_rates=priv->rates.num_rates;
+				for (int i=0;i<IPW_MAX_RATES;i++)
+				{
+					dd->rates[i].rate=priv->rates.supported_rates[i];
+					dd->rates[i].flags=0;
+				}
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_RATE_SET\n");
+            }
+		break;
+		case APPLE80211_IOC_OP_MODE: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_OP_MODE\n");
+				struct apple80211_opmode_data *dd=(struct apple80211_opmode_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->op_mode=APPLE80211_M_STA;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_OP_MODE\n");
+            }
+		break;
+		case APPLE80211_IOC_PHY_MODE: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_PHY_MODE\n");
+				struct apple80211_phymode_data *dd=(struct apple80211_phymode_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->phy_mode=APPLE80211_MODE_AUTO;
+				dd->active_phy_mode=APPLE80211_MODE_AUTO;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_PHY_MODE\n");
+				
+            }
+		break;
+		case APPLE80211_IOC_STATE: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_STATE\n");
+				struct apple80211_state_data *dd=(struct apple80211_state_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->state=0;//APPLE80211_S_RUN;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_STATE\n");
+            }
+		break;
+		case APPLE80211_IOC_SCAN_REQ: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_SCAN_REQ\n");
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_SCAN_REQ\n");
+				struct apple80211_scan_data *dd=(struct apple80211_scan_data *)(data);
+				bzero(dd,sizeof(*dd));
+				dd->version = APPLE80211_VERSION;
+				intf->postMessage(APPLE80211_IOC_STATION_LIST);
+            }
+		break;
+		case APPLE80211_IOC_RATE: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_RATE\n");
+                struct apple80211_rate_data *dd=(struct apple80211_rate_data *)(data);
+				dd->version = APPLE80211_VERSION;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_RATE\n");
+            }
+		break;
+		case APPLE80211_IOC_TXPOWER: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_TXPOWER\n");
+                struct apple80211_txpower_data *dd=(struct apple80211_txpower_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->txpower_unit=0;
+				dd->txpower=100;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_TXPOWER\n");
+            }
+		break;
+		case APPLE80211_IOC_PROTMODE: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_PROTMODE\n");
+                struct apple80211_protmode_data *dd=(struct apple80211_protmode_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->protmode=APPLE80211_PROTMODE_AUTO;
+				dd->threshold=0;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_PROTMODE\n");
+            }
+		break;
+		case APPLE80211_IOC_CHANNEL: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_CHANNEL\n");
+                struct apple80211_channel_data *dd=(struct apple80211_channel_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->channel.channel=priv->channel;
+				dd->channel.flags=0;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_CHANNEL\n");
+            }
+		break;
+		case APPLE80211_IOC_AUTH_TYPE: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_AUTH_TYPE\n");
+                struct apple80211_authtype_data *dd=(struct apple80211_authtype_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->authtype_lower=APPLE80211_AUTHTYPE_OPEN;
+				dd->authtype_upper=APPLE80211_AUTHTYPE_NONE;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_AUTH_TYPE\n");
+            }
+		break;	
+        case APPLE80211_IOC_CARD_CAPABILITIES: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_CARD_CAPABILITIES\n");
+                struct apple80211_capability_data *dd=(struct apple80211_capability_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->capabilities[0]=0xff;
+				dd->capabilities[1]=0xff;
+				dd->capabilities[2]=0xff;
+				dd->capabilities[3]=0xff;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_CARD_CAPABILITIES\n");
+            }
+		break;		
+        case APPLE80211_IOC_STATUS_DEV_NAME: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_STATUS_DEV_NAME\n");
+                struct apple80211_status_dev_data *dd=(struct apple80211_status_dev_data *)(data);
+				bzero(dd->dev_name, sizeof(dd->dev_name));
+				dd->version = APPLE80211_VERSION;
+				sprintf((char*)dd->dev_name,"%s%d" ,intf->getNamePrefix(), intf->getUnitNumber());
+				intf->setEnabledBySystem(true);
+				intf->setPoweredOnByUser(true);
+				ipw_adapter_restart();
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_STATUS_DEV_NAME\n");
+            }
+		break;
+		case APPLE80211_IOC_POWER: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_POWER\n");
+                struct apple80211_power_data *dd=(struct apple80211_power_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				dd->num_radios = 3;
+				dd->power_state[0] = APPLE80211_POWER_ON;
+				dd->power_state[1] = APPLE80211_POWER_ON;
+				dd->power_state[2] = APPLE80211_POWER_ON;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_POWER\n");
+            }
+		break;
+		case APPLE80211_IOC_BSSID:
+            if( SIOCSA80211 == req ) {
+                IWI_DEBUG("Don't know how to SET bssid\n");
+            }
+            else {
+				IWI_DEBUG("GET APPLE80211_IOC_BSSID\n");
+                struct apple80211_bssid_data *dd=(struct apple80211_bssid_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				if (priv)
+				bcopy(priv->bssid,dd->bssid.octet,6);
+            }
+		break;
+		case APPLE80211_IOC_SSID: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("Request to GET SSID\n");
+				struct apple80211_ssid_data *dd=(struct apple80211_ssid_data *)(data);
+				dd->version = APPLE80211_VERSION;
+				if (priv)
+				{
+					dd->ssid_len=priv->essid_len;
+					bcopy(priv->essid,dd->ssid_bytes,priv->essid_len);
+				}
+            }
+            else {
+                IWI_DEBUG("Request to SET SSID\n");
+            }
+		break;
 
 
+		
+		
+	}
+	return ret;
+}

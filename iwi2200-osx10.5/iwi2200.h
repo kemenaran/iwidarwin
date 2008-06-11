@@ -762,11 +762,14 @@ struct ieee80211_crypto_alg {
 };
 //end
 
-class darwin_iwi2200 : public IOEthernetController//IO80211Controller
+class darwin_iwi2200 : public IO80211Controller
 {
 	OSDeclareDefaultStructors(darwin_iwi2200)
 public:
-
+	
+	//virtual SInt32 getSTATUS_DEV(IO80211Interface *interface,
+	//						 struct apple80211_status_dev_data *dd);
+	virtual SInt32 apple80211Request( UInt32 req, int type, IO80211Interface * intf, void * data );
 	virtual IOReturn setWakeOnMagicPacket( bool active );
 	virtual IOReturn getPacketFilters(const OSSymbol * group,
                                       UInt32 *         filters) const;
@@ -1197,9 +1200,9 @@ static int is_network_beacon(struct ieee80211_network *src,
 	IOPCIDevice *				fPCIDevice;		// PCI nub
 	IOEthernetAddress			fEnetAddr;		// holds the mac address currently hardcoded
 	IOWorkLoop *				fWorkLoop;		// the workloop
-   // IO80211Interface*			fNetif;			// ???
+   IO80211Interface*			fNetif;			// ???
 	//IOEthernetInterface*			fNetif;
-	IONetworkInterface*			fNetif;
+	//IONetworkInterface*			fNetif;
 	IOInterruptEventSource *	fInterruptSrc;	// ???
 	//IOTimerEventSource *		fWatchdogTimer;	// ???
 	IOBasicOutputQueue *				fTransmitQueue;	// ???
