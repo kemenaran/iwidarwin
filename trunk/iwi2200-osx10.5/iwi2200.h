@@ -766,9 +766,9 @@ class darwin_iwi2200 : public IO80211Controller
 {
 	OSDeclareDefaultStructors(darwin_iwi2200)
 public:
-	
-	//virtual SInt32 getSTATUS_DEV(IO80211Interface *interface,
-	//						 struct apple80211_status_dev_data *dd);
+	virtual SInt32 getASSOCIATE_RESULT( IO80211Interface * interface, 
+								struct apple80211_assoc_result_data * ard );
+	virtual SInt32 getLastAssocData( struct apple80211_assoc_data * ad);							
 	virtual SInt32 apple80211Request( UInt32 req, int type, IO80211Interface * intf, void * data );
 	virtual IOReturn setWakeOnMagicPacket( bool active );
 	virtual IOReturn getPacketFilters(const OSSymbol * group,
