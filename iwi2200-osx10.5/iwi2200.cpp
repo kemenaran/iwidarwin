@@ -11325,20 +11325,39 @@ void __exit ieee80211_crypto_deinit(void)
 //	BUG_ON(!list_empty(&ieee80211_crypto_algs));
 }
 
-/*SInt32
-darwin_iwi2200::getSTATUS_DEV(IO80211Interface *interface,
-							 struct apple80211_status_dev_data *dd)
+SInt32 darwin_iwi2200::getASSOCIATE_RESULT( IO80211Interface * interface, 
+								struct apple80211_assoc_result_data * ard )
 {
-    dd->version = APPLE80211_VERSION;
-    bzero(dd->dev_name, sizeof(dd->dev_name));
-    strncpy((char*)dd->dev_name, "darwin_iwi2200", sizeof(dd->dev_name));
-	super::enable(interface);
-	interface->setEnabledBySystem(true);
-	interface->setPoweredOnByUser(true);
-		
-	return kIOReturnSuccess;
-}*/
+	ard->version=APPLE80211_VERSION;
+	ard->result=APPLE80211_RESULT_UNAVAILABLE;
+	if (priv)
+	if (priv->status & STATUS_ASSOCIATED)
+		ard->result=APPLE80211_RESULT_SUCCESS;
+	return 0;
+}
 
+SInt32 darwin_iwi2200::getLastAssocData( struct apple80211_assoc_data * ad)
+{
+	bzero(ad,sizeof(*ad));
+	if (priv)
+	if (priv->status & STATUS_ASSOCIATED)
+	if (priv->assoc_network)
+	{
+	ad->				version=APPLE80211_VERSION;
+	ad->				ad_mode=APPLE80211_AP_MODE_INFRA;		// apple80211_apmode
+	ad->				ad_auth_lower=APPLE80211_AUTHTYPE_OPEN;	// apple80211_authtype_lower
+	ad->				ad_auth_upper=APPLE80211_AUTHTYPE_NONE;	// apple80211_authtype_upper
+	ad->				ad_ssid_len=priv->assoc_network->ssid_len;
+	bcopy(priv->assoc_network->ssid,ad->ad_ssid,priv->assoc_network->ssid_len);
+	bcopy(priv->assoc_network->bssid,ad->ad_bssid.octet,6);		// prefer over ssid if not zeroed
+	//struct apple80211_key	ad_key;	
+	ad->				ad_rsn_ie_len=priv->assoc_network->rsn_ie_len;
+	bcopy(priv->assoc_network->rsn_ie,ad->ad_rsn_ie,MAX_WPA_IE_LEN);
+	ad->				ad_flags=APPLE80211_ASSOC_F_CLOSED;		// apple80211_assoc_flags
+	}
+	return 0;
+}
+		
 SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface * intf, void * data ) 
 {
     SInt32 ret = 0;
@@ -11397,7 +11416,7 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
             else {
                struct apple80211_country_code_data *cd= (struct apple80211_country_code_data *)data;
 				cd->version = APPLE80211_VERSION;
-				strncpy((char*)cd->cc, "??", 3);
+				//strncpy((char*)cd->cc, "??", 3);
             }
 		break;
 		case APPLE80211_IOC_MCS_INDEX_SET:
@@ -11467,6 +11486,26 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
                 IWI_DEBUG("SET APPLE80211_IOC_RATE_SET\n");
             }
 		break;
+		case APPLE80211_IOC_NOISE: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_NOISE\n");
+				struct apple80211_noise_data *dd=(struct apple80211_noise_data *)(data);
+				dd->version = APPLE80211_VERSION;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_NOISE\n");
+            }
+		break;
+		case APPLE80211_IOC_RSSI: //req_type
+            if( SIOCGA80211 == req ) {
+                IWI_DEBUG("GET APPLE80211_IOC_RSSI\n");
+				struct apple80211_rssi_data *dd=(struct apple80211_rssi_data *)(data);
+				dd->version = APPLE80211_VERSION;
+            }
+            else {
+                IWI_DEBUG("SET APPLE80211_IOC_RSSI\n");
+            }
+		break;
 		case APPLE80211_IOC_OP_MODE: //req_type
             if( SIOCGA80211 == req ) {
                 IWI_DEBUG("GET APPLE80211_IOC_OP_MODE\n");
@@ -11496,7 +11535,13 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
                 IWI_DEBUG("GET APPLE80211_IOC_STATE\n");
 				struct apple80211_state_data *dd=(struct apple80211_state_data *)(data);
 				dd->version = APPLE80211_VERSION;
-				dd->state=0;//APPLE80211_S_RUN;
+				if (priv->status & STATUS_ASSOCIATED)
+				dd->state=APPLE80211_S_RUN;
+				else
+				if (priv->status & STATUS_SCANNING)
+				dd->state=APPLE80211_S_SCAN;
+				else
+				dd->state=APPLE80211_S_INIT;
             }
             else {
                 IWI_DEBUG("SET APPLE80211_IOC_STATE\n");
@@ -11508,10 +11553,29 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
             }
             else {
                 IWI_DEBUG("SET APPLE80211_IOC_SCAN_REQ\n");
-				struct apple80211_scan_data *dd=(struct apple80211_scan_data *)(data);
-				bzero(dd,sizeof(*dd));
-				dd->version = APPLE80211_VERSION;
-				intf->postMessage(APPLE80211_IOC_STATION_LIST);
+				struct apple80211_scan_data *xx=(struct apple80211_scan_data*)data;
+				bzero(xx,sizeof(*xx));
+				struct ieee80211_network *network = NULL;
+				if(!list_empty(&priv->ieee->network_list))
+				list_for_each_entry(network, &priv->ieee->network_list, list) 
+				{
+					//bzero(&dd,sizeof(dd));
+					struct apple80211_scan_result dd;
+					for (int i=0;i<network->rates_len;i++)
+					{
+						if (i<=APPLE80211_MAX_RATES) dd.asr_rates[i]=network->rates[i];
+					}
+					dd.version=APPLE80211_VERSION;
+					dd.asr_cap=network->capability;
+					dd.asr_nrates=network->rates_len;
+					dd.asr_channel.channel=network->channel;
+					dd.asr_ssid_len=network->ssid_len;
+					bcopy(network->bssid,dd.asr_bssid,6);
+					if (dd.asr_ssid_len>0)
+					bcopy(network->ssid,dd.asr_ssid,dd.asr_ssid_len);
+					intf->postMessage(APPLE80211_IOC_SCAN_RESULT,&dd,sizeof(dd));
+				}
+				//intf->postMessage(APPLE80211_IOC_STATION_LIST);
             }
 		break;
 		case APPLE80211_IOC_RATE: //req_type
@@ -11519,6 +11583,14 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
                 IWI_DEBUG("GET APPLE80211_IOC_RATE\n");
                 struct apple80211_rate_data *dd=(struct apple80211_rate_data *)(data);
 				dd->version = APPLE80211_VERSION;
+				if (priv->assoc_network)
+				{
+				dd->num_radios=priv->assoc_network->rates_len;
+				for (int i=0;i<APPLE80211_MAX_RADIO;i++)
+				{
+					dd->rate[i]=priv->assoc_network->rates[i];
+				}
+				}
             }
             else {
                 IWI_DEBUG("SET APPLE80211_IOC_RATE\n");
@@ -11636,6 +11708,11 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
 				{
 					dd->ssid_len=priv->essid_len;
 					bcopy(priv->essid,dd->ssid_bytes,priv->essid_len);
+					if (!priv->status & STATUS_ASSOCIATED)
+					{
+						dd->ssid_len=0;
+						bzero(dd->ssid_bytes,32);
+					}
 				}
             }
             else {
