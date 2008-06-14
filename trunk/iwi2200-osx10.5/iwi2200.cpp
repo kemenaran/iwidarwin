@@ -11370,7 +11370,7 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
         return 0;
     }
 
-	
+	//IWI_LOG("type %d %x\n",type,req);
     switch( type ) {
 		
 		default:
@@ -11416,7 +11416,11 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
             else {
                struct apple80211_country_code_data *cd= (struct apple80211_country_code_data *)data;
 				cd->version = APPLE80211_VERSION;
-				//strncpy((char*)cd->cc, "??", 3);
+				 char ii[3];
+				 sprintf(ii,"%c%c%c",priv->eeprom[EEPROM_COUNTRY_CODE + 0],
+				    priv->eeprom[EEPROM_COUNTRY_CODE + 1],
+				    priv->eeprom[EEPROM_COUNTRY_CODE + 2]);
+					strncpy((char*)cd->cc, ii, 3);
             }
 		break;
 		case APPLE80211_IOC_MCS_INDEX_SET:
@@ -11459,11 +11463,19 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
                 IWI_DEBUG("GET APPLE80211_IOC_SUPPORTED_CHANNELS\n");
 				struct apple80211_sup_channel_data *dd=(struct apple80211_sup_channel_data *)(data);
 				dd->version = APPLE80211_VERSION;
-				dd->num_channels = 13;
-				for(int i=1; i<=dd->num_channels; i++) {
-				dd->supported_channels[i-1].version = APPLE80211_VERSION;
-				dd->supported_channels[i-1].channel = i;
-				dd->supported_channels[i-1].flags   = 0;//APPLE80211_C_FLAG_2GHZ;
+				dd->num_channels = priv->ieee->geo.a_channels+priv->ieee->geo.bg_channels;
+				int z=0;
+				for(int i=0; i<priv->ieee->geo.a_channels; i++) {
+				dd->supported_channels[z].version = APPLE80211_VERSION;
+				dd->supported_channels[z].channel = priv->ieee->geo.a[i].channel;
+				dd->supported_channels[z].flags   = priv->ieee->geo.a[i].flags;//APPLE80211_C_FLAG_2GHZ;
+				z++;
+				}
+				for(int i=0; i<priv->ieee->geo.bg_channels; i++) {
+				dd->supported_channels[z].version = APPLE80211_VERSION;
+				dd->supported_channels[z].channel = priv->ieee->geo.bg[i].channel;
+				dd->supported_channels[z].flags   = priv->ieee->geo.bg[i].flags;//APPLE80211_C_FLAG_2GHZ;
+				z++;
 				}
             }
             else {
@@ -11476,7 +11488,7 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
 				struct apple80211_rate_set_data *dd=(struct apple80211_rate_set_data *)(data);
 				dd->version = APPLE80211_VERSION;
 				dd->num_rates=priv->rates.num_rates;
-				for (int i=0;i<IPW_MAX_RATES;i++)
+				for (int i=0;i<APPLE80211_MAX_RATES;i++)
 				{
 					dd->rates[i].rate=priv->rates.supported_rates[i];
 					dd->rates[i].flags=0;
@@ -11491,6 +11503,12 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
                 IWI_DEBUG("GET APPLE80211_IOC_NOISE\n");
 				struct apple80211_noise_data *dd=(struct apple80211_noise_data *)(data);
 				dd->version = APPLE80211_VERSION;
+				dd->num_radios = 3;
+				dd->noise_unit = APPLE80211_UNIT_PERCENT;
+				dd->noise[0] = 90;
+				dd->noise[1] = 80;
+				dd->noise[2] = 70;
+				dd->aggregate_noise = 40;
             }
             else {
                 IWI_DEBUG("SET APPLE80211_IOC_NOISE\n");
@@ -11625,7 +11643,8 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
                 IWI_DEBUG("GET APPLE80211_IOC_CHANNEL\n");
                 struct apple80211_channel_data *dd=(struct apple80211_channel_data *)(data);
 				dd->version = APPLE80211_VERSION;
-				dd->channel.channel=priv->channel;
+				if (priv->assoc_network)
+				dd->channel.channel=priv->assoc_network->channel;
 				dd->channel.flags=0;
             }
             else {
@@ -11649,10 +11668,8 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
                 IWI_DEBUG("GET APPLE80211_IOC_CARD_CAPABILITIES\n");
                 struct apple80211_capability_data *dd=(struct apple80211_capability_data *)(data);
 				dd->version = APPLE80211_VERSION;
-				dd->capabilities[0]=0xff;
-				dd->capabilities[1]=0xff;
-				dd->capabilities[2]=0xff;
-				dd->capabilities[3]=0xff;
+				dd->capabilities[0] = 0xab; // Values taken directly from AirPort_Brcm43xx
+				dd->capabilities[1] = 0x7e; // I would guess they define settings for the various radios.
             }
             else {
                 IWI_DEBUG("SET APPLE80211_IOC_CARD_CAPABILITIES\n");
@@ -11703,17 +11720,12 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
             if( SIOCGA80211 == req ) {
                 IWI_DEBUG("Request to GET SSID\n");
 				struct apple80211_ssid_data *dd=(struct apple80211_ssid_data *)(data);
-				dd->version = APPLE80211_VERSION;
-				if (priv)
-				{
-					dd->ssid_len=priv->essid_len;
-					bcopy(priv->essid,dd->ssid_bytes,priv->essid_len);
-					if (!priv->status & STATUS_ASSOCIATED)
+				dd->version = APPLE80211_VERSION;				
+					if (priv->status & STATUS_ASSOCIATED)
 					{
-						dd->ssid_len=0;
-						bzero(dd->ssid_bytes,32);
+						dd->ssid_len=priv->essid_len;
+						bcopy(priv->essid,dd->ssid_bytes,priv->essid_len);
 					}
-				}
             }
             else {
                 IWI_DEBUG("Request to SET SSID\n");
