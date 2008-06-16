@@ -11571,7 +11571,8 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
             }
             else {
                 IWI_DEBUG("SET APPLE80211_IOC_SCAN_REQ\n");
-				struct apple80211_scan_data *xx=(struct apple80211_scan_data*)data;
+				ret=1;
+				/*struct apple80211_scan_data *xx=(struct apple80211_scan_data*)data;
 				bzero(xx,sizeof(*xx));
 				struct ieee80211_network *network = NULL;
 				if(!list_empty(&priv->ieee->network_list))
@@ -11592,7 +11593,7 @@ SInt32 darwin_iwi2200::apple80211Request( UInt32 req, int type, IO80211Interface
 					if (dd.asr_ssid_len>0)
 					bcopy(network->ssid,dd.asr_ssid,dd.asr_ssid_len);
 					intf->postMessage(APPLE80211_IOC_SCAN_RESULT,&dd,sizeof(dd));
-				}
+				}*/
 				//intf->postMessage(APPLE80211_IOC_STATION_LIST);
             }
 		break;
