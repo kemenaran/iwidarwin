@@ -77,7 +77,7 @@ bool ApplePS2ALPSGlidePoint::init( OSDictionary * properties )
     _device                    = 0;
     _interruptHandlerInstalled = false;
     _packetByteCount           = 0;
-    _resolution                = (100) << 16; // (100 dpi, 4 counts/mm)
+    _resolution                = (300) << 16; // (100 dpi, 4 counts/mm)
     _touchPadModeByte          = kTapEnabled;
     _scrolling                 = SCROLL_NONE;
     _zscrollpos                = 0;
@@ -408,9 +408,9 @@ void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
     buttons |= right ? 0x02 : 0;
     buttons |= middle ? 0x04 : 0;
 
-    /*DEBUG_LOG("Absolute packet: x: %d, y: %d, xpos: %d, ypos: %d, buttons: %x, "
+    IOLog("Absolute packet: x: %d, y: %d, xpos: %d, ypos: %d, buttons: %x, "
               "z: %d, zpos: %d\n", x, y, (int)_xpos, (int)_ypos, (int)buttons, 
-              (int)z, (int)_zpos);*/
+              (int)z, (int)_zpos);
     
     wasNotScrolling = _scrolling == SCROLL_NONE;
     scroll = insideScrollArea(x, y);
@@ -443,11 +443,11 @@ void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
         // Those "if" should provide angle tapping (simulate click on up/down
         // buttons of a scrollbar), but i have to investigate more on the values,
         // since currently they don't work...
-        if (ydiff == 0 && scroll == SCROLL_HORIZ)
+      /*  if (ydiff == 0 && scroll == SCROLL_HORIZ)
             ydiff = ((x >= 950 ? 25 : (x <= 100 ? -25 : 0)) / max(_edgeaccellvalue, 1));
         
         if (xdiff == 0 && scroll == SCROLL_VERT)
-            xdiff = ((y >= 950 ? 25 : (y <= 100 ? -25 : 0)) / max(_edgeaccellvalue, 1));
+            xdiff = ((y >= 950 ? 25 : (y <= 100 ? -25 : 0)) / max(_edgeaccellvalue, 1));*/
         
         dispatchScrollWheelEvent(ydiff, xdiff, 0, time);
         _zscrollpos = z;
@@ -738,7 +738,7 @@ IOReturn ApplePS2ALPSGlidePoint::setParamProperties( OSDictionary * dict )
     if (eaccell)
     {
         _edgeaccell = eaccell->unsigned32BitValue();
-        _edgeaccellvalue = (((double)(_edgeaccell / 1966.08)) / 75.0); 
+       _edgeaccellvalue = (((double)(_edgeaccell / 800)) / 60);
         _edgeaccellvalue = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue;
         setProperty("HIDTrackpadScrollAcceleration", eaccell);
     }
