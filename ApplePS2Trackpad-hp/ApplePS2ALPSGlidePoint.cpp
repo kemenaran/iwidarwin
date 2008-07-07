@@ -408,9 +408,9 @@ void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
     buttons |= right ? 0x02 : 0;
     buttons |= middle ? 0x04 : 0;
 
-    IOLog("Absolute packet: x: %d, y: %d, xpos: %d, ypos: %d, buttons: %x, "
-              "z: %d, zpos: %d\n", x, y, (int)_xpos, (int)_ypos, (int)buttons, 
-              (int)z, (int)_zpos);
+  //  IOLog("Absolute packet: x: %d, y: %d, xpos: %d, ypos: %d, buttons: %x, "
+    //          "z: %d, zpos: %d\n", x, y, (int)_xpos, (int)_ypos, (int)buttons, 
+      //        (int)z, (int)_zpos);
     
     wasNotScrolling = _scrolling == SCROLL_NONE;
     scroll = insideScrollArea(x, y);
