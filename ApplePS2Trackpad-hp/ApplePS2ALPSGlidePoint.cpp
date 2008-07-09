@@ -738,7 +738,8 @@ IOReturn ApplePS2ALPSGlidePoint::setParamProperties( OSDictionary * dict )
     if (eaccell)
     {
         _edgeaccell = eaccell->unsigned32BitValue();
-       _edgeaccellvalue = (((double)(_edgeaccell / 800)) / 60);
+      // _edgeaccellvalue = (((double)(_edgeaccell / 1966.08)) / 75);
+	   _edgeaccellvalue = (((double)(_edgeaccell / 8192))/200);
         _edgeaccellvalue = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue;
         setProperty("HIDTrackpadScrollAcceleration", eaccell);
     }
