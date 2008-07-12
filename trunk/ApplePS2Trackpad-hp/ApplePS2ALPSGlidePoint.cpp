@@ -347,7 +347,7 @@ void ApplePS2ALPSGlidePoint::interruptOccurred( UInt8 data )
 	
 	if((_packetBuffer[0] & 0xc8) == 0x08) {
 		if(_packetByteCount == 3) {
-			dispatchRelativePointerEventWithPacket(_packetBuffer,3);
+			//dispatchRelativePointerEventWithPacket(_packetBuffer,3);
 			_packetByteCount = 0;
 			return;
 		}
@@ -470,17 +470,18 @@ void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
 
 int ApplePS2ALPSGlidePoint::insideScrollArea(int x, int y)
 {
-    int scroll = 0;
+   // IOLog("x %d y %d\n",x,y);
+	int scroll = 0;
     if (x > 900) scroll |= SCROLL_VERT;
-    if (y > 650) scroll |= SCROLL_HORIZ;
+    if (y > 700) scroll |= SCROLL_HORIZ;
     
-    if (x > 900 && y > 650)
+   /* if (x > 900 && y > 650)
     {
         if (_scrolling == SCROLL_VERT)
             scroll = SCROLL_VERT;
         else
             scroll = SCROLL_HORIZ;
-    }
+    }*/
     
     _scrolling = scroll;
     return scroll;
@@ -769,7 +770,7 @@ void ApplePS2ALPSGlidePoint::setDevicePowerState( UInt32 whatToDo )
 
         case kPS2C_EnableDevice:
 
-            setTapEnable( _touchPadModeByte );
+           // setTapEnable( _touchPadModeByte );
 
 
             //
