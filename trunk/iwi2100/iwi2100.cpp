@@ -178,7 +178,7 @@ config = 0;
   channel = 0;
   mode = 0;
   disable2=1;
-  associate = 0;
+  associate = 1;
   auto_create = 1;
   led = 1;
   bt_coexist = 1;
@@ -226,7 +226,6 @@ void darwin_iwi2100::bd_queue_free(struct ipw2100_priv *priv, struct ipw2100_bd_
 		//pci_free_consistent(priv->pci_dev, q->size, q->drv, q->nic);
 		q->nic=NULL;
 		q->drv=NULL;
-		q->drv = NULL;
 	}
 
 }
@@ -246,10 +245,9 @@ int darwin_iwi2100::ipw2100_tx_allocate(struct ipw2100_priv *priv)
 	}
 
 	priv->tx_buffers =
-	    (struct ipw2100_tx_packet *)kmalloc(TX_PENDED_QUEUE_LENGTH *
+	    (struct ipw2100_tx_packet *)IOMalloc(TX_PENDED_QUEUE_LENGTH *
 						sizeof(struct
-						       ipw2100_tx_packet),
-						GFP_ATOMIC);
+						       ipw2100_tx_packet));
 	if (!priv->tx_buffers) {
 		IWI_DEBUG_FULL( 
 		       ": %s: alloc failed form tx buffers.\n",
@@ -293,7 +291,9 @@ int darwin_iwi2100::ipw2100_tx_allocate(struct ipw2100_priv *priv)
 				    data_phys);*/
 	}
 
-	kfree(priv->tx_buffers);
+	IOFree(priv->tx_buffers, TX_PENDED_QUEUE_LENGTH *
+						sizeof(struct
+						       ipw2100_tx_packet));
 	priv->tx_buffers = NULL;
 
 	return err;
@@ -336,14 +336,14 @@ void darwin_iwi2100::status_queue_free(struct ipw2100_priv *priv)
 int darwin_iwi2100::ipw2100_alloc_skb(struct ipw2100_priv *priv,
 				    struct ipw2100_rx_packet *packet)
 {
-	if (mbuf_getpacket(MBUF_WAITOK , &packet->skb)!=0) 
+	/*if (mbuf_getpacket(MBUF_WAITOK , &packet->skb)!=0) 
 	{
 		IWI_LOG("no mem for skb\n");
 		return -ENOMEM; 
-	}
-	//packet->skb = allocatePacket(sizeof(struct ipw2100_rx));
-	//if (!packet->skb)
-	//	return -ENOMEM;
+	}*/
+	packet->skb = allocatePacket(sizeof(struct ipw2100_rx));
+	if (!packet->skb)
+		return -ENOMEM;
 	mbuf_setlen(packet->skb,0);
 	mbuf_pkthdr_setlen(packet->skb,0);
 		
@@ -380,8 +380,7 @@ int darwin_iwi2100::ipw2100_rx_allocate(struct ipw2100_priv *priv)
 	 * allocate packets
 	 */
 	priv->rx_buffers = (struct ipw2100_rx_packet *)
-	    kmalloc(RX_QUEUE_LENGTH * sizeof(struct ipw2100_rx_packet),
-		    GFP_KERNEL);
+	    IOMalloc(RX_QUEUE_LENGTH * sizeof(struct ipw2100_rx_packet)  );
 	if (!priv->rx_buffers) {
 		IWI_DEBUG_FULL("can't allocate rx packet buffer table\n");
 
@@ -421,7 +420,7 @@ int darwin_iwi2100::ipw2100_rx_allocate(struct ipw2100_priv *priv)
 		dev_kfree_skb(priv->rx_buffers[j].skb);*/
 	}
 
-	kfree(priv->rx_buffers);
+	IOFree(priv->rx_buffers, RX_QUEUE_LENGTH * sizeof(struct ipw2100_rx_packet));
 	priv->rx_buffers = NULL;
 
 	bd_queue_free(priv, &priv->rx_queue);
@@ -438,10 +437,9 @@ int darwin_iwi2100::ipw2100_msg_allocate(struct ipw2100_priv *priv)
 	dma_addr_t p;
 
 	priv->msg_buffers =
-	    (struct ipw2100_tx_packet *)kmalloc(IPW_COMMAND_POOL_SIZE *
+	    (struct ipw2100_tx_packet *)IOMalloc(IPW_COMMAND_POOL_SIZE *
 						sizeof(struct
-						       ipw2100_tx_packet),
-						GFP_KERNEL);
+						       ipw2100_tx_packet)			);
 	if (!priv->msg_buffers) {
 		IWI_DEBUG_FULL(  ": %s: PCI alloc failed for msg "
 		       "buffers.\n", priv->net_dev->name);
@@ -482,7 +480,9 @@ int darwin_iwi2100::ipw2100_msg_allocate(struct ipw2100_priv *priv)
 				    cmd_phys);*/
 	}
 
-	kfree(priv->msg_buffers);
+	IOFree(priv->msg_buffers, IPW_COMMAND_POOL_SIZE *
+						sizeof(struct
+						       ipw2100_tx_packet));
 	priv->msg_buffers = NULL;
 
 	return err;
@@ -500,7 +500,7 @@ void darwin_iwi2100::ieee80211_txb_free(struct ieee80211_txb *txb)
 			txb->fragments[i]=NULL;
 			
 		}
-	kfree(txb);
+	IOFree(txb,sizeof(struct ieee80211_txb) + (sizeof(u8 *) * txb->nr_frags));
 	txb=NULL;
 }
 
@@ -535,7 +535,9 @@ void darwin_iwi2100::ipw2100_tx_free(struct ipw2100_priv *priv)
 		}
 	}
 
-	kfree(priv->tx_buffers);
+	IOFree(priv->tx_buffers, TX_PENDED_QUEUE_LENGTH *
+						sizeof(struct
+						       ipw2100_tx_packet));
 	priv->tx_buffers = NULL;
 
 }
@@ -564,7 +566,7 @@ void darwin_iwi2100::ipw2100_rx_free(struct ipw2100_priv *priv)
 		}
 	}
 
-	kfree(priv->rx_buffers);
+	IOFree(priv->rx_buffers, RX_QUEUE_LENGTH * sizeof(struct ipw2100_rx_packet));
 	priv->rx_buffers = NULL;
 
 }
@@ -587,7 +589,9 @@ void darwin_iwi2100::ipw2100_msg_free(struct ipw2100_priv *priv)
 				    cmd_phys);*/
 	}
 
-	kfree(priv->msg_buffers);
+	IOFree(priv->msg_buffers,IPW_COMMAND_POOL_SIZE *
+						sizeof(struct
+						       ipw2100_tx_packet));
 	priv->msg_buffers = NULL;
 }
 
@@ -743,7 +747,7 @@ int darwin_iwi2100::ipw2100_sw_reset(int option)
 //                break;
 //        }
 
-	(void*)ieee->networks = kmalloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network), GFP_KERNEL);
+	(void*)ieee->networks = IOMalloc(MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 	memset(ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 	INIT_LIST_HEAD(&ieee->network_free_list);
 	INIT_LIST_HEAD(&ieee->network_list);
@@ -1088,25 +1092,27 @@ mbuf_t darwin_iwi2100::mergePacket(mbuf_t m)
 	int offset;
 	if(!mbuf_next(m))
 	{
-		offset = (4 - ((int)(mbuf_data(m)) & 3)) % 4;    //packet needs to be 4 byte aligned
+		//offset = (4 - ((int)(mbuf_data(m)) & 3)) % 4;    //packet needs to be 4 byte aligned
+		offset = (1 - ((int)(mbuf_data(m)) & 3)) % 1;   
 		if (offset==0) return m;
 		IWI_DEBUG_FULL("this packet dont have mbuf_next, merge  is not required\n");
 		goto copy_packet;
 	}
 
 	/* allocate and Initialize New mbuf */
-	//nm = allocatePacket(mbuf_pkthdr_len(m));
-	//if (nm==0) return NULL;
-	if (mbuf_getpacket(MBUF_WAITOK, &nm)!=0) return NULL;
+	nm = allocatePacket(mbuf_pkthdr_len(m));
+	if (nm==0) return NULL;
+	//if (mbuf_getpacket(MBUF_WAITOK, &nm)!=0) return NULL;
 	mbuf_setlen(nm,0);
 	mbuf_pkthdr_setlen(nm,0);
 	if( mbuf_next(nm)) IWI_ERR("merged mbuf_next\n");
 	
 	/* merging chains to single mbuf */
 	for (nm2 = m; nm2;  nm2 = mbuf_next(nm2)) {
-		memcpy (skb_put (nm, mbuf_len(nm2)), (UInt8*)mbuf_data(nm2), mbuf_len(nm2));
+		bcopy (mbuf_data(nm2), skb_put (nm, mbuf_len(nm2)), mbuf_len(nm2));
+		//skb_put (nm, mbuf_len(nm2));
+		//mbuf_copyback(nm, mbuf_len(nm), mbuf_len(nm2), mbuf_data(nm2), MBUF_WAITOK);
 	}
-
 	/* checking if merged or not. */
 	if( mbuf_len(nm) == mbuf_pkthdr_len(m) ) 
 	{
@@ -1148,8 +1154,8 @@ void darwin_iwi2100::freePacket2(mbuf_t m)
 }
 
 void darwin_iwi2100::getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const {
-    constraints->alignStart  = kIOPacketBufferAlign4;	// even word aligned.
-    constraints->alignLength = kIOPacketBufferAlign4;	// no restriction.
+    constraints->alignStart  = kIOPacketBufferAlign1;	// even word aligned.
+    constraints->alignLength = kIOPacketBufferAlign1;	// no restriction.
 }
 
 int darwin_iwi2100::ipw2100_set_scan_options(struct ipw2100_priv *priv)
@@ -1498,7 +1504,7 @@ void darwin_iwi2100::ipw2100_tx_send_data(struct ipw2100_priv *priv)
 							IEEE80211_3ADDR_LEN,
 							tbd->buf_length,
 							PCI_DMA_TODEVICE);*/
-			tbd->host_addr=(u32)((UInt8*)mbuf_data(packet->info.d_struct.
+			tbd->host_addr=mbuf_data_to_physical((UInt8*)mbuf_data(packet->info.d_struct.
 							txb->fragments[i])+IEEE80211_3ADDR_LEN);
 			IWI_DEBUG_FULL("data frag tbd TX%d P=%08x L=%d\n",
 				     txq->next, tbd->host_addr,
@@ -1845,9 +1851,9 @@ bool darwin_iwi2100::start(IOService *provider)
 		
 		//resetDevice((UInt16 *)memBase); //iwi2200 code to fix
 		ipw2100_sw_reset(1);
-		/*ipw2100_initialize_ordinals(priv);
-		ipw2100_init_nic();
-		ipw2100_stop_nic();*/
+		//ipw2100_initialize_ordinals(priv);
+		//ipw2100_reset_nic(priv);
+		//ipw2100_stop_nic();
 		pl=1;
 		ipw2100_up(priv,1);
 		//ipw2100_initialize_ordinals(priv);
@@ -1923,7 +1929,7 @@ bool darwin_iwi2100::start(IOService *provider)
 		
 		//ipw2100_sw_reset(1);
 
-		//queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::check_firstup),priv,1000,true);
+		queue_te(10,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::check_firstup),priv,1000,true);
 		return true;			// end start successfully
 	} while (false);
 		
@@ -3138,11 +3144,11 @@ int darwin_iwi2100::ipw2100_read_mac_address(struct ipw2100_priv *priv)
 	IOLog("ipw2100_read_mac_address: card MAC is %02X:%02X:%02X:%02X:%02X:%02X\n",
 		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-//	memcpy(fEnetAddr.bytes, mac, ETH_ALEN);
+	memcpy(fEnetAddr.bytes, mac, ETH_ALEN);
 
-/*	memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
+	memcpy(priv->net_dev->dev_addr, mac, ETH_ALEN);
 	memcpy(priv->mac_addr, mac, ETH_ALEN);
-	memcpy(priv->ieee->dev->dev_addr, mac, ETH_ALEN);*/
+	memcpy(priv->ieee->dev->dev_addr, mac, ETH_ALEN);
 	return 0;
 }
 
@@ -3552,29 +3558,24 @@ int darwin_iwi2100::ipw2100_adapter_setup(struct ipw2100_priv *priv)
 		return 0;
 	}
 #endif				
-
-/*	err = ipw2100_read_mac_address(priv);
+	err = ipw2100_read_mac_address(priv);
 	if (err)
 		return -EIO;
 
 	err = ipw2100_set_mac_address(priv, batch_mode);
 	if (err)
 		return err;
-
 	err = ipw2100_set_port_type(priv, priv->ieee->iw_mode, batch_mode);
 	if (err)
-		return err;*/
-IOLog("1\n");
+		return err;
 	if (priv->ieee->iw_mode == IW_MODE_ADHOC) {
 		err = ipw2100_set_channel(priv, priv->channel, batch_mode);
 		if (err)
 			return err;
 	}
-IOLog("2\n");
 	err = ipw2100_system_config(priv, batch_mode);
 	if (err)
 		return err;
-IOLog("3\n");
 	err = ipw2100_set_tx_rates(priv, priv->tx_rates, batch_mode);
 	if (err)
 		return err;
@@ -3582,11 +3583,9 @@ IOLog("3\n");
 	/*err = ipw2100_set_power_mode(priv, IPW_POWER_MODE_CAM);
 	if (err)
 		return err;*/
-IOLog("4\n");
 	err = ipw2100_set_rts_threshold(priv, priv->rts_threshold);
 	if (err)
 		return err;
-IOLog("5\n");
 	if (priv->config & CFG_STATIC_BSSID)
 		bssid = priv->bssid;
 	else
@@ -3594,7 +3593,6 @@ IOLog("5\n");
 	err = ipw2100_set_mandatory_bssid(priv, bssid, batch_mode);
 	if (err)
 		return err;
-IOLog("6\n");
 	if (priv->config & CFG_STATIC_ESSID)
 		err = ipw2100_set_essid(priv, (char*)priv->essid, priv->essid_len,
 					batch_mode);
@@ -3606,7 +3604,6 @@ IOLog("6\n");
 	//err = ipw2100_configure_security(priv, batch_mode);
 	//if (err)
 	//	return err;
-IOLog("7\n");
 	if (priv->ieee->iw_mode == IW_MODE_ADHOC) {
 		err =
 		    ipw2100_set_ibss_beacon_interval(priv,
@@ -3620,7 +3617,6 @@ IOLog("7\n");
 			return err;
 	}
 
-IOLog("8\n");
 	return 0;
 }
 
@@ -3738,6 +3734,7 @@ int darwin_iwi2100::ipw2100_up(struct ipw2100_priv *priv, int deferred)
 
 	/* Send all of the commands that must be sent prior to
 	 * HOST_COMPLETE */
+	 if (!deferred)
 	if (ipw2100_adapter_setup(priv)) {
 		IOLog( ": %s: Failed to start the card.\n",
 		       priv->net_dev->name);
@@ -4120,6 +4117,7 @@ void darwin_iwi2100::ipw2100_wx_event_work(struct ipw2100_priv *priv)
 
 		//netif_carrier_on(priv->net_dev);
 		//netif_wake_queue(priv->net_dev);
+		fTransmitQueue->start();
 	}
 
 	if (!(priv->status & STATUS_ASSOCIATED)) {
@@ -4552,7 +4550,7 @@ int darwin_iwi2100::ieee80211_parse_info_param(struct ieee80211_info_element
 			 
 			if (network->ibss_dfs)
 				break;
-			network->ibss_dfs = (struct ieee80211_ibss_dfs*)kmalloc(info_element->len, NULL);
+			network->ibss_dfs = (struct ieee80211_ibss_dfs*)IOMalloc(info_element->len);
 			if (!network->ibss_dfs)
 				return 1;
 			memcpy(network->ibss_dfs, info_element->data,
@@ -4801,7 +4799,7 @@ void darwin_iwi2100::ieee80211_process_probe_response(struct ieee80211_device *i
 	struct ieee80211_network *target;
 	struct ieee80211_network *oldest = NULL;
 	
-	IOLog("'%s' (" MAC_FMT
+	IWI_DEBUG_FULL("'%s' (" MAC_FMT
 			     "): %c%c%c%c %c%c%c%c-%c%c%c%c %c%c%c%c\n",
 			     escape_essid((const char*)beacon->info_element->data,
 					  beacon->info_element->len),
@@ -4904,7 +4902,6 @@ void darwin_iwi2100::ieee80211_process_probe_response(struct ieee80211_device *i
 
 UInt32 darwin_iwi2100::outputPacket(mbuf_t m, void * param)
 {
-	IOLog("outputPacket\n");
 	if((fNetif->getFlags() & IFF_RUNNING)==0 || m==NULL)
 	{
 		if (m)
@@ -5006,8 +5003,8 @@ struct ieee80211_txb *darwin_iwi2100::ieee80211_alloc_txb(int nr_frags, int txb_
 	txb->frag_size = txb_size;
 
 	for (i = 0; i < nr_frags; i++) {
-		//txb->fragments[i] = allocatePacket(txb_size + headroom);
-		mbuf_getpacket(MBUF_WAITOK , &txb->fragments[i]);
+		txb->fragments[i] = allocatePacket(txb_size + headroom);
+		//mbuf_getpacket(MBUF_WAITOK , &txb->fragments[i]);
 		//__dev_alloc_skb(txb_size + headroom,						    gfp_mask);
 		if (unlikely(!txb->fragments[i])) {
 			i--;
@@ -5015,8 +5012,8 @@ struct ieee80211_txb *darwin_iwi2100::ieee80211_alloc_txb(int nr_frags, int txb_
 		}
 		// default m_len is alocated size in mbuf
 		// must set 0 m_len , pkthdr.len . 
-		//mbuf_setlen(txb->fragments[i],0);
-		//mbuf_pkthdr_setlen(txb->fragments[i],0);
+		mbuf_setlen(txb->fragments[i],0);
+		mbuf_pkthdr_setlen(txb->fragments[i],0);
 
 		//skb_reserve(txb->fragments[i], headroom);
 		// fix me: should check later
@@ -5381,7 +5378,7 @@ int darwin_iwi2100::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 		ieee80211_txb_free(txb);
 		//if (skb_frag)
 		//if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
-		skb_frag=NULL;
+		//skb_frag=NULL;
 	}
 
 	return ret;
@@ -5397,7 +5394,7 @@ int darwin_iwi2100::ieee80211_xmit(mbuf_t skb, struct net_device *dev)
 	ieee80211_txb_free(txb);
 	//if (skb_frag)
 	//if (!(mbuf_type(skb_frag) == MBUF_TYPE_FREE) ) freePacket(skb_frag);
-	skb_frag=NULL;
+	//skb_frag=NULL;
 	////fTransmitQueue->stop();
 	//////fTransmitQueue->setCapacity(0);
 	////fTransmitQueue->flush();
@@ -5469,7 +5466,7 @@ int darwin_iwi2100::ipw_tx_skb(struct ipw2100_priv *priv, struct ieee80211_txb *
 
 	packet->info.d_struct.txb = txb;
 
-	IOLog("Sending fragment (%d bytes):\n", mbuf_len(txb->fragments[0]));
+	//IOLog("Sending fragment (%d bytes):\n", mbuf_len(txb->fragments[0]));
 	//printk_buf(IPW_DL_TX, txb->fragments[0]->data, txb->fragments[0]->len);
 
 	packet->jiffy_start = jiffies;
@@ -5624,18 +5621,17 @@ void darwin_iwi2100::ieee80211_rx_mgt(struct ieee80211_device *ieee,
 void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 			  struct ieee80211_rx_stats *stats)
 {
-	IOLog("isr_rx...\n");
 	struct ipw2100_status *status = &priv->status_queue.drv[i];
 	struct ipw2100_rx_packet *packet = &priv->rx_buffers[i];
 
 	//mbuf_setlen(packet->skb,sizeof(struct ipw2100_rx));
 	//mbuf_pkthdr_setlen(packet->skb,sizeof(struct ipw2100_rx));
 			 
-	if (unlikely(status->frame_size > mbuf_pkthdr_len(packet->skb))) {
-		IOLog("%s: frame_size (%u) > mbuf_pkthdr_len (%u)!"
+	if (unlikely(status->frame_size > mbuf_trailingspace(packet->skb))) {
+		IOLog("%s: frame_size (%u) > mbuf_trailingspace (%u)!"
 			       "  Dropping.\n",
 			       priv->net_dev->name,
-			       status->frame_size, mbuf_pkthdr_len(packet->skb));
+			       status->frame_size, mbuf_trailingspace(packet->skb));
 		priv->ieee->stats.rx_errors++;
 		return;
 	}
@@ -5659,10 +5655,15 @@ void darwin_iwi2100::isr_rx(struct ipw2100_priv *priv, int i,
 
 	//todo: check if works
 	packet->dma_addr=NULL;
+	
+	//skb_reserve(packet->skb, offsetof(struct ipw2100_rx_packet, rxp->rx_data));
+	skb_put(packet->skb, le16_to_cpu(status->frame_size));
+	
+	
 	//skb_put(packet->skb, status->frame_size);
-	mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw2100_rx_packet, rxp->rx_data), status->frame_size);
+	/*mbuf_setdata(packet->skb, (UInt8*)mbuf_data(packet->skb) + offsetof(struct ipw2100_rx_packet, rxp->rx_data), status->frame_size);
 	if( mbuf_flags(packet->skb) & MBUF_PKTHDR)
-			mbuf_pkthdr_setlen(packet->skb, status->frame_size);
+			mbuf_pkthdr_setlen(packet->skb, status->frame_size);*/
 			
 	if (!ieee80211_rx(priv->ieee, packet->skb, stats)) {
 		IOLog("%s: Non consumed packet:\n",
@@ -6230,7 +6231,7 @@ int darwin_iwi2100::__ipw2100_tx_process(struct ipw2100_priv *priv)
 		/* We have a free slot in the Tx queue, so wake up the
 		 * transmit layer if it is stopped. */
 		if (priv->status & STATUS_ASSOCIATED)
-			//fTransmitQueue->start();
+			fTransmitQueue->start();
 		//	netif_wake_queue(priv->net_dev);
 
 		/* A packet was processed by the hardware, so update the
@@ -6407,8 +6408,8 @@ UInt32 darwin_iwi2100::handleInterrupt(void)
 	
 skipi:
 	ipw2100_enable_interrupts(priv);
-	fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-	fTransmitQueue->start();
+	//fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	//fTransmitQueue->start();
 	return 0;
 }
 
@@ -6505,9 +6506,7 @@ IOReturn darwin_iwi2100::getHardwareAddress( IOEthernetAddress * addr )
 			IOLog("copy add done\n");
 		}
 	}
-	IOLog("copy add 1\n");
 	memcpy(addr, &fEnetAddr, sizeof(*addr));
-	IOLog("copy add 2\n");
 	if (priv)
 	{
 		memcpy(priv->mac_addr, &fEnetAddr.bytes, ETH_ALEN);
@@ -6515,7 +6514,6 @@ IOReturn darwin_iwi2100::getHardwareAddress( IOEthernetAddress * addr )
 		memcpy(priv->ieee->dev->dev_addr, &fEnetAddr.bytes, ETH_ALEN);
 		//IOLog("getHardwareAddress " MAC_FMT "\n",MAC_ARG(priv->mac_addr));
 	}
-	IOLog("copy add 3\n");
 	return kIOReturnSuccess;
 }
 
@@ -8191,12 +8189,12 @@ int darwin_iwi2100::ipw2100_associate_network(struct ipw2100_priv *priv,
 	char *txratename;
 	u8 bssid[ETH_ALEN];
 
-	priv->config |= CFG_ASSOCIATE;
+	//priv->config |= CFG_ASSOCIATE;
 	IOLog("set ssid\n");
 	if (network->ssid_len>0)
 	ipw2100_set_essid(priv, (char*)network->ssid, network->ssid_len,1);
 	IOLog("set txrate\n");	
-	txrate=network->rates[network->rates_len];
+	txrate=TX_RATE_11_MBIT;//network->rates[network->rates_len];
 	if (txrate!=0)
 	ipw2100_set_tx_rates(priv, txrate, 1);
 	IOLog("set channel\n");
@@ -8204,15 +8202,16 @@ int darwin_iwi2100::ipw2100_associate_network(struct ipw2100_priv *priv,
 	ipw2100_set_channel(priv, chan, 1);
 	
 	IOLog("set bssid\n");
-	/*ret=ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_AP_BSSID, &bssid, (u32*)&len);
-	if (ret) {
+	ret=ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_AP_BSSID, &bssid, (u32*)&len);
+	/*if (ret) {
 		IOLog("failed querying ordinals at line %d\n",
 			       __LINE__);
 		return 0;
 	}*/
-	memcpy(network->bssid, &bssid, ETH_ALEN);
-	memcpy(network->bssid, priv->ieee->bssid, ETH_ALEN);
+	memcpy(&bssid, network->bssid, ETH_ALEN);
+	memcpy(priv->ieee->bssid, &bssid, ETH_ALEN);
 
+	
 	switch (txrate) {
 	case TX_RATE_1_MBIT:
 		txratename = "1Mbps";
@@ -8243,7 +8242,7 @@ int darwin_iwi2100::ipw2100_associate_network(struct ipw2100_priv *priv,
 		memcpy(priv->essid, network->ssid, priv->essid_len);
 	}
 	priv->channel = chan;
-	//memcpy(priv->bssid, bssid, ETH_ALEN);
+	memcpy(priv->bssid, &bssid, ETH_ALEN);
 
 	priv->status |= STATUS_ASSOCIATING;
 	priv->connect_start = jiffies;//get_seconds();
@@ -8251,7 +8250,7 @@ int darwin_iwi2100::ipw2100_associate_network(struct ipw2100_priv *priv,
 	//queue_delayed_work(priv->workqueue, &priv->wx_event_work, HZ / 10);
 	queue_te(9,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi2100::ipw2100_wx_event_work),priv,HZ/10,true);
 	//ipw2100_wx_event_work(priv);
-	priv->config &= ~CFG_ASSOCIATE;
+	
 }
 
 void darwin_iwi2100::ipw2100_reset_stats(struct ipw2100_priv *priv)
@@ -8577,21 +8576,28 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 			return 1;
 		}
 		int rep=0;
+		//clone->priv->config |= CFG_ASSOCIATE;
+		clone->ipw2100_set_mandatory_bssid(clone->priv, network->bssid, 1);
 		while (!(clone->priv->status & STATUS_ASSOCIATED)) 
 		{
-			clone->ipw2100_associate_network(clone->priv, network, rates, 0);
-			IODelay(2000*1000);
+			//clone->ipw2100_associate_network(clone->priv, network, rates, 0);
+			//IODelay(2000*1000);
+			IODelay(1000*1000);
 			rep++;
 			if (rep==10) break;
 		}
+		clone->priv->config &= ~CFG_ASSOCIATE;
 		if (rep == 10)
 		{
 			IWI_LOG("failed when associating to this network\n");
+			clone->ipw2100_set_mandatory_bssid(clone->priv, NULL, 1);
 			return 1;
 		}
 	}
 	if (opt==1) //HACK: start/stop the nic
 	{
+		return 0;
+		
 		u32 reg=0;
 		if (clone->priv->status & (STATUS_RF_KILL_SW | STATUS_RF_KILL_HW)) // off -> on
 		{
@@ -8660,7 +8666,7 @@ int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt
 			}
 		}
 		ex:
-		IWI_DEBUG("found %d networks\n",i);
+		IWI_DEBUG_FULL("found %d networks\n",i);
 	}
 	//if (opt==3) memcpy(data,clone->priv->assoc_network,*len);
 	if (opt==4)
