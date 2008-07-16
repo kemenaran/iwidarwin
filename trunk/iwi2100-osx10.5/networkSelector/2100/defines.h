@@ -1,3 +1,5 @@
+typedef unsigned char	u_char;
+#include <libkern/OSByteOrder.h>
 #include <IOKit/IOTypes.h>
 #include "net/ieee80211.h"
 #include "net/ieee80211_crypt.h"

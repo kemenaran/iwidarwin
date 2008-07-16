@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <sys/kern_control.h>
 #include <sys/socket.h>
 #include <sys/sys_domain.h>
