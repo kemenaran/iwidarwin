@@ -1,0 +1,46 @@
+{\rtf1\mac\ansicpg10000\cocoartf824\cocoasubrtf420
+{\fonttbl\f0\fswiss\fcharset77 Helvetica;\f1\fnil\fcharset77 LucidaGrande;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww9000\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\f0\fs24 \cf0 Welcome to the IWIDarwin project.\
+http://code.google.com/p/iwidarwin/\
+\
+The following installer will install the following software:\
+\
+1. iwi2100.kext - Driver for the Intel Pro Wireless 2100 Family of wireless network adaptors.\
+2. 
+\f1 networkSelector/
+\f0 nsGUI.app - Application which should control and allow the user to control the driver functions, the ability to select networks, shut down and start up the device.\
+\
+The current version of the driver and software will enable the user to connect to\
+unsecured networks.\
+\
+Parameters:\
+change it in the info.plist file of iwi2100.kext. Remove System/Library/
+\f1 Extensions.kextcache/mkext
+\f0  after changing a parameter, them reboot\
+\
+p_mode= 0,1,2 set modes: bss, ibss or monitor\
+p_enabled= 0,1 auto associate at boot on/off for unsecured networks\
+\
+Known Bugs:\
+the driver is slow if the signal is weak\
+radio switch might fail to turn the card on\
+\
+TODO:\
+add more secure network support\
+\
+The IWIDarwin project is maintained by:\
+jalavoui, \
+kazuhisa, \
+fliphdk, \
+asaf.algawi, \
+braschlosan, \
+ursulaslover, \
+airflypan, \
+JustJoe4, \
+kemenaran, \
+jalilcejin\
+}
