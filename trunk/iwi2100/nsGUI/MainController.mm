@@ -26,6 +26,14 @@ static int networkMenuCount = 0;
 	[statusItem setToolTip: @"NetworkSelector"];
 	[statusItem setHighlightMode: YES];
 	[networkName setTarget:self];
+	//set all textboxs to null to avoid errors when sending to iwi2200
+	[passwordName setStringValue:@""];
+	[networkName setStringValue:@""];
+	[[[dataOutlet tableColumnWithIdentifier:@"Signal"] dataCell] setLevelIndicatorStyle:NSContinuousCapacityLevelIndicatorStyle];
+	[[[dataOutlet tableColumnWithIdentifier:@"Signal"] dataCell] setMaxValue:250];
+	[[[dataOutlet tableColumnWithIdentifier:@"Signal"] dataCell] setWarningValue:190];
+	[[[dataOutlet tableColumnWithIdentifier:@"Signal"] dataCell] setCriticalValue:179];
+	
 }
 
 - (id) init
@@ -87,6 +95,7 @@ static int networkMenuCount = 0;
 }
 - (IBAction)NetworkAction:(id)sender
 {
+		if (priv.ieee->scans<2) return;
 		[ConnectButton setEnabled:true];
 		[ConnectButton setHidden:false];
 		[listWindow setHidden:false];
@@ -121,20 +130,20 @@ static int networkMenuCount = 0;
 		if (c>0)
 		if (!memcmp(priv.ieee->networks[c].bssid, priv.ieee->networks[c-1].bssid, sizeof(priv.ieee->networks[c-1].bssid)))
 		{
-			priv.ieee->networks[c].ssid_len=0;
+			priv.ieee->networks[c].ssid_len=99;
 		}
-		if (priv.ieee->networks[c].ssid_len>0) 
+		if (priv.ieee->networks[c].ssid_len<99)
 		{
 			priv.ieee->networks[c+1]=priv.ieee->networks[c];
 			goto rep;
 		}
-/*		if (priv.status & STATUS_ASSOCIATED)
+		if (priv.status & STATUS_ASSOCIATED)
 		{
-			priv.assoc_network=&nets;
-			sp=sizeof(*priv.assoc_network);
-			result = getsockopt( fd, SYSPROTO_CONTROL, 3, priv.assoc_network, &sp);
+			//priv.assoc_network=&nets;
+			//sp=sizeof(*priv.assoc_network);
+			//result = getsockopt( fd, SYSPROTO_CONTROL, 3, priv.assoc_network, &sp);
 		}
-		if ((priv.status & STATUS_ASSOCIATED) && priv.assoc_network)
+		if ((priv.status & STATUS_ASSOCIATED) /*&& priv.assoc_network*/)
 		{
 			char	sa_data[14];
 			sp=sizeof(sa_data);
@@ -150,7 +159,7 @@ static int networkMenuCount = 0;
 				}
 			}
 			
-		}*/
+		}
 		
 		
 		if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)) 
@@ -169,15 +178,31 @@ static int networkMenuCount = 0;
 						
 					for (ii=0; ii<MAX_NETWORK_COUNT ;ii++)
 					{
-						if (priv.ieee->networks[ii].ssid_len>0)
+						if (priv.ieee->networks[ii].ssid_len<99 && ![[NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid)] isEqualToString:@"00:00:00:00:00:00"])
 						{
 							cn++;
 							NSString *sSSID = [NSString stringWithFormat:@"%s",escape_essid((const char*)priv.ieee->networks[ii].ssid, priv.ieee->networks[ii].ssid_len)];
 							NSString *sMAC = [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid)];
 							NSString *sch = [NSString stringWithFormat:@"%d",priv.ieee->networks[ii].channel];
-							
-							NSImage *sig; // = [NSImage new];
+							//NSImage *sig; // = [NSImage new];
+							NSString *ssig = [NSString stringWithFormat:@"%d",priv.ieee->networks[ii].stats.signal];
 							NSImage *prot;// = [NSImage new];
+							NSString *ntype=@"";
+							NSLevelIndicatorCell *sig=[NSLevelIndicatorCell new];
+							/*if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
+							{
+							if (priv.ieee->networks[ii].security & STD_WEP) ntype=@"WEP";
+							if (priv.ieee->networks[ii].security & STD_WPA) ntype=@"WPA";
+							if (priv.ieee->networks[ii].security & STD_WPA2) ntype=@"WPA2";
+							
+							if (priv.ieee->networks[ii].security & AUTH_PSK) ntype=[ntype stringByAppendingString:@"_s"];
+							if (priv.ieee->networks[ii].security & AUTH_MGT) ntype=[ntype stringByAppendingString:@"_m"];
+							
+							if (priv.ieee->networks[ii].security & ENC_TKIP) ntype=[ntype stringByAppendingString:@".t"];
+							if (priv.ieee->networks[ii].security & ENC_WRAP) ntype=[ntype stringByAppendingString:@".w"];
+							if (priv.ieee->networks[ii].security & ENC_CCMP) ntype=[ntype stringByAppendingString:@".c"];
+							}*/
+
 							prot = [[NSImage alloc] init];
 							
 							if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY) ? 1 : 0)
@@ -203,20 +228,28 @@ static int networkMenuCount = 0;
 								
 							NSString* imageName;
 							
+							
+
 							int signal = priv.ieee->networks[ii].stats.signal;
-							if (signal < 50 ) imageName = [[NSBundle mainBundle] pathForResource:@"sig1s" ofType:@"tif"];
-							if (signal >=50 && signal <100) imageName = [[NSBundle mainBundle] pathForResource:@"sig2s" ofType:@"tif"];
-							if (signal >=100 && signal <180) imageName = [[NSBundle mainBundle] pathForResource:@"sig3s" ofType:@"tif"];
-							if (signal>=180) imageName = [[NSBundle mainBundle] pathForResource:@"sig4s" ofType:@"tif"];
+							if (signal < 170 ) imageName = [[NSBundle mainBundle] pathForResource:@"sig1s" ofType:@"tif"];
+							if (signal >=170 && signal <180) imageName = [[NSBundle mainBundle] pathForResource:@"sig2s" ofType:@"tif"];
+							if (signal >=180 && signal <190) imageName = [[NSBundle mainBundle] pathForResource:@"sig3s" ofType:@"tif"];
+							if (signal>=190) imageName = [[NSBundle mainBundle] pathForResource:@"sig4s" ofType:@"tif"];
+							[sig setIntValue:signal];
+
+							//sig = [[NSImage alloc] initWithContentsOfFile:imageName];
 							
-							sig = [[NSImage alloc] initWithContentsOfFile:imageName];
-							
-							cout<<prot;
+							//cout<<prot;
 
 							
 							NSMutableArray *data = [NSMutableArray new];
-							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];[data addObject:sig];[data addObject:prot];
-							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",@"Signal", @"Info",nil];
+							[data addObject:sSSID];[data addObject:sMAC];[data addObject:sch];
+							[data addObject:sig];[data addObject:ssig];[data addObject:prot];
+							[data addObject:ntype];
+							
+							NSArray * keys   = [NSArray arrayWithObjects:@"SSID", @"MAC", @"Channel",
+							@"Signal", @"Value",@"Info",@"Type",nil];
+							
 							
 							NSMutableDictionary *temp = [[NSMutableDictionary alloc] initWithObjects: data forKeys: keys];
 							
@@ -227,7 +260,7 @@ static int networkMenuCount = 0;
 							
 							[menuItem setTag:ii];
 							[menuItem setTarget:self];
-							[menuItem setImage:sig];
+							[menuItem setImage:[[NSImage alloc] initWithContentsOfFile:imageName]];
 							
 							[networksMenu addItem:menuItem];
 							
@@ -236,10 +269,7 @@ static int networkMenuCount = 0;
 						}
 					}
 				}
-
 		[dataOutlet reloadData];
-		
-				
 }
 
 - (IBAction)PowerAction:(id)sender
@@ -296,16 +326,47 @@ static int networkMenuCount = 0;
 - (IBAction)Connect:(id)sender
 {
 	int sel0 = [dataOutlet selectedRow];
-	sel0++;
-	if (sel0>0)
+	if (sel0>=0)
 	{
 		int ii;
-		int vi=0;
+		int vi=-1;
+		NSString *mac0,*mac1;
+		mac1 = [[networksData objectAtIndex:sel0] objectForKey:@"MAC"];
 		for (ii=0; ii<MAX_NETWORK_COUNT ;ii++)
-		if (priv.ieee->networks[ii].ssid_len>0)
+		if (priv.ieee->networks[ii].ssid_len<99)
 		{
-			vi++;
-			if (vi==sel0) break;
+			mac0 = [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x",MAC_ARG(priv.ieee->networks[ii].bssid)];
+			if ([mac0 isEqualToString:mac1]) 
+			{
+				vi=ii;
+				break;
+			}
+		}
+		if ( ieee80211_is_empty_essid((const char*)priv.ieee->networks[ii].ssid,priv.ieee->networks[ii].ssid_len))
+		{
+			[self cancelModeChange:nil];
+			[hiddenessid setStringValue:@""];
+			[NSApp runModalForWindow:(NSWindow *)cr_hiddenDialog relativeToWindow:mainWindow];
+			if ([[hiddenessid stringValue] isEqualToString:@""]) return;
+			priv.ieee->networks[ii].ssid_len=[[hiddenessid stringValue] length];
+			memcpy(priv.ieee->networks[ii].ssid,escape_essid([[hiddenessid stringValue] cString],priv.ieee->networks[ii].ssid_len),priv.ieee->networks[ii].ssid_len);
+			//printf("net %s %d\n",escape_essid((const char*)priv.ieee->networks[ii].ssid,priv.ieee->networks[ii].ssid_len),priv.ieee->networks[ii].ssid_len);
+		}
+		if (vi==-1) return;
+		ii=vi;
+		if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY)!=0)
+		{
+			if (0)//priv.ieee->networks[ii].security & STD_WEP)
+			{
+				[self cancelModeChange:nil];
+				[passwordName setStringValue:@""];
+				[NSApp runModalForWindow:(NSWindow *)cr_passwordDialog relativeToWindow:mainWindow];
+				if ([[passwordName stringValue] isEqualToString:@""]) return;
+				if ([[hexapassw cell] state])//hexa
+				setsockopt(fd,SYSPROTO_CONTROL,6,[[passwordName stringValue] cString] ,[[passwordName stringValue] length]);
+				else
+				setsockopt(fd,SYSPROTO_CONTROL,7,[[passwordName stringValue] cString] ,[[passwordName stringValue] length]);
+			}
 		}
 		[textOutlet setStringValue:[NSString stringWithCString:"connecting to network..."]];
 		[ProgressAnim setHidden:false];
@@ -314,9 +375,13 @@ static int networkMenuCount = 0;
 		int r=setsockopt(fd,SYSPROTO_CONTROL,2,&priv.ieee->networks[ii], sizeof(priv.ieee->networks[ii]));
 		[ProgressAnim stopAnimation:self];
 		[ProgressAnim setHidden:true];
-		if (r==1)
-		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
 		wait_conect=NO;
+		if (r==1)
+		{
+		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
+		[self preAction];
+		}
+		
 		
 
 		
@@ -333,10 +398,22 @@ static int networkMenuCount = 0;
 		int ii;
 		int vi=0;
 		for (ii=0; ii<MAX_NETWORK_COUNT ;ii++)
-		if (priv.ieee->networks[ii].ssid_len>0)
+		if (priv.ieee->networks[ii].ssid_len<99)
 		{
 			vi++;
 			if (vi==sel0) break;
+		}
+		if ( ieee80211_is_empty_essid((const char*)priv.ieee->networks[ii].ssid,priv.ieee->networks[ii].ssid_len))
+		{
+			[self openMainWindow:sender];
+			return;
+		}
+		if ((priv.ieee->networks[ii].capability & WLAN_CAPABILITY_PRIVACY)!=0)
+		{
+			
+			//if (priv.ieee->networks[ii].security & STD_WEP)
+			//[self openMainWindow:sender];
+			return;
 		}
 		[textOutlet setStringValue:[NSString stringWithCString:"connecting to network..."]];
 		[ProgressAnim setHidden:false];
@@ -345,11 +422,25 @@ static int networkMenuCount = 0;
 		int r=setsockopt(fd,SYSPROTO_CONTROL,2,&priv.ieee->networks[ii], sizeof(priv.ieee->networks[ii]));
 		[ProgressAnim stopAnimation:self];
 		[ProgressAnim setHidden:true];
-		if (r==1)
-		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
 		wait_conect=NO;
+		if (r==1)
+		{
+		[textOutlet setStringValue:[NSString stringWithCString:"failed while connecting to network..."]];
+		[self preAction];
+		}
 	}
 	[self CancelConnect:nil];
+}
+
+- (IBAction)Cancelhidden:(id)sender;
+{
+	[cr_hiddenDialog orderOut:nil];
+	[NSApp endSheet:cr_hiddenDialog];
+	if ([sender tag]) 
+	{
+		[hiddenessid setStringValue:@""];
+		return;
+	}
 }
 
 - (IBAction)CancelConnect:(id)sender;
@@ -432,7 +523,7 @@ static int networkMenuCount = 0;
 		memset(priv.ieee->networks, 0, MAX_NETWORK_COUNT * sizeof(struct ieee80211_network));
 		
 		[NSApp setApplicationIconImage:originalIcon];
-
+		int pon=0;
 		if (priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW))
 		{
 			[PowerButton setTitle:@"Set Power ON"];
@@ -445,13 +536,13 @@ static int networkMenuCount = 0;
 		}
 			else
 		{
+			pon=1;
 			[PowerButton setTitle:@"Set Power OFF"];
 			[[DockMenu itemWithTitle:@"Set Power ON"] setTitle:@"Set Power OFF"];			
-
-			
 			[Createibss setEnabled:NO];
 			[LedButton setEnabled:NO];
 			[ModeButton setEnabled:NO];
+			[self CancelConnect:nil];
 		}
 		NSString *sta,*sta0;
 		sta=@"";
@@ -480,31 +571,30 @@ static int networkMenuCount = 0;
 		sp=sizeof(priv.ieee->networks[c]);
 		if (!(priv.status & (STATUS_RF_KILL_HW | STATUS_RF_KILL_SW)))
 		result = getsockopt( fd, SYSPROTO_CONTROL, 2, &priv.ieee->networks[c], &sp);
-		
 		if (c>0)
 		if (!memcmp(priv.ieee->networks[c].bssid, priv.ieee->networks[c-1].bssid, sizeof(priv.ieee->networks[c-1].bssid)))
 		{
-			priv.ieee->networks[c].ssid_len=0;
+			priv.ieee->networks[c].ssid_len=99;
 		}
-		if (priv.ieee->networks[c].ssid_len>0) 
+		if (priv.ieee->networks[c].ssid_len<99)
 		{
 			priv.ieee->networks[c+1]=priv.ieee->networks[c];
 			goto rep;
 		}
 		if (c>0)
 			//[NetButton setEnabled:YES];
-			if (!(priv.status & STATUS_ASSOCIATED)) [self NetworkAction:nil];
+			if (!(priv.status & STATUS_ASSOCIATED) && pon) [self NetworkAction:nil];
 		//else
 		//	[NetButton setEnabled:NO];
 		
-/*		if (priv.status & STATUS_ASSOCIATED)
+		if (priv.status & STATUS_ASSOCIATED)
 		{
 			[self CancelConnect:nil];
-			priv.assoc_network=&nets;
-			sp=sizeof(*priv.assoc_network);
-			result = getsockopt( fd, SYSPROTO_CONTROL, 3, priv.assoc_network, &sp);
+			//priv.assoc_network=&nets;
+			//sp=sizeof(*priv.assoc_network);
+			//result = getsockopt( fd, SYSPROTO_CONTROL, 3, priv.assoc_network, &sp);
 		}
-		if ((priv.status & STATUS_ASSOCIATED) && priv.assoc_network)
+		if ((priv.status & STATUS_ASSOCIATED) /*&& priv.assoc_network*/)
 		{
 			//[NetButton setEnabled:NO];
 			char	sa_data[14];
@@ -512,19 +602,19 @@ static int networkMenuCount = 0;
 			result = getsockopt( fd, SYSPROTO_CONTROL, 4, sa_data, &sp);
 			
 			sta0=[NSString stringWithFormat:@"'%s (%02x:%02x:%02x:%02x:%02x:%02x) ch: %d'\n",
-						escape_essid((const char*)priv.assoc_network->ssid, priv.assoc_network->ssid_len),
-						MAC_ARG(priv.assoc_network->bssid), priv.assoc_network->channel];
+						escape_essid((const char*)priv.essid, priv.essid_len),
+						MAC_ARG(priv.bssid), priv.channel];
 			sta=[sta stringByAppendingString:sta0];
 			
-			int signal = priv.assoc_network->stats.signal;
+			int signal = 0;//priv.assoc_network->stats.signal;
 			
 			NSString *imageName;
 			
-			if (signal < 50 ) imageName = [[NSBundle mainBundle] pathForResource:@"sig1s" ofType:@"tif"];
-			if (signal >=50 && signal <100) imageName = [[NSBundle mainBundle] pathForResource:@"sig2s" ofType:@"tif"];
-			if (signal >=100 && signal <180) imageName = [[NSBundle mainBundle] pathForResource:@"sig3s" ofType:@"tif"];
-			if (signal>=180) imageName = [[NSBundle mainBundle] pathForResource:@"sig4s" ofType:@"tif"];
-			
+			if (signal < 170 ) imageName = [[NSBundle mainBundle] pathForResource:@"sig1s" ofType:@"tif"];
+			if (signal >=170 && signal <180) imageName = [[NSBundle mainBundle] pathForResource:@"sig2s" ofType:@"tif"];
+			if (signal >=180 && signal <190) imageName = [[NSBundle mainBundle] pathForResource:@"sig3s" ofType:@"tif"];
+			if (signal>=190) imageName = [[NSBundle mainBundle] pathForResource:@"sig4s" ofType:@"tif"];
+								
 			statusImage = [[NSImage alloc] initWithContentsOfFile:imageName];
 			[statusItem setImage:statusImage];
 			[statusItem setAlternateImage:statusImage];
@@ -533,7 +623,7 @@ static int networkMenuCount = 0;
 			if (![DockMenu itemWithTag:360])
 			{
 				NSMenuItem *temp = [[NSMenuItem alloc] initWithTitle:[NSString stringWithCString:
-				escape_essid((const char*)priv.assoc_network->ssid, priv.assoc_network->ssid_len)]
+				escape_essid((const char*)priv.essid, priv.essid_len)]
 				action:nil keyEquivalent:@""];
 				imageName = [[NSBundle mainBundle] pathForResource:@"Connected" ofType:@"png"];
 				NSImage *tempImage = [[NSImage alloc] initWithContentsOfFile:imageName];
@@ -568,20 +658,24 @@ static int networkMenuCount = 0;
 					sta0=[NSString stringWithCString:"no internet connection!\n"];
 					sta=[sta stringByAppendingString:sta0];
 					//[textOutlet setStringValue:[NSString stringWithCString:sta]];
-				}
+				}/*else
+				{
+					sta0=[NSString stringWithFormat:@"Quality %d\n",priv.quality];
+					sta=[sta stringByAppendingString:sta0];
+				}*/
 			}
-		}*/
+		}
 		[textOutlet setStringValue:sta];
 
 		
 		
 		
 }
-- (void)tableView:(NSTableView *)tableView sortDescriptorsDidChange:(NSArray *)oldDescriptors {
+/*- (void)tableView:(NSTableView *)tableView sortDescriptorsDidChange:(NSArray *)oldDescriptors {
 	NSArray *newDescriptors = [tableView sortDescriptors];
-	[networksData sortUsingDescriptors:newDescriptors];
+	[networksData sortUsingDescriptors:NULL];
 	[dataOutlet reloadData];
-}
+}*/
 - (NSMenu *)applicationDockMenu:(NSApplication *)sender
 {
     return networksMenu;
@@ -645,8 +739,26 @@ static int networkMenuCount = 0;
 - (IBAction)createAdHocSelected:(id)sender
 {
 	[self cancelModeChange:nil];
+	[networkName setStringValue:@""];
 	[NSApp beginSheet:cr_networkDialog modalForWindow:mainWindow
         modalDelegate:self didEndSelector:nil contextInfo:nil];
+}
+
+- (IBAction)createPassword:(id)sender
+{
+
+	[cr_passwordDialog orderOut:nil];
+    [NSApp endSheet:cr_passwordDialog];
+	
+	if ([sender tag]) 
+	{
+		[passwordName setStringValue:@""];
+		return;
+	}
+
+}
+- (IBAction)createPasswordSelected:(id)sender
+{
 }
 
 @end
