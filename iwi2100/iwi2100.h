@@ -12,7 +12,7 @@
 #define TX_QUEUE_CHECK
 //#define IW_RX_REPLACING
 //#define IWI_NOLOG
-#define IWI_DEBUG_NORMAL
+//#define IWI_DEBUG_NORMAL
 //#define IWI_DEBUG_FULL_MODE
 #define IWI_WARNERR
 
@@ -1011,7 +1011,7 @@ virtual void	dataLinkLayerAttachComplete( IO80211Interface * interface );*/
 			return;
 
 			if (network->ibss_dfs) {
-			kfree(network->ibss_dfs);
+			IOFree(network->ibss_dfs,sizeof(*network->ibss_dfs));
 			network->ibss_dfs = NULL;
 			}
 		}			  					
