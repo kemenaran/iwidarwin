@@ -51,7 +51,7 @@
 		400A31900C01E54A007BE2A8 /* sig3s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig3s.tif; path = GFX/sig3s.tif; sourceTree = "<group>"; };
 		400A31920C01E54D007BE2A8 /* sig4s.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = sig4s.tif; path = GFX/sig4s.tif; sourceTree = "<group>"; };
 		400B93D70BFE7DF8005504F4 /* Connected.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Connected.png; path = GFX/Connected.png; sourceTree = "<group>"; };
-		400D54FD0BBD50ED00653AE4 /* nsGUI.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = nsGUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		400D54FD0BBD50ED00653AE4 /* nsGUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nsGUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		40138DF70BBBE165007E4177 /* enc.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = enc.tif; path = GFX/enc.tif; sourceTree = "<group>"; };
 		402F07BF0BF934E600038DCA /* icons.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icons.icns; sourceTree = "<group>"; };
 		406E55DA0BECD5B800AB0131 /* MainController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = MainController.h; sourceTree = "<group>"; };
