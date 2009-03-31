@@ -23,7 +23,7 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *
  *****************************************************************************/
-#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
+//#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 
 #ifdef LINUX
 #include <linux/kernel.h>

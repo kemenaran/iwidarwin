@@ -659,7 +659,7 @@ static u16 iwl3945_get_adjacent_rate(struct iwl3945_rs_sta *rs_sta,
  * rate table and must reference the driver allocated rate table
  *
  */
-static struct ieee80211_rate *rs_get_rate(void *priv_rate,
+static struct ieee80211_rate *rs_get_rate(struct ieee80211_local *local, void *priv_rate,
 					  struct net_device *dev,
 					  struct sk_buff *skb,
 					  struct rate_control_extra *extra)
@@ -676,7 +676,7 @@ static struct ieee80211_rate *rs_get_rate(void *priv_rate,
 	u32 fail_count;
 	s8 scale_action = 0;
 	unsigned long flags;
-	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+	//struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	struct sta_info *sta;
 	u16 fc, rate_mask;
@@ -699,7 +699,9 @@ static struct ieee80211_rate *rs_get_rate(void *priv_rate,
 	}
 
 	sta = sta_info_get(local, hdr->addr1);
-	if (!sta || !sta->rate_ctrl_priv) {
+	if (!sta) 
+	return NULL;
+	if (!sta->rate_ctrl_priv) {
 		IWL_DEBUG_RATE("leave: No STA priv data to update!\n");
 		if (sta)
 			sta_info_put(sta);
@@ -751,6 +753,7 @@ static struct ieee80211_rate *rs_get_rate(void *priv_rate,
 			       window->counter,
 			       window->success_counter,
 			       rs_sta->expected_tpt ? "not " : "");
+		
 		goto out;
 
 	}
