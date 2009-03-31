@@ -1,8 +1,8 @@
 #ifndef __DEFINES_H__
 #define __DEFINES_H__
 
-
-#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
+#define IM_HERE_NOW()
+//#define IM_HERE_NOW() printf("%s @ %s:%d\n", __FUNCTION__, __FILE__, __LINE__)
 #define CONFIG_IWL3945_DEBUG 1
 
 #define DUMP_PREFIX_OFFSET 0
@@ -208,6 +208,13 @@ enum ieee80211_link_state_t {
 // Bit manipulation, rewritten to use mach routines
 #define test_bit(x, y) isset(y, x)
 #define clear_bit(x, y) clrbit(y, x)
+#define test_and_clear_bit(x,y)		\
+({		\
+	int r;		\
+	r=test_bit(x, y);		\
+	clear_bit(x, y);		\
+	r;		\
+})
 
 //#define spin_lock_irqsave(lock, fl) //lck_spin_lock((lock)->slock+flags-flags)
 //#define spin_unlock_irqrestore(lock, fl) //lck_spin_unlock(((lock)->slock)+flags-flags)
@@ -600,8 +607,8 @@ struct ieee80211_local {
 	int long_retry_limit; /* dot11LongRetryLimit */
 	int short_preamble; /* use short preamble with IEEE 802.11b */
     
-	struct crypto_blkcipher *wep_tx_tfm;
-	struct crypto_blkcipher *wep_rx_tfm;
+	//struct crypto_blkcipher *wep_tx_tfm;
+	//struct crypto_blkcipher *wep_rx_tfm;
 	u32 wep_iv;
 	int key_tx_rx_threshold; /* number of times any key can be used in TX
      * or RX before generating a rekey
@@ -934,7 +941,7 @@ struct rate_control_ops {
     void (*tx_status)(void *priv, struct net_device *dev,
                       struct sk_buff *skb,
                       struct ieee80211_tx_status *status);
-    struct ieee80211_rate *(*get_rate)(void *priv, struct net_device *dev,
+    struct ieee80211_rate *(*get_rate)(struct ieee80211_local *local, void *priv, struct net_device *dev,
                                        struct sk_buff *skb,
                                        struct rate_control_extra *extra);
     void (*rate_init)(void *priv, void *priv_sta,
@@ -1571,9 +1578,14 @@ struct pci_driver {
 
 static struct ieee80211_hw * my_hw;
 
+static inline struct ieee80211_hw* local_to_hw(struct ieee80211_local *local)
+{
+	return &local->hw;
+}
+
 static inline struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw)
 {
-    return container_of(hw, struct ieee80211_local, hw);
+	 return container_of(hw, struct ieee80211_local, hw);
 }
 
 static inline struct ieee80211_local *wdev_priv(void *x)
@@ -1879,7 +1891,7 @@ int __x = (x);          \
 
 
 
-#define net_ratelimit() 0
+#define net_ratelimit() 1
 
 
 // This magic allows us to call init() and exit(), despite them being declared static
@@ -2200,7 +2212,7 @@ static u8 my_mac_addr[6];
 #define IEEE80211_ENCRYPT_HEADROOM 8
 #define IEEE80211_ENCRYPT_TAILROOM 12
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
-#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
+//#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
 #define TOTAL_MAX_TX_BUFFER 512
 #define STA_MAX_TX_BUFFER 128
 #define AP_MAX_BC_BUFFER 128

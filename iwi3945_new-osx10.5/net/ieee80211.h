@@ -189,11 +189,11 @@ struct net_device
 
 	/* List of functions to handle Wireless Extensions (instead of ioctl).
 	 * See <net/iw_handler.h> for details. Jean II */
-	const struct iw_handler_def *	wireless_handlers;
+	//const struct iw_handler_def *	wireless_handlers;
 	/* Instance data managed by the core of Wireless Extensions. */
-	struct iw_public_data *	wireless_data;
+	//struct iw_public_data *	wireless_data;
 
-	struct ethtool_ops *ethtool_ops;
+	//struct ethtool_ops *ethtool_ops;
 
 	/*
 	 * This marks the end of the "visible" part of the structure. All
@@ -225,7 +225,7 @@ struct net_device
 	unsigned char		addr_len;	/* hardware address length	*/
 	unsigned short          dev_id;		/* for shared network cards */
 
-	struct dev_mc_list	*mc_list;	/* Multicast mac addresses	*/
+	//struct dev_mc_list	*mc_list;	/* Multicast mac addresses	*/
 	int			mc_count;	/* Number of installed mcasts	*/
 	int			promiscuity;
 	int			allmulti;
@@ -295,12 +295,12 @@ struct net_device
 #define NETIF_F_TSO		2048	/* Can offload TCP/IP segmentation */
 #define NETIF_F_LLTX		4096	/* LockLess TX */
 
-	struct netpoll		*np;
+	//struct netpoll		*np;
 	/* bridge stuff */
-	struct net_bridge_port	*br_port;
+	//struct net_bridge_port	*br_port;
 
 	/* this will get initialized at each interface type init routine */
-	struct divert_blk	*divert;
+	//struct divert_blk	*divert;
 	/* class/net/name entry */
 	//struct class_device	class_dev;
     void *ieee80211_ptr;

@@ -36,6 +36,7 @@ extern "C" {
 	
 	//
 }
+
 extern void setCurController(IONetworkController * tmp);
 extern IOWorkLoop * getWorkLoop();
 extern IOInterruptEventSource * getInterruptEventSource();
@@ -51,9 +52,18 @@ extern void * get_my_priv();
 extern void setfNetif(IOEthernetInterface*	Intf);
 extern void setfTransmitQueue(IOBasicOutputQueue* fT);
 extern struct sk_buff *dev_alloc_skb(unsigned int length);
-
-
-struct ieee80211_tx_control tx_ctrl;//need to init this?			  
+extern int ieee80211_sta_set_bssid(struct net_device *dev, u8 *bssid);
+extern  void ieee80211_sta_req_auth(struct net_device *dev,
+			    struct ieee80211_if_sta *ifsta);
+extern int ieee80211_sta_set_ssid(struct net_device *dev, char *ssid, size_t len);
+extern void ieee80211_associated(struct net_device *dev,
+				 struct ieee80211_if_sta *ifsta);
+extern void ieee80211_if_set_type(struct net_device *dev, int type);
+extern void ieee80211_auth_completed(struct net_device *dev,
+				     struct ieee80211_if_sta *ifsta);
+extern int ieee80211_set_channel(struct ieee80211_local *local, int channel, int freq);					 
+									 				 
+//struct ieee80211_tx_control tx_ctrl;//need to init this?			  
 IOService * my_provider;
 static darwin_iwi3945 *clone;
 int first_up;
@@ -175,8 +185,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		bcopy(bss->bssid,ifsta->bssid,ETH_ALEN);
 		bcopy(bss->ssid,ifsta->ssid,bss->ssid_len);
 		ifsta->ssid_len=bss->ssid_len;
-		//iwl3945_add_station((struct iwl3945_priv*)get_my_priv(), ifsta->bssid, 0, CMD_ASYNC);
-		ieee80211_sta_config_auth(dev, ifsta);
+		//iwl3945_add_station((struct iwl3945_priv*)get_my_priv(), ifsta->bssid, 1,0);
+		//ieee80211_sta_config_auth(dev, ifsta);
 		//ieee80211_authenticate(dev, ifsta);
 		//ieee80211_associate(dev, ifsta);	
 	}
@@ -431,15 +441,16 @@ void darwin_iwi3945::queue_te2(int num, thread_call_func_t func, thread_call_par
 
 void darwin_iwi3945::check_firstup(void)
 {
-	IOLog("check_firstup\n");
+
 	if (first_up==0) 
 	//if (_pmPowerState != 1)
 	{
-		IOLog("goto system preferences -> networks and press apply if you keep seeing this\n");
+		//IOLog("goto system preferences -> networks and press apply if you keep seeing this\n");
 		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::check_firstup),NULL,2000,true);
 		return;
 	}
 	//disable(fNetif);
+	struct ieee80211_local *local =hw_to_local(get_my_hw());
 	u8 addr[6];
 	const char *buf=fakemac;
 	int i,n;
@@ -457,17 +468,159 @@ void darwin_iwi3945::check_firstup(void)
 		IOLog("Setting mac address from parameter to " MAC_FMT "\n",MAC_ARG(addr));
 		ifnet_set_lladdr(fifnet,addr,6);
 		bcopy(addr, my_mac_addr, ETH_ALEN);
-		struct net_device *dev=hw_to_local(get_my_hw())->mdev;
-		bcopy(addr, dev->dev_addr, ETH_ALEN);
+		bcopy(addr, local->mdev->dev_addr, ETH_ALEN);
+		bcopy(addr, local->scan_dev->dev_addr, ETH_ALEN);
 		setProperty(kIOMACAddress, my_mac_addr, kIOEthernetAddressSize);
 	}
 	//queue_te2(1,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwi3945::adapter_start),NULL,NULL,true);
-	/*struct ieee80211_local *local =hw_to_local(get_my_hw());
-	//int r=ieee80211_open(local);
+
 	struct net_device *dev=local->scan_dev;
-	if (dev) 
-	ieee80211_sta_req_scan(dev,NULL,0);*/
+	int rt=0;
+
+
+	//ieee80211_open(dev);
+	
+	retry:
+			if (!local->sta_scanning)
+				ieee80211_sta_req_scan(dev,NULL,0);
+
+			int b=0;
+			while (local->sta_scanning) 
+			{
+				b++;
+				IOSleep(100);
+				if (b==100) break;
+			}
+			IOSleep(jiffies_to_msecs(HZ*2+1));
+			IOSleep(jiffies_to_msecs(HZ*2+1));
+			rt++;
+			IOLog("searching for networks...\n");
+			struct ieee80211_sta_bss *bss=NULL;
+			 i=0;
+			list_for_each_entry(bss, &local->sta_bss_list, list) {
+				i++;
+				printk("%d) " MAC_FMT " ('%s') cap %x hw %d ch %d\n", i,MAC_ARG(bss->bssid),
+				escape_essid((const char*)bss->ssid, bss->ssid_len),bss->capability,bss->hw_mode,bss->channel);
+				break;
+			}
+			if (rt<5 && i==0)
+			{
+				goto retry;
+			}
+			if (i==0) return;
+
+		IOLog("trying to associate\n");
+
+		struct iwl3945_priv *priv=(struct iwl3945_priv*)get_my_priv();
+		struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
+		struct ieee80211_if_sta *ifsta = &sdata->u.sta;
+		struct ieee80211_hw_mode *mode;
+		struct sta_info *sta;
+		u32 rates;
+		int j;
+
+
+	
+		
+		int rep=0;
+	rscan:	
+		memcpy(priv->staging_rxon.bssid_addr, bss->bssid, ETH_ALEN);		
+		ieee80211_set_channel(local, -1, bss->freq);
+		ieee80211_sta_set_ssid(dev, (char*)bss->ssid, bss->ssid_len);	
+		//priv->staging_rxon.filter_flags |= RXON_FILTER_ASSOC_MSK;	
+		ieee80211_sta_set_bssid(dev, bss->bssid);
+		//ifsta->auth_tries = IEEE80211_AUTH_MAX_TRIES-1;
+		ieee80211_sta_req_auth(dev, ifsta);
+		
+
+		if (!local->sta_scanning) 
+		ieee80211_sta_req_scan(dev,bss->ssid,bss->ssid_len);
+				
+		//ieee80211_associated(dev, ifsta);
+		rep++;
+			while (local->sta_scanning) 
+			{
+				b++;
+				IOSleep(100);
+				if (b==100) break;
+			}
+		IOSleep(jiffies_to_msecs(HZ*2+1));
+		IOSleep(jiffies_to_msecs(HZ*2+1));
+		if (rep<1 && !ifsta->associated) goto rscan;
+	
+	
+	//memcpy(local->mdev->dev_addr, bss->bssid, ETH_ALEN);
+	
+	//ifsta->aid = aid;
+	ifsta->ap_capab = bss->capability;
+
+	//kfree(ifsta->assocresp_ies);
+	//ifsta->assocresp_ies_len = len - (pos - (u8 *) mgmt);
+	//ifsta->assocresp_ies = (u8*)kmalloc(ifsta->assocresp_ies_len, GFP_ATOMIC);
+	//if (ifsta->assocresp_ies)
+	//	memcpy(ifsta->assocresp_ies, pos, ifsta->assocresp_ies_len);
+	
+	sta = sta_info_get(local, bss->bssid);
+	
+	if (!sta) {
+		sta = sta_info_add(local, dev, bss->bssid, GFP_ATOMIC);
+		if (!sta) {
+			printk(KERN_DEBUG "%s: failed to add STA entry for the"
+			       " AP\n", dev->name);
+			return;
+		}
+			sta->last_rssi = bss->rssi;
+			sta->last_signal = bss->signal;
+			sta->last_noise = bss->noise;
+	}
+
+	sta->dev = dev;
+	sta->flags |= WLAN_STA_AUTH | WLAN_STA_ASSOC;
+	sta->assoc_ap = 1;
+
+	rates = 0;
+	mode = local->oper_hw_mode;
+	for (i = 0; i < bss->supp_rates_len; i++) {
+		int rate = (bss->supp_rates[i] & 0x7f) * 5;
+		if (mode->mode == MODE_ATHEROS_TURBO)
+			rate *= 2;
+		for (j = 0; j < mode->num_rates; j++)
+			if (mode->rates[j].rate == rate)
+				rates |= BIT(j);
+	}
+
+	sta->supp_rates = rates;
+
+	rate_control_rate_init(sta, local);
+
+	if (bss->wmm_ie ) {
+		ifsta->wmm_enabled=1;
+		sta->flags |= WLAN_STA_WME;
+		ieee80211_sta_wmm_params(dev, ifsta, bss->wmm_ie,
+					 bss->wmm_ie_len);
+	}
+
+
+	sta_info_put(sta);
+	
+	IOSleep(1000);
+	//ieee80211_sta_req_auth(dev, ifsta);
+	
+	//ifsta->state = IEEE80211_ASSOCIATED;
+	//ieee80211_associate(dev, ifsta);
+	//priv->staging_rxon.filter_flags |= RXON_FILTER_ASSOC_MSK;	
+	//ieee80211_sta_req_scan(dev,bss->ssid,bss->ssid_len);
+	//ifsta->last_rate=54*1000000;
+	//ieee80211_sta_req_auth(dev, ifsta);		
+	//ieee80211_auth_completed(dev, ifsta);
+	ieee80211_associated(dev, ifsta);
+	IOSleep(2000);
+	priv->call_post_assoc_from_beacon = 1;
+
+	//ifsta->last_rate=54*1000000;
+	//setLinkStatus(kIONetworkLinkValid | (ifsta->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_AUTO],ifsta->last_rate);
 }
+
 
 void darwin_iwi3945::adapter_start(void)
 {
@@ -1582,13 +1735,13 @@ IOReturn darwin_iwi3945::enable( IONetworkInterface* netif )
 		{
 			first_up=1;
 		}
-	if ((fNetif->getFlags() & IFF_RUNNING)==0)
+	if (1)//(fNetif->getFlags() & IFF_RUNNING)==0)
 	{
 		IOLog("ifconfig going up\n ");
 		//FIXME: if associated set IFF_RUNNING
 		//if (priv->status & STATUS_ASSOCIATED) 
-		if(get_my_hw())
-			if (is_associated((void *)get_my_hw()->priv))
+		//if(get_my_hw())
+		//	if (is_associated((void *)get_my_hw()->priv))
 				ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
 		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
@@ -1688,7 +1841,9 @@ copy_packet:
  *-------------------------------------------------------------------------*/
  UInt32 darwin_iwi3945::outputPacket2(mbuf_t m, void * param)
 {
-	IOLog("outputPaccket2 called\n");
+
+
+
 	IOInterruptState flags;
 	//spin_lock_irqsave(spin, flags);
 	
@@ -1712,7 +1867,7 @@ copy_packet:
 
 	mbuf_t nm;
 	
-	IOLog("outputPacket t: %d f:%04x\n",mbuf_type(m),mbuf_flags(m));
+	//IOLog("outputPacket t: %d f:%04x\n",mbuf_type(m),mbuf_flags(m));
 	
 	//drop mbuf is not PKTHDR
 	if (!(mbuf_flags(m) & MBUF_PKTHDR) ){
@@ -1748,14 +1903,17 @@ copy_packet:
 	
 	struct ieee80211_local *local=hw_to_local(get_my_hw());
 	if (!local) return kIOReturnOutputSuccess;
-	if(!local->mdev) return kIOReturnOutputSuccess;
+	//if(!local->mdev) return kIOReturnOutputSuccess;
 	struct sk_buff *skb=dev_alloc_skb(mbuf_len(m));//TODO: make this work better
 	struct ieee80211_tx_packet_data *pkt_data = (struct ieee80211_tx_packet_data *)skb->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
-	pkt_data->ifindex=1;
+	pkt_data->ifindex=2;
 	skb_set_data(skb,mbuf_data(m),mbuf_len(m));
-	int ret = ieee80211_master_start_xmit(skb,local->mdev);
-	if (ret==0) netStats->outputPackets++;	
+	dev_queue_xmit(skb);
+	int ret=0; 
+	//ret= ieee80211_master_start_xmit(skb,local->mdev);
+	if (ret==0) 
+	netStats->outputPackets++;	
 
 finish:	
 	//spin_unlock_irqrestore(spin, flags);
@@ -1766,7 +1924,7 @@ finish:
 
 UInt32 darwin_iwi3945::outputPacket(mbuf_t m, void * param)
 {
-	IOLog("outputPacket called by someone\n");
+
 	if (!(fTransmitQueue->getState() & 0x1))
 	{
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
@@ -1784,7 +1942,7 @@ UInt32 darwin_iwi3945::outputPacket(mbuf_t m, void * param)
 IOReturn darwin_iwi3945::disable( IONetworkInterface* /*netif*/ )
 {
     IOLog("darwin_iwi3945::disable()\n");
-	if ((fNetif->getFlags() & IFF_RUNNING)!=0)
+	if (1)//(fNetif->getFlags() & IFF_RUNNING)!=0)
 	{
 		IOLog("ifconfig going down\n");
 		setLinkStatus(kIONetworkLinkValid);

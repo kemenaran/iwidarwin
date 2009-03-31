@@ -12,7 +12,14 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif		
+#endif	
+	extern void ieee80211_sta_rx_mgmt(struct net_device *dev, struct sk_buff *skb,
+			   struct ieee80211_rx_status *rx_status);
+	extern void ieee80211_sta_wmm_params(struct net_device *dev,
+				     struct ieee80211_if_sta *ifsta,
+				     u8 *wmm_param, size_t wmm_param_len);
+	extern void rate_control_rate_init(struct sta_info *sta,
+					  struct ieee80211_local *local);
 	extern void rate_control_release(struct kref *kref);
 	extern struct net_device * dev_get_by_index(int index);
 	extern int pskb_expand_head(struct sk_buff *skb, int size, int reserve);
@@ -39,7 +46,7 @@ extern "C" {
 	extern void tasklet_enable(struct tasklet_struct *t);
 	extern int ieee80211_sta_start_scan(struct net_device *dev,
 				    u8 *ssid, size_t ssid_len);
-	extern struct ieee80211_hw* local_to_hw(struct ieee80211_local *local);
+	//extern struct ieee80211_hw* local_to_hw(struct ieee80211_local *local);
 	extern int __init rate_control_simple_init(void);
 	extern int ieee80211_sta_find_ibss(struct net_device *dev,
 				   struct ieee80211_if_sta *ifsta);
@@ -140,7 +147,8 @@ extern void mutex_unlock(struct mutex *new_mutex);
     
     extern struct sta_info * sta_info_get(struct ieee80211_local *local, u8 *addr);
     extern void sta_info_put(struct sta_info *sta);
-    
+    extern struct sta_info * sta_info_add(struct ieee80211_local *local,
+			       struct net_device *dev, u8 *addr, gfp_t gfp);
     
     
     extern int ieee80211_rate_control_register(struct rate_control_ops *ops);
@@ -164,7 +172,7 @@ extern void mutex_unlock(struct mutex *new_mutex);
                           struct sk_buff *skb, struct rate_control_extra *extra)
     {
         struct rate_control_ref *ref = local->rate_ctrl;
-        return ref->ops->get_rate(ref->priv, dev, skb, extra);
+        return ref->ops->get_rate(local, ref->priv, dev, skb, extra);
     }
 #define net_random()        random()
     extern void pci_free_consistent(struct pci_dev *hwdev, size_t size,
