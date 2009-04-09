@@ -509,7 +509,7 @@ void darwin_iwi3945::check_firstup(void)
 			}
 			if (i==0) return;
 
-		IOLog("trying to associate\n");
+		IOLog("trying to authenticate\n");
 
 		struct iwl3945_priv *priv=(struct iwl3945_priv*)get_my_priv();
 		struct ieee80211_sub_if_data *sdata = (ieee80211_sub_if_data*)IEEE80211_DEV_TO_SUB_IF(dev);
@@ -614,11 +614,31 @@ void darwin_iwi3945::check_firstup(void)
 	//ieee80211_sta_req_auth(dev, ifsta);		
 	//ieee80211_auth_completed(dev, ifsta);
 	ieee80211_associated(dev, ifsta);
-	IOSleep(2000);
-	priv->call_post_assoc_from_beacon = 1;
+	IOSleep(3000);
+	//priv->call_post_assoc_from_beacon = 1;
 
 	//ifsta->last_rate=54*1000000;
 	//setLinkStatus(kIONetworkLinkValid | (ifsta->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_AUTO],ifsta->last_rate);
+
+#define AUTH_REQ        \
+    "\xB0\x00\x3A\x01\xBB\xBB\xBB\xBB\xBB\xBB\xCC\xCC\xCC\xCC\xCC\xCC" \
+    "\xBB\xBB\xBB\xBB\xBB\xBB\xB0\x00\x00\x00\x01\x00\x00\x00"
+
+	rep=0;
+raut:
+	struct sk_buff *m=dev_alloc_skb(30);
+	struct ieee80211_tx_packet_data *pkt_data = (struct ieee80211_tx_packet_data *)m->cb;
+	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
+	pkt_data->ifindex=2;
+	memcpy( mbuf_data(m->mac_data), AUTH_REQ, 30 );
+	memcpy( (u8*)mbuf_data(m->mac_data) +  4, bss->bssid, 6 );
+	memcpy( (u8*)mbuf_data(m->mac_data) + 10, dev->dev_addr , 6 );
+	memcpy( (u8*)mbuf_data(m->mac_data) + 16, bss->bssid, 6 );
+	((u8*)mbuf_data(m->mac_data))[24]=0x01;
+	IOLog("send authentication packet %d\n",rep);
+	dev_queue_xmit(m);				
+	IOSleep(1000);	
+	if (rep<10 && !ifsta->authenticated) goto raut;			
 }
 
 
