@@ -627,6 +627,8 @@ void darwin_iwi3945::check_firstup(void)
 	rep=0;
 raut:
 	struct sk_buff *m=dev_alloc_skb(30);
+	mbuf_pkthdr_setlen(m->mac_data,30);
+	mbuf_setlen(m->mac_data,30);
 	struct ieee80211_tx_packet_data *pkt_data = (struct ieee80211_tx_packet_data *)m->cb;
 	memset(pkt_data, 0, sizeof(struct ieee80211_tx_packet_data));
 	pkt_data->ifindex=2;
