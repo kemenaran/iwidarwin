@@ -160,7 +160,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 		}	
 	}
 	if(opt == 3){
-		IOLog("request associate\n");
+		IOLog("to associate to a unsecure network reboot and check system.log\n");
+		return 0;
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		struct ieee80211_sta_bss *bss=NULL;
 		u8 bssid[ETH_ALEN];
@@ -196,7 +197,8 @@ int configureConnection(kern_ctl_ref ctlref, u_int unit, void *userdata, int opt
 int sendNetworkList(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,int opt, void *data, size_t *len)
 {
 	if(opt == 2){
-		IOLog("request scan\n");
+		IOLog("request scan - reboot and check system.log\n");
+		return 0;
 		struct ieee80211_local *local=hw_to_local(get_my_hw());
 		if (local)
 		{
@@ -604,8 +606,8 @@ void darwin_iwi3945::check_firstup(void)
 	sta_info_put(sta);
 	
 	IOSleep(1000);
-	//ieee80211_sta_req_auth(dev, ifsta);
-	
+	ieee80211_sta_req_auth(dev, ifsta);
+	IOSleep(1000);	
 	//ifsta->state = IEEE80211_ASSOCIATED;
 	//ieee80211_associate(dev, ifsta);
 	//priv->staging_rxon.filter_flags |= RXON_FILTER_ASSOC_MSK;	
@@ -614,7 +616,7 @@ void darwin_iwi3945::check_firstup(void)
 	//ieee80211_sta_req_auth(dev, ifsta);		
 	//ieee80211_auth_completed(dev, ifsta);
 	ieee80211_associated(dev, ifsta);
-	IOSleep(3000);
+	IOSleep(1000);
 	//priv->call_post_assoc_from_beacon = 1;
 
 	//ifsta->last_rate=54*1000000;
