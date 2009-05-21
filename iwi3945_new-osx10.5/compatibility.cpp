@@ -4471,12 +4471,12 @@ IM_HERE_NOW();
 	ifsta->state = IEEE80211_ASSOCIATE;
 	printk(KERN_DEBUG "%s: associate with AP " MAC_FMT "\n",
 	       dev->name, MAC_ARG(ifsta->bssid));
-	if (ieee80211_privacy_mismatch(dev, ifsta)) {
+	/*if (ieee80211_privacy_mismatch(dev, ifsta)) {
 		printk(KERN_DEBUG "%s: mismatch in privacy configuration and "
 		       "mixed-cell disabled - abort association\n", dev->name);
 		ifsta->state = IEEE80211_DISABLED;
 		return;
-	}
+	}*/ //hack
 
 	ieee80211_send_assoc(dev, ifsta);
 	//ifsta->last_rate=54*1000000;
@@ -8103,13 +8103,13 @@ void ieee80211_sta_work(struct work_struct *work)
 		break;
 	}
 
-	if (ieee80211_privacy_mismatch(dev, ifsta)) {
+	/*if (ieee80211_privacy_mismatch(dev, ifsta)) {
 		printk(KERN_DEBUG "%s: privacy configuration mismatch and "
 		       "mixed-cell disabled - disassociate\n", dev->name);
 
 		ieee80211_send_disassoc(dev, ifsta, WLAN_REASON_UNSPECIFIED);
 		ieee80211_set_disassoc(dev, ifsta, 0);
-	}
+	}*/ //hack
 
 }
 
