@@ -7306,7 +7306,7 @@ IM_HERE_NOW();
 }
 
 
-static void ieee80211_sta_reset_auth(struct net_device *dev,
+void ieee80211_sta_reset_auth(struct net_device *dev,
 				     struct ieee80211_if_sta *ifsta)
 {
 	IM_HERE_NOW();
@@ -7946,12 +7946,12 @@ void ieee80211_authenticate(struct net_device *dev,
 		printk(KERN_DEBUG "%s: authentication with AP " MAC_FMT
 		       " timed out\n",
 		       dev->name, MAC_ARG(ifsta->bssid));
-		ifsta->state = IEEE80211_DISABLED;
+		//ifsta->state = IEEE80211_DISABLED;
 		//ieee80211_auth_completed(dev,ifsta);//hack
 		//ifsta->auth_tries=0;//hack
 		//del_timer(&ifsta->timer);//hack
-
-		return;
+		ifsta->auth_tries=0;
+		//return;
 	}
 
 	ifsta->state = IEEE80211_AUTHENTICATE;
