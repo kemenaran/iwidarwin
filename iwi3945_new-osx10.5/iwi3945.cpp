@@ -532,7 +532,7 @@ void darwin_iwi3945::check_firstup(void)
 		//priv->staging_rxon.filter_flags |= RXON_FILTER_ASSOC_MSK;	
 		ieee80211_sta_set_bssid(dev, bss->bssid);
 		//ifsta->auth_tries = IEEE80211_AUTH_MAX_TRIES-1;
-		ieee80211_sta_req_auth(dev, ifsta);
+	
 		
 
 		if (!local->sta_scanning) 
@@ -605,9 +605,12 @@ void darwin_iwi3945::check_firstup(void)
 
 	sta_info_put(sta);
 	
-	IOSleep(1000);
+	//IOSleep(1000);
+	ieee80211_sta_reset_auth(dev, ifsta);
+	ieee80211_sta_config_auth(dev, ifsta);
 	ieee80211_sta_req_auth(dev, ifsta);
-	IOSleep(1000);	
+	ieee80211_authenticate(dev, ifsta);
+	//IOSleep(1000);	
 	//ifsta->state = IEEE80211_ASSOCIATED;
 	//ieee80211_associate(dev, ifsta);
 	//priv->staging_rxon.filter_flags |= RXON_FILTER_ASSOC_MSK;	
@@ -615,13 +618,13 @@ void darwin_iwi3945::check_firstup(void)
 	//ifsta->last_rate=54*1000000;
 	//ieee80211_sta_req_auth(dev, ifsta);		
 	//ieee80211_auth_completed(dev, ifsta);
-	ieee80211_associated(dev, ifsta);
-	IOSleep(1000);
+//	ieee80211_associated(dev, ifsta);
+//	IOSleep(1000);
 	//priv->call_post_assoc_from_beacon = 1;
 
 	//ifsta->last_rate=54*1000000;
 	//setLinkStatus(kIONetworkLinkValid | (ifsta->last_rate ? kIONetworkLinkActive : 0), mediumTable[MEDIUM_TYPE_AUTO],ifsta->last_rate);
-
+/*
 #define AUTH_REQ        \
     "\xB0\x00\x3A\x01\xBB\xBB\xBB\xBB\xBB\xBB\xCC\xCC\xCC\xCC\xCC\xCC" \
     "\xBB\xBB\xBB\xBB\xBB\xBB\xB0\x00\x00\x00\x01\x00\x00\x00"
@@ -642,7 +645,7 @@ raut:
 	IOLog("send authentication packet %d\n",rep);
 	dev_queue_xmit(m);				
 	IOSleep(1000);	
-	if (rep<10 && !ifsta->authenticated) goto raut;			
+	if (rep<10 && !ifsta->authenticated) goto raut;	*/		
 }
 
 
