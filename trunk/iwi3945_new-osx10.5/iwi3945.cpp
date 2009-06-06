@@ -605,10 +605,10 @@ void darwin_iwi3945::check_firstup(void)
 
 	sta_info_put(sta);
 	
-	//IOSleep(1000);
+	IOSleep(1000);
 	ieee80211_sta_reset_auth(dev, ifsta);
 	ieee80211_sta_config_auth(dev, ifsta);
-	ieee80211_sta_req_auth(dev, ifsta);
+	//ieee80211_sta_req_auth(dev, ifsta);
 	ieee80211_authenticate(dev, ifsta);
 	//IOSleep(1000);	
 	//ifsta->state = IEEE80211_ASSOCIATED;
