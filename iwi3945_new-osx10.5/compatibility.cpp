@@ -9165,8 +9165,8 @@ IM_HERE_NOW();
 			       "associated station\n",
 			       tx->dev->name);
 //#endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
-			I802_DEBUG_INC(tx->local->tx_handlers_drop_not_assoc);
-			return TXRX_DROP;
+			//I802_DEBUG_INC(tx->local->tx_handlers_drop_not_assoc);
+			//hack return TXRX_DROP;
 		}
 	} else {
 		if (unlikely((tx->fc & IEEE80211_FCTL_FTYPE) == IEEE80211_FTYPE_DATA &&
@@ -9182,14 +9182,14 @@ IM_HERE_NOW();
 		return TXRX_CONTINUE;
 	}
 
-	if (unlikely(!tx->u.tx.mgmt_interface && tx->sdata->ieee802_1x &&
+	/*if (unlikely(!tx->u.tx.mgmt_interface && tx->sdata->ieee802_1x &&
 		     !(sta_flags & WLAN_STA_AUTHORIZED))) {
 //#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 		printk(KERN_DEBUG "%s: dropped frame to (unauthorized port)\n", tx->dev->name);
 //#endif
 		I802_DEBUG_INC(tx->local->tx_handlers_drop_unauth_port);
 		return TXRX_DROP;
-	}
+	}*///hack
 
 	return TXRX_CONTINUE;
 }
