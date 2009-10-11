@@ -832,10 +832,10 @@ EXPORT_SYMBOL(iwl_bg_scan_completed);
 
 void iwl_setup_scan_deferred_work(struct iwl_priv *priv)
 {
-	INIT_WORK(&priv->scan_completed, iwl_bg_scan_completed);
-	INIT_WORK(&priv->request_scan, iwl_bg_request_scan);
-	INIT_WORK(&priv->abort_scan, iwl_bg_abort_scan);
-	INIT_DELAYED_WORK(&priv->scan_check, iwl_bg_scan_check);
+	INIT_WORK(&priv->scan_completed, iwl_bg_scan_completed,7);
+	INIT_WORK(&priv->request_scan, iwl_bg_request_scan,8);
+	INIT_WORK(&priv->abort_scan, iwl_bg_abort_scan,9);
+	INIT_DELAYED_WORK(&priv->scan_check, iwl_bg_scan_check,22);
 }
 EXPORT_SYMBOL(iwl_setup_scan_deferred_work);
 

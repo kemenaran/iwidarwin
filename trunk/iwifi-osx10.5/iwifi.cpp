@@ -22,15 +22,17 @@ OSDefineMetaClassAndStructors(darwin_iwifi, IOEthernetController);
 
 // Magic to make the init/exit routines public.
 extern "C" {
-    
-	
+    extern int (*init_routine)();
+	extern int (*init_routine2)();
+	extern IOPCIDevice* my_pci_device;
+	extern UInt16 my_deviceID;
 	//
 }
 
 extern void setCurController(IONetworkController * tmp);
 extern IOWorkLoop * getWorkLoop();
 extern IOInterruptEventSource * getInterruptEventSource();
-extern int if_down();
+
 extern IOPCIDevice * getPCIDevice();
 extern IOMemoryMap * getMap();
 extern void setUnloaded();
@@ -38,7 +40,7 @@ extern void start_undirect_scan();
 extern u8 * getMyMacAddr();
 extern void setMyfifnet(ifnet_t fifnet);
 extern struct ieee80211_hw * get_my_hw();
-extern void * get_my_priv();
+
 extern void setfNetif(IOEthernetInterface*	Intf);
 extern void setfTransmitQueue(IOBasicOutputQueue* fT);
 extern struct sk_buff *dev_alloc_skb(unsigned int length);
@@ -209,8 +211,43 @@ bool darwin_iwifi::start(IOService *provider)
 		
 		setCurController(this);
 		my_provider=provider;
-		//if( init_routine() )
-		//	return false;
+
+		if ( (fPCIDevice = OSDynamicCast(IOPCIDevice, provider)) == 0) {
+			IOLog("%s  fPCIDevice == 0 :(\n", getName());
+			break;
+		}
+
+		fPCIDevice->retain();
+		
+		if (fPCIDevice->open(this) == 0) {
+			IOLog("%s fPCIDevice->open(this) failed\n", getName());
+			break;
+		}
+		
+		if (fPCIDevice->requestPowerDomainState(kIOPMPowerOn, 
+			(IOPowerConnection *) getParentEntry(gIOPowerPlane),
+			IOPMLowestState ) != IOPMNoErr) {
+				IOLog("%s Power thingi failed\n", getName());
+				break;
+       		}
+			
+		my_pci_device=fPCIDevice;	
+		deviceID = fPCIDevice->configRead16(kIOPCIConfigDeviceID);		
+		my_deviceID=deviceID;
+		IOLog("Card ID: %04x\n", deviceID);
+
+		if (deviceID==0x4222 || deviceID==0x4227)
+		{
+			//3945
+			if( init_routine() )
+			return false;
+		}
+		else
+		{
+			if( init_routine2() )
+			return false;
+		}
+		
 
 		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
 		setfTransmitQueue(fTransmitQueue);
@@ -373,7 +410,7 @@ void darwin_iwifi::stop(IOService *provider)
 		fInterruptSrc->release();
 		printf("Stopping OK\n");
 	}
-	if_down();
+
 	if( fNetif ) {
         detachInterface( fNetif );
         fNetif->release();

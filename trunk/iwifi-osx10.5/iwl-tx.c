@@ -762,7 +762,7 @@ int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 
 	IWL_DEBUG_TX(priv, "station Id %d\n", sta_id);
 
-	txq_id = skb_get_queue_mapping(skb);
+	txq_id = 0;//;skb_get_queue_mapping(skb);
 	if (ieee80211_is_data_qos(fc)) {
 		qc = ieee80211_get_qos_ctl(hdr);
 		tid = qc[0] & IEEE80211_QOS_CTL_TID_MASK;
@@ -910,11 +910,11 @@ int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 	pci_dma_sync_single_for_device(priv->pci_dev, txcmd_phys,
 				       len/*, PCI_DMA_BIDIRECTIONAL*/);
 
-	trace_iwlwifi_dev_tx(priv,
-			     &((struct iwl_tfd *)txq->tfds)[txq->q.write_ptr],
-			     sizeof(struct iwl_tfd),
-			     &out_cmd->hdr, firstlen,
-			     (u8*)skb->data + hdr_len, secondlen);
+	//trace_iwlwifi_dev_tx(priv,
+	//		     &((struct iwl_tfd *)txq->tfds)[txq->q.write_ptr],
+	//		     sizeof(struct iwl_tfd),
+	//		     &out_cmd->hdr, firstlen,
+	//		     (u8*)skb->data + hdr_len, secondlen);
 
 	/* Tell device the write index *just past* this latest filled TFD */
 	q->write_ptr = iwl_queue_inc_wrap(q->write_ptr, q->n_bd);
@@ -1050,7 +1050,7 @@ int iwl_enqueue_hcmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
 	pci_unmap_addr_set(out_meta, /*mapping,*/ phys_addr);
 	pci_unmap_len_set(out_meta, len, fix_size);
 
-	trace_iwlwifi_dev_hcmd(priv, &out_cmd->hdr, fix_size, cmd->flags);
+	//trace_iwlwifi_dev_hcmd(priv, &out_cmd->hdr, fix_size, cmd->flags);
 
 	priv->cfg->ops->lib->txq_attach_buf_to_tfd(priv, txq,
 						   phys_addr, fix_size, 1,

@@ -64,8 +64,9 @@
 
 static inline void _iwl_write32(struct iwl_priv *priv, u32 ofs, u32 val)
 {
-	trace_iwlwifi_dev_iowrite32(priv, ofs, val);
-	iowrite32(val, priv->hw_base + ofs);
+	//trace_iwlwifi_dev_iowrite32(priv, ofs, val);
+	//iowrite32(val, priv->hw_base + ofs);
+	OSWriteLittleInt32(priv->hw_base, ofs ,val);
 }
 
 #ifdef CONFIG_IWLWIFI_DEBUG
@@ -83,8 +84,9 @@ static inline void __iwl_write32(const char *f, u32 l, struct iwl_priv *priv,
 
 static inline u32 _iwl_read32(struct iwl_priv *priv, u32 ofs)
 {
-	u32 val = ioread32(priv->hw_base + ofs);
-	trace_iwlwifi_dev_ioread32(priv, ofs, val);
+	//u32 val = ioread32(priv->hw_base + ofs);
+	u32 val = OSReadLittleInt32(priv->hw_base, ofs);
+	//trace_iwlwifi_dev_ioread32(priv, ofs, val);
 	return val;
 }
 

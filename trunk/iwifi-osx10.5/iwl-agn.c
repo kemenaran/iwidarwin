@@ -791,8 +791,8 @@ void iwl_rx_handle(struct iwl_priv *priv)
 				 PCI_DMA_FROMDEVICE);
 		pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
 
-		trace_iwlwifi_dev_rx(priv, pkt,
-			le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK);
+	//	trace_iwlwifi_dev_rx(priv, pkt,
+	//		le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK);
 
 		/* Reclaim a command buffer only if this packet is a response
 		 *   to a (driver-originated) command.
@@ -2857,13 +2857,13 @@ static void iwl_setup_deferred_work(struct iwl_priv *priv)
 
 	init_waitqueue_head(&priv->wait_command_queue);
 
-	INIT_WORK(&priv->up, iwl_bg_up);
-	INIT_WORK(&priv->restart, iwl_bg_restart);
-	INIT_WORK(&priv->rx_replenish, iwl_bg_rx_replenish);
-	INIT_WORK(&priv->beacon_update, iwl_bg_beacon_update);
-	INIT_WORK(&priv->run_time_calib_work, iwl_bg_run_time_calib_work);
-	INIT_DELAYED_WORK(&priv->init_alive_start, iwl_bg_init_alive_start);
-	INIT_DELAYED_WORK(&priv->alive_start, iwl_bg_alive_start);
+	INIT_WORK(&priv->up, iwl_bg_up,14);
+	INIT_WORK(&priv->restart, iwl_bg_restart,15);
+	INIT_WORK(&priv->rx_replenish, iwl_bg_rx_replenish,16);
+	INIT_WORK(&priv->beacon_update, iwl_bg_beacon_update,17);
+	INIT_WORK(&priv->run_time_calib_work, iwl_bg_run_time_calib_work,18);
+	INIT_DELAYED_WORK(&priv->init_alive_start, iwl_bg_init_alive_start,20);
+	INIT_DELAYED_WORK(&priv->alive_start, iwl_bg_alive_start,21);
 
 	iwl_setup_scan_deferred_work(priv);
 
@@ -3362,7 +3362,7 @@ static void __exit iwl_exit(void)
 }
 
 module_exit(iwl_exit);
-module_init(iwl_init);
+module_init2(iwl_init);
 
 #ifdef CONFIG_IWLWIFI_DEBUG
 module_param_named(debug50, iwl_debug_level, uint, S_IRUGO);

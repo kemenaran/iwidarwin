@@ -477,7 +477,7 @@ static int iwl3945_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 	struct iwl_cmd_meta *out_meta;
 	dma_addr_t phys_addr;
 	dma_addr_t txcmd_phys;
-	int txq_id = skb_get_queue_mapping(skb);
+	int txq_id = 0;//skb_get_queue_mapping(skb);
 	u16 len, idx, len_org, hdr_len; /* TODO: len_org is not used */
 	u8 id;
 	u8 unicast;
@@ -685,7 +685,7 @@ static int iwl3945_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 			spin_unlock_irqrestore(&priv->lock, flags);
 		}
 
-		iwl_stop_queue(priv, skb_get_queue_mapping(skb));
+		iwl_stop_queue(priv, 0/*skb_get_queue_mapping(skb)*/);
 	}
 
 	return 0;
@@ -1402,8 +1402,8 @@ static void iwl3945_rx_handle(struct iwl_priv *priv)
 				PCI_DMA_FROMDEVICE);
 		pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
 
-		trace_iwlwifi_dev_rx(priv, pkt,
-			le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK);
+	//	trace_iwlwifi_dev_rx(priv, pkt,
+	//		le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK);
 
 		/* Reclaim a command buffer only if this packet is a response
 		 *   to a (driver-originated) command.
@@ -2739,7 +2739,7 @@ static void iwl3945_rfkill_poll(struct work_struct *data)
 			test_bit(STATUS_RF_KILL_HW, &priv->status));
 
 	queue_delayed_work(priv->workqueue, &priv->rfkill_poll,
-			   round_jiffies_relative(2 * HZ));
+			  /* round_jiffies_relative*/(2 * HZ));
 
 }
 
@@ -3193,7 +3193,7 @@ static void iwl3945_mac_stop(struct ieee80211_hw *hw)
 
 	/* start polling the killswitch state again */
 	queue_delayed_work(priv->workqueue, &priv->rfkill_poll,
-			   round_jiffies_relative(2 * HZ));
+			  /* round_jiffies_relative*/(2 * HZ));
 
 	IWL_DEBUG_MAC80211(priv, "leave\n");
 }
@@ -3710,17 +3710,17 @@ static void iwl3945_setup_deferred_work(struct iwl_priv *priv)
 
 	init_waitqueue_head(&priv->wait_command_queue);
 
-	INIT_WORK(&priv->up, iwl3945_bg_up);
-	INIT_WORK(&priv->restart, iwl3945_bg_restart);
-	INIT_WORK(&priv->rx_replenish, iwl3945_bg_rx_replenish);
-	INIT_WORK(&priv->beacon_update, iwl3945_bg_beacon_update);
-	INIT_DELAYED_WORK(&priv->init_alive_start, iwl3945_bg_init_alive_start);
-	INIT_DELAYED_WORK(&priv->alive_start, iwl3945_bg_alive_start);
-	INIT_DELAYED_WORK(&priv->rfkill_poll, iwl3945_rfkill_poll);
-	INIT_WORK(&priv->scan_completed, iwl_bg_scan_completed);
-	INIT_WORK(&priv->request_scan, iwl3945_bg_request_scan);
-	INIT_WORK(&priv->abort_scan, iwl_bg_abort_scan);
-	INIT_DELAYED_WORK(&priv->scan_check, iwl_bg_scan_check);
+	INIT_WORK(&priv->up, iwl3945_bg_up,0);
+	INIT_WORK(&priv->restart, iwl3945_bg_restart,1);
+	INIT_WORK(&priv->rx_replenish, iwl3945_bg_rx_replenish,2);
+	INIT_WORK(&priv->beacon_update, iwl3945_bg_beacon_update,3);
+	INIT_DELAYED_WORK(&priv->init_alive_start, iwl3945_bg_init_alive_start,23);
+	INIT_DELAYED_WORK(&priv->alive_start, iwl3945_bg_alive_start,24);
+	INIT_DELAYED_WORK(&priv->rfkill_poll, iwl3945_rfkill_poll,25);
+	INIT_WORK(&priv->scan_completed, iwl_bg_scan_completed,4);
+	INIT_WORK(&priv->request_scan, iwl3945_bg_request_scan,5);
+	INIT_WORK(&priv->abort_scan, iwl_bg_abort_scan,6);
+	INIT_DELAYED_WORK(&priv->scan_check, iwl_bg_scan_check,26);
 
 	iwl3945_hw_setup_deferred_work(priv);
 

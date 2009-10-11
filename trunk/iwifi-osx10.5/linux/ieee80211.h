@@ -1285,7 +1285,7 @@ static inline u8 *ieee80211_get_DA(struct ieee80211_hdr *hdr)
  * ieee80211_is_robust_mgmt_frame - check if frame is a robust management frame
  * @hdr: the frame (buffer must include at least the first octet of payload)
  */
-static inline ieee80211_is_robust_mgmt_frame(struct ieee80211_hdr *hdr)
+static inline bool ieee80211_is_robust_mgmt_frame(struct ieee80211_hdr *hdr)
 {
 	if (ieee80211_is_disassoc(hdr->frame_control) ||
 	    ieee80211_is_deauth(hdr->frame_control))
@@ -1443,7 +1443,7 @@ static inline unsigned long ieee80211_tu_to_usec(unsigned long tu)
  * @tim_len: length of the TIM IE
  * @aid: the AID to look for
  */
-static inline ieee80211_check_tim(struct ieee80211_tim_ie *tim,
+static inline bool ieee80211_check_tim(struct ieee80211_tim_ie *tim,
 				       u8 tim_len, u16 aid)
 {
 	u8 mask;
