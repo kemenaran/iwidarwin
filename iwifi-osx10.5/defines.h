@@ -7,8 +7,4 @@
 
 
 
-
-
-
-
 #endif //__DEFINES_H__

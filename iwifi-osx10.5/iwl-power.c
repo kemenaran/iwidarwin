@@ -858,9 +858,9 @@ void iwl_tt_initialize(struct iwl_priv *priv)
 	priv->thermal_throttle.ct_kill_waiting_tm.function =
 		iwl_tt_ready_for_ct_kill;
 	/* setup deferred ct kill work */
-	INIT_WORK(&priv->tt_work, iwl_bg_tt_work);
-	INIT_WORK(&priv->ct_enter, iwl_bg_ct_enter);
-	INIT_WORK(&priv->ct_exit, iwl_bg_ct_exit);
+	INIT_WORK(&priv->tt_work, iwl_bg_tt_work,10);
+	INIT_WORK(&priv->ct_enter, iwl_bg_ct_enter,11);
+	INIT_WORK(&priv->ct_exit, iwl_bg_ct_exit,12);
 
 	switch (priv->hw_rev & CSR_HW_REV_TYPE_MSK) {
 	case CSR_HW_REV_TYPE_6x00:

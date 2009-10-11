@@ -2574,7 +2574,7 @@ void iwl3945_hw_rx_handler_setup(struct iwl_priv *priv)
 void iwl3945_hw_setup_deferred_work(struct iwl_priv *priv)
 {
 	INIT_DELAYED_WORK(&priv->thermal_periodic,
-			  iwl3945_bg_reg_txpower_periodic);
+			  iwl3945_bg_reg_txpower_periodic,19);
 }
 
 void iwl3945_hw_cancel_deferred_work(struct iwl_priv *priv)

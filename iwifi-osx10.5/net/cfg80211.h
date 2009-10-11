@@ -1253,7 +1253,7 @@ static inline struct device *wiphy_dev(struct wiphy *wiphy)
  */
 static inline const char *wiphy_name(struct wiphy *wiphy)
 {
-	return dev_name(&wiphy->dev);
+	return NULL;//dev_name(&wiphy->dev);
 }
 
 /**
@@ -1873,7 +1873,7 @@ void cfg80211_ibss_joined(struct net_device *dev, const u8 *bssid, gfp_t gfp);
  * @wiphy: the wiphy
  * @blocked: block status
  */
-void wiphy_rfkill_set_hw_state(struct wiphy *wiphy, int blocked);
+//void wiphy_rfkill_set_hw_state(struct wiphy *wiphy, int blocked);
 
 /**
  * wiphy_rfkill_start_polling - start polling rfkill

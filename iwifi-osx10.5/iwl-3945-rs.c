@@ -680,8 +680,8 @@ static void rs_get_rate(void *priv_r, struct ieee80211_sta *sta,
 
 	IWL_DEBUG_RATE(priv, "enter\n");
 
-	if (rate_control_send_low(sta, priv_sta, txrc))
-		return;
+	//if (rate_control_send_low(sta, priv_sta, txrc))
+	//hack	return;
 
 	rate_mask = sta->supp_rates[sband->band];
 

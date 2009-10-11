@@ -1922,7 +1922,7 @@ static u16 iwl4965_build_addsta_hcmd(const struct iwl_addsta_cmd *cmd, u8 *data)
 
 static inline u32 iwl4965_get_scd_ssn(struct iwl4965_tx_resp *tx_resp)
 {
-	return le32_to_cpup(&tx_resp->u.status + tx_resp->frame_count) & MAX_SN;
+	return le32_to_cpu(&tx_resp->u.status + tx_resp->frame_count) & MAX_SN;
 }
 
 /**
@@ -2192,7 +2192,7 @@ static void iwl4965_rx_handler_setup(struct iwl_priv *priv)
 
 static void iwl4965_setup_deferred_work(struct iwl_priv *priv)
 {
-	INIT_WORK(&priv->txpower_work, iwl4965_bg_txpower_work);
+	INIT_WORK(&priv->txpower_work, iwl4965_bg_txpower_work,13);
 }
 
 static void iwl4965_cancel_deferred_work(struct iwl_priv *priv)
