@@ -10,6 +10,10 @@
  * published by the Free Software Foundation.
  */
 
+struct regulatory_request;
+struct ieee80211_reg_rule;
+struct iw_request_info;
+
 //#include <linux/netdevice.h>
 //#include <linux/debugfs.h>
 //#include <linux/list.h>
@@ -1113,6 +1117,7 @@ struct cfg80211_ops {
  *	kernel's default on wiphy_new(), but can be changed by the
  *	driver if it has a good reason to override the default
  */
+ 
 struct wiphy {
 	/* assign these fields before you register the wiphy */
 
@@ -1388,12 +1393,12 @@ static inline void *wdev_priv(struct wireless_dev *wdev)
 /**
  * ieee80211_channel_to_frequency - convert channel number to frequency
  */
-extern int ieee80211_channel_to_frequency(int chan);
+//extern int ieee80211_channel_to_frequency(int chan);
 
 /**
  * ieee80211_frequency_to_channel - convert frequency to channel number
  */
-extern int ieee80211_frequency_to_channel(int freq);
+//extern int ieee80211_frequency_to_channel(int freq);
 
 /*
  * Name indirection necessary because the ieee80211 code also has
@@ -1487,7 +1492,7 @@ unsigned int ieee80211_get_hdrlen_from_skb(const struct sk_buff *skb);
  * ieee80211_hdrlen - get header length in bytes from frame control
  * @fc: frame control field in little-endian format
  */
-unsigned int ieee80211_hdrlen(__le16 fc);
+//unsigned int ieee80211_hdrlen(__le16 fc);
 
 /**
  * ieee80211_data_to_8023 - convert an 802.11 data frame to 802.3

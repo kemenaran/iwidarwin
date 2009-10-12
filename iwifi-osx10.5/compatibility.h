@@ -7,13 +7,24 @@
 #undef del_timer
 #undef mod_timer
 
+struct ieee80211_hw;
+struct rate_control_ops;
+struct ieee80211_local;
+struct ieee80211_ops;
+struct wiphy;
+struct ieee80211_vif;
+struct ieee80211_bss;
+
+
 #include "net/compat.h"
+#include "net/mac80211.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
+void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr);
 void ieee80211_wake_queues(struct ieee80211_hw *hw);
 void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue);
 void ieee80211_unregister_hw(struct ieee80211_hw *hw);
@@ -86,7 +97,7 @@ int request_firmware(const struct firmware ** firmware_p, const char * name, str
 void release_firmware (	const struct firmware *  fw);
 int queue_work(struct workqueue_struct *wq, struct work_struct *work);
 int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay);
-int mod_timer(struct timer_list2 *timer, int length);
+void mod_timer(struct timer_list2 *timer, int length);
 void init_timer(struct timer_list2 *timer);
 void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,int groupsize, char *linebuf, size_t linebuflen, bool ascii);
 void dev_kfree_skb_any(struct sk_buff *skb);
@@ -94,7 +105,7 @@ void dev_kfree_skb(struct sk_buff *skb);
 void *dev_get_drvdata(void *p);
 void destroy_workqueue (	struct workqueue_struct *  	wq);
 int cancel_work_sync(struct work_struct *work);
-int del_timer_sync(struct timer_list2 *timer);
+void del_timer_sync(struct timer_list2 *timer);
 int cancel_work_sync(struct work_struct *work);
 int cancel_delayed_work(struct delayed_work *work);
 int cancel_delayed_work_sync(struct delayed_work *work);
@@ -134,7 +145,29 @@ static inline void free_irq (unsigned int irq, void *dev_id){
 
 #define module_init(func) int (*init_routine)(void) = func
 #define module_init2(func) int (*init_routine2)(void) = func
-
+static inline u8 *bss_mesh_cfg(struct ieee80211_bss *bss)
+ {
+ #ifdef CONFIG_MAC80211_MESH
+         return bss->mesh_cfg;
+ #endif
+         return NULL;
+ }
+ 
+ static inline u8 *bss_mesh_id(struct ieee80211_bss *bss)
+ {
+ #ifdef CONFIG_MAC80211_MESH
+         return bss->mesh_id;
+ #endif
+         return NULL;
+ }
+ 
+ static inline u8 bss_mesh_id_len(struct ieee80211_bss *bss)
+ {
+ #ifdef CONFIG_MAC80211_MESH
+         return bss->mesh_id_len;
+ #endif
+         return 0;
+ }
 
 
 

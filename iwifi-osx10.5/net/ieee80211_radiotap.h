@@ -61,26 +61,7 @@
  * The radio capture header precedes the 802.11 header.
  * All data in the header is little endian on all platforms.
  */
-struct ieee80211_radiotap_header {
-	u8 it_version;		/* Version 0. Only increases
-				 * for drastic changes,
-				 * introduction of compatible
-				 * new fields does not count.
-				 */
-	u8 it_pad;
-	__le16 it_len;		/* length of the whole
-				 * header in bytes, including
-				 * it_version, it_pad,
-				 * it_len, and data fields.
-				 */
-	__le32 it_present;	/* A bitmap telling which
-				 * fields are present. Set bit 31
-				 * (0x80000000) to extend the
-				 * bitmap by another 32 bits.
-				 * Additional extensions are made
-				 * by setting bit 31.
-				 */
-};
+
 
 /* Name                                 Data type    Units
  * ----                                 ---------    -----

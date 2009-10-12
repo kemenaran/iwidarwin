@@ -3,6 +3,7 @@
 #include <IOKit/network/IONetworkController.h>
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/IOInterruptEventSource.h>
+#include <IOKit/IOMapper.h>
 
 #include <IOKit/assert.h>
 #include <IOKit/IOTimerEventSource.h>
@@ -27,7 +28,7 @@
 #include <IOKit/IODataQueue.h>
 
 #include "compatibility.h"
-#include "net/mac80211.h"
+//#include "net/mac80211.h"
 
 #include "firmware/iwlwifi-1000-3.ucode.h"
 #include "firmware/iwlwifi-3945-2.ucode.h"
@@ -47,7 +48,7 @@ static IOBasicOutputQueue *				fTransmitQueue;
 
 static IOWorkLoop * workqueue;
 static IOInterruptEventSource *	fInterruptSrc;
-static IOInterruptEventSource *	DMAInterruptSource;
+//static IOInterruptEventSource *	DMAInterruptSource;
 static irqreturn_t (*realHandler)(int, void *);
 static pci_driver * my_drv;
 struct pci_dev* my_pci_dev;
@@ -87,8 +88,8 @@ void setCurController(IONetworkController *tmp){
 }
 
 void * get_my_priv(){
-	//if(my_hw)
-	//	return my_hw->priv;
+	if(my_hw)
+		return my_hw->priv;
 	return NULL;
 }
 
@@ -657,14 +658,15 @@ void init_timer(struct timer_list2 *timer) {
 	timer_func[timer->vv]=thread_call_allocate((thread_call_func_t)test_timer,(void*)timer);
 }
 
-int mod_timer(struct timer_list2 *timer, int length) {
+void mod_timer(struct timer_list2 *timer, int length) {
 	del_timer(timer);
 	timer->expires = length; 
 	timer->on=1;
 	add_timer(timer);
+
 }
 
-int del_timer_sync(struct timer_list2 *timer) {
+void del_timer_sync(struct timer_list2 *timer) {
 	del_timer(timer);
 }
 
@@ -898,6 +900,15 @@ int pci_write_config_byte(struct pci_dev *dev, int where, u8 val){
 }
 
 
+void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr){
+	my_mac_addr[0] = addr[0];
+	my_mac_addr[1] = addr[1];
+	my_mac_addr[2] = addr[2];
+	my_mac_addr[3] = addr[3];
+	my_mac_addr[4] = addr[4];
+	my_mac_addr[5] = addr[5];
+	//memcpy(hw->wiphy->perm_addr, addr, ETH_ALEN);
+}
 
 void pci_release_regions (struct pci_dev * pdev){
 	return;
@@ -905,14 +916,26 @@ void pci_release_regions (struct pci_dev * pdev){
 /*
 	get the priv...
 */
+
+static inline void *dev_get_drvdata(struct device *dev)
+ {
+         return dev->driver_data;
+ }
+
 void *pci_get_drvdata (struct pci_dev *pdev){
-	return my_hw->priv;
+	//return my_hw->priv;
+	return dev_get_drvdata(&pdev->dev);
 }
+
+static inline void dev_set_drvdata(struct device *dev, void *data)
+ {
+         dev->driver_data = data;
+ }
+
 void pci_set_drvdata (struct pci_dev *pdev, void *data){
-	return;
+	dev_set_drvdata(&pdev->dev, data);
 }
 //ok
-#include <IOKit/IOMapper.h>
 #define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
 #define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
 #define _4G 0x0000000100000000LL
@@ -937,8 +960,6 @@ void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,dma_addr_t *dma_ha
 
 void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen){
 	IOMemoryMap	*				map;
-	IOPhysicalAddress			phys_add;
-	UInt16 *					virt_add;
 	IOPCIDevice *fPCIDevice = my_pci_device;//(IOPCIDevice *)dev->dev.kobj.ptr;
 	map = fPCIDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0, kIOMapInhibitCache);
 	if (map == 0) {
@@ -1042,7 +1063,7 @@ int pci_register_driver(struct pci_driver * drv){
 		return -6;
 	my_drv=drv;
 	//maybe get the pointer for the good function as iwl3945_pci_probe ...
-	struct pci_device_id *test=(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
+	struct pci_device_id *test=(struct pci_device_id*)drv->id_table;//(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
 	struct pci_dev *test_pci=(struct pci_dev *)IOMalloc(sizeof(struct pci_dev));
 	
 	if(!currentController){
@@ -4418,7 +4439,9 @@ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
 {}
 
 int ieee80211_start_tx_ba_session(struct ieee80211_hw *hw, u8 *ra, u16 tid)
-{}
+{
+return 0;
+}
 
 void ieee80211_stop_tx_ba_cb_irqsafe(struct ieee80211_hw *hw, const u8 *ra,
 				     u16 tid)
