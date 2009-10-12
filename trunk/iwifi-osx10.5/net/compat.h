@@ -777,8 +777,6 @@ static inline void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
 }
 
 #define PCI_DMA_BIDIRECTIONAL   0
- #define PCI_DMA_TODEVICE        1
- #define PCI_DMA_FROMDEVICE      2
  #define PCI_DMA_NONE            3
 #define pci_unmap_addr(x) x
 #define pci_unmap_len(x) sizeof(x)
@@ -788,6 +786,7 @@ static inline void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
 #define	NETDEV_ALIGN		32
 #define	NETDEV_ALIGN_CONST	(NETDEV_ALIGN - 1)
 
+#undef ALIGN
 #define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
 #define ALIGN(x,a)              __ALIGN_MASK(x,(typeof(x))(a)-1)
 
@@ -805,12 +804,8 @@ static inline void prefetch(const void *x) {;}
 		n = list_entry(pos->member.next, typeof(*pos), member);	\
 	     &pos->member != (head); 					\
 	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
-		 	
-#define list_for_each_entry_rcu(pos, head, member) \
-         for (pos = list_entry((head)->next, typeof(*pos), member); \
-                 prefetch(rcu_dereference(pos)->member.next), \
-                         &pos->member != (head); \
-                 pos = list_entry(pos->member.next, typeof(*pos), member))
+
+
 
 struct kref {
          atomic_t refcount;
@@ -883,7 +878,6 @@ struct hlist_node {
                  (p) = (v); \
          })
 
- #define WLAN_STA_PS BIT(2)
  #define STA_INFO_PIN_STAT_NORMAL        0
  #define STA_INFO_PIN_STAT_PINNED        1
  #define STA_INFO_PIN_STAT_DESTROY       2
@@ -930,29 +924,7 @@ struct hlist_node {
  
  
 
-static inline u8 *bss_mesh_cfg(struct ieee80211_bss *bss)
- {
- #ifdef CONFIG_MAC80211_MESH
-         return bss->mesh_cfg;
- #endif
-         return NULL;
- }
- 
- static inline u8 *bss_mesh_id(struct ieee80211_bss *bss)
- {
- #ifdef CONFIG_MAC80211_MESH
-         return bss->mesh_id;
- #endif
-         return NULL;
- }
- 
- static inline u8 bss_mesh_id_len(struct ieee80211_bss *bss)
- {
- #ifdef CONFIG_MAC80211_MESH
-         return bss->mesh_id_len;
- #endif
-         return 0;
- }
+
 
 #define ASSERT_MGD_MTX(x)
 #define smp_mb()
@@ -1014,7 +986,26 @@ static inline u8 *bss_mesh_cfg(struct ieee80211_bss *bss)
 #define WLAN_STA_MFP             1<<10
 #define WLAN_STA_SUSPEND         1<<11
   
-
+struct ieee80211_radiotap_header {
+	u8 it_version;		/* Version 0. Only increases
+				 * for drastic changes,
+				 * introduction of compatible
+				 * new fields does not count.
+				 */
+	u8 it_pad;
+	__le16 it_len;		/* length of the whole
+				 * header in bytes, including
+				 * it_version, it_pad,
+				 * it_len, and data fields.
+				 */
+	__le32 it_present;	/* A bitmap telling which
+				 * fields are present. Set bit 31
+				 * (0x80000000) to extend the
+				 * bitmap by another 32 bits.
+				 * Additional extensions are made
+				 * by setting bit 31.
+				 */
+};
 
 
 

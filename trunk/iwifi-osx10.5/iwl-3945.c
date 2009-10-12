@@ -2272,7 +2272,8 @@ int iwl3945_txpower_set_from_eeprom(struct iwl_priv *priv)
 		/* set tx power value for all OFDM rates */
 		for (rate_index = 0; rate_index < IWL_OFDM_RATES;
 		     rate_index++) {
-			s32 uninitialized_var(power_idx);
+			//s32 uninitialized_var(power_idx);
+			s32 power_idx;
 			int rc;
 
 			/* use channel group's clip-power table,
@@ -2883,4 +2884,4 @@ struct pci_device_id iwl3945_hw_card_ids[] = {
 	{0}
 };
 
-MODULE_DEVICE_TABLE(pci, iwl3945_hw_card_ids);
+//MODULE_DEVICE_TABLE(pci, iwl3945_hw_card_ids);

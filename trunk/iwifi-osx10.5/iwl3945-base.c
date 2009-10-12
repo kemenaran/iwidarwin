@@ -3375,7 +3375,7 @@ static ssize_t store_debug_level(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,
+//static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,
 			show_debug_level, store_debug_level);
 
 #endif /* CONFIG_IWLWIFI_DEBUG */
@@ -3391,7 +3391,7 @@ static ssize_t show_temperature(struct device *d,
 	return sprintf(buf, "%d\n", iwl3945_hw_get_temperature(priv));
 }
 
-static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
+//static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
 
 static ssize_t show_tx_power(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -3417,7 +3417,7 @@ static ssize_t store_tx_power(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
+//static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
 
 static ssize_t show_flags(struct device *d,
 			  struct device_attribute *attr, char *buf)
@@ -3451,7 +3451,7 @@ static ssize_t store_flags(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
+//static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
 
 static ssize_t show_filter_flags(struct device *d,
 				 struct device_attribute *attr, char *buf)
@@ -3487,8 +3487,7 @@ static ssize_t store_filter_flags(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,
-		   store_filter_flags);
+//static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,		   store_filter_flags);
 
 #ifdef CONFIG_IWL3945_SPECTRUM_MEASUREMENT
 
@@ -3559,7 +3558,7 @@ static ssize_t store_measurement(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(measurement, S_IRUSR | S_IWUSR,
+//static DEVICE_ATTR(measurement, S_IRUSR | S_IWUSR,
 		   show_measurement, store_measurement);
 #endif /* CONFIG_IWL3945_SPECTRUM_MEASUREMENT */
 
@@ -3583,8 +3582,7 @@ static ssize_t show_retry_rate(struct device *d,
 	return sprintf(buf, "%d", priv->retry_rate);
 }
 
-static DEVICE_ATTR(retry_rate, S_IWUSR | S_IRUSR, show_retry_rate,
-		   store_retry_rate);
+//static DEVICE_ATTR(retry_rate, S_IWUSR | S_IRUSR, show_retry_rate,		   store_retry_rate);
 
 
 static ssize_t show_channels(struct device *d,
@@ -3594,7 +3592,7 @@ static ssize_t show_channels(struct device *d,
 	return 0;
 }
 
-static DEVICE_ATTR(channels, S_IRUSR, show_channels, NULL);
+//static DEVICE_ATTR(channels, S_IRUSR, show_channels, NULL);
 
 static ssize_t show_statistics(struct device *d,
 			       struct device_attribute *attr, char *buf)
@@ -3632,7 +3630,7 @@ static ssize_t show_statistics(struct device *d,
 	return len;
 }
 
-static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
+//static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
 
 static ssize_t show_antenna(struct device *d,
 			    struct device_attribute *attr, char *buf)
@@ -3670,7 +3668,7 @@ static ssize_t store_antenna(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(antenna, S_IWUSR | S_IRUGO, show_antenna, store_antenna);
+//static DEVICE_ATTR(antenna, S_IWUSR | S_IRUGO, show_antenna, store_antenna);
 
 static ssize_t show_status(struct device *d,
 			   struct device_attribute *attr, char *buf)
@@ -3681,7 +3679,7 @@ static ssize_t show_status(struct device *d,
 	return sprintf(buf, "0x%08x\n", (int)priv->status);
 }
 
-static DEVICE_ATTR(status, S_IRUGO, show_status, NULL);
+//static DEVICE_ATTR(status, S_IRUGO, show_status, NULL);
 
 static ssize_t dump_error_log(struct device *d,
 			      struct device_attribute *attr,
@@ -3696,7 +3694,7 @@ static ssize_t dump_error_log(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(dump_errors, S_IWUSR, NULL, dump_error_log);
+//static DEVICE_ATTR(dump_errors, S_IWUSR, NULL, dump_error_log);
 
 /*****************************************************************************
  *

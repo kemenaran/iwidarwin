@@ -37,20 +37,12 @@ extern u32 iwl_debug_level;
 //#define IWL_INFO(p, f, a...) dev_info(&((p)->pci_dev->dev), f, ## a)
 //#define IWL_CRIT(p, f, a...) dev_crit(&((p)->pci_dev->dev), f, ## a)
 
-#define dev_printk(level, p,fmt, args...) \
-do { \
-  IOLog(": %c %s " fmt, \
-	 __FUNCTION__ , ## args); } while (0)
+#define dev_printk(level, p,fmt, args...) IOLog("DP: " fmt, ## args)
 	 
-#define IWL_D(level, fmt, args...) \
-do { \
-  IOLog(": %c %s " fmt, \
-	 __FUNCTION__ , ## args); } while (0)
-	 
-#define IWL_ERR(p, f, a...) IWL_D(p, f, ## a)
-#define IWL_WARN(p, f, a...) IWL_D(p, f, ## a)
-#define IWL_INFO(p, f, a...) IWL_D(p, f, ## a)
-#define IWL_CRIT(p, f, a...) IWL_D(p, f, ## a)
+#define IWL_ERR(p, f, a...) IOLog("E: " f, ## a)
+#define IWL_WARN(p, f, a...) IOLog("W: " f, ## a)
+#define IWL_INFO(p, f, a...) IOLog("I: " f, ## a)
+#define IWL_CRIT(p, f, a...) IOLog("C: " f, ## a)
 
 #define iwl_print_hex_error(priv, p, len) 				\
 do {									\

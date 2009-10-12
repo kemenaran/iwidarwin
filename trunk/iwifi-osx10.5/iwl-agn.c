@@ -380,7 +380,7 @@ static inline dma_addr_t iwl_tfd_tb_get_addr(struct iwl_tfd *tfd, u8 idx)
 {
 	struct iwl_tfd_tb *tb = &tfd->tbs[idx];
 
-	dma_addr_t addr = get_unaligned_le32(&tb->lo);
+	dma_addr_t addr = get_unaligned_le32((u8*)&tb->lo);
 	if (sizeof(dma_addr_t) > sizeof(u32))
 		addr |=
 		((dma_addr_t)(le16_to_cpu(tb->hi_n_len) & 0xF) << 16) << 16;
@@ -401,7 +401,7 @@ static inline void iwl_tfd_set_tb(struct iwl_tfd *tfd, u8 idx,
 	struct iwl_tfd_tb *tb = &tfd->tbs[idx];
 	u16 hi_n_len = len << 4;
 
-	put_unaligned_le32(addr, &tb->lo);
+	put_unaligned_le32(addr, (u8*)&tb->lo);
 	if (sizeof(dma_addr_t) > sizeof(u32))
 		hi_n_len |= ((addr >> 16) >> 16) & 0xF;
 
@@ -446,7 +446,7 @@ void iwl_hw_txq_free_tfd(struct iwl_priv *priv, struct iwl_tx_queue *txq)
 	/* Unmap tx_cmd */
 	if (num_tbs)
 		pci_unmap_single(dev,
-				pci_unmap_addr(&txq->meta[index]/*, mapping*/),
+				pci_unmap_addr(&txq->meta[index]),
 				pci_unmap_len(&txq->meta[index]),
 				PCI_DMA_BIDIRECTIONAL);
 
@@ -2636,7 +2636,7 @@ static ssize_t store_debug_level(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,
+//static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,
 			show_debug_level, store_debug_level);
 
 
@@ -2654,7 +2654,7 @@ static ssize_t show_temperature(struct device *d,
 	return sprintf(buf, "%d\n", priv->temperature);
 }
 
-static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
+//static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
 
 static ssize_t show_tx_power(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -2689,7 +2689,7 @@ static ssize_t store_tx_power(struct device *d,
 	return ret;
 }
 
-static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
+//static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
 
 static ssize_t show_flags(struct device *d,
 			  struct device_attribute *attr, char *buf)
@@ -2727,7 +2727,7 @@ static ssize_t store_flags(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
+//static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
 
 static ssize_t show_filter_flags(struct device *d,
 				 struct device_attribute *attr, char *buf)
@@ -2768,8 +2768,7 @@ static ssize_t store_filter_flags(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,
-		   store_filter_flags);
+//static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,		   store_filter_flags);
 
 
 static ssize_t show_statistics(struct device *d,
@@ -2808,7 +2807,7 @@ static ssize_t show_statistics(struct device *d,
 	return len;
 }
 
-static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
+//static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
 
 static ssize_t show_rts_ht_protection(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -2841,8 +2840,7 @@ static ssize_t store_rts_ht_protection(struct device *d,
 	return ret;
 }
 
-static DEVICE_ATTR(rts_ht_protection, S_IWUSR | S_IRUGO,
-			show_rts_ht_protection, store_rts_ht_protection);
+//static DEVICE_ATTR(rts_ht_protection, S_IWUSR | S_IRUGO,			show_rts_ht_protection, store_rts_ht_protection);
 
 
 /*****************************************************************************
@@ -3315,7 +3313,7 @@ static struct pci_device_id iwl_hw_card_ids[] = {
 
 	{0}
 };
-MODULE_DEVICE_TABLE(pci, iwl_hw_card_ids);
+//MODULE_DEVICE_TABLE(pci, iwl_hw_card_ids);
 
 static struct pci_driver iwl_driver = {
 	.name = DRV_NAME,
