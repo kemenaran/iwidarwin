@@ -21,7 +21,7 @@
 //#include <linux/device.h>
 #include "../linux/ieee80211.h"
 #include "cfg80211.h"
-
+#include "ieee80211_radiotap.h"
 /**
  * DOC: Introduction
  *
@@ -1527,8 +1527,8 @@ struct ieee80211_ops {
  * @priv_data_len: length of private data
  * @ops: callbacks for this device
  */
-struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
-					const struct ieee80211_ops *ops);
+//struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
+//					const struct ieee80211_ops *ops);
 
 /**
  * ieee80211_register_hw - Register hardware device
@@ -1539,7 +1539,7 @@ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
  *
  * @hw: the device to register as returned by ieee80211_alloc_hw()
  */
-int ieee80211_register_hw(struct ieee80211_hw *hw);
+//int ieee80211_register_hw(struct ieee80211_hw *hw);
 
 #ifdef CONFIG_MAC80211_LEDS
 extern char *__ieee80211_get_tx_led_name(struct ieee80211_hw *hw);
@@ -1631,7 +1631,7 @@ static inline char *ieee80211_get_radio_led_name(struct ieee80211_hw *hw)
  *
  * @hw: the hardware to unregister
  */
-void ieee80211_unregister_hw(struct ieee80211_hw *hw);
+
 
 /**
  * ieee80211_free_hw - free hardware descriptor
@@ -1642,7 +1642,7 @@ void ieee80211_unregister_hw(struct ieee80211_hw *hw);
  *
  * @hw: the hardware to free
  */
-void ieee80211_free_hw(struct ieee80211_hw *hw);
+//void ieee80211_free_hw(struct ieee80211_hw *hw);
 
 /**
  * ieee80211_restart_hw - restart hardware completely
@@ -1656,7 +1656,7 @@ void ieee80211_free_hw(struct ieee80211_hw *hw);
  *
  * @hw: the hardware to restart
  */
-void ieee80211_restart_hw(struct ieee80211_hw *hw);
+
 
 /**
  * ieee80211_rx - receive frame
@@ -1687,7 +1687,6 @@ void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb);
  * @hw: the hardware this frame came in on
  * @skb: the buffer to receive, owned by mac80211 after this call
  */
-void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb);
 
 /**
  * ieee80211_tx_status - transmit status callback
@@ -1719,8 +1718,7 @@ void ieee80211_tx_status(struct ieee80211_hw *hw,
  * @hw: the hardware the frame was transmitted by
  * @skb: the frame that was transmitted, owned by mac80211 after this call
  */
-void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw,
-				 struct sk_buff *skb);
+
 
 /**
  * ieee80211_beacon_get - beacon generation function
@@ -1734,8 +1732,8 @@ void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw,
  * hardware interrupt). Returned skb is used only once and low-level driver
  * is responsible for freeing it.
  */
-struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
-				     struct ieee80211_vif *vif);
+//struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
+//				     struct ieee80211_vif *vif);
 
 /**
  * ieee80211_rts_get - RTS frame generation function
@@ -1868,7 +1866,7 @@ void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
  *
  * Drivers should use this function instead of netif_wake_queue.
  */
-void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue);
+
 
 /**
  * ieee80211_stop_queue - stop specific queue
@@ -1877,7 +1875,7 @@ void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue);
  *
  * Drivers should use this function instead of netif_stop_queue.
  */
-void ieee80211_stop_queue(struct ieee80211_hw *hw, int queue);
+//void ieee80211_stop_queue(struct ieee80211_hw *hw, int queue);
 
 /**
  * ieee80211_queue_stopped - test status of the queue
@@ -1895,7 +1893,7 @@ int ieee80211_queue_stopped(struct ieee80211_hw *hw, int queue);
  *
  * Drivers should use this function instead of netif_stop_queue.
  */
-void ieee80211_stop_queues(struct ieee80211_hw *hw);
+//void ieee80211_stop_queues(struct ieee80211_hw *hw);
 
 /**
  * ieee80211_wake_queues - wake all queues
@@ -1903,7 +1901,6 @@ void ieee80211_stop_queues(struct ieee80211_hw *hw);
  *
  * Drivers should use this function instead of netif_wake_queue.
  */
-void ieee80211_wake_queues(struct ieee80211_hw *hw);
 
 /**
  * ieee80211_scan_completed - completed hardware scan
@@ -1915,7 +1912,6 @@ void ieee80211_wake_queues(struct ieee80211_hw *hw);
  * @hw: the hardware that finished the scan
  * @aborted: set to true if scan was aborted
  */
-void ieee80211_scan_completed(struct ieee80211_hw *hw, int aborted);
 
 /**
  * ieee80211_iterate_active_interfaces - iterate active interfaces
@@ -1990,7 +1986,7 @@ void ieee80211_queue_delayed_work(struct ieee80211_hw *hw,
  * the need to start aggregation on a certain RA/TID, the session level
  * will be managed by the mac80211.
  */
-int ieee80211_start_tx_ba_session(struct ieee80211_hw *hw, u8 *ra, u16 tid);
+
 
 /**
  * ieee80211_start_tx_ba_cb - low level driver ready to aggregate.
@@ -2013,8 +2009,7 @@ void ieee80211_start_tx_ba_cb(struct ieee80211_hw *hw, u8 *ra, u16 tid);
  * finished with preparations for the BA session.
  * This version of the function is IRQ-safe.
  */
-void ieee80211_start_tx_ba_cb_irqsafe(struct ieee80211_hw *hw, const u8 *ra,
-				      u16 tid);
+
 
 /**
  * ieee80211_stop_tx_ba_session - Stop a Block Ack session.
@@ -2054,8 +2049,7 @@ void ieee80211_stop_tx_ba_cb(struct ieee80211_hw *hw, u8 *ra, u8 tid);
  * finished with preparations for the BA session tear down.
  * This version of the function is IRQ-safe.
  */
-void ieee80211_stop_tx_ba_cb_irqsafe(struct ieee80211_hw *hw, const u8 *ra,
-				     u16 tid);
+
 
 /**
  * ieee80211_find_sta - find a station
@@ -2066,8 +2060,8 @@ void ieee80211_stop_tx_ba_cb_irqsafe(struct ieee80211_hw *hw, const u8 *ra,
  * This function must be called under RCU lock and the
  * resulting pointer is only valid under RCU lock as well.
  */
-struct ieee80211_sta *ieee80211_find_sta(struct ieee80211_hw *hw,
-					 const u8 *addr);
+//struct ieee80211_sta *ieee80211_find_sta(struct ieee80211_hw *hw,
+//					 const u8 *addr);
 
 /**
  * ieee80211_beacon_loss - inform hardware does not receive beacons
@@ -2203,8 +2197,8 @@ int rate_usable_index_exists(struct ieee80211_supported_band *sband,
 	return false;
 }
 
-int ieee80211_rate_control_register(struct rate_control_ops *ops);
-void ieee80211_rate_control_unregister(struct rate_control_ops *ops);
+//int ieee80211_rate_control_register(struct rate_control_ops *ops);
+//void ieee80211_rate_control_unregister(struct rate_control_ops *ops);
 
 static inline int
 conf_is_ht20(struct ieee80211_conf *conf)
@@ -2235,5 +2229,985 @@ conf_is_ht(struct ieee80211_conf *conf)
 {
 	return conf->channel_type != NL80211_CHAN_NO_HT;
 }
+
+struct net_device
+{
+
+	/*
+	 * This is the first field of the "visible" part of this structure
+	 * (i.e. as seen by users in the "Space.c" file).  It is the name
+	 * the interface.
+	 */
+	char			name[IFNAMSIZ];
+
+	/*
+	 *	I/O specific fields
+	 *	FIXME: Merge these and struct ifmap into one
+	 */
+	unsigned long		mem_end;	/* shared mem end	*/
+	unsigned long		mem_start;	/* shared mem start	*/
+	unsigned long		base_addr;	/* device I/O address	*/
+	unsigned int		irq;		/* device IRQ number	*/
+
+	/*
+	 *	Some hardware also needs these fields, but they are not
+	 *	part of the usual set specified in Space.c.
+	 */
+
+	unsigned char		if_port;	/* Selectable AUI, TP,..*/
+	unsigned char		dma;		/* DMA channel		*/
+
+	unsigned long		state;
+
+	struct net_device	*next;
+	
+	/* The device initialization function. Called only once. */
+
+	/* ------- Fields preinitialized in Space.c finish here ------- */
+
+	struct net_device	*next_sched;
+
+	/* Interface index. Unique device identifier	*/
+	int			ifindex;
+	int			iflink;
+
+
+	struct net_device_stats* (*get_stats)(struct net_device *dev);
+	struct iw_statistics*	(*get_wireless_stats)(struct net_device *dev);
+
+	/* List of functions to handle Wireless Extensions (instead of ioctl).
+	 * See <net/iw_handler.h> for details. Jean II */
+	//const struct iw_handler_def *	wireless_handlers;
+	/* Instance data managed by the core of Wireless Extensions. */
+	//struct iw_public_data *	wireless_data;
+
+	//struct ethtool_ops *ethtool_ops;
+
+	/*
+	 * This marks the end of the "visible" part of the structure. All
+	 * fields hereafter are internal to the system, and may change at
+	 * will (read: may be cleaned up at will).
+	 */
+
+	/* These may be needed for future network-power-down code. */
+	unsigned long		trans_start;	/* Time (in jiffies) of last Tx	*/
+	unsigned long		last_rx;	/* Time of last Rx	*/
+
+	unsigned short		flags;	/* interface flags (a la BSD)	*/
+	unsigned short		gflags;
+        unsigned short          priv_flags; /* Like 'flags' but invisible to userspace. */
+	unsigned short		padded;	/* How much padding added by alloc_netdev() */
+
+	unsigned		mtu;	/* interface MTU value		*/
+	unsigned short		type;	/* interface hardware type	*/
+	unsigned short		hard_header_len;	/* hardware hdr length	*/
+	void			*priv;	/* pointer to private data	*/
+
+	struct net_device	*master; /* Pointer to master device of a group,
+					  * which this device is member of.
+					  */
+
+	/* Interface address info. */
+	unsigned char		broadcast[MAX_ADDR_LEN];	/* hw bcast add	*/
+	unsigned char		dev_addr[MAX_ADDR_LEN];	/* hw address	*/
+	unsigned char		addr_len;	/* hardware address length	*/
+	unsigned short          dev_id;		/* for shared network cards */
+
+	//struct dev_mc_list	*mc_list;	/* Multicast mac addresses	*/
+	int			mc_count;	/* Number of installed mcasts	*/
+	int			promiscuity;
+	int			allmulti;
+
+	int			watchdog_timeo;
+	struct timer_list2	watchdog_timer;
+
+	/* Protocol specific pointers */
+	
+	void 			*atalk_ptr;	/* AppleTalk link 	*/
+	void			*ip_ptr;	/* IPv4 specific data	*/  
+	void                    *dn_ptr;        /* DECnet specific data */
+	void                    *ip6_ptr;       /* IPv6 specific data */
+	void			*ec_ptr;	/* Econet specific data	*/
+	void			*ax25_ptr;	/* AX.25 specific data */
+
+	struct list_head	poll_list;	/* Link to poll list	*/
+	int			quota;
+	int			weight;
+
+	struct Qdisc		*qdisc;
+	struct Qdisc		*qdisc_sleeping;
+	struct Qdisc		*qdisc_ingress;
+	struct list_head	qdisc_list;
+	unsigned long		tx_queue_len;	/* Max frames per queue allowed */
+
+	/* ingress path synchronizer */
+	spinlock_t		ingress_lock;
+	/* hard_start_xmit synchronizer */
+	spinlock_t		xmit_lock;
+	/* cpu id of processor entered to hard_start_xmit or -1,
+	   if nobody entered there.
+	 */
+	int			xmit_lock_owner;
+	/* device queue lock */
+	spinlock_t		queue_lock;
+	/* Number of references to this device */
+	atomic_t		refcnt;
+	/* delayed register/unregister */
+	struct list_head	todo_list;
+	/* device name hash chain */
+	struct hlist_node	name_hlist;
+	/* device index hash chain */
+	struct hlist_node	index_hlist;
+
+	/* register/unregister state machine */
+	enum { NETREG_UNINITIALIZED=0,
+	       NETREG_REGISTERING,	/* called register_netdevice */
+	       NETREG_REGISTERED,	/* completed register todo */
+	       NETREG_UNREGISTERING,	/* called unregister_netdevice */
+	       NETREG_UNREGISTERED,	/* completed unregister todo */
+	       NETREG_RELEASED,		/* called free_netdev */
+	} reg_state;
+
+	/* Net device features */
+	unsigned long		features;
+#define NETIF_F_SG		1	/* Scatter/gather IO. */
+#define NETIF_F_IP_CSUM		2	/* Can checksum only TCP/UDP over IPv4. */
+#define NETIF_F_NO_CSUM		4	/* Does not require checksum. F.e. loopack. */
+#define NETIF_F_HW_CSUM		8	/* Can checksum all the packets. */
+#define NETIF_F_HIGHDMA		32	/* Can DMA to high memory. */
+#define NETIF_F_FRAGLIST	64	/* Scatter/gather IO. */
+#define NETIF_F_HW_VLAN_TX	128	/* Transmit VLAN hw acceleration */
+#define NETIF_F_HW_VLAN_RX	256	/* Receive VLAN hw acceleration */
+#define NETIF_F_HW_VLAN_FILTER	512	/* Receive filtering on VLAN */
+#define NETIF_F_VLAN_CHALLENGED	1024	/* Device cannot handle VLAN packets */
+#define NETIF_F_TSO		2048	/* Can offload TCP/IP segmentation */
+#define NETIF_F_LLTX		4096	/* LockLess TX */
+
+	//struct netpoll		*np;
+	/* bridge stuff */
+	//struct net_bridge_port	*br_port;
+
+	/* this will get initialized at each interface type init routine */
+	//struct divert_blk	*divert;
+	/* class/net/name entry */
+	//struct class_device	class_dev;
+    void *ieee80211_ptr;
+};
+
+struct ieee80211_fragment_entry {
+          unsigned long first_frag_time;
+          unsigned int seq;
+          unsigned int rx_queue;
+          unsigned int last_frag;
+          unsigned int extra_len;
+          struct sk_buff_head skb_list;
+          int ccmp; /* Whether fragments were encrypted with CCMP */
+          u8 last_pn[6]; /* PN of the last fragment if CCMP was used */
+  };
+ 
+struct beacon_data {
+         u8 *head, *tail;
+         int head_len, tail_len;
+         int dtim_period;
+ };
+
+struct ieee80211_if_ap {
+         struct beacon_data *beacon;
+ 
+         struct list_head vlans;
+ 
+         /* yes, this looks ugly, but guarantees that we can later use
+          * bitmap_empty :)
+          * NB: don't touch this bitmap, use sta_info_{set,clear}_tim_bit */
+         u8 tim[sizeof(unsigned long) * BITS_TO_LONGS(IEEE80211_MAX_AID + 1)];
+         struct sk_buff_head ps_bc_buf;
+         atomic_t num_sta_ps; /* number of stations in PS mode */
+         int dtim_count;
+ };
+
+struct ieee80211_if_wds {
+         struct sta_info *sta;
+         u8 remote_addr[ETH_ALEN];
+ };
+
+struct ieee80211_if_vlan {
+         struct list_head list;
+ };
+
+struct ieee80211_if_managed {
+         struct timer_list2 timer;
+         struct timer_list2 conn_mon_timer;
+         struct timer_list2 bcn_mon_timer;
+         struct timer_list2 chswitch_timer;
+         struct work_struct work;
+         struct work_struct monitor_work;
+         struct work_struct chswitch_work;
+         struct work_struct beacon_loss_work;
+ 
+         unsigned long probe_timeout;
+         int probe_send_count;
+ 
+         struct mutex mtx;
+         struct ieee80211_bss *associated;
+         struct ieee80211_mgd_work *old_associate_work;
+         struct list_head work_list;
+ 
+         u8 bssid[ETH_ALEN];
+ 
+         u16 aid;
+         u16 capab;
+ 
+         struct sk_buff_head skb_queue;
+ 
+         unsigned long timers_running; /* used for quiesce/restart */
+         bool powersave; /* powersave requested for this iface */
+ 
+         unsigned long request;
+ 
+         unsigned int flags;
+ 
+         u32 beacon_crc;
+ 
+         enum {
+                 IEEE80211_MFP_DISABLED,
+                 IEEE80211_MFP_OPTIONAL,
+                 IEEE80211_MFP_REQUIRED
+         } mfp; /* management frame protection */
+ 
+         int wmm_last_param_set;
+ };
+
+struct ieee80211_if_ibss {
+         struct timer_list2 timer;
+         struct work_struct work;
+ 
+         struct sk_buff_head skb_queue;
+ 
+         unsigned long request;
+         unsigned long last_scan_completed;
+ 
+         bool timer_running;
+ 
+         bool fixed_bssid;
+         bool fixed_channel;
+         bool privacy;
+ 
+         u8 bssid[ETH_ALEN];
+         u8 ssid[IEEE80211_MAX_SSID_LEN];
+         u8 ssid_len, ie_len;
+         u8 *ie;
+         struct ieee80211_channel *channel;
+ 
+         unsigned long ibss_join_req;
+         /* probe response/beacon for IBSS */
+         struct sk_buff *presp, *skb;
+ 
+         enum {
+                 IEEE80211_IBSS_MLME_SEARCH,
+                 IEEE80211_IBSS_MLME_JOINED,
+         } state;
+ };
+
+struct ieee80211_sub_if_data {
+         struct list_head list;
+ 
+         struct wireless_dev wdev;
+ 
+         /* keys */
+         struct list_head key_list;
+ 
+         struct net_device *dev;
+         struct ieee80211_local *local;
+ 
+         unsigned int flags;
+ 
+         int drop_unencrypted;
+ 
+         /*
+          * keep track of whether the HT opmode (stored in
+          * vif.bss_info.ht_operation_mode) is valid.
+          */
+         bool ht_opmode_valid;
+ 
+         /* Fragment table for host-based reassembly */
+         struct ieee80211_fragment_entry fragments[IEEE80211_FRAGMENT_MAX];
+         unsigned int fragment_next;
+ 
+ #define NUM_DEFAULT_KEYS 4
+ #define NUM_DEFAULT_MGMT_KEYS 2
+         struct ieee80211_key *keys[NUM_DEFAULT_KEYS + NUM_DEFAULT_MGMT_KEYS];
+         struct ieee80211_key *default_key;
+         struct ieee80211_key *default_mgmt_key;
+ 
+         u16 sequence_number;
+ 
+         /*
+          * AP this belongs to: self in AP mode and
+          * corresponding AP in VLAN mode, NULL for
+          * all others (might be needed later in IBSS)
+          */
+         struct ieee80211_if_ap *bss;
+ 
+         int force_unicast_rateidx; /* forced TX rateidx for unicast frames */
+         int max_ratectrl_rateidx; /* max TX rateidx for rate control */
+ 
+         union {
+                 struct ieee80211_if_ap ap;
+                 struct ieee80211_if_wds wds;
+                 struct ieee80211_if_vlan vlan;
+                 struct ieee80211_if_managed mgd;
+                 struct ieee80211_if_ibss ibss;
+ #ifdef CONFIG_MAC80211_MESH
+                 struct ieee80211_if_mesh mesh;
+ #endif
+                 u32 mntr_flags;
+         } u;
+ 
+ #ifdef CONFIG_MAC80211_DEBUGFS
+         struct dentry *debugfsdir;
+         union {
+                 struct {
+                         struct dentry *drop_unencrypted;
+                         struct dentry *bssid;
+                         struct dentry *aid;
+                         struct dentry *capab;
+                         struct dentry *force_unicast_rateidx;
+                         struct dentry *max_ratectrl_rateidx;
+                 } sta;
+                 struct {
+                         struct dentry *drop_unencrypted;
+                         struct dentry *num_sta_ps;
+                         struct dentry *dtim_count;
+                        struct dentry *force_unicast_rateidx;
+                         struct dentry *max_ratectrl_rateidx;
+                         struct dentry *num_buffered_multicast;
+                 } ap;
+                 struct {
+                         struct dentry *drop_unencrypted;
+                         struct dentry *peer;
+                         struct dentry *force_unicast_rateidx;
+                         struct dentry *max_ratectrl_rateidx;
+                 } wds;
+                 struct {
+                         struct dentry *drop_unencrypted;
+                         struct dentry *force_unicast_rateidx;
+                         struct dentry *max_ratectrl_rateidx;
+                 } vlan;
+                 struct {
+                         struct dentry *mode;
+                 } monitor;
+         } debugfs;
+         struct {
+                 struct dentry *default_key;
+                 struct dentry *default_mgmt_key;
+         } common_debugfs;
+ 
+ #ifdef CONFIG_MAC80211_MESH
+         struct dentry *mesh_stats_dir;
+         struct {
+                 struct dentry *fwded_mcast;
+                 struct dentry *fwded_unicast;
+                 struct dentry *fwded_frames;
+                 struct dentry *dropped_frames_ttl;
+                 struct dentry *dropped_frames_no_route;
+                 struct dentry *estab_plinks;
+                 struct timer_list2 mesh_path_timer;
+         } mesh_stats;
+ 
+         struct dentry *mesh_config_dir;
+         struct {
+                 struct dentry *dot11MeshRetryTimeout;
+                 struct dentry *dot11MeshConfirmTimeout;
+                 struct dentry *dot11MeshHoldingTimeout;
+                 struct dentry *dot11MeshMaxRetries;
+                 struct dentry *dot11MeshTTL;
+                 struct dentry *auto_open_plinks;
+                 struct dentry *dot11MeshMaxPeerLinks;
+                 struct dentry *dot11MeshHWMPactivePathTimeout;
+                 struct dentry *dot11MeshHWMPpreqMinInterval;
+                 struct dentry *dot11MeshHWMPnetDiameterTraversalTime;
+                 struct dentry *dot11MeshHWMPmaxPREQretries;
+                 struct dentry *path_refresh_time;
+                 struct dentry *min_discovery_timeout;
+         } mesh_config;
+ #endif
+ 
+ #endif
+         /* must be last, dynamically sized area in this! */
+         struct ieee80211_vif vif;
+ };
+
+struct tid_ampdu_tx {
+          struct timer_list2 addba_resp_timer;
+          struct sk_buff_head pending;
+          u16 ssn;
+          u8 dialog_token;
+  };
+ 
+struct tid_ampdu_rx {
+         struct sk_buff **reorder_buf;
+         unsigned long *reorder_time;
+         struct timer_list2 session_timer;
+         u16 head_seq_num;
+         u16 stored_mpdu_num;
+         u16 ssn;
+         u16 buf_size;
+         u16 timeout;
+         u8 dialog_token;
+         bool shutdown;
+ };
+
+struct sta_ampdu_mlme {
+         /* rx */
+        u8 tid_state_rx[STA_TID_NUM];
+         struct tid_ampdu_rx *tid_rx[STA_TID_NUM];
+        /* tx */
+        u8 tid_state_tx[STA_TID_NUM];
+         struct tid_ampdu_tx *tid_tx[STA_TID_NUM];
+         u8 addba_req_num[STA_TID_NUM];
+         u8 dialog_token_allocator;
+ };
+
+struct sta_info {
+
+		 /* General information, mostly static */
+         struct list_head list;
+         struct sta_info *hnext;
+         struct ieee80211_local *local;
+         struct ieee80211_sub_if_data *sdata;
+         struct ieee80211_key *key;
+         struct rate_control_ref *rate_ctrl;
+         void *rate_ctrl_priv;
+         spinlock_t lock;
+         spinlock_t flaglock;
+ 
+         u16 listen_interval;
+ 
+         /*
+          * for use by the internal lifetime management,
+          * see __sta_info_unlink
+          */
+         u8 pin_status;
+ 
+         /*
+          * frequently updated, locked with own spinlock (flaglock),
+          * use the accessors defined below
+          */
+         u32 flags;
+ 
+         /*
+          * STA powersave frame queues, no more than the internal
+          * locking required.
+          */
+         struct sk_buff_head ps_tx_buf;
+         struct sk_buff_head tx_filtered;
+ 
+         /* Updated from RX path only, no locking requirements */
+         unsigned long rx_packets, rx_bytes;
+         unsigned long wep_weak_iv_count;
+         unsigned long last_rx;
+         unsigned long num_duplicates;
+         unsigned long rx_fragments;
+         unsigned long rx_dropped;
+         int last_signal;
+         int last_qual;
+         int last_noise;
+         __le16 last_seq_ctrl[NUM_RX_DATA_QUEUES];
+ 
+         /* Updated from TX status path only, no locking requirements */
+         unsigned long tx_filtered_count;
+         unsigned long tx_retry_failed, tx_retry_count;
+         /* moving percentage of failed MSDUs */
+         unsigned int fail_avg;
+ 
+         /* Updated from TX path only, no locking requirements */
+         unsigned long tx_packets;
+         unsigned long tx_bytes;
+         unsigned long tx_fragments;
+         struct ieee80211_tx_rate last_tx_rate;
+         u16 tid_seq[IEEE80211_QOS_CTL_TID_MASK + 1];
+ 
+         /*
+          * Aggregation information, locked with lock.
+          */
+        struct sta_ampdu_mlme ampdu_mlme;
+         u8 timer_to_tid[STA_TID_NUM];
+ 
+ #ifdef CONFIG_MAC80211_MESH
+         /*
+          * Mesh peer link attributes
+          * TODO: move to a sub-structure that is referenced with pointer?
+          */
+         __le16 llid;
+         __le16 plid;
+         __le16 reason;
+         u8 plink_retries;
+         bool ignore_plink_timer;
+         bool plink_timer_was_running;
+         enum plink_state plink_state;
+         u32 plink_timeout;
+         struct timer_list2 plink_timer;
+ #endif
+ 
+ #ifdef CONFIG_MAC80211_DEBUGFS
+         struct sta_info_debugfsdentries {
+                 struct dentry *dir;
+                 struct dentry *flags;
+                 struct dentry *num_ps_buf_frames;
+                 struct dentry *inactive_ms;
+                 struct dentry *last_seq_ctrl;
+                 struct dentry *agg_status;
+                 struct dentry *aid;
+                 struct dentry *dev;
+                 struct dentry *rx_packets;
+                 struct dentry *tx_packets;
+                 struct dentry *rx_bytes;
+                 struct dentry *tx_bytes;
+                 struct dentry *rx_duplicates;
+                 struct dentry *rx_fragments;
+                 struct dentry *rx_dropped;
+                 struct dentry *tx_fragments;
+                 struct dentry *tx_filtered;
+                 struct dentry *tx_retry_failed;
+                 struct dentry *tx_retry_count;
+                 struct dentry *last_signal;
+                 struct dentry *last_qual;
+                 struct dentry *last_noise;
+                 struct dentry *wep_weak_iv_count;
+                 bool add_has_run;
+         } debugfs;
+ #endif
+ 
+         /* keep last! */
+         struct ieee80211_sta sta;
+ };
+
+struct ieee80211_local {
+         /* embed the driver visible part.
+          * don't cast (use the static inlines below), but we keep
+          * it first anyway so they become a no-op */
+         struct ieee80211_hw hw;
+ 
+         const struct ieee80211_ops *ops;
+ 
+         /*
+          * private workqueue to mac80211. mac80211 makes this accessible
+          * via ieee80211_queue_work()
+          */
+         struct workqueue_struct *workqueue;
+ 
+         unsigned long queue_stop_reasons[IEEE80211_MAX_QUEUES];
+         /* also used to protect ampdu_ac_queue and amdpu_ac_stop_refcnt */
+         spinlock_t queue_stop_reason_lock;
+ 
+         int open_count;
+         int monitors, cooked_mntrs;
+         /* number of interfaces with corresponding FIF_ flags */
+         int fif_fcsfail, fif_plcpfail, fif_control, fif_other_bss, fif_pspoll;
+         unsigned int filter_flags; /* FIF_* */
+         struct iw_statistics wstats;
+ 
+         /* protects the aggregated multicast list and filter calls */
+         spinlock_t filter_lock;
+ 
+         /* used for uploading changed mc list */
+         struct work_struct reconfig_filter;
+ 
+         /* aggregated multicast list */
+         struct dev_addr_list *mc_list;
+         int mc_count;
+ 
+         bool tim_in_locked_section; /* see ieee80211_beacon_get() */
+ 
+         /*
+          * suspended is true if we finished all the suspend _and_ we have
+          * not yet come up from resume. This is to be used by mac80211
+          * to ensure driver sanity during suspend and mac80211's own
+          * sanity. It can eventually be used for WoW as well.
+          */
+         bool suspended;
+ 
+         /*
+          * quiescing is true during the suspend process _only_ to
+          * ease timer cancelling etc.
+          */
+         bool quiescing;
+ 
+         /* device is started */
+         bool started;
+ 
+         int tx_headroom; /* required headroom for hardware/radiotap */
+ 
+         /* Tasklet and skb queue to process calls from IRQ mode. All frames
+          * added to skb_queue will be processed, but frames in
+          * skb_queue_unreliable may be dropped if the total length of these
+          * queues increases over the limit. */
+ #define IEEE80211_IRQSAFE_QUEUE_LIMIT 128
+         struct tasklet_struct tasklet;
+         struct sk_buff_head skb_queue;
+         struct sk_buff_head skb_queue_unreliable;
+ 
+         /* Station data */
+         /*
+          * The lock only protects the list, hash, timer and counter
+          * against manipulation, reads are done in RCU. Additionally,
+          * the lock protects each BSS's TIM bitmap.
+          */
+         spinlock_t sta_lock;
+         unsigned long num_sta;
+         struct list_head sta_list;
+         struct sta_info *sta_hash[STA_HASH_SIZE];
+         struct timer_list2 sta_cleanup;
+         int sta_generation;
+ 
+         struct sk_buff_head pending[IEEE80211_MAX_QUEUES];
+         struct tasklet_struct tx_pending_tasklet;
+ 
+         /*
+          * This lock is used to prevent concurrent A-MPDU
+          * session start/stop processing, this thus also
+          * synchronises the ->ampdu_action() callback to
+          * drivers and limits it to one at a time.
+          */
+         spinlock_t ampdu_lock;
+ 
+         /* number of interfaces with corresponding IFF_ flags */
+         atomic_t iff_allmultis, iff_promiscs;
+ 
+         struct rate_control_ref *rate_ctrl;
+ 
+         struct crypto_blkcipher *wep_tx_tfm;
+         struct crypto_blkcipher *wep_rx_tfm;
+         u32 wep_iv;
+ 
+         /* see iface.c */
+         struct list_head interfaces;
+         struct mutex iflist_mtx;
+ 
+         /*
+          * Key lock, protects sdata's key_list and sta_info's
+          * key pointers (write access, they're RCU.)
+          */
+         spinlock_t key_lock;
+ 
+ 
+         /* Scanning and BSS list */
+         struct mutex scan_mtx;
+         unsigned long scanning;
+         struct cfg80211_ssid scan_ssid;
+         struct cfg80211_scan_request *int_scan_req;
+         struct cfg80211_scan_request *scan_req;
+         struct ieee80211_channel *scan_channel;
+         const u8 *orig_ies;
+         int orig_ies_len;
+         int scan_channel_idx;
+         int scan_ies_len;
+ 
+         //enum mac80211_scan_state next_scan_state;
+         struct delayed_work scan_work;
+         struct ieee80211_sub_if_data *scan_sdata;
+         enum nl80211_channel_type oper_channel_type;
+         struct ieee80211_channel *oper_channel, *csa_channel;
+ 
+         /* SNMP counters */
+         /* dot11CountersTable */
+         u32 dot11TransmittedFragmentCount;
+         u32 dot11MulticastTransmittedFrameCount;
+         u32 dot11FailedCount;
+         u32 dot11RetryCount;
+         u32 dot11MultipleRetryCount;
+         u32 dot11FrameDuplicateCount;
+         u32 dot11ReceivedFragmentCount;
+         u32 dot11MulticastReceivedFrameCount;
+         u32 dot11TransmittedFrameCount;
+ 
+ #ifdef CONFIG_MAC80211_LEDS
+         int tx_led_counter, rx_led_counter;
+         struct led_trigger *tx_led, *rx_led, *assoc_led, *radio_led;
+         char tx_led_name[32], rx_led_name[32],
+              assoc_led_name[32], radio_led_name[32];
+ #endif
+ 
+ #ifdef CONFIG_MAC80211_DEBUGFS
+         struct work_struct sta_debugfs_add;
+ #endif
+ 
+ #ifdef CONFIG_MAC80211_DEBUG_COUNTERS
+         /* TX/RX handler statistics */
+         unsigned int tx_handlers_drop;
+         unsigned int tx_handlers_queued;
+         unsigned int tx_handlers_drop_unencrypted;
+         unsigned int tx_handlers_drop_fragment;
+         unsigned int tx_handlers_drop_wep;
+         unsigned int tx_handlers_drop_not_assoc;
+         unsigned int tx_handlers_drop_unauth_port;
+         unsigned int rx_handlers_drop;
+         unsigned int rx_handlers_queued;
+         unsigned int rx_handlers_drop_nullfunc;
+         unsigned int rx_handlers_drop_defrag;
+         unsigned int rx_handlers_drop_short;
+         unsigned int rx_handlers_drop_passive_scan;
+         unsigned int tx_expand_skb_head;
+         unsigned int tx_expand_skb_head_cloned;
+         unsigned int rx_expand_skb_head;
+         unsigned int rx_expand_skb_head2;
+         unsigned int rx_handlers_fragments;
+         unsigned int tx_status_drop;
+ #define I802_DEBUG_INC(c) (c)++
+ #else /* CONFIG_MAC80211_DEBUG_COUNTERS */
+ #define I802_DEBUG_INC(c) do { } while (0)
+ #endif /* CONFIG_MAC80211_DEBUG_COUNTERS */
+ 
+ 
+         int total_ps_buffered; /* total number of all buffered unicast and
+                                 * multicast packets for power saving stations
+                                 */
+         int wifi_wme_noack_test;
+         unsigned int wmm_acm; /* bit field of ACM bits (BIT(802.1D tag)) */
+ 
+         bool pspolling;
+         /*
+          * PS can only be enabled when we have exactly one managed
+          * interface (and monitors) in PS, this then points there.
+          */
+         struct ieee80211_sub_if_data *ps_sdata;
+         struct work_struct dynamic_ps_enable_work;
+         struct work_struct dynamic_ps_disable_work;
+         struct timer_list2 dynamic_ps_timer;
+        // struct notifier_block network_latency_notifier;
+ 
+         int user_power_level; /* in dBm */
+         int power_constr_level; /* in dBm */
+ 
+         struct work_struct restart_work;
+ 
+ #ifdef CONFIG_MAC80211_DEBUGFS
+         struct local_debugfsdentries {
+                 struct dentry *rcdir;
+                 struct dentry *rcname;
+                 struct dentry *frequency;
+                 struct dentry *total_ps_buffered;
+                 struct dentry *wep_iv;
+                 struct dentry *tsf;
+                 struct dentry *queues;
+                 struct dentry *reset;
+                 struct dentry *noack;
+                 struct dentry *statistics;
+                 struct local_debugfsdentries_statsdentries {
+                         struct dentry *transmitted_fragment_count;
+                         struct dentry *multicast_transmitted_frame_count;
+                         struct dentry *failed_count;
+                         struct dentry *retry_count;
+                         struct dentry *multiple_retry_count;
+                         struct dentry *frame_duplicate_count;
+                         struct dentry *received_fragment_count;
+                         struct dentry *multicast_received_frame_count;
+                         struct dentry *transmitted_frame_count;
+                         struct dentry *wep_undecryptable_count;
+                        struct dentry *num_scans;
+ #ifdef CONFIG_MAC80211_DEBUG_COUNTERS
+                         struct dentry *tx_handlers_drop;
+                         struct dentry *tx_handlers_queued;
+                         struct dentry *tx_handlers_drop_unencrypted;
+                         struct dentry *tx_handlers_drop_fragment;
+                         struct dentry *tx_handlers_drop_wep;
+                         struct dentry *tx_handlers_drop_not_assoc;
+                         struct dentry *tx_handlers_drop_unauth_port;
+                         struct dentry *rx_handlers_drop;
+                         struct dentry *rx_handlers_queued;
+                         struct dentry *rx_handlers_drop_nullfunc;
+                         struct dentry *rx_handlers_drop_defrag;
+                         struct dentry *rx_handlers_drop_short;
+                         struct dentry *rx_handlers_drop_passive_scan;
+                         struct dentry *tx_expand_skb_head;
+                         struct dentry *tx_expand_skb_head_cloned;
+                         struct dentry *rx_expand_skb_head;
+                         struct dentry *rx_expand_skb_head2;
+                         struct dentry *rx_handlers_fragments;
+                         struct dentry *tx_status_drop;
+ #endif
+                         struct dentry *dot11ACKFailureCount;
+                         struct dentry *dot11RTSFailureCount;
+                         struct dentry *dot11FCSErrorCount;
+                         struct dentry *dot11RTSSuccessCount;
+                 } stats;
+                 struct dentry *stations;
+                 struct dentry *keys;
+         } debugfs;
+ #endif
+ };
+
+
+struct rate_control_alg {
+          struct list_head list;
+          struct rate_control_ops *ops;
+  };
+
+struct ieee80211_tx_status_rtap_hdr {
+          struct ieee80211_radiotap_header hdr;
+          u8 rate;
+          u8 padding_for_rate;
+          __le16 tx_flags;
+          u8 data_retries;
+  } __attribute__ ((packed));
+ 
+ 
+ struct rate_control_ref {
+          struct ieee80211_local *local;
+          struct rate_control_ops *ops;
+         void *priv;
+          struct kref kref;
+  };
+ 
+ 
+  
+ enum ieee80211_mgd_state {
+         IEEE80211_MGD_STATE_IDLE,
+         IEEE80211_MGD_STATE_PROBE,
+         IEEE80211_MGD_STATE_AUTH,
+         IEEE80211_MGD_STATE_ASSOC,
+ };
+
+ struct ieee80211_mgd_work {
+         struct list_head list;
+         struct ieee80211_bss *bss;
+         int ie_len;
+         u8 prev_bssid[ETH_ALEN];
+         u8 ssid[IEEE80211_MAX_SSID_LEN];
+         u8 ssid_len;
+         unsigned long timeout;
+         enum ieee80211_mgd_state state;
+         u16 auth_alg, auth_transaction;
+ 
+         int tries;
+ 
+         u8 key[WLAN_KEY_LEN_WEP104];
+         u8 key_len, key_idx;
+ 
+         /* must be last */
+         u8 ie[0]; /* for auth or assoc frame, not probe */
+ };
+
+
+struct ieee80211_bss {
+          /* Yes, this is a hack */
+          struct cfg80211_bss cbss;
+  
+          /* don't want to look up all the time */
+          size_t ssid_len;
+          u8 ssid[IEEE80211_MAX_SSID_LEN];
+  
+          u8 dtim_period;
+  
+          bool wmm_used;
+  
+          unsigned long last_probe_resp;
+  
+  #ifdef CONFIG_MAC80211_MESH
+          u8 *mesh_id;
+          size_t mesh_id_len;
+          u8 *mesh_cfg;
+  #endif
+  
+  #define IEEE80211_MAX_SUPP_RATES 32
+          u8 supp_rates[IEEE80211_MAX_SUPP_RATES];
+          size_t supp_rates_len;
+  
+          /*
+          * During assocation, we save an ERP value from a probe response so
+           * that we can feed ERP info to the driver when handling the
+           * association completes. these fields probably won't be up-to-date
+          * otherwise, you probably don't want to use them.
+          */
+         bool has_erp_value;
+         u8 erp_value;
+ };
+
+struct ieee802_11_elems {
+         u8 *ie_start;
+         size_t total_len;
+ 
+         /* pointers to IEs */
+         u8 *ssid;
+         u8 *supp_rates;
+         u8 *fh_params;
+         u8 *ds_params;
+         u8 *cf_params;
+         struct ieee80211_tim_ie *tim;
+         u8 *ibss_params;
+         u8 *challenge;
+         u8 *wpa;
+         u8 *rsn;
+         u8 *erp_info;
+         u8 *ext_supp_rates;
+         u8 *wmm_info;
+         u8 *wmm_param;
+         struct ieee80211_ht_cap *ht_cap_elem;
+         struct ieee80211_ht_info *ht_info_elem;
+         u8 *mesh_config;
+         u8 *mesh_id;
+         u8 *peer_link;
+         u8 *preq;
+         u8 *prep;
+         u8 *perr;
+         u8 *ch_switch_elem;
+         u8 *country_elem;
+         u8 *pwr_constr_elem;
+         u8 *quiet_elem;         /* first quite element */
+         u8 *timeout_int;
+ 
+         /* length of them, respectively */
+         u8 ssid_len;
+         u8 supp_rates_len;
+         u8 fh_params_len;
+         u8 ds_params_len;
+         u8 cf_params_len;
+         u8 tim_len;
+         u8 ibss_params_len;
+         u8 challenge_len;
+         u8 wpa_len;
+         u8 rsn_len;
+         u8 erp_info_len;
+         u8 ext_supp_rates_len;
+         u8 wmm_info_len;
+         u8 wmm_param_len;
+         u8 mesh_config_len;
+         u8 mesh_id_len;
+         u8 peer_link_len;
+         u8 preq_len;
+         u8 prep_len;
+         u8 perr_len;
+         u8 ch_switch_elem_len;
+         u8 country_elem_len;
+         u8 pwr_constr_elem_len;
+      u8 quiet_elem_len;
+         u8 num_of_quiet_elem;   /* can be more the one */
+         u8 timeout_int_len;
+ };
+
+struct rb_node
+ {
+         unsigned long  rb_parent_color;
+ #define RB_RED          0
+ #define RB_BLACK        1
+         struct rb_node *rb_right;
+         struct rb_node *rb_left;
+ } __attribute__((aligned(sizeof(long))));
+
+struct cfg80211_internal_bss {
+         struct list_head list;
+         struct rb_node rbn;
+         unsigned long ts;
+         struct kref ref;
+         atomic_t hold;
+         bool ies_allocated;
+ 
+         /* must be last because of priv member */
+         struct cfg80211_bss pub;
+ };
+
+
+
+
 
 #endif /* MAC80211_H */

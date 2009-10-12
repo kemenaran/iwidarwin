@@ -669,9 +669,9 @@ static void iwl_tx_cmd_build_hwcrypto(struct iwl_priv *priv,
 
 	case ALG_TKIP:
 		tx_cmd->sec_ctl = TX_CMD_SEC_TKIP;
-		ieee80211_get_tkip_key(keyconf, skb_frag,
-			IEEE80211_TKIP_P2_KEY, tx_cmd->key);
-		IWL_DEBUG_TX(priv, "tx_cmd with tkip hwcrypto\n");
+		//ieee80211_get_tkip_key(keyconf, skb_frag,
+		//	IEEE80211_TKIP_P2_KEY, tx_cmd->key);
+		IWL_DEBUG_TX(priv, "TODO: tx_cmd with tkip hwcrypto\n");
 		break;
 
 	case ALG_WEP:
@@ -856,8 +856,8 @@ int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 	/* Physical address of this Tx command's header (not MAC header!),
 	 * within command buffer array. */
 	txcmd_phys = pci_map_single(priv->pci_dev,
-				    &out_cmd->hdr, len/*,
-				    PCI_DMA_BIDIRECTIONAL*/);
+				    &out_cmd->hdr, len,
+				    PCI_DMA_BIDIRECTIONAL);
 	pci_unmap_addr_set(out_meta, /*mapping,*/ txcmd_phys);
 	pci_unmap_len_set(out_meta, len, len);
 	/* Add buffer containing Tx command and MAC(!) header to TFD's
@@ -892,7 +892,7 @@ int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 		sizeof(struct iwl_cmd_header) + hdr_len;
 	/* take back ownership of DMA buffer to enable update */
 	pci_dma_sync_single_for_cpu(priv->pci_dev, txcmd_phys,
-				    len/*, PCI_DMA_BIDIRECTIONAL*/);
+				    len, PCI_DMA_BIDIRECTIONAL);
 	tx_cmd->dram_lsb_ptr = cpu_to_le32(scratch_phys);
 	tx_cmd->dram_msb_ptr = iwl_get_dma_hi_addr(scratch_phys);
 
@@ -907,8 +907,8 @@ int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 		priv->cfg->ops->lib->txq_update_byte_cnt_tbl(priv, txq,
 						     le16_to_cpu(tx_cmd->len));
 
-	pci_dma_sync_single_for_device(priv->pci_dev, txcmd_phys,
-				       len/*, PCI_DMA_BIDIRECTIONAL*/);
+	//pci_dma_sync_single_for_device(priv->pci_dev, txcmd_phys,
+	//			       len/*, PCI_DMA_BIDIRECTIONAL*/);
 
 	//trace_iwlwifi_dev_tx(priv,
 	//		     &((struct iwl_tfd *)txq->tfds)[txq->q.write_ptr],
@@ -1046,7 +1046,7 @@ int iwl_enqueue_hcmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
 		priv->cfg->ops->lib->txq_update_byte_cnt_tbl(priv, txq, 0);
 
 	phys_addr = pci_map_single(priv->pci_dev, &out_cmd->hdr,
-				   fix_size/*, PCI_DMA_BIDIRECTIONAL*/);
+				   fix_size, PCI_DMA_BIDIRECTIONAL);
 	pci_unmap_addr_set(out_meta, /*mapping,*/ phys_addr);
 	pci_unmap_len_set(out_meta, len, fix_size);
 
@@ -1119,9 +1119,9 @@ static void iwl_hcmd_queue_reclaim(struct iwl_priv *priv, int txq_id,
 	}
 
 	pci_unmap_single(priv->pci_dev,
-		pci_unmap_addr(&txq->meta[cmd_idx]/*, mapping*/),
-		pci_unmap_len(&txq->meta[cmd_idx]/*, len),
-		PCI_DMA_BIDIRECTIONAL*/));
+		pci_unmap_addr(&txq->meta[cmd_idx]),
+		pci_unmap_len(&txq->meta[cmd_idx]),
+		PCI_DMA_BIDIRECTIONAL);
 
 	for (idx = iwl_queue_inc_wrap(idx, q->n_bd); q->read_ptr != idx;
 	     q->read_ptr = iwl_queue_inc_wrap(q->read_ptr, q->n_bd)) {

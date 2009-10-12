@@ -110,8 +110,8 @@ struct iwl_tt_mgmt {
 #endif
 	struct iwl_tt_restriction *restriction;
 	struct iwl_tt_trans *transaction;
-	struct timer_list ct_kill_exit_tm;
-	struct timer_list ct_kill_waiting_tm;
+	struct timer_list2 ct_kill_exit_tm;
+	struct timer_list2 ct_kill_waiting_tm;
 };
 
 enum iwl_power_level {

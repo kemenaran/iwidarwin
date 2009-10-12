@@ -185,41 +185,9 @@
 			children = (
 				611BAF10108155D500677C8A /* ieee80211.h */,
 				611BAF11108155D500677C8A /* nl80211.h */,
-				611BAF15108155D500677C8A /* spi */,
-				611BAF18108155D500677C8A /* ssb */,
-				611BAF21108155D500677C8A /* unaligned */,
-				611BAF2C108155D500677C8A /* usb */,
 				611BAF2F108155D500677C8A /* wireless.h */,
 			);
 			path = linux;
-			sourceTree = "<group>";
-		};
-		611BAF15108155D500677C8A /* spi */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = spi;
-			sourceTree = "<group>";
-		};
-		611BAF18108155D500677C8A /* ssb */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = ssb;
-			sourceTree = "<group>";
-		};
-		611BAF21108155D500677C8A /* unaligned */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = unaligned;
-			sourceTree = "<group>";
-		};
-		611BAF2C108155D500677C8A /* usb */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = usb;
 			sourceTree = "<group>";
 		};
 		61B0346E0B59819700286B6C /* firmware */ = {

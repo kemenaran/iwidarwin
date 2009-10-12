@@ -1237,7 +1237,7 @@ struct iwl_priv {
 	u32 disable_chain_noise_cal;
 	u32 disable_tx_power_cal;
 	struct work_struct run_time_calib_work;
-	struct timer_list statistics_periodic;
+	struct timer_list2 statistics_periodic;
 	int hw_ready;
 	/*For 3945*/
 #define IWL_DEFAULT_TX_POWER 0x0F

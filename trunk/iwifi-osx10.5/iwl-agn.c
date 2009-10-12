@@ -447,8 +447,8 @@ void iwl_hw_txq_free_tfd(struct iwl_priv *priv, struct iwl_tx_queue *txq)
 	if (num_tbs)
 		pci_unmap_single(dev,
 				pci_unmap_addr(&txq->meta[index]/*, mapping*/),
-				pci_unmap_len(&txq->meta[index])/*, len),
-				PCI_DMA_BIDIRECTIONAL*/);
+				pci_unmap_len(&txq->meta[index]),
+				PCI_DMA_BIDIRECTIONAL);
 
 	/* Unmap chunks, if any. */
 	for (i = 1; i < num_tbs; i++) {

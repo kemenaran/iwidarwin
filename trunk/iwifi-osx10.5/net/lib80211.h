@@ -110,7 +110,7 @@ struct lib80211_crypt_info {
 	struct lib80211_crypt_data *crypt[NUM_WEP_KEYS];
 	int tx_keyidx;		/* default TX key index (crypt[tx_keyidx]) */
 	struct list_head crypt_deinit_list;
-	struct timer_list crypt_deinit_timer;
+	struct timer_list2 crypt_deinit_timer;
 	int crypt_quiesced;
 };
 

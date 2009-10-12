@@ -1467,4 +1467,6 @@ static inline bool ieee80211_check_tim(struct ieee80211_tim_ie *tim,
 	return !!(tim->virtual_map[index] & mask);
 }
 
+
+
 #endif /* LINUX_IEEE80211_H */
