@@ -294,7 +294,7 @@
 							<real>186</real>
 						</array>
 						<key>RubberWindowFrame</key>
-						<string>0 125 1024 621 0 0 1024 746 </string>
+						<string>256 157 1024 621 0 0 1280 778 </string>
 					</dict>
 					<key>Module</key>
 					<string>PBXSmartGroupTreeModule</string>
@@ -324,7 +324,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61E582D20DFEC9E000F7097B</string>
+										<string>61A757811083B8A600622D5A</string>
 										<key>history</key>
 										<array>
 											<string>6131B3AB0BB20C00001B2298</string>
@@ -332,7 +332,7 @@
 											<string>61B112450BB4288700DD9EA9</string>
 											<string>61B11A9B0BB42DFF00DD9EA9</string>
 											<string>61D0D75F0CCEA8D100202EFD</string>
-											<string>61B6D2660DFEC80E006259B6</string>
+											<string>61E582D20DFEC9E000F7097B</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -355,7 +355,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {816, 423}}</string>
 								<key>RubberWindowFrame</key>
-								<string>0 125 1024 621 0 0 1024 746 </string>
+								<string>256 157 1024 621 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -375,7 +375,7 @@
 								<key>Frame</key>
 								<string>{{0, 428}, {816, 162}}</string>
 								<key>RubberWindowFrame</key>
-								<string>0 125 1024 621 0 0 1024 746 </string>
+								<string>256 157 1024 621 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
@@ -399,9 +399,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61E582D30DFEC9E000F7097B</string>
+				<string>61A757821083B8A600622D5A</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61E582D40DFEC9E000F7097B</string>
+				<string>61A757831083B8A600622D5A</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -533,10 +533,11 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>/var/root/svn/trunk/iwi3945_new-osx10.5/networkSelector/networkSelector.xcodeproj</string>
+		<string>61D06D6D0DFC11BD00F670D6</string>
+		<string>/var/root/svn/trunk/iwifi-osx10.5/networkSelector/networkSelector.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
-	<string>0 125 1024 621 0 0 1024 746 </string>
+	<string>256 157 1024 621 0 0 1280 778 </string>
 	<key>WindowToolsV3</key>
 	<array>
 		<dict>
@@ -566,7 +567,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {500, 218}}</string>
 								<key>RubberWindowFrame</key>
-								<string>21 223 500 500 0 0 1024 746 </string>
+								<string>31 251 500 500 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -590,7 +591,7 @@
 								<key>Frame</key>
 								<string>{{0, 223}, {500, 236}}</string>
 								<key>RubberWindowFrame</key>
-								<string>21 223 500 500 0 0 1024 746 </string>
+								<string>31 251 500 500 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXBuildResultsModule</string>
@@ -613,14 +614,14 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61D06D6D0DFC11BD00F670D6</string>
-				<string>61D09B630DFEC63E00F0871C</string>
+				<string>61A757841083B8A600622D5A</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.buildV3</string>
 			<key>WindowString</key>
-			<string>21 223 500 500 0 0 1024 746 </string>
+			<string>31 251 500 500 0 0 1280 778 </string>
 			<key>WindowToolGUID</key>
 			<string>61D06D6D0DFC11BD00F670D6</string>
 			<key>WindowToolIsVisible</key>
