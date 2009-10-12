@@ -69,7 +69,7 @@ typedef __u64 __be64;
 #define BITS_PER_BYTE           8
 #define BITS_TO_LONGS(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
 #define ETH_ALEN	6
-struct device{};
+
 struct list_head {
 	struct list_head *next, *prev;
 };
@@ -159,9 +159,16 @@ container_of(ptr, type, member)
 #define GFP_ATOMIC 0
 #define synchronize_irq(x)
 #define DEVICE_ATTR(_name,_mode,_show,_store) 
+
 struct kobject {
     void *ptr;
 };
+
+struct device {
+    struct kobject kobj; // Device of type IOPCIDevice.
+    void *driver_data;
+};
+
 struct pci_dev {
     unsigned long device;
     unsigned long subsystem_device;
@@ -768,6 +775,246 @@ static inline void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
 	//enable_int();
 	return;
 }
+
+#define PCI_DMA_BIDIRECTIONAL   0
+ #define PCI_DMA_TODEVICE        1
+ #define PCI_DMA_FROMDEVICE      2
+ #define PCI_DMA_NONE            3
+#define pci_unmap_addr(x) x
+#define pci_unmap_len(x) sizeof(x)
+#define pci_unmap_addr_set(x,y)
+#define pci_unmap_len_set(x,y,z) 
+
+#define	NETDEV_ALIGN		32
+#define	NETDEV_ALIGN_CONST	(NETDEV_ALIGN - 1)
+
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+#define ALIGN(x,a)              __ALIGN_MASK(x,(typeof(x))(a)-1)
+
+#define IEEE80211_DEV_TO_SUB_IF(dev) netdev_priv(dev)
+
+static inline void prefetch(const void *x) {;}
+
+#define list_for_each_entry(pos, head, member)				\
+	for (pos = list_entry((head)->next, typeof(*pos), member);	\
+	     prefetch(pos->member.next), &pos->member != (head); 	\
+	     pos = list_entry(pos->member.next, typeof(*pos), member))
+
+#define list_for_each_entry_safe(pos, n, head, member)			\
+	for (pos = list_entry((head)->next, typeof(*pos), member),	\
+		n = list_entry(pos->member.next, typeof(*pos), member);	\
+	     &pos->member != (head); 					\
+	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+		 	
+#define list_for_each_entry_rcu(pos, head, member) \
+         for (pos = list_entry((head)->next, typeof(*pos), member); \
+                 prefetch(rcu_dereference(pos)->member.next), \
+                         &pos->member != (head); \
+                 pos = list_entry(pos->member.next, typeof(*pos), member))
+
+struct kref {
+         atomic_t refcount;
+          void (*release)(struct kref *kref);
+  };
+
+#define atomic_set(v,i)     (((v)->counter) = (i))
+
+#define NUM_RX_DATA_QUEUES 17
+#define NUM_TX_DATA_QUEUES 6
+#define MAX_STA_COUNT 2007
+#define STA_TID_NUM 16
+#define STA_HASH_SIZE 256
+
+
+#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+#define smp_read_barrier_depends()      do {} while (0)
+
+#define rcu_dereference(p)     ({ \
+                                 typeof(p) _________p1 = ACCESS_ONCE(p); \
+                                 smp_read_barrier_depends(); \
+                                 (_________p1); \
+                                 })
+
+
+#define list_entry_rcu(ptr, type, member) \
+         container_of(rcu_dereference(ptr), type, member)
+
+#define list_first_entry_rcu(ptr, type, member) \
+         list_entry_rcu((ptr)->next, type, member)
+ 
+ #define __list_for_each_rcu(pos, head) \
+         for (pos = rcu_dereference((head)->next); \
+                 pos != (head); \
+                 pos = rcu_dereference(pos->next))
+
+
+#define list_for_each_entry_rcu(pos, head, member) \
+         for (pos = list_entry_rcu((head)->next, typeof(*pos), member); \
+                 prefetch(pos->member.next), &pos->member != (head); \
+                 pos = list_entry_rcu(pos->member.next, typeof(*pos), member))
+
+
+#define rcu_read_lock()
+#define rcu_read_unlock()
+#define IEEE80211_FRAGMENT_MAX 4
+#define MAX_ADDR_LEN	32
+
+struct hlist_node {
+         struct hlist_node *next, **pprev;
+ };
+
+#define STA_HASH(sta) (sta[5])
+
+#define LIST_HEAD_INIT(name) { &(name), &(name) }
+
+#undef LIST_HEAD
+#define LIST_HEAD(name) \
+	struct list_head name = LIST_HEAD_INIT(name)
+
+#define rtnl_lock()
+#define rtnl_unlock()
+
+#define smp_wmb()
+#define rcu_assign_pointer(p, v) \
+         ({ \
+                 if (!__builtin_constant_p(v) || \
+                     ((v) != NULL)) \
+                         smp_wmb(); \
+                 (p) = (v); \
+         })
+
+ #define WLAN_STA_PS BIT(2)
+ #define STA_INFO_PIN_STAT_NORMAL        0
+ #define STA_INFO_PIN_STAT_PINNED        1
+ #define STA_INFO_PIN_STAT_DESTROY       2
+ 
+ static inline void __list_add_rcu(struct list_head *neww,
+                  struct list_head *prev, struct list_head *next)
+  {
+          neww->next = next;
+          neww->prev = prev;
+          rcu_assign_pointer(prev->next, neww);
+          next->prev = neww;
+  }
+ 
+ static inline void list_add_tail_rcu(struct list_head *neww,
+                                          struct list_head *head)
+  {
+          __list_add_rcu(neww, head->prev, head);
+  }
+ 
+ #define ARPHRD_IEEE80211_RADIOTAP 803  /* IEEE 802.11 + radiotap header */
+
+ enum rx_mgmt_action {
+          /* no action required */
+          RX_MGMT_NONE,
+  
+          /* caller must call cfg80211_send_rx_auth() */
+          RX_MGMT_CFG80211_AUTH,
+  
+          /* caller must call cfg80211_send_rx_assoc() */
+          RX_MGMT_CFG80211_ASSOC,
+  
+          /* caller must call cfg80211_send_deauth() */
+          RX_MGMT_CFG80211_DEAUTH,
+  
+          /* caller must call cfg80211_send_disassoc() */
+          RX_MGMT_CFG80211_DISASSOC,
+  
+          /* caller must call cfg80211_auth_timeout() & free work */
+          RX_MGMT_CFG80211_AUTH_TO,
+  
+          /* caller must call cfg80211_assoc_timeout() & free work */
+          RX_MGMT_CFG80211_ASSOC_TO,
+  };
+ 
+ 
+
+static inline u8 *bss_mesh_cfg(struct ieee80211_bss *bss)
+ {
+ #ifdef CONFIG_MAC80211_MESH
+         return bss->mesh_cfg;
+ #endif
+         return NULL;
+ }
+ 
+ static inline u8 *bss_mesh_id(struct ieee80211_bss *bss)
+ {
+ #ifdef CONFIG_MAC80211_MESH
+         return bss->mesh_id;
+ #endif
+         return NULL;
+ }
+ 
+ static inline u8 bss_mesh_id_len(struct ieee80211_bss *bss)
+ {
+ #ifdef CONFIG_MAC80211_MESH
+         return bss->mesh_id_len;
+ #endif
+         return 0;
+ }
+
+#define ASSERT_MGD_MTX(x)
+#define smp_mb()
+
+#define IEEE80211_AUTH_TIMEOUT (HZ / 5)
+#define IEEE80211_AUTH_MAX_TRIES 3
+#define IEEE80211_ASSOC_TIMEOUT (HZ / 5)
+#define IEEE80211_ASSOC_MAX_TRIES 3
+#define IEEE80211_MONITORING_INTERVAL (2 * HZ)
+#define IEEE80211_PROBE_INTERVAL (60 * HZ)
+#define IEEE80211_RETRY_AUTH_INTERVAL (1 * HZ)
+#define IEEE80211_SCAN_INTERVAL (2 * HZ)
+#define IEEE80211_SCAN_INTERVAL_SLOW (15 * HZ)
+#define IEEE80211_IBSS_JOIN_TIMEOUT (20 * HZ)
+
+#define IEEE80211_PROBE_DELAY (HZ / 33)
+#define IEEE80211_CHANNEL_TIME (HZ / 33)
+#define IEEE80211_PASSIVE_CHANNEL_TIME (HZ / 5)
+#define IEEE80211_SCAN_RESULT_EXPIRE (10 * HZ)
+#define IEEE80211_IBSS_MERGE_INTERVAL (30 * HZ)
+#define IEEE80211_IBSS_INACTIVITY_LIMIT (60 * HZ)
+
+#define IEEE80211_IBSS_MAX_STA_ENTRIES 128
+
+
+#define IEEE80211_FC(type, stype) cpu_to_le16(type | stype)
+
+#define ERP_INFO_USE_PROTECTION BIT(1)
+
+
+ #define STA_TID_NUM 16
+ #define ADDBA_RESP_INTERVAL HZ
+ #define HT_AGG_MAX_RETRIES              (0x3)
+  
+  #define HT_AGG_STATE_INITIATOR_SHIFT    (4)
+  
+  #define HT_ADDBA_REQUESTED_MSK          BIT(0)
+  #define HT_ADDBA_DRV_READY_MSK          BIT(1)
+  #define HT_ADDBA_RECEIVED_MSK           BIT(2)
+  #define HT_AGG_STATE_REQ_STOP_BA_MSK    BIT(3)
+  #define HT_AGG_STATE_INITIATOR_MSK      BIT(HT_AGG_STATE_INITIATOR_SHIFT)
+  #define HT_AGG_STATE_IDLE               (0x0)
+  #define HT_AGG_STATE_OPERATIONAL        (HT_ADDBA_REQUESTED_MSK |       \
+                                           HT_ADDBA_DRV_READY_MSK |       \
+                                           HT_ADDBA_RECEIVED_MSK)
+
+
+#define USHORT_MAX      ((u16)(~0U))
+
+#define WLAN_STA_AUTH            1<<0
+#define WLAN_STA_ASSOC           1<<1
+#define WLAN_STA_PS              1<<2
+#define WLAN_STA_AUTHORIZED      1<<3
+#define WLAN_STA_SHORT_PREAMBLE  1<<4
+#define WLAN_STA_ASSOC_AP        1<<5
+#define WLAN_STA_WME             1<<6
+#define WLAN_STA_WDS             1<<7
+#define WLAN_STA_CLEAR_PS_FILT   1<<9
+#define WLAN_STA_MFP             1<<10
+#define WLAN_STA_SUSPEND         1<<11
+  
+
 
 
 

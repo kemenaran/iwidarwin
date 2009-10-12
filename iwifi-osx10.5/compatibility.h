@@ -13,6 +13,66 @@
 extern "C" {
 #endif
 
+
+void ieee80211_wake_queues(struct ieee80211_hw *hw);
+void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue);
+void ieee80211_unregister_hw(struct ieee80211_hw *hw);
+ void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw,
+				 struct sk_buff *skb);
+void ieee80211_scan_completed(struct ieee80211_hw *hw, int aborted);
+void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb);
+void ieee80211_stop_tx_ba_cb_irqsafe(struct ieee80211_hw *hw, const u8 *ra,
+				     u16 tid);
+int ieee80211_start_tx_ba_session(struct ieee80211_hw *hw, u8 *ra, u16 tid);
+void ieee80211_start_tx_ba_cb_irqsafe(struct ieee80211_hw *hw, const u8 *ra,
+				      u16 tid);
+ void ieee80211_restart_hw(struct ieee80211_hw *hw);
+void ieee80211_rate_control_unregister(struct rate_control_ops *ops);
+int ieee80211_rate_control_register(struct rate_control_ops *ops);
+unsigned int ieee80211_hdrlen(__le16 fc);
+int ieee80211_register_hw(struct ieee80211_hw *hw);
+void ieee80211_stop_queue(struct ieee80211_hw *hw, int queue);
+void ieee80211_stop_queues(struct ieee80211_hw *hw);
+ void ieee80211_free_hw (	struct ieee80211_hw *  	hw);
+struct ieee80211_sta *ieee80211_find_sta(struct ieee80211_hw *hw,
+                                          const u8 *addr);
+int ieee80211_frequency_to_channel(int freq);
+int ieee80211_channel_to_frequency(int chan);
+struct sk_buff *ieee80211_beacon_get(struct ieee80211_hw *hw,
+                                      struct ieee80211_vif *vif);
+void sta_info_init(struct ieee80211_local *local);
+struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
+                                         const struct ieee80211_ops *ops);
+int pci_write_config_word(struct pci_dev *dev, int where, u16 val);
+int pci_write_config_byte(struct pci_dev *dev, int where, u8 val);
+void pci_unregister_driver (struct pci_driver * drv);
+void pci_set_master (struct pci_dev * dev);
+void pci_set_drvdata (struct pci_dev *pdev, void *data);
+int pci_set_dma_mask(struct pci_dev *dev, u64 mask);
+int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask);
+int pci_request_regions (struct pci_dev * pdev, char * res_name);
+void pci_release_regions (struct pci_dev * pdev);
+int pci_register_driver(struct pci_driver * drv);
+int pci_pme_capable(struct pci_dev *dev, u8 where);
+void pci_iounmap(struct pci_dev *dev, void __iomem * addr);
+void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen);
+void *pci_get_drvdata (struct pci_dev *pdev);
+int pci_find_capability(struct pci_dev *dev, u8 where);
+int pci_enable_msi  (struct pci_dev * dev);
+int pci_enable_device (struct pci_dev * dev);
+void pci_dma_sync_single_for_cpu(struct pci_dev *hwdev, dma_addr_t dma_handle, size_t size, int direction);
+void pci_disable_msi(struct pci_dev* dev);
+void pci_disable_device (struct pci_dev * dev);
+    void pci_free_consistent(struct pci_dev *hwdev, size_t size,
+                                    void *vaddr, dma_addr_t dma_handle);
+    void *pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
+                         dma_addr_t *dma_handle);
+    void pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr,
+                            size_t size, int direction);
+    int pci_read_config_byte(struct pci_dev *dev, int where, u8 *val);
+    int pci_read_config_word(struct pci_dev *dev, int where, u16 *val);
+    int pci_read_config_dword(struct pci_dev *dev, int where, u32 *val);
+    addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction);
 void wiphy_rfkill_set_hw_state(struct wiphy *wiphy, int blocked);
 void tasklet_schedule(struct tasklet_struct *t);
 int tasklet_kill(struct tasklet_struct *t);
@@ -74,6 +134,12 @@ static inline void free_irq (unsigned int irq, void *dev_id){
 
 #define module_init(func) int (*init_routine)(void) = func
 #define module_init2(func) int (*init_routine2)(void) = func
+
+
+
+
+
+
 
 
 

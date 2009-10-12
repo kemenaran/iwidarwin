@@ -293,7 +293,7 @@ void iwl_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 		/* dma address must be no more than 36 bits */
 		BUG_ON(rxb->real_dma_addr & ~DMA_BIT_MASK(36));
 		/* and also 256 byte aligned! */
-		//rxb->aligned_dma_addr = ALIGN(rxb->real_dma_addr, 256);
+		rxb->aligned_dma_addr = ALIGN(rxb->real_dma_addr, 256);
 		skb_reserve(rxb->skb, rxb->aligned_dma_addr - rxb->real_dma_addr);
 
 		spin_lock_irqsave(&rxq->lock, flags);

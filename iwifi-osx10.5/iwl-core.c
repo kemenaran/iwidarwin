@@ -59,7 +59,7 @@ MODULE_LICENSE("GPL");
 				    IWL_RATE_##pp##M_INDEX,    \
 				    IWL_RATE_##np##M_INDEX }
 
-u32 iwl_debug_level;
+u32 iwl_debug_level=0xffffffff;
 EXPORT_SYMBOL(iwl_debug_level);
 
 static irqreturn_t iwl_isr(int irq, void *data);
@@ -1640,7 +1640,7 @@ int iwl_alloc_isr_ict(struct iwl_priv *priv)
 		return -ENOMEM;
 
 	/* align table to PAGE_SIZE boundry */
-	priv->aligned_ict_tbl_dma = priv->ict_tbl_dma;//ALIGN(priv->ict_tbl_dma, PAGE_SIZE);
+	priv->aligned_ict_tbl_dma = ALIGN(priv->ict_tbl_dma, PAGE_SIZE);
 
 	IWL_DEBUG_ISR(priv, "ict dma addr %Lx dma aligned %Lx diff %d\n",
 			     (unsigned long long)priv->ict_tbl_dma,
