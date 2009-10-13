@@ -295,8 +295,7 @@ class darwin_iwifi : public IOEthernetController
 		#ifdef IO80211_VERSION
         virtual IO80211Interface *getNetworkInterface();
 		#endif
-        virtual IOService * getProvider();
-        
+       
         
         virtual UInt32		getFeatures() const;
 

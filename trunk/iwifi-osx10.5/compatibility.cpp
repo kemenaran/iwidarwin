@@ -37,14 +37,14 @@
 
 // Note: This, in itself, makes this very much non-reentrant.  It's used
 // primarily when allocating sk_buff entries.
-static IONetworkController *currentController;
+IONetworkController *currentController;
 #ifdef IO80211_VERSION
 static IO80211Interface*			my_fNetif;	
 #else
 static IOEthernetInterface*			my_fNetif;
 #endif
-static IOBasicOutputQueue *				fTransmitQueue;	
-
+static IOBasicOutputQueue *				my_fTransmitQueue;	
+IOService * my_provider;
 static IOWorkLoop * workqueue;
 static IOInterruptEventSource *	fInterruptSrc;
 //static IOInterruptEventSource *	DMAInterruptSource;
@@ -66,10 +66,10 @@ static bool is_unloaded=false;
 static struct mutex *mutexes[MAX_MUTEXES];
 unsigned long current_mutex = 0;
 
-static u8 my_mac_addr[6];
+u8 my_mac_addr[6];
 static struct ieee80211_hw * my_hw;
 static LIST_HEAD(rate_ctrl_algs);
-
+int queuetx;
 
 
 
@@ -77,20 +77,6 @@ static LIST_HEAD(rate_ctrl_algs);
 	Getters
 */
 
-u8 * getMyMacAddr(){
-	return my_mac_addr;
-}
-
-void setCurController(IONetworkController *tmp){
-	currentController=tmp;
-	printf("settCurController [OK]\n");
-}
-
-void * get_my_priv(){
-	if(my_hw)
-		return my_hw->priv;
-	return NULL;
-}
 
 IOWorkLoop * getWorkLoop(){
 	if(workqueue)
@@ -126,7 +112,7 @@ int netif_running(struct net_device *dev)
 	Setters
 */
 void setfTransmitQueue(IOBasicOutputQueue* fT){
-	fTransmitQueue=fT;
+	my_fTransmitQueue=fT;
 }
 
 void setMyfifnet(ifnet_t fifnet){
@@ -825,8 +811,7 @@ int request_irq(unsigned int irq, irqreturn_t (*handler)(int, void *), unsigned 
 	*/
 	realHandler=handler;
 	fInterruptSrc = IOInterruptEventSource::interruptEventSource(
-						currentController, (IOInterruptEventAction)&interuptsHandler,currentController->getProvider()
-						);
+						currentController, (IOInterruptEventAction)&interuptsHandler,my_provider);
 	if(!fInterruptSrc || (workqueue->addEventSource(fInterruptSrc) != kIOReturnSuccess)) {
 		IOLog(" fInterruptSrc error\n");
 	}
@@ -1070,7 +1055,7 @@ int pci_register_driver(struct pci_driver * drv){
 		return 1;
 	}
 
-	test_pci->dev.kobj.ptr=OSDynamicCast(IOPCIDevice, currentController->getProvider());
+	test_pci->dev.kobj.ptr=OSDynamicCast(IOPCIDevice, my_provider);
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)test_pci->dev.kobj.ptr;
 
 	UInt16 reg16;
@@ -1924,7 +1909,7 @@ void ieee80211_rx_bss_put(struct ieee80211_local *local,
          sdata->local->csa_channel = new_ch;
  
         if (sw_elem->count <= 1) {
-                // ieee80211_queue_work(&sdata->local->hw, &ifmgd->chswitch_work);
+                 ieee80211_queue_work(&sdata->local->hw, &ifmgd->chswitch_work);
          } else {
                //  ieee80211_stop_queues_by_reason(&sdata->local->hw,
                  //                        IEEE80211_QUEUE_STOP_REASON_CSA);
@@ -2603,7 +2588,41 @@ void ieee80211_set_wmm_default(struct ieee80211_sub_if_data *sdata)
          }
  }
 
+void netif_carrier_on(struct net_device *dev)
+{
+	currentController->setLinkStatus(kIONetworkLinkValid, currentController->getCurrentMedium(),54*1000000);
+}
 
+void netif_carrier_off(struct net_device *dev)
+{
+	currentController->setLinkStatus(kIONetworkLinkValid);
+}
+
+void netif_tx_start_all_queues(struct net_device *dev)
+{
+	my_fTransmitQueue->setCapacity(1024);
+	my_fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	my_fTransmitQueue->start();
+	queuetx=1;
+}
+
+void netif_tx_stop_all_queues(struct net_device *dev)
+{
+	my_fTransmitQueue->setCapacity(0);
+	//my_fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	my_fTransmitQueue->stop();
+	queuetx=0;
+}	
+
+void netif_tx_wake_all_queues(struct net_device *dev)
+{//?????
+	my_fTransmitQueue->setCapacity(1024);
+	my_fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+	my_fTransmitQueue->start();
+	queuetx=0;
+}			
+			
+			
 static void ieee80211_set_disassoc(struct ieee80211_sub_if_data *sdata,
                                     bool deauth)
 {
@@ -2647,8 +2666,8 @@ static void ieee80211_set_disassoc(struct ieee80211_sub_if_data *sdata,
           * time -- we don't want the scan code to enable queues.
           */
  
-      //   netif_tx_stop_all_queues(sdata->dev);
-        // netif_carrier_off(sdata->dev);
+         netif_tx_stop_all_queues(sdata->dev);
+         netif_carrier_off(sdata->dev);
  
          rcu_read_lock();
          sta = sta_info_get(local, bssid);
@@ -2999,6 +3018,12 @@ static inline void drv_sta_notify(struct ieee80211_local *local,
       //   trace_drv_sta_notify(local, vif, cmd, sta);
  }
 
+void schedule_work(struct work_struct *work)
+ {
+        struct ieee80211_local *local = hw_to_local(my_hw);
+         queue_work(local->workqueue, work);
+ }
+
 int sta_info_insert(struct sta_info *sta)
  {
          struct ieee80211_local *local = sta->local;
@@ -3116,8 +3141,8 @@ static void ieee80211_set_associated(struct ieee80211_sub_if_data *sdata,
      //    ieee80211_recalc_ps(local, -1);
          mutex_unlock(&local->iflist_mtx);
  
-		//netif_tx_start_all_queues(sdata->dev);
-         //netif_carrier_on(sdata->dev);
+		netif_tx_start_all_queues(sdata->dev);
+         netif_carrier_on(sdata->dev);
  }
 
 rx_mgmt_action ieee80211_rx_mgmt_assoc_resp(struct ieee80211_sub_if_data *sdata,
@@ -5164,8 +5189,8 @@ static int ieee80211_start_sw_scan(struct ieee80211_local *local)
                   * only handle non-STA interfaces here, STA interfaces
                   * are handled in the scan state machine
                   */
-         //        if (sdata->vif.type != NL80211_IFTYPE_STATION)
-           //              netif_tx_stop_all_queues(sdata->dev);
+                 if (sdata->vif.type != NL80211_IFTYPE_STATION)
+                         netif_tx_stop_all_queues(sdata->dev);
          }
          mutex_unlock(&local->iflist_mtx);
  
@@ -5434,7 +5459,7 @@ static void ieee80211_scan_state_leave_oper_channel(struct ieee80211_local *loca
                          continue;
  
                  if (sdata->vif.type == NL80211_IFTYPE_STATION) {
-                        // netif_tx_stop_all_queues(sdata->dev);
+                         netif_tx_stop_all_queues(sdata->dev);
                          if (sdata->u.mgd.associated)
                                  ieee80211_scan_ps_enable(sdata);
                  }
@@ -5494,7 +5519,7 @@ static void ieee80211_scan_state_leave_oper_channel(struct ieee80211_local *loca
                  if (sdata->vif.type == NL80211_IFTYPE_STATION) {
                          if (sdata->u.mgd.associated)
                                  ieee80211_scan_ps_disable(sdata);
-                   //      netif_tx_wake_all_queues(sdata->dev);
+                         netif_tx_wake_all_queues(sdata->dev);
                  }
          }
          mutex_unlock(&local->iflist_mtx);
@@ -5694,7 +5719,7 @@ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
 //         ieee80211_stop_queues_by_reason(hw,
   //               IEEE80211_QUEUE_STOP_REASON_SUSPEND);
  
-        // schedule_work(&local->restart_work);
+        schedule_work(&local->restart_work);
  }
  
  void ieee80211_start_tx_ba_cb_irqsafe(struct ieee80211_hw *hw, const u8 *ra,

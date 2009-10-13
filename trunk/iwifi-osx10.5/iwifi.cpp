@@ -26,10 +26,15 @@ extern "C" {
 	extern int (*init_routine2)();
 	extern IOPCIDevice* my_pci_device;
 	extern UInt16 my_deviceID;
-	//
+	extern int queuetx;
+	extern IOService * my_provider;
+	extern IONetworkController *currentController;
+	extern u8 my_mac_addr[6];
+	
+	
 }
 
-extern void setCurController(IONetworkController * tmp);
+
 extern IOWorkLoop * getWorkLoop();
 extern IOInterruptEventSource * getInterruptEventSource();
 
@@ -37,7 +42,7 @@ extern IOPCIDevice * getPCIDevice();
 extern IOMemoryMap * getMap();
 extern void setUnloaded();
 extern void start_undirect_scan();
-extern u8 * getMyMacAddr();
+
 extern void setMyfifnet(ifnet_t fifnet);
 extern struct ieee80211_hw * get_my_hw();
 
@@ -46,17 +51,13 @@ extern void setfTransmitQueue(IOBasicOutputQueue* fT);
 extern struct sk_buff *dev_alloc_skb(unsigned int length);
 				 
 									 				 
-IOService * my_provider;
+
 static darwin_iwifi *clone;
 int first_up;
 static thread_call_t tlink2[256];//for the queue work...
 
 #pragma mark -
 #pragma mark Overrides required for implementation
-
-IOService *darwin_iwifi::getProvider() {
-    return my_provider;
-}
 
 
 #pragma mark -
@@ -209,7 +210,7 @@ bool darwin_iwifi::start(IOService *provider)
 			break;
 		}
 		
-		setCurController(this);
+		currentController=this;
 		my_provider=provider;
 
 		if ( (fPCIDevice = OSDynamicCast(IOPCIDevice, provider)) == 0) {
@@ -230,7 +231,17 @@ bool darwin_iwifi::start(IOService *provider)
 				IOLog("%s Power thingi failed\n", getName());
 				break;
        		}
-			
+	
+		queuetx=0;
+		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
+		setfTransmitQueue(fTransmitQueue);
+		if (fTransmitQueue == NULL)
+		{
+			IOLog("ERR: getOutputQueue()\n");
+			break;
+		}
+		fTransmitQueue->setCapacity(0);
+				
 		my_pci_device=fPCIDevice;	
 		deviceID = fPCIDevice->configRead16(kIOPCIConfigDeviceID);		
 		my_deviceID=deviceID;
@@ -249,15 +260,7 @@ bool darwin_iwifi::start(IOService *provider)
 		}
 		
 
-		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
-		setfTransmitQueue(fTransmitQueue);
-		if (fTransmitQueue == NULL)
-		{
-			IOLog("ERR: getOutputQueue()\n");
-			break;
-		}
-		fTransmitQueue->setCapacity(0);
-		mac_addr = getMyMacAddr();
+		mac_addr = my_mac_addr;
 		//getHardwareAddress(mac_addr);
 		        // Publish the MAC address
         if ( (setProperty(kIOMACAddress, mac_addr, kIOEthernetAddressSize) == false) )
@@ -1442,21 +1445,28 @@ IOReturn setWakeOnMagicPacket( int active )
 
 IOReturn darwin_iwifi::enable( IONetworkInterface* netif )
 {
-	IOLog("darwin_iwifi::enable()\n");
+
     
+	if (!fifnet)
+	{
+		char ii[4];
+		sprintf(ii,"%s%d" ,netif->getNamePrefix(), netif->getUnitNumber());
+		ifnet_find_by_name(ii,&fifnet);
+		setMyfifnet(fifnet);
+	}
     if (first_up==0)
 		{
 			first_up=1;
 		}
-	if (1)//(fNetif->getFlags() & IFF_RUNNING)==0)
+	if ((fNetif->getFlags() & IFF_RUNNING)==0)
 	{
-		//IOLog("ifconfig going up\n ");
+		IOLog("ifconfig going up\n ");
 		//FIXME: if associated set IFF_RUNNING
 		//if (priv->status & STATUS_ASSOCIATED) 
 		//if(get_my_hw())
 		//	if (is_associated((void *)get_my_hw()->priv))
-		/*		ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
-		fTransmitQueue->setCapacity(1024);
+				ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
+		/*fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();*/
 		
@@ -1556,7 +1566,6 @@ copy_packet:
 {
 
 
-
 	IOInterruptState flags;
 	//spin_lock_irqsave(spin, flags);
 	
@@ -1580,7 +1589,7 @@ copy_packet:
 
 	mbuf_t nm;
 	
-	//IOLog("outputPacket t: %d f:%04x\n",mbuf_type(m),mbuf_flags(m));
+	IOLog("outputPacket2 t: %d f:%04x\n",mbuf_type(m),mbuf_flags(m));
 	
 	//drop mbuf is not PKTHDR
 	if (!(mbuf_flags(m) & MBUF_PKTHDR) ){
@@ -1624,33 +1633,32 @@ finish:
 
 UInt32 darwin_iwifi::outputPacket(mbuf_t m, void * param)
 {
-
-	/*if (!(fTransmitQueue->getState() & 0x1))
+	if (queuetx)
 	{
-		fTransmitQueue->setCapacity(1024);
-		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-		fTransmitQueue->start();
-		return kIOReturnOutputSuccess;//kIOReturnOutputStall; 
+		if (!(fTransmitQueue->getState() & 0x1))
+		{
+			fTransmitQueue->setCapacity(1024);
+			fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+			fTransmitQueue->start();
+			return kIOReturnOutputSuccess;//kIOReturnOutputStall; 
+		}
+		fTransmitQueue->enqueue(m, 0);
 	}
-	
-
-	fTransmitQueue->enqueue(m, 0);*/
-	
 	return kIOReturnOutputSuccess;
 }
 
 
 IOReturn darwin_iwifi::disable( IONetworkInterface* /*netif*/ )
 {
-    IOLog("darwin_iwifi::disable()\n");
-	if (1)//(fNetif->getFlags() & IFF_RUNNING)!=0)
+
+	if ((fNetif->getFlags() & IFF_RUNNING)!=0)
 	{
-		/*IOLog("ifconfig going down\n");
-		setLinkStatus(kIONetworkLinkValid);
+		IOLog("ifconfig going down\n");
+		/*setLinkStatus(kIONetworkLinkValid);
 		fTransmitQueue->stop();
 		fTransmitQueue->setCapacity(0);
-		fTransmitQueue->flush();
-		ifnet_set_flags(fifnet, 0 , IFF_RUNNING);*/
+		fTransmitQueue->flush();*/
+		ifnet_set_flags(fifnet, 0 , IFF_RUNNING);
 					
 		return kIOReturnSuccess;
 		
@@ -1751,7 +1759,7 @@ bool darwin_iwifi::configureInterface( IONetworkInterface *netif )
 //FIXME: Mac from iwl3945
 IOReturn darwin_iwifi::getHardwareAddress(IOEthernetAddress *addr)
 {
-	u8 *tmp = getMyMacAddr();
+	u8 *tmp = my_mac_addr;
 	//addr = (IOEthernetAddress *)IOMalloc(sizeof(IOEthernetAddress));
 	addr->bytes[0] = tmp[0];
 	addr->bytes[1] = tmp[1];

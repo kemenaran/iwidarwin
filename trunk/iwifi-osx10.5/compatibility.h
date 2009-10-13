@@ -26,8 +26,11 @@ extern "C" {
 #endif
 
 
-
-
+void netif_tx_wake_all_queues(struct net_device *dev);
+void netif_tx_stop_all_queues(struct net_device *dev);
+void netif_tx_start_all_queues(struct net_device *dev);
+void netif_carrier_off(struct net_device *dev);
+void netif_carrier_on(struct net_device *dev);
 int skb_len(const struct sk_buff *skb);
 void *skb_data(const struct sk_buff *skb);
 void ieee80211_queue_work(struct ieee80211_hw *hw, struct work_struct *work);
