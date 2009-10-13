@@ -307,7 +307,7 @@ static inline struct sk_buff *skb_clone(const struct sk_buff *skb, unsigned int 
     return skb_copy;
 }
 
-static inline void *skb_data(const struct sk_buff *skb) {
+void *skb_data(const struct sk_buff *skb) {
     return mbuf_data(skb->mac_data);
 }
 
@@ -318,7 +318,7 @@ static inline int skb_set_data(const struct sk_buff *skb, void *data, size_t len
    return 0;
 }
 
-static inline int skb_len(const struct sk_buff *skb) {
+int skb_len(const struct sk_buff *skb) {
 	return mbuf_len(skb->mac_data);
 }
 
@@ -3347,7 +3347,7 @@ void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len)
          u16 fc;
  
          rx_status = (struct ieee80211_rx_status *) skb->cb;
-         mgmt = (struct ieee80211_mgmt *) skb->data;
+         mgmt = (struct ieee80211_mgmt *) skb_data(skb);
          fc = le16_to_cpu(mgmt->frame_control);
  
          mutex_lock(&ifmgd->mtx);
@@ -3357,19 +3357,19 @@ void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len)
                                                          ETH_ALEN) == 0) {
                  switch (fc & IEEE80211_FCTL_STYPE) {
                  case IEEE80211_STYPE_BEACON:
-                         ieee80211_rx_mgmt_beacon(sdata, mgmt, skb->len,
+                         ieee80211_rx_mgmt_beacon(sdata, mgmt, skb_len(skb),
                                                   rx_status);
                          break;
                  case IEEE80211_STYPE_PROBE_RESP:
                          ieee80211_rx_mgmt_probe_resp(sdata, NULL, mgmt,
-                                                      skb->len, rx_status);
+                                                      skb_len(skb), rx_status);
                          break;
                  case IEEE80211_STYPE_DEAUTH:
                          rma = ieee80211_rx_mgmt_deauth(sdata, NULL,
-                                                        mgmt, skb->len);
+                                                        mgmt, skb_len(skb));
                          break;
                  case IEEE80211_STYPE_DISASSOC:
-                         rma = ieee80211_rx_mgmt_disassoc(sdata, mgmt, skb->len);
+                         rma = ieee80211_rx_mgmt_disassoc(sdata, mgmt, skb_len(skb));
                          break;
                  case IEEE80211_STYPE_ACTION:
                          /* XXX: differentiate, can only happen for CSA now! */
@@ -3385,11 +3385,11 @@ void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len)
                          /* no action */
                          break;
                  case RX_MGMT_CFG80211_DEAUTH:
-                         cfg80211_send_deauth(sdata->dev, (u8 *)mgmt, skb->len,
+                         cfg80211_send_deauth(sdata->dev, (u8 *)mgmt, skb_len(skb),
                                               NULL);
                          break;
                  case RX_MGMT_CFG80211_DISASSOC:
-                         cfg80211_send_disassoc(sdata->dev, (u8 *)mgmt, skb->len,
+                         cfg80211_send_disassoc(sdata->dev, (u8 *)mgmt, skb_len(skb),
                                                 NULL);
                          break;
                  default:
@@ -3404,23 +3404,23 @@ void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len)
  
                  switch (fc & IEEE80211_FCTL_STYPE) {
                  case IEEE80211_STYPE_PROBE_RESP:
-                         ieee80211_rx_mgmt_probe_resp(sdata, wk, mgmt, skb->len,
+                         ieee80211_rx_mgmt_probe_resp(sdata, wk, mgmt, skb_len(skb),
                                                       rx_status);
                         break;
                  case IEEE80211_STYPE_AUTH:
-                         rma = ieee80211_rx_mgmt_auth(sdata, wk, mgmt, skb->len);
+                         rma = ieee80211_rx_mgmt_auth(sdata, wk, mgmt, skb_len(skb));
                          break;
                  case IEEE80211_STYPE_ASSOC_RESP:
                          rma = ieee80211_rx_mgmt_assoc_resp(sdata, wk, mgmt,
-                                                            skb->len, false);
+                                                            skb_len(skb), false);
                          break;
                  case IEEE80211_STYPE_REASSOC_RESP:
                          rma = ieee80211_rx_mgmt_assoc_resp(sdata, wk, mgmt,
-                                                            skb->len, true);
+                                                            skb_len(skb), true);
                          break;
                  case IEEE80211_STYPE_DEAUTH:
                          rma = ieee80211_rx_mgmt_deauth(sdata, wk, mgmt,
-                                                        skb->len);
+                                                        skb_len(skb));
                          break;
                  }
                  /*
@@ -3439,13 +3439,13 @@ void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len)
                  /* no action */
                  break;
          case RX_MGMT_CFG80211_AUTH:
-                 cfg80211_send_rx_auth(sdata->dev, (u8 *) mgmt, skb->len);
+                 cfg80211_send_rx_auth(sdata->dev, (u8 *) mgmt, skb_len(skb));
                  break;
          case RX_MGMT_CFG80211_ASSOC:
-                 cfg80211_send_rx_assoc(sdata->dev, (u8 *) mgmt, skb->len);
+                 cfg80211_send_rx_assoc(sdata->dev, (u8 *) mgmt, skb_len(skb));
                  break;
          case RX_MGMT_CFG80211_DEAUTH:
-                 cfg80211_send_deauth(sdata->dev, (u8 *)mgmt, skb->len, NULL);
+                 cfg80211_send_deauth(sdata->dev, (u8 *)mgmt, skb_len(skb), NULL);
                  break;
          default:
                  WARN(1, "unexpected: %d", rma);
@@ -4581,7 +4581,7 @@ struct ieee80211_sta *ieee80211_find_sta(struct ieee80211_hw *hw,
                  if (!skb)
                          goto out;
  
-                 hdr = (struct ieee80211_hdr *) skb->data;
+                 hdr = (struct ieee80211_hdr *) skb_data(skb);
                  hdr->frame_control = cpu_to_le16(IEEE80211_FTYPE_MGMT |
                                                   IEEE80211_STYPE_BEACON);
          } else if (ieee80211_vif_is_mesh(&sdata->vif)) {

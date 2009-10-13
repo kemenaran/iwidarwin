@@ -1434,19 +1434,6 @@ IOReturn setWakeOnMagicPacket( int active )
     return kIOReturnSuccess;
 }
 
-int darwin_iwifi::up()
-{
-	//if_up()
-}
-
-
-
-void darwin_iwifi::down()
-{
-	//if_down();
-}
-
-
 /*-------------------------------------------------------------------------
  * Called by IOEthernetInterface client to enable the controller.
  * This method is always called while running on the default workloop thread.
@@ -1640,6 +1627,7 @@ UInt32 darwin_iwifi::outputPacket(mbuf_t m, void * param)
 
 	/*if (!(fTransmitQueue->getState() & 0x1))
 	{
+		fTransmitQueue->setCapacity(1024);
 		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
 		fTransmitQueue->start();
 		return kIOReturnOutputSuccess;//kIOReturnOutputStall; 

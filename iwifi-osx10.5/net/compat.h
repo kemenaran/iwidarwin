@@ -89,8 +89,8 @@ struct sk_buff {
 	struct sk_buff          *next;
 	struct sk_buff          *prev;
 	int pkt_type;
-    void *data;
-    unsigned int len;
+    //void *data;
+    //unsigned int len;
     mbuf_t mac_data;
     /*
      * This is the control buffer. It is free to use for every
@@ -1020,8 +1020,7 @@ struct ieee80211_radiotap_header {
 #define IEEE80211_STA_AUTHENTICATED  BIT(1)
 #define IEEE80211_STA_ASSOCIATED  BIT(2)
 #define IEEE80211_STA_PROBEREQ_POLL  BIT(3)
-#define IEEE80211_STA_WMM_ENABLED  BIT(5)
-#define IEEE80211_STA_DISABLE_11N  BIT(6)
+
 #define			IEEE80211_STA_BEACON_POLL        BIT(0)
 #define         IEEE80211_STA_CONNECTION_POLL    BIT(1)
 #define         IEEE80211_STA_CONTROL_PORT       BIT(2)
@@ -1037,8 +1036,6 @@ struct ieee80211_radiotap_header {
 #define IEEE80211_SDATA_USERSPACE_MLME  BIT(2)
 #define IEEE80211_SDATA_OPERATING_GMODE  BIT(3)
 #define IEEE80211_SDATA_DONT_BRIDGE_PACKETS  BIT(4)
-#define IEEE80211_SDATA_OPERATING_GMODE  BIT(2)
-#define IEEE80211_SDATA_DONT_BRIDGE_PACKETS  BIT(3)
 
 #define IEEE80211_MAX_PROBE_TRIES 5
 #define IEEE80211_PROBE_WAIT (HZ / 5)

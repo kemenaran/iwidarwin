@@ -815,7 +815,7 @@ int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 
 
 	/* Total # bytes to be transmitted */
-	len = (u16)skb->len;
+	len = (u16)skb_len(skb);
 	tx_cmd->len = cpu_to_le16(len);
 
 	if (info->control.hw_key)
@@ -876,9 +876,9 @@ int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 
 	/* Set up TFD's 2nd entry to point directly to remainder of skb,
 	 * if any (802.11 null frames have no payload). */
-	secondlen = len = skb->len - hdr_len;
+	secondlen = len = skb_len(skb) - hdr_len;
 	if (len) {
-		phys_addr = pci_map_single(priv->pci_dev, (u8*)skb->data + hdr_len,
+		phys_addr = pci_map_single(priv->pci_dev, (u8*)skb->mac_data + hdr_len,
 					   len, PCI_DMA_TODEVICE);
 		priv->cfg->ops->lib->txq_attach_buf_to_tfd(priv, txq,
 							   phys_addr, len,

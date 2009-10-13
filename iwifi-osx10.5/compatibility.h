@@ -14,7 +14,8 @@ struct ieee80211_ops;
 struct wiphy;
 struct ieee80211_vif;
 struct ieee80211_bss;
-
+struct cfg80211_bss;
+struct net_device;
 
 #include "net/compat.h"
 #include "net/mac80211.h"
@@ -25,6 +26,10 @@ extern "C" {
 #endif
 
 
+
+
+int skb_len(const struct sk_buff *skb);
+void *skb_data(const struct sk_buff *skb);
 void ieee80211_queue_work(struct ieee80211_hw *hw, struct work_struct *work);
 void ieee80211_queue_delayed_work(struct ieee80211_hw *hw,
 				  struct delayed_work *dwork,
