@@ -1962,7 +1962,7 @@ void ieee80211_iterate_active_interfaces_atomic(struct ieee80211_hw *hw,
  * @hw: the hardware struct for the interface we are adding work for
  * @work: the work we want to add onto the mac80211 workqueue
  */
-void ieee80211_queue_work(struct ieee80211_hw *hw, struct work_struct *work);
+
 
 /**
  * ieee80211_queue_delayed_work - add work onto the mac80211 workqueue
@@ -1974,9 +1974,7 @@ void ieee80211_queue_work(struct ieee80211_hw *hw, struct work_struct *work);
  * @dwork: delayable work to queue onto the mac80211 workqueue
  * @delay: number of jiffies to wait before queueing
  */
-void ieee80211_queue_delayed_work(struct ieee80211_hw *hw,
-				  struct delayed_work *dwork,
-				  unsigned long delay);
+
 
 /**
  * ieee80211_start_tx_ba_session - Start a tx Block Ack session.
@@ -2786,6 +2784,15 @@ struct sta_info {
          struct ieee80211_sta sta;
  };
 
+enum mac80211_scan_state {
+ SCAN_DECISION =0,
+ SCAN_SET_CHANNEL =1,
+ SCAN_SEND_PROBE =2,
+ SCAN_LEAVE_OPER_CHANNEL =3,
+ SCAN_ENTER_OPER_CHANNEL =4,
+};
+
+
 struct ieee80211_local {
          /* embed the driver visible part.
           * don't cast (use the static inlines below), but we keep
@@ -2907,7 +2914,7 @@ struct ieee80211_local {
          int scan_channel_idx;
          int scan_ies_len;
  
-         //enum mac80211_scan_state next_scan_state;
+         enum mac80211_scan_state next_scan_state;
          struct delayed_work scan_work;
          struct ieee80211_sub_if_data *scan_sdata;
          enum nl80211_channel_type oper_channel_type;
@@ -3209,7 +3216,6 @@ struct cfg80211_internal_bss {
          /* must be last because of priv member */
          struct cfg80211_bss pub;
  };
-
 
 
 

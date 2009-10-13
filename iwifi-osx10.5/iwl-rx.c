@@ -574,8 +574,7 @@ void iwl_rx_statistics(struct iwl_priv *priv,
 	 * REG_RECALIB_PERIOD seconds to ensure we get a
 	 * thermal update even if the uCode doesn't give
 	 * us one */
-	mod_timer(&priv->statistics_periodic, jiffies +
-		  msecs_to_jiffies(REG_RECALIB_PERIOD * 1000));
+	mod_timer(&priv->statistics_periodic, 		  msecs_to_jiffies(REG_RECALIB_PERIOD * 1000));
 
 	if (unlikely(!test_bit(STATUS_SCANNING, &priv->status)) &&
 	    (pkt->hdr.cmd == STATISTICS_NOTIFICATION)) {

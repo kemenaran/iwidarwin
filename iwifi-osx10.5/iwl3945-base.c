@@ -3092,7 +3092,7 @@ void iwl3945_post_associate(struct iwl_priv *priv)
 	iwl_activate_qos(priv, 0);
 
 	/* we have just associated, don't start scan too early */
-	priv->next_scan_jiffies = jiffies + IWL_DELAY_NEXT_SCAN;
+	priv->next_scan_jiffies =  IWL_DELAY_NEXT_SCAN;
 }
 
 /*****************************************************************************

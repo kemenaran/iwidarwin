@@ -627,7 +627,7 @@ struct cfg80211_bss {
  * @ie: the IE ID
  * Returns %NULL if not found.
  */
-const u8 *ieee80211_bss_get_ie(struct cfg80211_bss *bss, u8 ie);
+
 
 
 /**
@@ -1764,7 +1764,7 @@ void cfg80211_put_bss(struct cfg80211_bss *bss);
  * function when you detect a BSS is gone. Normally BSSes will also time
  * out, so it is not necessary to use this function at all.
  */
-void cfg80211_unlink_bss(struct wiphy *wiphy, struct cfg80211_bss *bss);
+
 
 /**
  * cfg80211_send_rx_auth - notification of processed authentication
@@ -1777,7 +1777,7 @@ void cfg80211_unlink_bss(struct wiphy *wiphy, struct cfg80211_bss *bss);
  * cfg80211_send_auth_timeout() to indicate the result of cfg80211_ops::auth()
  * call. This function may sleep.
  */
-void cfg80211_send_rx_auth(struct net_device *dev, const u8 *buf, size_t len);
+
 
 /**
  * cfg80211_send_auth_timeout - notification of timed out authentication
@@ -1786,7 +1786,7 @@ void cfg80211_send_rx_auth(struct net_device *dev, const u8 *buf, size_t len);
  *
  * This function may sleep.
  */
-void cfg80211_send_auth_timeout(struct net_device *dev, const u8 *addr);
+
 
 /**
  * cfg80211_send_rx_assoc - notification of processed association
@@ -1799,7 +1799,7 @@ void cfg80211_send_auth_timeout(struct net_device *dev, const u8 *addr);
  * function or cfg80211_send_assoc_timeout() to indicate the result of
  * cfg80211_ops::assoc() call. This function may sleep.
  */
-void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len);
+
 
 /**
  * cfg80211_send_assoc_timeout - notification of timed out association
@@ -1808,7 +1808,7 @@ void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len);
  *
  * This function may sleep.
  */
-void cfg80211_send_assoc_timeout(struct net_device *dev, const u8 *addr);
+
 
 /**
  * cfg80211_send_deauth - notification of processed deauthentication
@@ -1822,8 +1822,7 @@ void cfg80211_send_assoc_timeout(struct net_device *dev, const u8 *addr);
  * station mode. This includes both received deauthentication frames and
  * locally generated ones. This function may sleep.
  */
-void cfg80211_send_deauth(struct net_device *dev, const u8 *buf, size_t len,
-			  void *cookie);
+
 
 /**
  * cfg80211_send_disassoc - notification of processed disassociation
@@ -1837,8 +1836,7 @@ void cfg80211_send_deauth(struct net_device *dev, const u8 *buf, size_t len,
  * station mode. This includes both received disassociation frames and locally
  * generated ones. This function may sleep.
  */
-void cfg80211_send_disassoc(struct net_device *dev, const u8 *buf, size_t len,
-			    void *cookie);
+
 
 /**
  * cfg80211_michael_mic_failure - notification of Michael MIC failure (TKIP)

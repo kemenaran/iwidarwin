@@ -63,6 +63,7 @@ typedef __u64 __be64;
         (((x) + ((__divisor) / 2)) / (__divisor));      \
 }                                                       \
 )
+# define BITS_PER_LONG 32
 #define BIT(nr)                 (1UL << (nr))
 #define BIT_MASK(nr)            (1UL << ((nr) % BITS_PER_LONG))
 #define BIT_WORD(nr)            ((nr) / BITS_PER_LONG)
@@ -1007,7 +1008,60 @@ struct ieee80211_radiotap_header {
 				 */
 };
 
+#define might_sleep()
 
+
+#define IEEE80211_STA_REQ_SCAN 0
+#define IEEE80211_STA_REQ_AUTH 1
+#define IEEE80211_STA_REQ_RUN  2
+
+//OLD flags???
+#define IEEE80211_STA_PREV_BSSID_SET  BIT(0)
+#define IEEE80211_STA_AUTHENTICATED  BIT(1)
+#define IEEE80211_STA_ASSOCIATED  BIT(2)
+#define IEEE80211_STA_PROBEREQ_POLL  BIT(3)
+#define IEEE80211_STA_WMM_ENABLED  BIT(5)
+#define IEEE80211_STA_DISABLE_11N  BIT(6)
+#define			IEEE80211_STA_BEACON_POLL        BIT(0)
+#define         IEEE80211_STA_CONNECTION_POLL    BIT(1)
+#define         IEEE80211_STA_CONTROL_PORT       BIT(2)
+#define         IEEE80211_STA_WMM_ENABLED        BIT(3)
+#define         IEEE80211_STA_DISABLE_11N        BIT(4)
+#define         IEEE80211_STA_CSA_RECEIVED       BIT(5)
+#define         IEEE80211_STA_MFP_ENABLED        BIT(6)
+#define IEEE80211_CONNECTION_IDLE_TIME (2 * HZ) 
+
+
+#define IEEE80211_SDATA_ALLMULTI  BIT(0)
+#define IEEE80211_SDATA_PROMISC  BIT(1)
+#define IEEE80211_SDATA_USERSPACE_MLME  BIT(2)
+#define IEEE80211_SDATA_OPERATING_GMODE  BIT(3)
+#define IEEE80211_SDATA_DONT_BRIDGE_PACKETS  BIT(4)
+#define IEEE80211_SDATA_OPERATING_GMODE  BIT(2)
+#define IEEE80211_SDATA_DONT_BRIDGE_PACKETS  BIT(3)
+
+#define IEEE80211_MAX_PROBE_TRIES 5
+#define IEEE80211_PROBE_WAIT (HZ / 5)
+
+#define round_jiffies_up(x) x
+
+
+#define typecheck(type,x) \
+   ({      type __dummy; \
+          typeof(x) __dummy2; \
+          (void)(&__dummy == &__dummy2); \
+          1; \
+  })
+
+
+#define time_before(a,b)        time_after(b,a)
+#define time_is_before_jiffies(a) time_after(jiffies, a)
+#define time_is_after_jiffies(a) time_before(jiffies, a)
+#define TMR_RUNNING_CHANSW      1
+#define TMR_RUNNING_TIMER       0
+#define round_jiffies_relative(x) 1
+#define spin_lock_bh(x)
+#define spin_unlock_bh(x)
 
 
 
