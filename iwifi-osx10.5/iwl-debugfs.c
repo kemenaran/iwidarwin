@@ -1694,7 +1694,7 @@ err:
 	iwl_dbgfs_unregister(priv);
 	return ret;
 }*/
-EXPORT_SYMBOL(iwl_dbgfs_register);
+//EXPORT_SYMBOL(iwl_dbgfs_register);
 
 /**
  * Remove the debugfs files and directories
@@ -1748,7 +1748,7 @@ EXPORT_SYMBOL(iwl_dbgfs_register);
 	kfree(priv->dbgfs);
 	priv->dbgfs = NULL;
 }*/
-EXPORT_SYMBOL(iwl_dbgfs_unregister);
+//EXPORT_SYMBOL(iwl_dbgfs_unregister);
 
 
 

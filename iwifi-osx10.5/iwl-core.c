@@ -60,7 +60,7 @@ MODULE_LICENSE("GPL");
 				    IWL_RATE_##np##M_INDEX }
 
 u32 iwl_debug_level=0xffffffff;
-EXPORT_SYMBOL(iwl_debug_level);
+//EXPORT_SYMBOL(iwl_debug_level);
 
 static irqreturn_t iwl_isr(int irq, void *data);
 
@@ -88,7 +88,7 @@ const struct iwl_rate_info iwl_rates[IWL_RATE_COUNT] = {
 	IWL_DECLARE_RATE_INFO(60, 60, 48, INV, 48, INV, 48, INV),/* 60mbps */
 	/* FIXME:RS:          ^^    should be INV (legacy) */
 };
-EXPORT_SYMBOL(iwl_rates);
+//EXPORT_SYMBOL(iwl_rates);
 
 /**
  * translate ucode response to mac80211 tx status control values
@@ -112,7 +112,7 @@ void iwl_hwrate_to_tx_control(struct iwl_priv *priv, u32 rate_n_flags,
 		r->flags |= IEEE80211_TX_RC_SHORT_GI;
 	r->idx = iwl_hwrate_to_mac80211_idx(rate_n_flags, info->band);
 }
-EXPORT_SYMBOL(iwl_hwrate_to_tx_control);
+//EXPORT_SYMBOL(iwl_hwrate_to_tx_control);
 
 int iwl_hwrate_to_plcp_idx(u32 rate_n_flags)
 {
@@ -143,7 +143,7 @@ int iwl_hwrate_to_plcp_idx(u32 rate_n_flags)
 
 	return -1;
 }
-EXPORT_SYMBOL(iwl_hwrate_to_plcp_idx);
+//EXPORT_SYMBOL(iwl_hwrate_to_plcp_idx);
 
 int iwl_hwrate_to_mac80211_idx(u32 rate_n_flags, enum ieee80211_band band)
 {
@@ -179,7 +179,7 @@ u8 iwl_toggle_tx_ant(struct iwl_priv *priv, u8 ant)
 }
 
 const u8 iwl_bcast_addr[ETH_ALEN] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-EXPORT_SYMBOL(iwl_bcast_addr);
+//EXPORT_SYMBOL(iwl_bcast_addr);
 
 
 /* This function both allocates and initializes hw and priv. */
@@ -204,7 +204,7 @@ struct ieee80211_hw *iwl_alloc_all(struct iwl_cfg *cfg,
 out:
 	return hw;
 }
-EXPORT_SYMBOL(iwl_alloc_all);
+//EXPORT_SYMBOL(iwl_alloc_all);
 
 void iwl_hw_detect(struct iwl_priv *priv)
 {
@@ -212,7 +212,7 @@ void iwl_hw_detect(struct iwl_priv *priv)
 	priv->hw_wa_rev = _iwl_read32(priv, CSR_HW_REV_WA_REG);
 	pci_read_config_byte(priv->pci_dev, PCI_REVISION_ID, &priv->rev_id);
 }
-EXPORT_SYMBOL(iwl_hw_detect);
+//EXPORT_SYMBOL(iwl_hw_detect);
 
 int iwl_hw_nic_init(struct iwl_priv *priv)
 {
@@ -260,7 +260,7 @@ int iwl_hw_nic_init(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_hw_nic_init);
+//EXPORT_SYMBOL(iwl_hw_nic_init);
 
 /*
  * QoS  support
@@ -293,7 +293,7 @@ void iwl_activate_qos(struct iwl_priv *priv, u8 force)
 				       &priv->qos_data.def_qos_parm, NULL);
 	}
 }
-EXPORT_SYMBOL(iwl_activate_qos);
+//EXPORT_SYMBOL(iwl_activate_qos);
 
 /*
  * AC        CWmin         CW max      AIFSN      TXOP Limit    TXOP Limit
@@ -394,7 +394,7 @@ void iwl_reset_qos(struct iwl_priv *priv)
 
 	spin_unlock_irqrestore(&priv->lock, flags);
 }
-EXPORT_SYMBOL(iwl_reset_qos);
+//EXPORT_SYMBOL(iwl_reset_qos);
 
 #define MAX_BIT_RATE_40_MHZ 150 /* Mbps */
 #define MAX_BIT_RATE_20_MHZ 72 /* Mbps */
@@ -591,7 +591,7 @@ int iwlcore_init_geos(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwlcore_init_geos);
+//EXPORT_SYMBOL(iwlcore_init_geos);
 
 /*
  * iwlcore_free_geos - undo allocations in iwlcore_init_geos
@@ -602,7 +602,7 @@ void iwlcore_free_geos(struct iwl_priv *priv)
 	kfree(priv->ieee_rates);
 	clear_bit(STATUS_GEO_CONFIGURED, &priv->status);
 }
-EXPORT_SYMBOL(iwlcore_free_geos);
+//EXPORT_SYMBOL(iwlcore_free_geos);
 
 static int is_single_rx_stream(struct iwl_priv *priv)
 {
@@ -653,7 +653,7 @@ u8 iwl_is_ht40_tx_allowed(struct iwl_priv *priv,
 			le16_to_cpu(priv->staging_rxon.channel),
 			ht_conf->extension_chan_offset);
 }
-EXPORT_SYMBOL(iwl_is_ht40_tx_allowed);
+//EXPORT_SYMBOL(iwl_is_ht40_tx_allowed);
 
 static u16 iwl_adjust_beacon_interval(u16 beacon_val, u16 max_beacon_val)
 {
@@ -710,7 +710,7 @@ void iwl_setup_rxon_timing(struct iwl_priv *priv)
 			le32_to_cpu(priv->rxon_timing.beacon_init_val),
 			le16_to_cpu(priv->rxon_timing.atim_window));
 }
-EXPORT_SYMBOL(iwl_setup_rxon_timing);
+//EXPORT_SYMBOL(iwl_setup_rxon_timing);
 
 void iwl_set_rxon_hwcrypto(struct iwl_priv *priv, int hw_decrypt)
 {
@@ -722,7 +722,7 @@ void iwl_set_rxon_hwcrypto(struct iwl_priv *priv, int hw_decrypt)
 		rxon->filter_flags |= RXON_FILTER_DIS_DECRYPT_MSK;
 
 }
-EXPORT_SYMBOL(iwl_set_rxon_hwcrypto);
+//EXPORT_SYMBOL(iwl_set_rxon_hwcrypto);
 
 /**
  * iwl_check_rxon_cmd - validate RXON structure is valid
@@ -797,7 +797,7 @@ int iwl_check_rxon_cmd(struct iwl_priv *priv)
 	}
 	return 0;
 }
-EXPORT_SYMBOL(iwl_check_rxon_cmd);
+//EXPORT_SYMBOL(iwl_check_rxon_cmd);
 
 /**
  * iwl_full_rxon_required - check if full RXON (vs RXON_ASSOC) cmd is needed
@@ -847,7 +847,7 @@ int iwl_full_rxon_required(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_full_rxon_required);
+//EXPORT_SYMBOL(iwl_full_rxon_required);
 
 u8 iwl_rate_get_lowest_plcp(struct iwl_priv *priv)
 {
@@ -873,7 +873,7 @@ u8 iwl_rate_get_lowest_plcp(struct iwl_priv *priv)
 	else
 		return IWL_RATE_6M_PLCP;
 }
-EXPORT_SYMBOL(iwl_rate_get_lowest_plcp);
+//EXPORT_SYMBOL(iwl_rate_get_lowest_plcp);
 
 void iwl_set_rxon_ht(struct iwl_priv *priv, struct iwl_ht_config *ht_conf)
 {
@@ -941,7 +941,7 @@ void iwl_set_rxon_ht(struct iwl_priv *priv, struct iwl_ht_config *ht_conf)
 			ht_conf->extension_chan_offset);
 	return;
 }
-EXPORT_SYMBOL(iwl_set_rxon_ht);
+//EXPORT_SYMBOL(iwl_set_rxon_ht);
 
 #define IWL_NUM_RX_CHAINS_MULTIPLE	3
 #define IWL_NUM_RX_CHAINS_SINGLE	2
@@ -1003,7 +1003,7 @@ int iwl_is_monitor_mode(struct iwl_priv *priv)
 {
 	return !!(priv->staging_rxon.filter_flags & RXON_FILTER_PROMISC_MSK);
 }
-EXPORT_SYMBOL(iwl_is_monitor_mode);
+//EXPORT_SYMBOL(iwl_is_monitor_mode);
 
 /**
  * iwl_set_rxon_chain - Set up Rx chain usage in "staging" RXON image
@@ -1075,7 +1075,7 @@ void iwl_set_rxon_chain(struct iwl_priv *priv)
 	WARN_ON(active_rx_cnt == 0 || idle_rx_cnt == 0 ||
 		active_rx_cnt < idle_rx_cnt);
 }
-EXPORT_SYMBOL(iwl_set_rxon_chain);
+//EXPORT_SYMBOL(iwl_set_rxon_chain);
 
 /**
  * iwl_set_rxon_channel - Set the phymode and channel values in staging RXON
@@ -1114,7 +1114,7 @@ int iwl_set_rxon_channel(struct iwl_priv *priv, struct ieee80211_channel *ch)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_set_rxon_channel);
+//EXPORT_SYMBOL(iwl_set_rxon_channel);
 
 void iwl_set_flags_for_band(struct iwl_priv *priv,
 			    enum ieee80211_band band)
@@ -1213,7 +1213,7 @@ void iwl_connection_init_rx_config(struct iwl_priv *priv, int mode)
 	priv->staging_rxon.ofdm_ht_dual_stream_basic_rates = 0xff;
 	priv->staging_rxon.ofdm_ht_triple_stream_basic_rates = 0xff;
 }
-EXPORT_SYMBOL(iwl_connection_init_rx_config);
+//EXPORT_SYMBOL(iwl_connection_init_rx_config);
 
 static void iwl_set_rate(struct iwl_priv *priv)
 {
@@ -1272,7 +1272,7 @@ void iwl_rx_csa(struct iwl_priv *priv, struct iwl_rx_mem_buffer *rxb)
 	rxon->channel = csa->channel;
 	priv->staging_rxon.channel = csa->channel;
 }
-EXPORT_SYMBOL(iwl_rx_csa);
+//EXPORT_SYMBOL(iwl_rx_csa);
 
 #ifdef CONFIG_IWLWIFI_DEBUG
 static void iwl_print_rx_config_cmd(struct iwl_priv *priv)
@@ -1327,7 +1327,7 @@ void iwl_irq_handle_error(struct iwl_priv *priv)
 			queue_work(priv->workqueue, &priv->restart);
 	}
 }
-EXPORT_SYMBOL(iwl_irq_handle_error);
+//EXPORT_SYMBOL(iwl_irq_handle_error);
 
 int iwl_apm_stop_master(struct iwl_priv *priv)
 {
@@ -1346,7 +1346,7 @@ int iwl_apm_stop_master(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_apm_stop_master);
+//EXPORT_SYMBOL(iwl_apm_stop_master);
 
 void iwl_apm_stop(struct iwl_priv *priv)
 {
@@ -1363,7 +1363,7 @@ void iwl_apm_stop(struct iwl_priv *priv)
 	iwl_clear_bit(priv, CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
 	spin_unlock_irqrestore(&priv->lock, flags);
 }
-EXPORT_SYMBOL(iwl_apm_stop);
+//EXPORT_SYMBOL(iwl_apm_stop);
 
 void iwl_configure_filter(struct ieee80211_hw *hw,
 			  unsigned int changed_flags,
@@ -1410,7 +1410,7 @@ void iwl_configure_filter(struct ieee80211_hw *hw,
 	*total_flags &= FIF_OTHER_BSS | FIF_ALLMULTI | FIF_PROMISC_IN_BSS |
 			FIF_BCN_PRBRESP_PROMISC | FIF_CONTROL;
 }
-EXPORT_SYMBOL(iwl_configure_filter);
+//EXPORT_SYMBOL(iwl_configure_filter);
 
 int iwl_setup_mac(struct iwl_priv *priv)
 {
@@ -1468,7 +1468,7 @@ int iwl_setup_mac(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_setup_mac);
+//EXPORT_SYMBOL(iwl_setup_mac);
 
 int iwl_set_hw_params(struct iwl_priv *priv)
 {
@@ -1488,7 +1488,7 @@ int iwl_set_hw_params(struct iwl_priv *priv)
 	/* Device-specific setup */
 	return priv->cfg->ops->lib->set_hw_params(priv);
 }
-EXPORT_SYMBOL(iwl_set_hw_params);
+//EXPORT_SYMBOL(iwl_set_hw_params);
 
 int iwl_init_drv(struct iwl_priv *priv)
 {
@@ -1551,7 +1551,7 @@ err_free_channel_map:
 err:
 	return ret;
 }
-EXPORT_SYMBOL(iwl_init_drv);
+//EXPORT_SYMBOL(iwl_init_drv);
 
 int iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, int force)
 {
@@ -1598,7 +1598,7 @@ int iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, int force)
 	 */
 	return ret;
 }
-EXPORT_SYMBOL(iwl_set_tx_power);
+//EXPORT_SYMBOL(iwl_set_tx_power);
 
 void iwl_uninit_drv(struct iwl_priv *priv)
 {
@@ -1607,7 +1607,7 @@ void iwl_uninit_drv(struct iwl_priv *priv)
 	iwl_free_channel_map(priv);
 	kfree(priv->scan);
 }
-EXPORT_SYMBOL(iwl_uninit_drv);
+//EXPORT_SYMBOL(iwl_uninit_drv);
 
 #define ICT_COUNT (PAGE_SIZE/sizeof(u32))
 
@@ -1621,7 +1621,7 @@ void iwl_free_isr_ict(struct iwl_priv *priv)
 		priv->ict_tbl_vir = NULL;
 	}
 }
-EXPORT_SYMBOL(iwl_free_isr_ict);
+//EXPORT_SYMBOL(iwl_free_isr_ict);
 
 
 /* allocate dram shared table it is a PAGE_SIZE aligned
@@ -1662,7 +1662,7 @@ int iwl_alloc_isr_ict(struct iwl_priv *priv)
 	priv->inta_mask |= CSR_INT_BIT_RX_PERIODIC;
 	return 0;
 }
-EXPORT_SYMBOL(iwl_alloc_isr_ict);
+//EXPORT_SYMBOL(iwl_alloc_isr_ict);
 
 /* Device is going up inform it about using ICT interrupt table,
  * also we need to tell the driver to start using ICT interrupt.
@@ -1698,7 +1698,7 @@ int iwl_reset_ict(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_reset_ict);
+//EXPORT_SYMBOL(iwl_reset_ict);
 
 /* Device is going down disable ict interrupt usage */
 void iwl_disable_ict(struct iwl_priv *priv)
@@ -1709,7 +1709,7 @@ void iwl_disable_ict(struct iwl_priv *priv)
 	priv->use_ict = false;
 	spin_unlock_irqrestore(&priv->lock, flags);
 }
-EXPORT_SYMBOL(iwl_disable_ict);
+//EXPORT_SYMBOL(iwl_disable_ict);
 
 /* interrupt handler using ict table, with this interrupt driver will
  * stop using INTA register to get device's interrupt, reading this register
@@ -1801,7 +1801,7 @@ irqreturn_t iwl_isr_ict(int irq, void *data)
 	spin_unlock(&priv->lock);
 	return IRQ_NONE;
 }
-EXPORT_SYMBOL(iwl_isr_ict);
+//EXPORT_SYMBOL(iwl_isr_ict);
 
 
 static irqreturn_t iwl_isr(int irq, void *data)
@@ -1927,7 +1927,7 @@ irqreturn_t iwl_isr_legacy(int irq, void *data)
 	spin_unlock(&priv->lock);
 	return IRQ_NONE;
 }
-EXPORT_SYMBOL(iwl_isr_legacy);
+//EXPORT_SYMBOL(iwl_isr_legacy);
 
 int iwl_send_bt_config(struct iwl_priv *priv)
 {
@@ -1942,7 +1942,7 @@ int iwl_send_bt_config(struct iwl_priv *priv)
 	return iwl_send_cmd_pdu(priv, REPLY_BT_CONFIG,
 				sizeof(struct iwl_bt_cmd), &bt_cmd);
 }
-EXPORT_SYMBOL(iwl_send_bt_config);
+//EXPORT_SYMBOL(iwl_send_bt_config);
 
 int iwl_send_statistics_request(struct iwl_priv *priv, u8 flags)
 {
@@ -1955,7 +1955,7 @@ int iwl_send_statistics_request(struct iwl_priv *priv, u8 flags)
 	};
 	return iwl_send_cmd(priv, &cmd);
 }
-EXPORT_SYMBOL(iwl_send_statistics_request);
+//EXPORT_SYMBOL(iwl_send_statistics_request);
 
 /**
  * iwl_verify_inst_sparse - verify runtime uCode image in card vs. host,
@@ -2078,7 +2078,7 @@ int iwl_verify_ucode(struct iwl_priv *priv)
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_verify_ucode);
+//EXPORT_SYMBOL(iwl_verify_ucode);
 
 
 void iwl_rf_kill_ct_config(struct iwl_priv *priv)
@@ -2131,7 +2131,7 @@ void iwl_rf_kill_ct_config(struct iwl_priv *priv)
 		break;
 	}
 }
-EXPORT_SYMBOL(iwl_rf_kill_ct_config);
+//EXPORT_SYMBOL(iwl_rf_kill_ct_config);
 
 
 /*
@@ -2166,7 +2166,7 @@ void iwl_rx_pm_sleep_notif(struct iwl_priv *priv,
 		     sleep->pm_sleep_mode, sleep->pm_wakeup_src);
 #endif
 }
-EXPORT_SYMBOL(iwl_rx_pm_sleep_notif);
+//EXPORT_SYMBOL(iwl_rx_pm_sleep_notif);
 
 void iwl_rx_pm_debug_statistics_notif(struct iwl_priv *priv,
 				      struct iwl_rx_mem_buffer *rxb)
@@ -2178,7 +2178,7 @@ void iwl_rx_pm_debug_statistics_notif(struct iwl_priv *priv,
 			get_cmd_string(pkt->hdr.cmd));
 	iwl_print_hex_dump(priv, IWL_DL_RADIO, pkt->u.raw, len);
 }
-EXPORT_SYMBOL(iwl_rx_pm_debug_statistics_notif);
+//EXPORT_SYMBOL(iwl_rx_pm_debug_statistics_notif);
 
 void iwl_rx_reply_error(struct iwl_priv *priv,
 			struct iwl_rx_mem_buffer *rxb)
@@ -2193,7 +2193,7 @@ void iwl_rx_reply_error(struct iwl_priv *priv,
 		le16_to_cpu(pkt->u.err_resp.bad_cmd_seq_num),
 		le32_to_cpu(pkt->u.err_resp.error_info));
 }
-EXPORT_SYMBOL(iwl_rx_reply_error);
+//EXPORT_SYMBOL(iwl_rx_reply_error);
 
 void iwl_clear_isr_stats(struct iwl_priv *priv)
 {
@@ -2242,7 +2242,7 @@ int iwl_mac_conf_tx(struct ieee80211_hw *hw, u16 queue,
 	IWL_DEBUG_MAC80211(priv, "leave\n");
 	return 0;
 }
-EXPORT_SYMBOL(iwl_mac_conf_tx);
+//EXPORT_SYMBOL(iwl_mac_conf_tx);
 
 static void iwl_ht_conf(struct iwl_priv *priv,
 			struct ieee80211_bss_conf *bss_conf)
@@ -2453,7 +2453,7 @@ void iwl_bss_info_changed(struct ieee80211_hw *hw,
 
 	IWL_DEBUG_MAC80211(priv, "leave\n");
 }
-EXPORT_SYMBOL(iwl_bss_info_changed);
+//EXPORT_SYMBOL(iwl_bss_info_changed);
 
 int iwl_mac_beacon_update(struct ieee80211_hw *hw, struct sk_buff *skb)
 {
@@ -2494,7 +2494,7 @@ int iwl_mac_beacon_update(struct ieee80211_hw *hw, struct sk_buff *skb)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_mac_beacon_update);
+//EXPORT_SYMBOL(iwl_mac_beacon_update);
 
 int iwl_set_mode(struct iwl_priv *priv, int mode)
 {
@@ -2529,7 +2529,7 @@ int iwl_set_mode(struct iwl_priv *priv, int mode)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_set_mode);
+//EXPORT_SYMBOL(iwl_set_mode);
 
 int iwl_mac_add_interface(struct ieee80211_hw *hw,
 				 struct ieee80211_if_init_conf *conf)
@@ -2566,7 +2566,7 @@ int iwl_mac_add_interface(struct ieee80211_hw *hw,
 	IWL_DEBUG_MAC80211(priv, "leave\n");
 	return 0;
 }
-EXPORT_SYMBOL(iwl_mac_add_interface);
+//EXPORT_SYMBOL(iwl_mac_add_interface);
 
 void iwl_mac_remove_interface(struct ieee80211_hw *hw,
 				     struct ieee80211_if_init_conf *conf)
@@ -2591,7 +2591,7 @@ void iwl_mac_remove_interface(struct ieee80211_hw *hw,
 	IWL_DEBUG_MAC80211(priv, "leave\n");
 
 }
-EXPORT_SYMBOL(iwl_mac_remove_interface);
+//EXPORT_SYMBOL(iwl_mac_remove_interface);
 
 /**
  * iwl_mac_config - mac80211 config callback
@@ -2726,7 +2726,7 @@ out:
 	mutex_unlock(&priv->mutex);
 	return ret;
 }
-EXPORT_SYMBOL(iwl_mac_config);
+//EXPORT_SYMBOL(iwl_mac_config);
 
 int iwl_mac_get_tx_stats(struct ieee80211_hw *hw,
 			 struct ieee80211_tx_queue_stats *stats)
@@ -2762,7 +2762,7 @@ int iwl_mac_get_tx_stats(struct ieee80211_hw *hw,
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_mac_get_tx_stats);
+//EXPORT_SYMBOL(iwl_mac_get_tx_stats);
 
 void iwl_mac_reset_tsf(struct ieee80211_hw *hw)
 {
@@ -2823,7 +2823,7 @@ void iwl_mac_reset_tsf(struct ieee80211_hw *hw)
 
 	IWL_DEBUG_MAC80211(priv, "leave\n");
 }
-EXPORT_SYMBOL(iwl_mac_reset_tsf);
+//EXPORT_SYMBOL(iwl_mac_reset_tsf);
 
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 
@@ -2862,7 +2862,7 @@ int iwl_alloc_traffic_mem(struct iwl_priv *priv)
 	iwl_reset_traffic_log(priv);
 	return 0;
 }
-EXPORT_SYMBOL(iwl_alloc_traffic_mem);
+//EXPORT_SYMBOL(iwl_alloc_traffic_mem);
 
 void iwl_free_traffic_mem(struct iwl_priv *priv)
 {
@@ -2872,7 +2872,7 @@ void iwl_free_traffic_mem(struct iwl_priv *priv)
 	kfree(priv->rx_traffic);
 	priv->rx_traffic = NULL;
 }
-EXPORT_SYMBOL(iwl_free_traffic_mem);
+//EXPORT_SYMBOL(iwl_free_traffic_mem);
 
 void iwl_dbg_log_tx_data_frame(struct iwl_priv *priv,
 		      u16 length, struct ieee80211_hdr *header)
@@ -2897,7 +2897,7 @@ void iwl_dbg_log_tx_data_frame(struct iwl_priv *priv,
 			(priv->tx_traffic_idx + 1) % IWL_TRAFFIC_ENTRIES;
 	}
 }
-EXPORT_SYMBOL(iwl_dbg_log_tx_data_frame);
+//EXPORT_SYMBOL(iwl_dbg_log_tx_data_frame);
 
 void iwl_dbg_log_rx_data_frame(struct iwl_priv *priv,
 		      u16 length, struct ieee80211_hdr *header)
@@ -2922,7 +2922,7 @@ void iwl_dbg_log_rx_data_frame(struct iwl_priv *priv,
 			(priv->rx_traffic_idx + 1) % IWL_TRAFFIC_ENTRIES;
 	}
 }
-EXPORT_SYMBOL(iwl_dbg_log_rx_data_frame);
+//EXPORT_SYMBOL(iwl_dbg_log_rx_data_frame);
 
 const char *get_mgmt_string(int cmd)
 {
@@ -3064,7 +3064,7 @@ void iwl_update_stats(struct iwl_priv *priv, int is_tx, __le16 fc, u16 len)
 		stats->data_bytes += len;
 	}
 }
-EXPORT_SYMBOL(iwl_update_stats);
+//EXPORT_SYMBOL(iwl_update_stats);
 #endif
 
 #ifdef CONFIG_PM
@@ -3088,7 +3088,7 @@ int iwl_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_pci_suspend);
+//EXPORT_SYMBOL(iwl_pci_suspend);
 
 int iwl_pci_resume(struct pci_dev *pdev)
 {
@@ -3104,6 +3104,6 @@ int iwl_pci_resume(struct pci_dev *pdev)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_pci_resume);
+//EXPORT_SYMBOL(iwl_pci_resume);
 
 #endif /* CONFIG_PM */

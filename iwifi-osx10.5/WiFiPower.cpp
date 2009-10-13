@@ -30,8 +30,6 @@ enum {
     kFiveSeconds = 5000000
 };
 
-#define kPCIPMCSR                   (pmPCICapPtr + 4)
-
 //---------------------------------------------------------------------------
 // handleSetPowerStateOff()
 //

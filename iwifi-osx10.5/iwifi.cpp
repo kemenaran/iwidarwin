@@ -1,6 +1,6 @@
 /*
- *  iwi3945.cpp
- *  iwi3945
+ *  iwifi.cpp
+ *  iwifi
  *
  *  Created by Sean Cross on 1/19/08.
  *  Copyright 2008 __MyCompanyName__. All rights reserved.
@@ -162,7 +162,7 @@ int setSelectedNetwork(kern_ctl_ref kctlref, u_int32_t unit, void *unitinfo,mbuf
 
 bool darwin_iwifi::init(OSDictionary *dict)
 {
-	fakemac=OSDynamicCast(OSString,dict->getObject("p_mac"))->getCStringNoCopy();
+
 	
 	return super::init(dict);
 }
@@ -1713,13 +1713,13 @@ IOReturn darwin_iwifi::enablePacketFilter(const OSSymbol * group,
 
 IOReturn darwin_iwifi::getMaxPacketSize(UInt32 * maxSize) const
 {
-    *maxSize = 1600;//kIOEthernetMaxPacketSize;//;//IPW_RX_BUF_SIZE;
+    *maxSize = 1518;//kIOEthernetMaxPacketSize;//;//IPW_RX_BUF_SIZE;
     return kIOReturnSuccess;
 }
 
 IOReturn darwin_iwifi::getMinPacketSize(UInt32 * minSize) const
 {
-    *minSize = 32;//kIOEthernetMinPacketSize;//;
+    *minSize = 64;//kIOEthernetMinPacketSize;//;
     return kIOReturnSuccess;
 }
 
@@ -1784,16 +1784,4 @@ int darwin_iwifi::addMediumType(UInt32 type, UInt32 speed, UInt32 code, char* na
 }
 
 
-/*static IOReturn darwin_iwifi::powerChangeHandler(void *target, void *refCon, UInt32
-            messageType, IOService *service, void *messageArgument,
-            vm_size_t argSize ) {
-    IOLog("Called powerChangeHandler.  Ignoring.\n");
-    return 0;
-}
 
-static IOReturn darwin_iwifi::powerDownHandler(void *target, void *refCon, UInt32
-            messageType, IOService *service, void *messageArgument,
-            vm_size_t argSize ) {
-    IOLog("Called powerDownHandler.  Ignoring.\n");
-    return 0;
-}*/

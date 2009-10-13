@@ -4205,7 +4205,6 @@ static int __init iwl3945_init(void)
 		       "Unable to register rate control algorithm: %d\n", ret);
 		return ret;
 	}
-
 	ret = pci_register_driver(&iwl3945_driver);
 	if (ret) {
 		printk(KERN_ERR DRV_NAME "Unable to initialize PCI module\n");

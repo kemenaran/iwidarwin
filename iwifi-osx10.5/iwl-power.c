@@ -337,7 +337,7 @@ int iwl_power_update_mode(struct iwl_priv *priv, int force)
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_power_update_mode);
+//EXPORT_SYMBOL(iwl_power_update_mode);
 
 int iwl_ht_enabled(struct iwl_priv *priv)
 {
@@ -349,7 +349,7 @@ int iwl_ht_enabled(struct iwl_priv *priv)
 	restriction = tt->restriction + tt->state;
 	return restriction->is_ht;
 }
-EXPORT_SYMBOL(iwl_ht_enabled);
+//EXPORT_SYMBOL(iwl_ht_enabled);
 
 int iwl_within_ct_kill_margin(struct iwl_priv *priv)
 {
@@ -378,7 +378,7 @@ enum iwl_antenna_ok iwl_tx_ant_restriction(struct iwl_priv *priv)
 	restriction = tt->restriction + tt->state;
 	return restriction->tx_stream;
 }
-EXPORT_SYMBOL(iwl_tx_ant_restriction);
+//EXPORT_SYMBOL(iwl_tx_ant_restriction);
 
 enum iwl_antenna_ok iwl_rx_ant_restriction(struct iwl_priv *priv)
 {
@@ -792,7 +792,7 @@ void iwl_tt_enter_ct_kill(struct iwl_priv *priv)
 	IWL_DEBUG_POWER(priv, "Queueing critical temperature enter.\n");
 	queue_work(priv->workqueue, &priv->ct_enter);
 }
-EXPORT_SYMBOL(iwl_tt_enter_ct_kill);
+//EXPORT_SYMBOL(iwl_tt_enter_ct_kill);
 
 void iwl_tt_exit_ct_kill(struct iwl_priv *priv)
 {
@@ -802,7 +802,7 @@ void iwl_tt_exit_ct_kill(struct iwl_priv *priv)
 	IWL_DEBUG_POWER(priv, "Queueing critical temperature exit.\n");
 	queue_work(priv->workqueue, &priv->ct_exit);
 }
-EXPORT_SYMBOL(iwl_tt_exit_ct_kill);
+//EXPORT_SYMBOL(iwl_tt_exit_ct_kill);
 
 static void iwl_bg_tt_work(struct work_struct *work)
 {
@@ -829,7 +829,7 @@ void iwl_tt_handler(struct iwl_priv *priv)
 	IWL_DEBUG_POWER(priv, "Queueing thermal throttling work.\n");
 	queue_work(priv->workqueue, &priv->tt_work);
 }
-EXPORT_SYMBOL(iwl_tt_handler);
+//EXPORT_SYMBOL(iwl_tt_handler);
 
 /* Thermal throttling initialization
  * For advance thermal throttling:
@@ -902,7 +902,7 @@ void iwl_tt_initialize(struct iwl_priv *priv)
 		break;
 	}
 }
-EXPORT_SYMBOL(iwl_tt_initialize);
+//EXPORT_SYMBOL(iwl_tt_initialize);
 
 /* cleanup thermal throttling management related memory and timer */
 void iwl_tt_exit(struct iwl_priv *priv)
@@ -925,7 +925,7 @@ void iwl_tt_exit(struct iwl_priv *priv)
 		tt->transaction = NULL;
 	}
 }
-EXPORT_SYMBOL(iwl_tt_exit);
+//EXPORT_SYMBOL(iwl_tt_exit);
 
 /* initialize to default */
 void iwl_power_initialize(struct iwl_priv *priv)
@@ -939,4 +939,4 @@ void iwl_power_initialize(struct iwl_priv *priv)
 	memset(&priv->power_data.sleep_cmd, 0,
 		sizeof(priv->power_data.sleep_cmd));
 }
-EXPORT_SYMBOL(iwl_power_initialize);
+//EXPORT_SYMBOL(iwl_power_initialize);

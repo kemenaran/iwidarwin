@@ -1,6 +1,6 @@
 /*
- *  iwi3945.h
- *  iwi3945
+ *  iwifi.h
+ *  iwifi
  *
  *  Created by Sean Cross on 1/19/08.
  *  Copyright 2008 __MyCompanyName__. All rights reserved.
@@ -102,12 +102,13 @@ extern "C" {
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/IOInterruptEventSource.h>
 
-#include "defines.h"
+//#include "defines.h"
 
 
 
 #pragma mark -
 #pragma mark Class definition
+#define kPCIPMCSR                   (pmPCICapPtr + 4)
 
 typedef enum {
 	MEDIUM_TYPE_NONE = 0,
@@ -306,15 +307,6 @@ class darwin_iwifi : public IOEthernetController
         virtual int outputRaw80211Packet( IO80211Interface * interface, mbuf_t m );
 										
 
-		
-		static IOReturn powerChangeHandler(void *target, void *refCon, UInt32
-            messageType, IOService *service, void *messageArgument,
-            vm_size_t argSize );
-
-		static IOReturn powerDownHandler(void *target, void *refCon, UInt32
-            messageType, IOService *service, void *messageArgument,
-            vm_size_t argSize );
-		
 		virtual IOOptionBits getState( void ) const;
 		
 		virtual IOReturn getMaxPacketSize(UInt32 * maxSize) const;
