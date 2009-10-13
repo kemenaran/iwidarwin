@@ -2931,6 +2931,7 @@ static struct ieee80211_ops iwl_hw_ops = {
 
 static int iwl_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
+
 	int err = 0;
 	struct iwl_priv *priv;
 	struct ieee80211_hw *hw;
@@ -3242,11 +3243,11 @@ static void __devexit iwl_pci_remove(struct pci_dev *pdev)
 
 /* Hardware specific file defines the PCI IDs table for that hardware module */
 static struct pci_device_id iwl_hw_card_ids[] = {
-#ifdef CONFIG_COMPAT_IWL4965
+//#ifdef CONFIG_COMPAT_IWL4965
 	{IWL_PCI_DEVICE(0x4229, PCI_ANY_ID, iwl4965_agn_cfg)},
 	{IWL_PCI_DEVICE(0x4230, PCI_ANY_ID, iwl4965_agn_cfg)},
-#endif /* CONFIG_COMPAT_IWL4965 */
-#ifdef CONFIG_IWL5000
+//#endif /* CONFIG_COMPAT_IWL4965 */
+//#ifdef CONFIG_IWL5000
 	{IWL_PCI_DEVICE(0x4232, 0x1205, iwl5100_bg_cfg)},
 	{IWL_PCI_DEVICE(0x4232, 0x1305, iwl5100_bg_cfg)},
 	{IWL_PCI_DEVICE(0x4232, 0x1206, iwl5100_abg_cfg)},
@@ -3284,7 +3285,7 @@ static struct pci_device_id iwl_hw_card_ids[] = {
 	{IWL_PCI_DEVICE(0x4238, 0x1111, iwl6000_3agn_cfg)},
 	{IWL_PCI_DEVICE(0x4239, 0x1311, iwl6000i_2agn_cfg)},
 	{IWL_PCI_DEVICE(0x4239, 0x1316, iwl6000i_2abg_cfg)},
-
+	
 /* 6x50 WiFi/WiMax Series */
 	{IWL_PCI_DEVICE(0x0086, 0x1101, iwl6050_3agn_cfg)},
 	{IWL_PCI_DEVICE(0x0086, 0x1121, iwl6050_3agn_cfg)},
@@ -3309,7 +3310,7 @@ static struct pci_device_id iwl_hw_card_ids[] = {
 	{IWL_PCI_DEVICE(0x0083, 0x1326, iwl1000_bg_cfg)},
 	{IWL_PCI_DEVICE(0x0084, 0x1216, iwl1000_bg_cfg)},
 	{IWL_PCI_DEVICE(0x0084, 0x1316, iwl1000_bg_cfg)},
-#endif /* CONFIG_IWL5000 */
+//#endif /* CONFIG_IWL5000 */
 
 	{0}
 };

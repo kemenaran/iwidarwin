@@ -245,7 +245,7 @@ int iwlcore_eeprom_verify_signature(struct iwl_priv *priv)
 	}
 	return ret;
 }
-EXPORT_SYMBOL(iwlcore_eeprom_verify_signature);
+//EXPORT_SYMBOL(iwlcore_eeprom_verify_signature);
 
 static void iwl_set_otp_access(struct iwl_priv *priv, enum iwl_access_mode mode)
 {
@@ -319,7 +319,7 @@ int iwlcore_eeprom_acquire_semaphore(struct iwl_priv *priv)
 
 	return ret;
 }
-EXPORT_SYMBOL(iwlcore_eeprom_acquire_semaphore);
+//EXPORT_SYMBOL(iwlcore_eeprom_acquire_semaphore);
 
 void iwlcore_eeprom_release_semaphore(struct iwl_priv *priv)
 {
@@ -327,14 +327,14 @@ void iwlcore_eeprom_release_semaphore(struct iwl_priv *priv)
 		CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM);
 
 }
-EXPORT_SYMBOL(iwlcore_eeprom_release_semaphore);
+//EXPORT_SYMBOL(iwlcore_eeprom_release_semaphore);
 
 const u8 *iwlcore_eeprom_query_addr(const struct iwl_priv *priv, size_t offset)
 {
 	BUG_ON(offset >= priv->cfg->eeprom_size);
 	return &priv->eeprom[offset];
 }
-EXPORT_SYMBOL(iwlcore_eeprom_query_addr);
+//EXPORT_SYMBOL(iwlcore_eeprom_query_addr);
 
 static int iwl_init_otp_access(struct iwl_priv *priv)
 {
@@ -584,14 +584,14 @@ err:
 alloc_err:
 	return ret;
 }
-EXPORT_SYMBOL(iwl_eeprom_init);
+//EXPORT_SYMBOL(iwl_eeprom_init);
 
 void iwl_eeprom_free(struct iwl_priv *priv)
 {
 	kfree(priv->eeprom);
 	priv->eeprom = NULL;
 }
-EXPORT_SYMBOL(iwl_eeprom_free);
+//EXPORT_SYMBOL(iwl_eeprom_free);
 
 int iwl_eeprom_check_version(struct iwl_priv *priv)
 {
@@ -613,13 +613,13 @@ err:
 	return -EINVAL;
 
 }
-EXPORT_SYMBOL(iwl_eeprom_check_version);
+//EXPORT_SYMBOL(iwl_eeprom_check_version);
 
 const u8 *iwl_eeprom_query_addr(const struct iwl_priv *priv, size_t offset)
 {
 	return priv->cfg->ops->lib->eeprom_ops.query_addr(priv, offset);
 }
-EXPORT_SYMBOL(iwl_eeprom_query_addr);
+//EXPORT_SYMBOL(iwl_eeprom_query_addr);
 
 u16 iwl_eeprom_query16(const struct iwl_priv *priv, size_t offset)
 {
@@ -627,7 +627,7 @@ u16 iwl_eeprom_query16(const struct iwl_priv *priv, size_t offset)
 		return 0;
 	return (u16)priv->eeprom[offset] | ((u16)priv->eeprom[offset + 1] << 8);
 }
-EXPORT_SYMBOL(iwl_eeprom_query16);
+//EXPORT_SYMBOL(iwl_eeprom_query16);
 
 void iwl_eeprom_get_mac(const struct iwl_priv *priv, u8 *mac)
 {
@@ -635,7 +635,7 @@ void iwl_eeprom_get_mac(const struct iwl_priv *priv, u8 *mac)
 					EEPROM_MAC_ADDRESS);
 	memcpy(mac, addr, ETH_ALEN);
 }
-EXPORT_SYMBOL(iwl_eeprom_get_mac);
+//EXPORT_SYMBOL(iwl_eeprom_get_mac);
 
 static void iwl_init_band_reference(const struct iwl_priv *priv,
 			int eep_band, int *eeprom_ch_count,
@@ -911,7 +911,7 @@ void iwlcore_eeprom_enhanced_txpower(struct iwl_priv *priv)
 		}
 	}
 }
-EXPORT_SYMBOL(iwlcore_eeprom_enhanced_txpower);
+//EXPORT_SYMBOL(iwlcore_eeprom_enhanced_txpower);
 
 #define CHECK_AND_PRINT_I(x) ((eeprom_ch_info[ch].flags & EEPROM_CHANNEL_##x) \
 			    ? # x " " : "")
@@ -1070,7 +1070,7 @@ int iwl_init_channel_map(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_init_channel_map);
+//EXPORT_SYMBOL(iwl_init_channel_map);
 
 /*
  * iwl_free_channel_map - undo allocations in iwl_init_channel_map
@@ -1080,7 +1080,7 @@ void iwl_free_channel_map(struct iwl_priv *priv)
 	kfree(priv->channel_info);
 	priv->channel_count = 0;
 }
-EXPORT_SYMBOL(iwl_free_channel_map);
+//EXPORT_SYMBOL(iwl_free_channel_map);
 
 /**
  * iwl_get_channel_info - Find driver's private channel info
@@ -1109,5 +1109,5 @@ const struct iwl_channel_info *iwl_get_channel_info(const struct iwl_priv *priv,
 
 	return NULL;
 }
-EXPORT_SYMBOL(iwl_get_channel_info);
+//EXPORT_SYMBOL(iwl_get_channel_info);
 

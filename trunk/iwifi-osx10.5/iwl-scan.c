@@ -81,7 +81,7 @@ int iwl_scan_cancel(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_scan_cancel);
+//EXPORT_SYMBOL(iwl_scan_cancel);
 /**
  * iwl_scan_cancel_timeout - Cancel any currently executing HW scan
  * @ms: amount of time to wait (in milliseconds) for scan to abort
@@ -106,7 +106,7 @@ int iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long ms)
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_scan_cancel_timeout);
+//EXPORT_SYMBOL(iwl_scan_cancel_timeout);
 
 static int iwl_send_scan_abort(struct iwl_priv *priv)
 {
@@ -279,7 +279,7 @@ void iwl_setup_rx_scan_handlers(struct iwl_priv *priv)
 	priv->rx_handlers[SCAN_COMPLETE_NOTIFICATION] =
 					iwl_rx_scan_complete_notif;
 }
-EXPORT_SYMBOL(iwl_setup_rx_scan_handlers);
+//EXPORT_SYMBOL(iwl_setup_rx_scan_handlers);
 
 inline u16 iwl_get_active_dwell_time(struct iwl_priv *priv,
 				     enum ieee80211_band band,
@@ -292,7 +292,7 @@ inline u16 iwl_get_active_dwell_time(struct iwl_priv *priv,
 		return IWL_ACTIVE_DWELL_TIME_24 +
 			IWL_ACTIVE_DWELL_FACTOR_24GHZ * (n_probes + 1);
 }
-EXPORT_SYMBOL(iwl_get_active_dwell_time);
+//EXPORT_SYMBOL(iwl_get_active_dwell_time);
 
 u16 iwl_get_passive_dwell_time(struct iwl_priv *priv,
 			       enum ieee80211_band band)
@@ -313,7 +313,7 @@ u16 iwl_get_passive_dwell_time(struct iwl_priv *priv,
 
 	return passive;
 }
-EXPORT_SYMBOL(iwl_get_passive_dwell_time);
+//EXPORT_SYMBOL(iwl_get_passive_dwell_time);
 
 static int iwl_get_channels_for_scan(struct iwl_priv *priv,
 				     enum ieee80211_band band,
@@ -486,7 +486,7 @@ out_unlock:
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_mac_hw_scan);
+//EXPORT_SYMBOL(iwl_mac_hw_scan);
 
 #define IWL_SCAN_CHECK_WATCHDOG (7 * HZ)
 
@@ -510,7 +510,7 @@ void iwl_bg_scan_check(struct work_struct *data)
 	}
 	mutex_unlock(&priv->mutex);
 }
-EXPORT_SYMBOL(iwl_bg_scan_check);
+//EXPORT_SYMBOL(iwl_bg_scan_check);
 
 /**
  * iwl_fill_probe_req - fill in all required fields and IE for probe request
@@ -557,7 +557,7 @@ u16 iwl_fill_probe_req(struct iwl_priv *priv, struct ieee80211_mgmt *frame,
 
 	return (u16)len;
 }
-EXPORT_SYMBOL(iwl_fill_probe_req);
+//EXPORT_SYMBOL(iwl_fill_probe_req);
 
 static void iwl_bg_request_scan(struct work_struct *data)
 {
@@ -806,7 +806,7 @@ void iwl_bg_abort_scan(struct work_struct *work)
 
 	mutex_unlock(&priv->mutex);
 }
-EXPORT_SYMBOL(iwl_bg_abort_scan);
+//EXPORT_SYMBOL(iwl_bg_abort_scan);
 
 void iwl_bg_scan_completed(struct work_struct *work)
 {
@@ -828,7 +828,7 @@ void iwl_bg_scan_completed(struct work_struct *work)
 	iwl_set_tx_power(priv, priv->tx_power_user_lmt, true);
 	mutex_unlock(&priv->mutex);
 }
-EXPORT_SYMBOL(iwl_bg_scan_completed);
+//EXPORT_SYMBOL(iwl_bg_scan_completed);
 
 void iwl_setup_scan_deferred_work(struct iwl_priv *priv)
 {
@@ -837,5 +837,5 @@ void iwl_setup_scan_deferred_work(struct iwl_priv *priv)
 	INIT_WORK(&priv->abort_scan, iwl_bg_abort_scan,9);
 	INIT_DELAYED_WORK(&priv->scan_check, iwl_bg_scan_check,22);
 }
-EXPORT_SYMBOL(iwl_setup_scan_deferred_work);
+//EXPORT_SYMBOL(iwl_setup_scan_deferred_work);
 

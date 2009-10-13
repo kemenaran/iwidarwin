@@ -4,7 +4,6 @@
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/IOInterruptEventSource.h>
 #include <IOKit/IOMapper.h>
-
 #include <IOKit/assert.h>
 #include <IOKit/IOTimerEventSource.h>
 #include <IOKit/IODeviceMemory.h>
@@ -1062,8 +1061,8 @@ int pci_register_driver(struct pci_driver * drv){
 	if(!drv)
 		return -6;
 	my_drv=drv;
-	//maybe get the pointer for the good function as iwl3945_pci_probe ...
-	struct pci_device_id *test=(struct pci_device_id*)drv->id_table;//(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
+
+	struct pci_device_id *test=(struct pci_device_id *)IOMalloc(sizeof(struct pci_device_id));
 	struct pci_dev *test_pci=(struct pci_dev *)IOMalloc(sizeof(struct pci_dev));
 	
 	if(!currentController){
@@ -1074,9 +1073,6 @@ int pci_register_driver(struct pci_driver * drv){
 	test_pci->dev.kobj.ptr=OSDynamicCast(IOPCIDevice, currentController->getProvider());
 	IOPCIDevice *fPCIDevice = (IOPCIDevice *)test_pci->dev.kobj.ptr;
 
-//	fPCIDevice->retain();
-//	fPCIDevice->open(currentController);
-//	fPCIDevice->requestPowerDomainState(kIOPMPowerOn, (IOPowerConnection *) currentController->getParentEntry(gIOPowerPlane),IOPMLowestState );
 	UInt16 reg16;
 	reg16 = fPCIDevice->configRead16(kIOPCIConfigCommand);
 	reg16 |= (kIOPCICommandBusMaster      |kIOPCICommandMemorySpace    |kIOPCICommandMemWrInvalidate);
@@ -1084,18 +1080,29 @@ int pci_register_driver(struct pci_driver * drv){
 	reg16 &= ~kIOPCICommandIOSpace;  // disable I/O space
 	fPCIDevice->configWrite16(kIOPCIConfigCommand,reg16);
 		
-	//fPCIDevice->configWrite8(kIOPCIConfigLatencyTimer,0x64);
+	int c=0;
+	u16 dID = fPCIDevice->configRead16(kIOPCIConfigDeviceID);
+	u16 subDID = fPCIDevice->configRead16(kIOPCIConfigRevisionID);
+
+	while (&drv->id_table[c]!=NULL)
+	{
+		if (drv->id_table[c].device==dID && (drv->id_table[c].subdevice==subDID || drv->id_table[c].subdevice==PCI_ANY_ID))
+		{
+			test->vendor=drv->id_table[c].vendor;
+			test->device=drv->id_table[c].device;
+			test->subvendor=drv->id_table[c].subvendor;
+			test->subdevice=drv->id_table[c].subdevice;
+			test->driver_data=drv->id_table[c].driver_data;
+			c=999;
+			break;
+		}	
+		c++;
+	}
+
+	int r = 1;
 	
-	/* We disable the RETRY_TIMEOUT register (0x41) to keep
-	 * PCI Tx retries from interfering with C3 CPU state */
-//	UInt16 reg = fPCIDevice->configRead16(0x40);
-//	if((reg & 0x0000ff00) != 0)
-//		fPCIDevice->configWrite16(0x40, reg & 0xffff00ff);
-
-	//fPCIDevice->setBusMasterEnable(true);
-	//fPCIDevice->setMemoryEnable(true);
-
-	int r = (drv->probe) (test_pci,test);
+	if (c==999)
+		r=(drv->probe) (test_pci,test);
 
 	if(r)
 		IOLog("Error drv->probe\n");
@@ -4318,29 +4325,17 @@ int ieee80211_rate_control_register(struct rate_control_ops *ops)
   {
           struct rate_control_alg *alg;
   
-          if (!ops->name)
-                  return -EINVAL;
-  
-         // mutex_lock(&rate_ctrl_mutex);
-        list_for_each_entry(alg, &rate_ctrl_algs, list) {
-                 if (!strcmp(alg->ops->name, ops->name)) {
-
-                          WARN_ON(1);
-                        //  mutex_unlock(&rate_ctrl_mutex);
-                          return -EALREADY;
-                  }
-          }
-  
           alg = (struct rate_control_alg*)kzalloc(sizeof(*alg), GFP_KERNEL);
-          if (alg == NULL) {
-                  //mutex_unlock(&rate_ctrl_mutex);
-                  return -ENOMEM;
-          }
-          alg->ops = ops;
- 
-         list_add_tail(&alg->list, &rate_ctrl_algs);
-        //  mutex_unlock(&rate_ctrl_mutex);
- 
+	if (alg == NULL) {
+		return -ENOMEM;
+	}
+
+	alg->ops = ops;
+
+	//mutex_lock(&rate_ctrl_mutex);
+	list_add_tail(&alg->list, &rate_ctrl_algs);
+	//mutex_unlock(&rate_ctrl_mutex);
+
           return 0;
   }
  
@@ -5614,20 +5609,21 @@ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
          local = wiphy_priv(wiphy);
  
         local->hw.wiphy = wiphy;*/
- 
-		wiphy=(struct wiphy*)IOMalloc(priv_size);
+
+		wiphy=(struct wiphy*)IOMalloc(sizeof(struct wiphy));
 		memset(wiphy,0,priv_size);
 		
-		 local = (struct ieee80211_local*)wiphy_priv(wiphy);
-		  local->hw.wiphy = wiphy;
+		// local = (struct ieee80211_local*)wiphy_priv(wiphy);
 		  
-		//local=(struct ieee80211_local*)IOMalloc(priv_size);
+		  
+		local=(struct ieee80211_local*)IOMalloc(priv_size);
 
-		//memset(local,0,priv_size);
-	
+		memset(local,0,priv_size);
+		local->hw.wiphy = wiphy;
+		
          local->hw.priv = (char *)local + ALIGN(sizeof(*local), NETDEV_ALIGN);
 
-		
+
          BUG_ON(!ops->tx);
          BUG_ON(!ops->start);
          BUG_ON(!ops->stop);

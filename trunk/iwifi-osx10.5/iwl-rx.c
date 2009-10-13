@@ -118,7 +118,7 @@ int iwl_rx_queue_space(const struct iwl_rx_queue *q)
 		s = 0;
 	return s;
 }
-EXPORT_SYMBOL(iwl_rx_queue_space);
+//EXPORT_SYMBOL(iwl_rx_queue_space);
 
 /**
  * iwl_rx_queue_update_write_ptr - Update the write pointer for the RX queue
@@ -161,7 +161,7 @@ int iwl_rx_queue_update_write_ptr(struct iwl_priv *priv, struct iwl_rx_queue *q)
 	spin_unlock_irqrestore(&q->lock, flags);
 	return ret;
 }
-EXPORT_SYMBOL(iwl_rx_queue_update_write_ptr);
+//EXPORT_SYMBOL(iwl_rx_queue_update_write_ptr);
 /**
  * iwl_dma_addr2rbd_ptr - convert a DMA address to a uCode read buffer ptr
  */
@@ -223,7 +223,7 @@ int iwl_rx_queue_restock(struct iwl_priv *priv)
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_rx_queue_restock);
+//EXPORT_SYMBOL(iwl_rx_queue_restock);
 
 
 /**
@@ -316,7 +316,7 @@ void iwl_rx_replenish(struct iwl_priv *priv)
 	iwl_rx_queue_restock(priv);
 	spin_unlock_irqrestore(&priv->lock, flags);
 }
-EXPORT_SYMBOL(iwl_rx_replenish);
+//EXPORT_SYMBOL(iwl_rx_replenish);
 
 void iwl_rx_replenish_now(struct iwl_priv *priv)
 {
@@ -324,7 +324,7 @@ void iwl_rx_replenish_now(struct iwl_priv *priv)
 
 	iwl_rx_queue_restock(priv);
 }
-EXPORT_SYMBOL(iwl_rx_replenish_now);
+//EXPORT_SYMBOL(iwl_rx_replenish_now);
 
 
 /* Assumes that the skb field of the buffers in 'pool' is kept accurate.
@@ -352,7 +352,7 @@ void iwl_rx_queue_free(struct iwl_priv *priv, struct iwl_rx_queue *rxq)
 	rxq->bd = NULL;
 	rxq->rb_stts  = NULL;
 }
-EXPORT_SYMBOL(iwl_rx_queue_free);
+//EXPORT_SYMBOL(iwl_rx_queue_free);
 
 int iwl_rx_queue_alloc(struct iwl_priv *priv)
 {
@@ -392,7 +392,7 @@ err_rb:
 err_bd:
 	return -ENOMEM;
 }
-EXPORT_SYMBOL(iwl_rx_queue_alloc);
+//EXPORT_SYMBOL(iwl_rx_queue_alloc);
 
 void iwl_rx_queue_reset(struct iwl_priv *priv, struct iwl_rx_queue *rxq)
 {
@@ -485,7 +485,7 @@ int iwl_rxq_stop(struct iwl_priv *priv)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_rxq_stop);
+//EXPORT_SYMBOL(iwl_rxq_stop);
 
 void iwl_rx_missed_beacon_notif(struct iwl_priv *priv,
 				struct iwl_rx_mem_buffer *rxb)
@@ -505,7 +505,7 @@ void iwl_rx_missed_beacon_notif(struct iwl_priv *priv,
 			iwl_init_sensitivity(priv);
 	}
 }
-EXPORT_SYMBOL(iwl_rx_missed_beacon_notif);
+//EXPORT_SYMBOL(iwl_rx_missed_beacon_notif);
 
 
 /* Calculate noise level, based on measurements during network silence just
@@ -587,7 +587,7 @@ void iwl_rx_statistics(struct iwl_priv *priv,
 	if (priv->cfg->ops->lib->temp_ops.temperature && change)
 		priv->cfg->ops->lib->temp_ops.temperature(priv);
 }
-EXPORT_SYMBOL(iwl_rx_statistics);
+//EXPORT_SYMBOL(iwl_rx_statistics);
 
 #define PERFECT_RSSI (-20) /* dBm */
 #define WORST_RSSI (-95)   /* dBm */
@@ -809,7 +809,7 @@ int iwl_set_decrypted_flag(struct iwl_priv *priv,
 	}
 	return 0;
 }
-EXPORT_SYMBOL(iwl_set_decrypted_flag);
+//EXPORT_SYMBOL(iwl_set_decrypted_flag);
 
 static u32 iwl_translate_rx_status(struct iwl_priv *priv, u32 decrypt_in)
 {
@@ -1079,7 +1079,7 @@ void iwl_rx_reply_rx(struct iwl_priv *priv,
 
 	}
 }
-EXPORT_SYMBOL(iwl_rx_reply_rx);
+//EXPORT_SYMBOL(iwl_rx_reply_rx);
 
 /* Cache phy data (Rx signal strength, etc) for HT frame (REPLY_RX_PHY_CMD).
  * This will be used later in iwl_rx_reply_rx() for REPLY_RX_MPDU_CMD. */
@@ -1091,4 +1091,4 @@ void iwl_rx_reply_rx_phy(struct iwl_priv *priv,
 	memcpy(&priv->last_phy_res[1], &(pkt->u.raw[0]),
 	       sizeof(struct iwl_rx_phy_res));
 }
-EXPORT_SYMBOL(iwl_rx_reply_rx_phy);
+//EXPORT_SYMBOL(iwl_rx_reply_rx_phy);

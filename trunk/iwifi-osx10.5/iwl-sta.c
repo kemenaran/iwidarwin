@@ -67,7 +67,7 @@ u8 iwl_find_station(struct iwl_priv *priv, const u8 *addr)
 	spin_unlock_irqrestore(&priv->sta_lock, flags);
 	return ret;
 }
-EXPORT_SYMBOL(iwl_find_station);
+//EXPORT_SYMBOL(iwl_find_station);
 
 int iwl_get_ra_sta_id(struct iwl_priv *priv, struct ieee80211_hdr *hdr)
 {
@@ -78,7 +78,7 @@ int iwl_get_ra_sta_id(struct iwl_priv *priv, struct ieee80211_hdr *hdr)
 		return iwl_find_station(priv, da);
 	}
 }
-EXPORT_SYMBOL(iwl_get_ra_sta_id);
+//EXPORT_SYMBOL(iwl_get_ra_sta_id);
 
 static void iwl_sta_ucode_activate(struct iwl_priv *priv, u8 sta_id)
 {
@@ -177,7 +177,7 @@ int iwl_send_add_sta(struct iwl_priv *priv,
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_send_add_sta);
+//EXPORT_SYMBOL(iwl_send_add_sta);
 
 static void iwl_set_ht_add_station(struct iwl_priv *priv, u8 index,
 				   struct ieee80211_sta_ht_cap *sta_ht_inf)
@@ -299,7 +299,7 @@ u8 iwl_add_station(struct iwl_priv *priv, const u8 *addr, int is_ap, u8 flags,
 	return sta_id;
 
 }
-EXPORT_SYMBOL(iwl_add_station);
+//EXPORT_SYMBOL(iwl_add_station);
 
 static void iwl_sta_ucode_deactivate(struct iwl_priv *priv, const char *addr)
 {
@@ -496,7 +496,7 @@ void iwl_clear_stations_table(struct iwl_priv *priv)
 
 	spin_unlock_irqrestore(&priv->sta_lock, flags);
 }
-EXPORT_SYMBOL(iwl_clear_stations_table);
+//EXPORT_SYMBOL(iwl_clear_stations_table);
 
 int iwl_get_free_ucode_key_index(struct iwl_priv *priv)
 {
@@ -508,7 +508,7 @@ int iwl_get_free_ucode_key_index(struct iwl_priv *priv)
 
 	return WEP_INVALID_OFFSET;
 }
-EXPORT_SYMBOL(iwl_get_free_ucode_key_index);
+//EXPORT_SYMBOL(iwl_get_free_ucode_key_index);
 
 int iwl_send_static_wepkey_cmd(struct iwl_priv *priv, u8 send_if_empty)
 {
@@ -552,7 +552,7 @@ int iwl_send_static_wepkey_cmd(struct iwl_priv *priv, u8 send_if_empty)
 	else
 		return 0;
 }
-EXPORT_SYMBOL(iwl_send_static_wepkey_cmd);
+//EXPORT_SYMBOL(iwl_send_static_wepkey_cmd);
 
 int iwl_remove_default_wep_key(struct iwl_priv *priv,
 			       struct ieee80211_key_conf *keyconf)
@@ -582,7 +582,7 @@ int iwl_remove_default_wep_key(struct iwl_priv *priv,
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_remove_default_wep_key);
+//EXPORT_SYMBOL(iwl_remove_default_wep_key);
 
 int iwl_set_default_wep_key(struct iwl_priv *priv,
 			    struct ieee80211_key_conf *keyconf)
@@ -618,7 +618,7 @@ int iwl_set_default_wep_key(struct iwl_priv *priv,
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_set_default_wep_key);
+//EXPORT_SYMBOL(iwl_set_default_wep_key);
 
 static int iwl_set_wep_dynamic_key_info(struct iwl_priv *priv,
 				struct ieee80211_key_conf *keyconf,
@@ -804,7 +804,7 @@ void iwl_update_tkip_key(struct iwl_priv *priv,
 	spin_unlock_irqrestore(&priv->sta_lock, flags);
 
 }
-EXPORT_SYMBOL(iwl_update_tkip_key);
+//EXPORT_SYMBOL(iwl_update_tkip_key);
 
 int iwl_remove_dynamic_key(struct iwl_priv *priv,
 				struct ieee80211_key_conf *keyconf,
@@ -864,7 +864,7 @@ int iwl_remove_dynamic_key(struct iwl_priv *priv,
 	spin_unlock_irqrestore(&priv->sta_lock, flags);
 	return ret;
 }
-EXPORT_SYMBOL(iwl_remove_dynamic_key);
+//EXPORT_SYMBOL(iwl_remove_dynamic_key);
 
 int iwl_set_dynamic_key(struct iwl_priv *priv,
 				struct ieee80211_key_conf *keyconf, u8 sta_id)
@@ -896,7 +896,7 @@ int iwl_set_dynamic_key(struct iwl_priv *priv,
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_set_dynamic_key);
+//EXPORT_SYMBOL(iwl_set_dynamic_key);
 
 #ifdef CONFIG_IWLWIFI_DEBUG
 static void iwl_dump_lq_cmd(struct iwl_priv *priv,
@@ -943,7 +943,7 @@ int iwl_send_lq_cmd(struct iwl_priv *priv,
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_send_lq_cmd);
+//EXPORT_SYMBOL(iwl_send_lq_cmd);
 
 /**
  * iwl_sta_init_lq - Initialize a station's hardware rate table
@@ -1041,7 +1041,7 @@ int iwl_rxon_add_station(struct iwl_priv *priv, const u8 *addr, int is_ap)
 
 	return sta_id;
 }
-EXPORT_SYMBOL(iwl_rxon_add_station);
+//EXPORT_SYMBOL(iwl_rxon_add_station);
 
 /**
  * iwl_get_sta_id - Find station's index within station table
@@ -1097,7 +1097,7 @@ int iwl_get_sta_id(struct iwl_priv *priv, struct ieee80211_hdr *hdr)
 		return priv->hw_params.bcast_sta_id;
 	}
 }
-EXPORT_SYMBOL(iwl_get_sta_id);
+//EXPORT_SYMBOL(iwl_get_sta_id);
 
 /**
  * iwl_sta_tx_modify_enable_tid - Enable Tx for this TID in station table
@@ -1115,7 +1115,7 @@ void iwl_sta_tx_modify_enable_tid(struct iwl_priv *priv, int sta_id, int tid)
 
 	iwl_send_add_sta(priv, &priv->stations[sta_id].sta, CMD_ASYNC);
 }
-EXPORT_SYMBOL(iwl_sta_tx_modify_enable_tid);
+//EXPORT_SYMBOL(iwl_sta_tx_modify_enable_tid);
 
 int iwl_sta_rx_agg_start(struct iwl_priv *priv,
 			 const u8 *addr, int tid, u16 ssn)
@@ -1138,7 +1138,7 @@ int iwl_sta_rx_agg_start(struct iwl_priv *priv,
 	return iwl_send_add_sta(priv, &priv->stations[sta_id].sta,
 					CMD_ASYNC);
 }
-EXPORT_SYMBOL(iwl_sta_rx_agg_start);
+//EXPORT_SYMBOL(iwl_sta_rx_agg_start);
 
 int iwl_sta_rx_agg_stop(struct iwl_priv *priv, const u8 *addr, int tid)
 {
@@ -1161,7 +1161,7 @@ int iwl_sta_rx_agg_stop(struct iwl_priv *priv, const u8 *addr, int tid)
 	return iwl_send_add_sta(priv, &priv->stations[sta_id].sta,
 					CMD_ASYNC);
 }
-EXPORT_SYMBOL(iwl_sta_rx_agg_stop);
+//EXPORT_SYMBOL(iwl_sta_rx_agg_stop);
 
 static void iwl_sta_modify_ps_wake(struct iwl_priv *priv, int sta_id)
 {

@@ -196,4 +196,4 @@ static void iwl_rx_spectrum_measure_notif(struct iwl_priv *priv,
 	priv->rx_handlers[SPECTRUM_MEASURE_NOTIFICATION] =
 			iwl_rx_spectrum_measure_notif;
 }*/
-EXPORT_SYMBOL(iwl_setup_spectrum_handlers);
+//EXPORT_SYMBOL(iwl_setup_spectrum_handlers);

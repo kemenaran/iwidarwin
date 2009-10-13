@@ -115,7 +115,7 @@ int iwl_txq_update_write_ptr(struct iwl_priv *priv, struct iwl_tx_queue *txq)
 
 	return ret;
 }
-EXPORT_SYMBOL(iwl_txq_update_write_ptr);
+//EXPORT_SYMBOL(iwl_txq_update_write_ptr);
 
 
 /**
@@ -165,7 +165,7 @@ void iwl_tx_queue_free(struct iwl_priv *priv, int txq_id)
 	/* 0-fill queue descriptor structure */
 	memset(txq, 0, sizeof(*txq));
 }
-EXPORT_SYMBOL(iwl_tx_queue_free);
+//EXPORT_SYMBOL(iwl_tx_queue_free);
 
 /**
  * iwl_cmd_queue_free - Deallocate DMA queue.
@@ -206,7 +206,7 @@ void iwl_cmd_queue_free(struct iwl_priv *priv)
 	/* 0-fill queue descriptor structure */
 	memset(txq, 0, sizeof(*txq));
 }
-EXPORT_SYMBOL(iwl_cmd_queue_free);
+//EXPORT_SYMBOL(iwl_cmd_queue_free);
 
 /*************** DMA-QUEUE-GENERAL-FUNCTIONS  *****
  * DMA services
@@ -246,7 +246,7 @@ int iwl_queue_space(const struct iwl_queue *q)
 		s = 0;
 	return s;
 }
-EXPORT_SYMBOL(iwl_queue_space);
+//EXPORT_SYMBOL(iwl_queue_space);
 
 
 /**
@@ -393,7 +393,7 @@ out_free_arrays:
 
 	return -ENOMEM;
 }
-EXPORT_SYMBOL(iwl_tx_queue_init);
+//EXPORT_SYMBOL(iwl_tx_queue_init);
 
 /**
  * iwl_hw_txq_ctx_free - Free TXQ Context
@@ -415,7 +415,7 @@ void iwl_hw_txq_ctx_free(struct iwl_priv *priv)
 
 	iwl_free_dma_ptr(priv, &priv->scd_bc_tbls);
 }
-EXPORT_SYMBOL(iwl_hw_txq_ctx_free);
+//EXPORT_SYMBOL(iwl_hw_txq_ctx_free);
 
 /**
  * iwl_txq_ctx_reset - Reset TX queue context
@@ -503,7 +503,7 @@ void iwl_txq_ctx_stop(struct iwl_priv *priv)
 	/* Deallocate memory for all Tx queues */
 	iwl_hw_txq_ctx_free(priv);
 }
-EXPORT_SYMBOL(iwl_txq_ctx_stop);
+//EXPORT_SYMBOL(iwl_txq_ctx_stop);
 
 /*
  * handle build REPLY_TX command notification.
@@ -941,7 +941,7 @@ drop_unlock:
 	spin_unlock_irqrestore(&priv->lock, flags);
 	return -1;
 }
-EXPORT_SYMBOL(iwl_tx_skb);
+//EXPORT_SYMBOL(iwl_tx_skb);
 
 /*************** HOST COMMAND QUEUE FUNCTIONS   *****/
 
@@ -1094,7 +1094,7 @@ int iwl_tx_queue_reclaim(struct iwl_priv *priv, int txq_id, int index)
 	}
 	return nfreed;
 }
-EXPORT_SYMBOL(iwl_tx_queue_reclaim);
+//EXPORT_SYMBOL(iwl_tx_queue_reclaim);
 
 
 /**
@@ -1184,7 +1184,7 @@ void iwl_tx_cmd_complete(struct iwl_priv *priv, struct iwl_rx_mem_buffer *rxb)
 		wake_up_interruptible(&priv->wait_command_queue);
 	}
 }
-EXPORT_SYMBOL(iwl_tx_cmd_complete);
+//EXPORT_SYMBOL(iwl_tx_cmd_complete);
 
 /*
  * Find first available (lowest unused) Tx Queue, mark it "active".
@@ -1261,7 +1261,7 @@ int iwl_tx_agg_start(struct iwl_priv *priv, const u8 *ra, u16 tid, u16 *ssn)
 	}
 	return ret;
 }
-EXPORT_SYMBOL(iwl_tx_agg_start);
+//EXPORT_SYMBOL(iwl_tx_agg_start);
 
 int iwl_tx_agg_stop(struct iwl_priv *priv , const u8 *ra, u16 tid)
 {
@@ -1322,7 +1322,7 @@ int iwl_tx_agg_stop(struct iwl_priv *priv , const u8 *ra, u16 tid)
 
 	return 0;
 }
-EXPORT_SYMBOL(iwl_tx_agg_stop);
+//EXPORT_SYMBOL(iwl_tx_agg_stop);
 
 int iwl_txq_check_empty(struct iwl_priv *priv, int sta_id, u8 tid, int txq_id)
 {
@@ -1356,7 +1356,7 @@ int iwl_txq_check_empty(struct iwl_priv *priv, int sta_id, u8 tid, int txq_id)
 	}
 	return 0;
 }
-EXPORT_SYMBOL(iwl_txq_check_empty);
+//EXPORT_SYMBOL(iwl_txq_check_empty);
 
 /**
  * iwl_tx_status_reply_compressed_ba - Update tx status from block-ack
@@ -1500,7 +1500,7 @@ void iwl_rx_reply_compressed_ba(struct iwl_priv *priv,
 		iwl_txq_check_empty(priv, sta_id, tid, scd_flow);
 	}
 }
-EXPORT_SYMBOL(iwl_rx_reply_compressed_ba);
+//EXPORT_SYMBOL(iwl_rx_reply_compressed_ba);
 
 #ifdef CONFIG_IWLWIFI_DEBUG
 #define TX_STATUS_ENTRY(x) case TX_STATUS_FAIL_ ## x: return #x
@@ -1530,5 +1530,5 @@ const char *iwl_get_tx_fail_reason(u32 status)
 
 	return "UNKNOWN";
 }
-EXPORT_SYMBOL(iwl_get_tx_fail_reason);
+//EXPORT_SYMBOL(iwl_get_tx_fail_reason);
 #endif /* CONFIG_IWLWIFI_DEBUG */
