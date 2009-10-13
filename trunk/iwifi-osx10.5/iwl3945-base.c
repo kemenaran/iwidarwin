@@ -317,12 +317,12 @@ unsigned int iwl3945_fill_beacon_frame(struct iwl_priv *priv,
 	     (priv->iw_mode != NL80211_IFTYPE_AP)))
 		return 0;
 
-	if (priv->ibss_beacon->len > left)
+	if (skb_len(priv->ibss_beacon) > left)
 		return 0;
 
-	memcpy(hdr, priv->ibss_beacon->data, priv->ibss_beacon->len);
+	memcpy(hdr, skb_data(priv->ibss_beacon), skb_len(priv->ibss_beacon));
 
-	return priv->ibss_beacon->len;
+	return skb_len(priv->ibss_beacon);
 }
 
 static int iwl3945_send_beacon_cmd(struct iwl_priv *priv)
@@ -597,7 +597,7 @@ static int iwl3945_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 	iwl3945_hw_build_tx_cmd_rate(priv, out_cmd, info, hdr, sta_id, 0);
 
 	/* Total # bytes to be transmitted */
-	len = (u16)skb->len;
+	len = (u16)skb_len(skb);
 	tx->len = cpu_to_le16(len);
 
 	iwl_dbg_log_tx_data_frame(priv, len, hdr);
@@ -658,9 +658,9 @@ static int iwl3945_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 
 	/* Set up TFD's 2nd entry to point directly to remainder of skb,
 	 * if any (802.11 null frames have no payload). */
-	len = skb->len - hdr_len;
+	len = skb_len(skb) - hdr_len;
 	if (len) {
-		phys_addr = pci_map_single(priv->pci_dev, (u8*)skb->data + hdr_len,
+		phys_addr = pci_map_single(priv->pci_dev, (u8*)skb_data(skb) + hdr_len,
 					   len, PCI_DMA_TODEVICE);
 		priv->cfg->ops->lib->txq_attach_buf_to_tfd(priv, txq,
 							   phys_addr, len,

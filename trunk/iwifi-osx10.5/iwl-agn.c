@@ -310,12 +310,12 @@ static unsigned int iwl_fill_beacon_frame(struct iwl_priv *priv,
 	     (priv->iw_mode != NL80211_IFTYPE_AP)))
 		return 0;
 
-	if (priv->ibss_beacon->len > left)
+	if (skb_len(priv->ibss_beacon) > left)
 		return 0;
 
-	memcpy(hdr, priv->ibss_beacon->data, priv->ibss_beacon->len);
+	memcpy(hdr, skb_data(priv->ibss_beacon), skb_len(priv->ibss_beacon));
 
-	return priv->ibss_beacon->len;
+	return skb_len(priv->ibss_beacon);
 }
 
 static unsigned int iwl_hw_get_beacon_cmd(struct iwl_priv *priv,

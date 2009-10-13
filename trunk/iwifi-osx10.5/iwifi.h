@@ -305,8 +305,7 @@ class darwin_iwifi : public IOEthernetController
                 
         virtual int outputRaw80211Packet( IO80211Interface * interface, mbuf_t m );
 										
-		virtual int up(void);
-		virtual void down(void);
+
 		
 		static IOReturn powerChangeHandler(void *target, void *refCon, UInt32
             messageType, IOService *service, void *messageArgument,
