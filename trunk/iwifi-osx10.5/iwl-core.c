@@ -2428,8 +2428,7 @@ void iwl_bss_info_changed(struct ieee80211_hw *hw,
 			 *
 			 * XXX: do this in mac80211
 			 */
-			priv->next_scan_jiffies = jiffies +
-					IWL_DELAY_NEXT_SCAN_AFTER_ASSOC;
+			priv->next_scan_jiffies = 					IWL_DELAY_NEXT_SCAN_AFTER_ASSOC;
 			if (!iwl_is_rfkill(priv))
 				priv->cfg->ops->lib->post_associate(priv);
 		} else {

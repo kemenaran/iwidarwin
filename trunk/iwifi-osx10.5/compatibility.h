@@ -24,6 +24,20 @@ struct ieee80211_bss;
 extern "C" {
 #endif
 
+
+void ieee80211_queue_work(struct ieee80211_hw *hw, struct work_struct *work);
+void ieee80211_queue_delayed_work(struct ieee80211_hw *hw,
+				  struct delayed_work *dwork,
+				  unsigned long delay);
+void cfg80211_send_assoc_timeout(struct net_device *dev, const u8 *addr);
+void cfg80211_send_auth_timeout(struct net_device *dev, const u8 *addr);
+void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len);
+void cfg80211_send_disassoc(struct net_device *dev, const u8 *buf, size_t len,
+			    void *cookie);
+const u8 *ieee80211_bss_get_ie(struct cfg80211_bss *bss, u8 ie);
+void cfg80211_send_deauth(struct net_device *dev, const u8 *buf, size_t len,
+			  void *cookie);
+void cfg80211_unlink_bss(struct wiphy *wiphy, struct cfg80211_bss *pub);
 void SET_IEEE80211_PERM_ADDR (	struct ieee80211_hw *  	hw, 	u8 *  	addr);
 void ieee80211_wake_queues(struct ieee80211_hw *hw);
 void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue);
@@ -169,8 +183,20 @@ static inline u8 *bss_mesh_cfg(struct ieee80211_bss *bss)
          return 0;
  }
 
-
-
+static inline void __set_bit(int nr, volatile unsigned long *addr)
+  {
+          unsigned long mask = BIT_MASK(nr);
+          unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
+  
+          *p  |= mask;
+  }
+static inline void __clear_bit(int nr, volatile unsigned long *addr)
+  {
+          unsigned long mask = BIT_MASK(nr);
+          unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
+  
+          *p &= ~mask;
+  }
 
 
 
