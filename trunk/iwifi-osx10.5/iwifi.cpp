@@ -24,6 +24,10 @@ OSDefineMetaClassAndStructors(darwin_iwifi, IOEthernetController);
 extern "C" {
     extern int (*init_routine)();
 	extern int (*init_routine2)();
+	extern int skb_set_data(const struct sk_buff *skb, void *data, size_t len);
+	extern struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw);
+	extern int drv_tx(struct ieee80211_local *local, struct sk_buff *skb);
+	struct sk_buff *dev_alloc_skb(unsigned int length);
 	extern IOPCIDevice* my_pci_device;
 	extern UInt16 my_deviceID;
 	extern int queuetx;
@@ -1622,8 +1626,13 @@ copy_packet:
 		netStats->outputErrors++;
 		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
+	IOLog("outputpacket2\n");
+	struct ieee80211_local *local=hw_to_local(get_my_hw());
+	if (!local) return kIOReturnOutputSuccess;
+	struct sk_buff *skb=dev_alloc_skb(mbuf_len(m));
+	skb_set_data(skb,mbuf_data(m),mbuf_len(m));
+	drv_tx(local,skb);
 	
-
 finish:	
 	//spin_unlock_irqrestore(spin, flags);
 

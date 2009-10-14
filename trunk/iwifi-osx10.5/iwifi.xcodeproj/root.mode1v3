@@ -265,17 +265,16 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateExpansionKey</key>
 							<array>
 								<string>089C166AFE841209C02AAC07</string>
-								<string>61BED3B210846FDE002D7F97</string>
-								<string>61BED3AB10846FD2002D7F97</string>
 								<string>247142CAFF3F8F9811CA285C</string>
+								<string>61BED3B210846FDE002D7F97</string>
 								<string>089C167CFE841241C02AAC07</string>
 								<string>1C37FBAC04509CD000000102</string>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>15</integer>
-									<integer>13</integer>
+									<integer>6</integer>
+									<integer>1</integer>
 									<integer>0</integer>
 								</array>
 							</array>
@@ -317,7 +316,7 @@
 								<key>PBXProjectModuleGUID</key>
 								<string>1CE0B20306471E060097A5F4</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>compatibility.cpp</string>
+								<string>iwifi.cpp</string>
 								<key>PBXSplitModuleInNavigatorKey</key>
 								<dict>
 									<key>Split0</key>
@@ -325,11 +324,11 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CE0B20406471E060097A5F4</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>compatibility.cpp</string>
+										<string>iwifi.cpp</string>
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61276F1B10857EF2007776C0</string>
+										<string>614F71921085B221007851AA</string>
 										<key>history</key>
 										<array>
 											<string>617B2C7A108488B400A784D6</string>
@@ -340,19 +339,21 @@
 											<string>61EDC89F10851C5E00E778E5</string>
 											<string>61EDC9711085245600E778E5</string>
 											<string>6121F94D10852D7B007E5875</string>
-											<string>6151FEB1108530960089554D</string>
-											<string>61DDDA9D1085526C00C71924</string>
 											<string>61DDDA9E1085526C00C71924</string>
 											<string>61DDDB6810855E3300C71924</string>
-											<string>61DDDB8A1085610E00C71924</string>
 											<string>61DDDB9F108562BC00C71924</string>
-											<string>61DDDBB11085645300C71924</string>
-											<string>61DDDBCA108569E800C71924</string>
 											<string>61FA448310857851000C5251</string>
 											<string>61FA448510857851000C5251</string>
 											<string>61FA44A610857ACB000C5251</string>
-											<string>61FA44A710857ACB000C5251</string>
-											<string>61276F1A10857EF2007776C0</string>
+											<string>61A421BC1085930C006BCE31</string>
+											<string>61A421D710859529006BCE31</string>
+											<string>61A422241085A1C2006BCE31</string>
+											<string>61A422311085A26B006BCE31</string>
+											<string>61A4226B1085A6F7006BCE31</string>
+											<string>61A4228C1085AC24006BCE31</string>
+											<string>61A422DD1085B18C006BCE31</string>
+											<string>61A422DE1085B18C006BCE31</string>
+											<string>61A422ED1085B1CE006BCE31</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -384,6 +385,8 @@
 											<string>61DDDB17108559A600C71924</string>
 											<string>61FA448C10857851000C5251</string>
 											<string>61FA44A910857ACB000C5251</string>
+											<string>61A421DA10859529006BCE31</string>
+											<string>61A422271085A1C2006BCE31</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -441,9 +444,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61276F1C10857EF2007776C0</string>
+				<string>614F718F1085B1FA007851AA</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61276F1D10857EF2007776C0</string>
+				<string>614F71901085B1FA007851AA</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -576,7 +579,6 @@
 	<key>WindowOrderList</key>
 	<array>
 		<string>61846FE110844EC300792CDB</string>
-		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>/var/root/svn/trunk/iwifi-osx10.5/iwifi.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -657,7 +659,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61846FE110844EC300792CDB</string>
-				<string>61276F1E10857EF2007776C0</string>
+				<string>614F71911085B1FA007851AA</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -853,8 +855,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61276F1F10857EF2007776C0</string>
-				<string>61276F2010857EF2007776C0</string>
+				<string>61A422D81085B0DD006BCE31</string>
+				<string>61A422D91085B0DD006BCE31</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>
