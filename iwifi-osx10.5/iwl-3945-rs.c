@@ -672,7 +672,7 @@ static void rs_get_rate(void *priv_r, struct ieee80211_sta *sta,
 	u32 fail_count;
 	s8 scale_action = 0;
 	unsigned long flags;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	u16 rate_mask = sta ? sta->supp_rates[sband->band] : 0;
 	s8 max_rate_idx = -1;
 	struct iwl_priv *priv = (struct iwl_priv *)priv_r;

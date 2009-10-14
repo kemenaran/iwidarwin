@@ -698,7 +698,7 @@ static void iwl_tx_cmd_build_hwcrypto(struct iwl_priv *priv,
  */
 int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 {
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
 	struct iwl_tx_queue *txq;
 	struct iwl_queue *q;
@@ -878,7 +878,7 @@ int iwl_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 	 * if any (802.11 null frames have no payload). */
 	secondlen = len = skb_len(skb) - hdr_len;
 	if (len) {
-		phys_addr = pci_map_single(priv->pci_dev, (u8*)skb->mac_data + hdr_len,
+		phys_addr = pci_map_single(priv->pci_dev, (u8*)skb_data(skb) + hdr_len,
 					   len, PCI_DMA_TODEVICE);
 		priv->cfg->ops->lib->txq_attach_buf_to_tfd(priv, txq,
 							   phys_addr, len,
@@ -1145,7 +1145,7 @@ static void iwl_hcmd_queue_reclaim(struct iwl_priv *priv, int txq_id,
  */
 void iwl_tx_cmd_complete(struct iwl_priv *priv, struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	u16 sequence = le16_to_cpu(pkt->hdr.sequence);
 	int txq_id = SEQ_TO_QUEUE(sequence);
 	int index = SEQ_TO_INDEX(sequence);
@@ -1434,7 +1434,7 @@ static int iwl_tx_status_reply_compressed_ba(struct iwl_priv *priv,
 void iwl_rx_reply_compressed_ba(struct iwl_priv *priv,
 					   struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	struct iwl_compressed_ba_resp *ba_resp = &pkt->u.compressed_ba;
 	struct iwl_tx_queue *txq = NULL;
 	struct iwl_ht_agg *agg;

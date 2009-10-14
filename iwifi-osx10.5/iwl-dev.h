@@ -1287,8 +1287,7 @@ static inline struct ieee80211_hdr *iwl_tx_queue_get_hdr(struct iwl_priv *priv,
 							 int txq_id, int idx)
 {
 	if (priv->txq[txq_id].txb[idx].skb[0])
-		return (struct ieee80211_hdr *)priv->txq[txq_id].
-				txb[idx].skb[0]->mac_data;
+		return (struct ieee80211_hdr *)skb_data(priv->txq[txq_id].txb[idx].skb[0]);
 	return NULL;
 }
 

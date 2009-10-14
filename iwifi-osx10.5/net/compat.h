@@ -4,6 +4,7 @@
 #include <IOKit/pccard/k_compat.h>
 #include <IOKit/IOLocks.h>
 
+
 #include <net/if_var.h>
 #include <sys/vm.h>
 #include <sys/param.h>
@@ -22,6 +23,7 @@
 #include <sys/sockio.h>
 #include <sys/malloc.h>
 #include <sys/queue.h>
+
 
 
 typedef signed char s8;
@@ -166,6 +168,8 @@ struct kobject {
 };
 
 struct device {
+	char			name[IFNAMSIZ];
+	struct device *parent;
     struct kobject kobj; // Device of type IOPCIDevice.
     void *driver_data;
 };
@@ -1009,7 +1013,7 @@ struct ieee80211_radiotap_header {
 };
 
 #define might_sleep()
-
+#define msleep(x) IODelay(x)
 
 #define IEEE80211_STA_REQ_SCAN 0
 #define IEEE80211_STA_REQ_AUTH 1

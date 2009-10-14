@@ -16,8 +16,10 @@ struct ieee80211_vif;
 struct ieee80211_bss;
 struct cfg80211_bss;
 struct net_device;
+struct cfg80211_scan_request;
 
-#include "net/compat.h"
+
+
 #include "net/mac80211.h"
 
 
@@ -37,6 +39,7 @@ void ieee80211_queue_work(struct ieee80211_hw *hw, struct work_struct *work);
 void ieee80211_queue_delayed_work(struct ieee80211_hw *hw,
 				  struct delayed_work *dwork,
 				  unsigned long delay);
+void cfg80211_scan_done(struct cfg80211_scan_request *request, bool aborted);
 void cfg80211_send_assoc_timeout(struct net_device *dev, const u8 *addr);
 void cfg80211_send_auth_timeout(struct net_device *dev, const u8 *addr);
 void cfg80211_send_rx_assoc(struct net_device *dev, const u8 *buf, size_t len);
@@ -52,7 +55,7 @@ void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue);
 void ieee80211_unregister_hw(struct ieee80211_hw *hw);
  void ieee80211_tx_status_irqsafe(struct ieee80211_hw *hw,
 				 struct sk_buff *skb);
-void ieee80211_scan_completed(struct ieee80211_hw *hw, int aborted);
+void ieee80211_scan_completed(struct ieee80211_hw *hw, bool aborted);
 void ieee80211_rx_irqsafe(struct ieee80211_hw *hw, struct sk_buff *skb);
 void ieee80211_stop_tx_ba_cb_irqsafe(struct ieee80211_hw *hw, const u8 *ra,
 				     u16 tid);
@@ -206,7 +209,46 @@ static inline void __clear_bit(int nr, volatile unsigned long *addr)
           *p &= ~mask;
   }
 
+#define BITMAP_LAST_WORD_MASK(nbits)                                    \
+ (                                                                       \
+         ((nbits) % BITS_PER_LONG) ?                                     \
+                 (1UL<<((nbits) % BITS_PER_LONG))-1 : ~0UL               \
+ )
 
+#define small_const_nbits(nbits) \
+         (__builtin_constant_p(nbits) && (nbits) <= BITS_PER_LONG)
+
+static inline int __bitmap_empty(const unsigned long *bitmap, int bits)
+  {
+          int k, lim = bits/BITS_PER_LONG;
+          for (k = 0; k < lim; ++k)
+                  if (bitmap[k])
+                          return 0;
+  
+          if (bits % BITS_PER_LONG)
+                  if (bitmap[k] & BITMAP_LAST_WORD_MASK(bits))
+                          return 0;
+  
+          return 1;
+  }
+ 
+static inline int bitmap_empty(const unsigned long *src, int nbits)
+ {
+         if (small_const_nbits(nbits))
+                 return ! (*src & BITMAP_LAST_WORD_MASK(nbits));
+         else
+                 return __bitmap_empty(src, nbits);
+ }
+ 
+ static inline int is_zero_ether_addr(const u8 *addr)
+  {
+          return !(addr[0] | addr[1] | addr[2] | addr[3] | addr[4] | addr[5]);
+  }
+ 
+ 
+ 
+ 
+ 
 
 
 

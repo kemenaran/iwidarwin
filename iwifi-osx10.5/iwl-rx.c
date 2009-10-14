@@ -287,7 +287,7 @@ void iwl_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 		/* Get physical address of RB/SKB */
 		rxb->real_dma_addr = pci_map_single(
 					priv->pci_dev,
-					rxb->skb->mac_data,
+					skb_data(rxb->skb),
 					priv->hw_params.rx_buf_size + 256,
 					PCI_DMA_FROMDEVICE);
 		/* dma address must be no more than 36 bits */
@@ -491,7 +491,7 @@ void iwl_rx_missed_beacon_notif(struct iwl_priv *priv,
 				struct iwl_rx_mem_buffer *rxb)
 
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	struct iwl_missed_beacon_notif *missed_beacon;
 
 	missed_beacon = &pkt->u.missed_beacon;
@@ -554,7 +554,7 @@ void iwl_rx_statistics(struct iwl_priv *priv,
 			      struct iwl_rx_mem_buffer *rxb)
 {
 	int change;
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 
 	IWL_DEBUG_RX(priv, "Statistics notification received (%d vs %d).\n",
 		     (int)sizeof(priv->statistics),
@@ -890,7 +890,7 @@ static void iwl_pass_packet_to_mac80211(struct iwl_priv *priv,
 		return;
 
 	/* Resize SKB from mac header to end of packet */
-	skb_reserve(rxb->skb, (void *)hdr - (void *)rxb->skb->mac_data);
+	skb_reserve(rxb->skb, (void *)hdr - (void *)skb_data(rxb->skb));
 	skb_put(rxb->skb, len);
 
 	iwl_update_stats(priv, false, hdr->frame_control, len);
@@ -925,7 +925,7 @@ void iwl_rx_reply_rx(struct iwl_priv *priv,
 {
 	struct ieee80211_hdr *header;
 	struct ieee80211_rx_status rx_status;
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	struct iwl_rx_phy_res *phy_res;
 	__le32 rx_pkt_status;
 	struct iwl4965_rx_mpdu_res_start *amsdu;
@@ -1086,7 +1086,7 @@ void iwl_rx_reply_rx(struct iwl_priv *priv,
 void iwl_rx_reply_rx_phy(struct iwl_priv *priv,
 				    struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	priv->last_phy_res[0] = 1;
 	memcpy(&priv->last_phy_res[1], &(pkt->u.raw[0]),
 	       sizeof(struct iwl_rx_phy_res));

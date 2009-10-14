@@ -1482,6 +1482,11 @@ static inline bool ieee80211_check_tim(struct ieee80211_tim_ie *tim,
 	return !!(tim->virtual_map[index] & mask);
 }
 
-
+enum {
+	IEEE80211_RX_MSG	= 1,
+	IEEE80211_TX_STATUS_MSG	= 2,
+	IEEE80211_DELBA_MSG	= 3,
+	IEEE80211_ADDBA_MSG	= 4,
+};
 
 #endif /* LINUX_IEEE80211_H */

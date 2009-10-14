@@ -3219,5 +3219,145 @@ struct cfg80211_internal_bss {
 
 
 
+enum rfkill_type {
+          RFKILL_TYPE_ALL = 0,
+          RFKILL_TYPE_WLAN,
+          RFKILL_TYPE_BLUETOOTH,
+          RFKILL_TYPE_UWB,
+          RFKILL_TYPE_WIMAX,
+          RFKILL_TYPE_WWAN,
+          RFKILL_TYPE_GPS,
+          NUM_RFKILL_TYPES,
+  };
+ 
+struct rfkill {
+          spinlock_t              lock;
+  
+          const char              *name;
+          enum rfkill_type        type;
+  
+          unsigned long           state;
+  
+          u32                     idx;
+  
+          bool                    registered;
+          bool                    persistent;
+  
+          const struct rfkill_ops *ops;
+          void                    *data;
+  
+  #ifdef CONFIG_RFKILL_LEDS
+          struct led_trigger      led_trigger;
+          const char              *ledtrigname;
+ #endif
+  
+          struct device           dev;
+          struct list_head        node;
+  
+          struct delayed_work     poll_work;
+          struct work_struct      uevent_work;
+          struct work_struct      sync_work;
+  };
+ 
+ struct rfkill_ops {
+         void    (*poll)(struct rfkill *rfkill, void *data);
+         void    (*query)(struct rfkill *rfkill, void *data);
+         int     (*set_block)(void *data, bool blocked);
+ };
+ 
+ struct rb_root
+ {
+         struct rb_node *rb_node;
+ };
+
+enum environment_cap {
+          ENVIRON_ANY,
+          ENVIRON_INDOOR,
+          ENVIRON_OUTDOOR,
+  };
+ 
+struct cfg80211_registered_device {
+          const struct cfg80211_ops *ops;
+          struct list_head list;
+          /* we hold this mutex during any call so that
+           * we cannot do multiple calls at once, and also
+           * to avoid the deregister call to proceed while
+           * any call is in progress */
+          struct mutex mtx;
+  
+          /* rfkill support */
+          struct rfkill_ops rfkill_ops;
+          struct rfkill *rfkill;
+          struct work_struct rfkill_sync;
+  
+          /* ISO / IEC 3166 alpha2 for which this device is receiving
+           * country IEs on, this can help disregard country IEs from APs
+           * on the same alpha2 quickly. The alpha2 may differ from
+           * cfg80211_regdomain's alpha2 when an intersection has occurred.
+           * If the AP is reconfigured this can also be used to tell us if
+           * the country on the country IE changed. */
+          char country_ie_alpha2[2];
+  
+          /* If a Country IE has been received this tells us the environment
+           * which its telling us its in. This defaults to ENVIRON_ANY */
+          enum environment_cap env;
+  
+          /* wiphy index, internal only */
+          int wiphy_idx;
+ 
+          /* associate netdev list */
+          struct mutex devlist_mtx;
+          struct list_head netdev_list;
+          int devlist_generation;
+          int opencount; /* also protected by devlist_mtx */
+          wait_queue_head_t dev_wait;
+ 
+          /* BSSes/scanning */
+          spinlock_t bss_lock;
+          struct list_head bss_list;
+          struct rb_root bss_tree;
+          u32 bss_generation;
+          struct cfg80211_scan_request *scan_req; /* protected by RTNL */
+          unsigned long suspend_at;
+          struct work_struct scan_done_wk;
+  
+  #ifdef CONFIG_NL80211_TESTMODE
+          struct genl_info *testmode_info;
+  #endif
+  
+          struct work_struct conn_work;
+          struct work_struct event_work;
+  
+          /* current channel */
+          struct ieee80211_channel *channel;
+  
+  #ifdef CONFIG_CFG80211_DEBUGFS
+          /* Debugfs entries */
+          struct wiphy_debugfsdentries {
+                 struct dentry *rts_threshold;
+                 struct dentry *fragmentation_threshold;
+                  struct dentry *short_retry_limit;
+                 struct dentry *long_retry_limit;
+                 struct dentry *ht40allow_map;
+          } debugfs;
+  #endif
+ 
+         /* must be last because of the way we do wiphy_priv(),
+           * and it should at least be aligned to NETDEV_ALIGN */
+          struct wiphy wiphy __attribute__((__aligned__(NETDEV_ALIGN)));
+  };
+ 
+ struct reg_beacon {
+          struct list_head list;
+          struct ieee80211_channel chan;
+  };
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 
 #endif /* MAC80211_H */

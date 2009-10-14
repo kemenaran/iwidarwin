@@ -1238,7 +1238,7 @@ static inline struct wiphy *priv_to_wiphy(void *priv)
  */
 static inline void set_wiphy_dev(struct wiphy *wiphy, struct device *dev)
 {
-	//wiphy->dev.parent = dev;
+	wiphy->dev.parent = dev;
 }
 
 /**
@@ -1248,7 +1248,7 @@ static inline void set_wiphy_dev(struct wiphy *wiphy, struct device *dev)
  */
 static inline struct device *wiphy_dev(struct wiphy *wiphy)
 {
-	return NULL;//wiphy->dev.parent;
+	return wiphy->dev.parent;
 }
 
 /**
@@ -1258,7 +1258,7 @@ static inline struct device *wiphy_dev(struct wiphy *wiphy)
  */
 static inline const char *wiphy_name(struct wiphy *wiphy)
 {
-	return NULL;//dev_name(&wiphy->dev);
+	return wiphy->dev.name;//dev_name(&wiphy->dev);
 }
 
 /**
@@ -1386,6 +1386,9 @@ static inline void *wdev_priv(struct wireless_dev *wdev)
 	return NULL;//wiphy_priv(wdev->wiphy);
 }
 
+#define SET_NETDEV_DEV(net, pdev)       ((net)->dev.parent = (pdev))
+//#define SET_NETDEV_DEVTYPE(net, devtype)        ((net)->dev.type = (devtype))
+
 /*
  * Utility functions
  */
@@ -1407,16 +1410,7 @@ static inline void *wdev_priv(struct wireless_dev *wdev)
  * to include both header files you'll (rightfully!) get a symbol
  * clash.
  */
-extern struct ieee80211_channel *__ieee80211_get_channel(struct wiphy *wiphy,
-							 int freq);
-/**
- * ieee80211_get_channel - get channel struct from wiphy for specified frequency
- */
-static inline struct ieee80211_channel *
-ieee80211_get_channel(struct wiphy *wiphy, int freq)
-{
-	return __ieee80211_get_channel(wiphy, freq);
-}
+
 
 /**
  * ieee80211_get_response_rate - get basic rate for a given rate
@@ -1707,7 +1701,7 @@ int cfg80211_wext_giwap(struct net_device *dev,
  * @aborted: set to true if the scan was aborted for any reason,
  *	userspace will be notified of that
  */
-void cfg80211_scan_done(struct cfg80211_scan_request *request, int aborted);
+
 
 /**
  * cfg80211_inform_bss - inform cfg80211 of a new BSS
