@@ -524,7 +524,7 @@ int iwl_hw_tx_queue_init(struct iwl_priv *priv,
 static void iwl_rx_reply_alive(struct iwl_priv *priv,
 				struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	struct iwl_alive_resp *palive;
 	struct delayed_work *pwork;
 
@@ -610,7 +610,7 @@ static void iwl_rx_beacon_notif(struct iwl_priv *priv,
 				struct iwl_rx_mem_buffer *rxb)
 {
 #ifdef CONFIG_IWLWIFI_DEBUG
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	struct iwl4965_beacon_notif *beacon =
 		(struct iwl4965_beacon_notif *)pkt->u.raw;
 	u8 rate = iwl_hw_get_rate(beacon->beacon_notify_hdr.rate_n_flags);
@@ -634,7 +634,7 @@ static void iwl_rx_beacon_notif(struct iwl_priv *priv,
 static void iwl_rx_card_state_notif(struct iwl_priv *priv,
 				    struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	u32 flags = le32_to_cpu(pkt->u.card_state_notif.flags);
 	unsigned long status = priv->status;
 
@@ -789,7 +789,7 @@ void iwl_rx_handle(struct iwl_priv *priv)
 		pci_unmap_single(priv->pci_dev, rxb->real_dma_addr,
 				 priv->hw_params.rx_buf_size + 256,
 				 PCI_DMA_FROMDEVICE);
-		pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+		pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 
 	//	trace_iwlwifi_dev_rx(priv, pkt,
 	//		le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK);

@@ -468,7 +468,7 @@ static void iwl3945_build_tx_cmd_basic(struct iwl_priv *priv,
  */
 static int iwl3945_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 {
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
 	struct iwl3945_tx_cmd *tx;
 	struct iwl_tx_queue *txq = NULL;
@@ -799,7 +799,7 @@ static int iwl3945_get_measurement(struct iwl_priv *priv,
 	if (rc)
 		return rc;
 
-	res = (struct iwl_rx_packet *)cmd.reply_skb->mac_data;
+	res = (struct iwl_rx_packet *)skb_data(cmd.reply_skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERR(priv, "Bad return from REPLY_RX_ON_ASSOC command\n");
 		rc = -EIO;
@@ -831,7 +831,7 @@ static int iwl3945_get_measurement(struct iwl_priv *priv,
 static void iwl3945_rx_reply_alive(struct iwl_priv *priv,
 			       struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (void *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl_alive_resp *palive;
 	struct delayed_work *pwork;
 
@@ -868,7 +868,7 @@ static void iwl3945_rx_reply_add_sta(struct iwl_priv *priv,
 				 struct iwl_rx_mem_buffer *rxb)
 {
 #ifdef CONFIG_IWLWIFI_DEBUG
-	struct iwl_rx_packet *pkt = (void *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (void *)skb_data(rxb->skb);
 #endif
 
 	IWL_DEBUG_RX(priv, "Received REPLY_ADD_STA: 0x%02X\n", pkt->u.status);
@@ -904,7 +904,7 @@ static void iwl3945_rx_beacon_notif(struct iwl_priv *priv,
 				struct iwl_rx_mem_buffer *rxb)
 {
 #ifdef CONFIG_IWLWIFI_DEBUG
-	struct iwl_rx_packet *pkt = (void *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl3945_beacon_notif *beacon = &(pkt->u.beacon_status);
 	u8 rate = beacon->beacon_notify_hdr.rate;
 
@@ -927,7 +927,7 @@ static void iwl3945_rx_beacon_notif(struct iwl_priv *priv,
 static void iwl3945_rx_card_state_notif(struct iwl_priv *priv,
 				    struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (void *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	u32 flags = le32_to_cpu(pkt->u.card_state_notif.flags);
 	unsigned long status = priv->status;
 
@@ -1184,7 +1184,7 @@ static void iwl3945_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 
 		/* Get physical address of RB/SKB */
 		rxb->real_dma_addr = pci_map_single(priv->pci_dev,
-						rxb->skb->mac_data,
+						skb_data(rxb->skb),
 						priv->hw_params.rx_buf_size,
 						PCI_DMA_FROMDEVICE);
 
@@ -1400,7 +1400,7 @@ static void iwl3945_rx_handle(struct iwl_priv *priv)
 		pci_unmap_single(priv->pci_dev, rxb->real_dma_addr,
 				priv->hw_params.rx_buf_size,
 				PCI_DMA_FROMDEVICE);
-		pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+		pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 
 	//	trace_iwlwifi_dev_rx(priv, pkt,
 	//		le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK);

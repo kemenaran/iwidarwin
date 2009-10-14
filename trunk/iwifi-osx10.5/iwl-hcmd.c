@@ -113,7 +113,7 @@ static void iwl_generic_cmd_callback(struct iwl_priv *priv,
 		return;
 	}
 
-	pkt = (struct iwl_rx_packet *)skb->mac_data;
+	pkt = (struct iwl_rx_packet *)skb_data(skb);
 	if (pkt->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERR(priv, "Bad return from %s (0x%08X)\n",
 			get_cmd_string(cmd->hdr.cmd), pkt->hdr.flags);

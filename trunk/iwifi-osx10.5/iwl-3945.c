@@ -293,7 +293,7 @@ static void iwl3945_tx_queue_reclaim(struct iwl_priv *priv,
 static void iwl3945_rx_reply_tx(struct iwl_priv *priv,
 			    struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (void *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	u16 sequence = le16_to_cpu(pkt->hdr.sequence);
 	int txq_id = SEQ_TO_QUEUE(sequence);
 	int index = SEQ_TO_INDEX(sequence);
@@ -353,7 +353,7 @@ static void iwl3945_rx_reply_tx(struct iwl_priv *priv,
 void iwl3945_hw_rx_statistics(struct iwl_priv *priv,
 		struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (void *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	IWL_DEBUG_RX(priv, "Statistics notification received (%d vs %d).\n",
 		     (int)sizeof(struct iwl3945_notif_statistics),
 		     le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK);
@@ -545,7 +545,7 @@ static void iwl3945_pass_packet_to_mac80211(struct iwl_priv *priv,
 				   struct iwl_rx_mem_buffer *rxb,
 				   struct ieee80211_rx_status *stats)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)IWL_RX_DATA(pkt);
 	struct iwl3945_rx_frame_hdr *rx_hdr = IWL_RX_HDR(pkt);
 	struct iwl3945_rx_frame_end *rx_end = IWL_RX_END(pkt);
@@ -570,7 +570,7 @@ static void iwl3945_pass_packet_to_mac80211(struct iwl_priv *priv,
 
 	if (!iwl3945_mod_params.sw_crypto)
 		iwl_set_decrypted_flag(priv,
-				       (struct ieee80211_hdr *)rxb->skb->mac_data,
+				       (struct ieee80211_hdr *)skb_data(rxb->skb),
 				       le32_to_cpu(rx_end->status), stats);
 
 	iwl_update_stats(priv, false, hdr->frame_control, len);
@@ -587,7 +587,7 @@ static void iwl3945_rx_reply_rx(struct iwl_priv *priv,
 {
 	struct ieee80211_hdr *header;
 	struct ieee80211_rx_status rx_status;
-	struct iwl_rx_packet *pkt = (void *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl3945_rx_frame_stats *rx_stats = IWL_RX_STATS(pkt);
 	struct iwl3945_rx_frame_hdr *rx_hdr = IWL_RX_HDR(pkt);
 	struct iwl3945_rx_frame_end *rx_end = IWL_RX_END(pkt);
@@ -1846,7 +1846,7 @@ static int iwl3945_send_rxon_assoc(struct iwl_priv *priv)
 	if (rc)
 		return rc;
 
-	res = (struct iwl_rx_packet *)cmd.reply_skb->mac_data;
+	res = (struct iwl_rx_packet *)skb_data(cmd.reply_skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERR(priv, "Bad return from REPLY_RXON_ASSOC command\n");
 		rc = -EIO;

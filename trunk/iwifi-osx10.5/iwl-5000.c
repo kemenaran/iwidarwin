@@ -459,7 +459,7 @@ static int iwl5000_send_calib_cfg(struct iwl_priv *priv)
 static void iwl5000_rx_calib_result(struct iwl_priv *priv,
 			     struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (void *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (void *)skb_data(rxb->skb);
 	struct iwl_calib_hdr *hdr = (struct iwl_calib_hdr *)pkt->u.raw;
 	int len = le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK;
 	int index;
@@ -1177,7 +1177,7 @@ static int iwl5000_tx_status_reply_tx(struct iwl_priv *priv,
 static void iwl5000_rx_reply_tx(struct iwl_priv *priv,
 				struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	u16 sequence = le16_to_cpu(pkt->hdr.sequence);
 	int txq_id = SEQ_TO_QUEUE(sequence);
 	int index = SEQ_TO_INDEX(sequence);

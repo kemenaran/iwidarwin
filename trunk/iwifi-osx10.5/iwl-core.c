@@ -1264,7 +1264,7 @@ static void iwl_set_rate(struct iwl_priv *priv)
 
 void iwl_rx_csa(struct iwl_priv *priv, struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	struct iwl_rxon_cmd *rxon = (void *)&priv->active_rxon;
 	struct iwl_csa_notification *csa = &(pkt->u.csa_notif);
 	IWL_DEBUG_11H(priv, "CSA notif: channel %d, status %d\n",
@@ -2160,7 +2160,7 @@ void iwl_rx_pm_sleep_notif(struct iwl_priv *priv,
 			   struct iwl_rx_mem_buffer *rxb)
 {
 #ifdef CONFIG_IWLWIFI_DEBUG
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	struct iwl_sleep_notification *sleep = &(pkt->u.sleep_notif);
 	IWL_DEBUG_RX(priv, "sleep mode: %d, src: %d\n",
 		     sleep->pm_sleep_mode, sleep->pm_wakeup_src);
@@ -2171,7 +2171,7 @@ void iwl_rx_pm_sleep_notif(struct iwl_priv *priv,
 void iwl_rx_pm_debug_statistics_notif(struct iwl_priv *priv,
 				      struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 	u32 len = le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK;
 	IWL_DEBUG_RADIO(priv, "Dumping %d bytes of unhandled "
 			"notification for %s:\n", len,
@@ -2183,7 +2183,7 @@ void iwl_rx_pm_debug_statistics_notif(struct iwl_priv *priv,
 void iwl_rx_reply_error(struct iwl_priv *priv,
 			struct iwl_rx_mem_buffer *rxb)
 {
-	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb->skb->mac_data;
+	struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)skb_data(rxb->skb);
 
 	IWL_ERR(priv, "Error Reply type 0x%08X cmd %s (0x%02X) "
 		"seq 0x%04X ser 0x%08X\n",
@@ -2481,7 +2481,7 @@ int iwl_mac_beacon_update(struct ieee80211_hw *hw, struct sk_buff *skb)
 	priv->ibss_beacon = skb;
 
 	priv->assoc_id = 0;
-	timestamp = ((struct ieee80211_mgmt *)skb->mac_data)->u.beacon.timestamp;
+	timestamp = ((struct ieee80211_mgmt *)skb_data(skb))->u.beacon.timestamp;
 	priv->timestamp = le64_to_cpu(timestamp);
 
 	IWL_DEBUG_MAC80211(priv, "leave\n");

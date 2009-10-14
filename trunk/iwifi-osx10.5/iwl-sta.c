@@ -111,7 +111,7 @@ static void iwl_add_sta_callback(struct iwl_priv *priv,
 		return;
 	}
 
-	res = (struct iwl_rx_packet *)skb->mac_data;
+	res = (struct iwl_rx_packet *)skb_data(skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERR(priv, "Bad return from REPLY_ADD_STA (0x%08X)\n",
 			  res->hdr.flags);
@@ -152,7 +152,7 @@ int iwl_send_add_sta(struct iwl_priv *priv,
 	if (ret || (flags & CMD_ASYNC))
 		return ret;
 
-	res = (struct iwl_rx_packet *)cmd.reply_skb->mac_data;
+	res = (struct iwl_rx_packet *)skb_data(cmd.reply_skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERR(priv, "Bad return from REPLY_ADD_STA (0x%08X)\n",
 			  res->hdr.flags);
@@ -336,7 +336,7 @@ static void iwl_remove_sta_callback(struct iwl_priv *priv,
 		return;
 	}
 
-	res = (struct iwl_rx_packet *)skb->mac_data;
+	res = (struct iwl_rx_packet *)skb_data(skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERR(priv, "Bad return from REPLY_REMOVE_STA (0x%08X)\n",
 		res->hdr.flags);
@@ -381,7 +381,7 @@ static int iwl_send_remove_station(struct iwl_priv *priv, const u8 *addr,
 	if (ret || (flags & CMD_ASYNC))
 		return ret;
 
-	res = (struct iwl_rx_packet *)cmd.reply_skb->mac_data;
+	res = (struct iwl_rx_packet *)skb_data(cmd.reply_skb);
 	if (res->hdr.flags & IWL_CMD_FAILED_MSK) {
 		IWL_ERR(priv, "Bad return from REPLY_REMOVE_STA (0x%08X)\n",
 			  res->hdr.flags);

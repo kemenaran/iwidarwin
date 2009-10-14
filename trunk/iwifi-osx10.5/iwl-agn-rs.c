@@ -848,7 +848,7 @@ static void rs_tx_status(void *priv_r, struct ieee80211_supported_band *sband,
 	int rs_index, mac_index, i;
 	struct iwl_lq_sta *lq_sta = priv_sta;
 	struct iwl_link_quality_cmd *table;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	struct iwl_priv *priv = (struct iwl_priv *)priv_r;
 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
 	struct iwl_rate_scale_data *window = NULL;
@@ -2022,7 +2022,7 @@ static void rs_rate_scale_perform(struct iwl_priv *priv,
 	struct ieee80211_hw *hw = priv->hw;
 	struct ieee80211_conf *conf = &hw->conf;
 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	int low = IWL_RATE_INVALID;
 	int high = IWL_RATE_INVALID;
 	int index;
@@ -2495,7 +2495,7 @@ static void rs_get_rate(void *priv_r, struct ieee80211_sta *sta, void *priv_sta,
 	struct iwl_priv *priv = (struct iwl_priv *)priv_r;
 	struct ieee80211_conf *conf = &priv->hw->conf;
 	struct ieee80211_sta_ht_cap *ht_cap = &sta->ht_cap;
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->mac_data;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb_data(skb);
 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
 	struct iwl_lq_sta *lq_sta = priv_sta;
 	int rate_idx;
