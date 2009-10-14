@@ -3353,7 +3353,26 @@ struct cfg80211_registered_device {
   };
  
  
+ struct ieee80211_ra_tid {
+         u8 ra[ETH_ALEN];
+         u16 tid;
+ };
+
+struct ieee80211_key;
+
+struct ieee80211_tx_data {
+         struct sk_buff *skb;
+         struct net_device *dev;
+         struct ieee80211_local *local;
+         struct ieee80211_sub_if_data *sdata;
+         struct sta_info *sta;
+         struct ieee80211_key *key;
  
+         struct ieee80211_channel *channel;
+ 
+         u16 ethertype;
+         unsigned int flags;
+ };
  
  
  

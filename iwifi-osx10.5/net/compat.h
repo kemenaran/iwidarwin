@@ -91,8 +91,7 @@ struct sk_buff {
 	struct sk_buff          *next;
 	struct sk_buff          *prev;
 	int pkt_type;
-    //void *data;
-    //unsigned int len;
+    struct net_device *dev;
     mbuf_t mac_data;
     /*
      * This is the control buffer. It is free to use for every

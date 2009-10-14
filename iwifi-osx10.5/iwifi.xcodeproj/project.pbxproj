@@ -127,11 +127,11 @@
 		089C166AFE841209C02AAC07 /* iwi3945 */ = {
 			isa = PBXGroup;
 			children = (
+				247142CAFF3F8F9811CA285C /* Source */,
+				9BC218750D40F26A000BA789 /* intel */,
 				61BED3B210846FDE002D7F97 /* net */,
 				61BED3AB10846FD2002D7F97 /* linux */,
 				61BED39E10846FAD002D7F97 /* firmware */,
-				9BC218750D40F26A000BA789 /* Added code */,
-				247142CAFF3F8F9811CA285C /* Source */,
 				8DA8362C06AD9B9200E5AC22 /* Kernel.framework */,
 				9B698EFC0D61A895004A4B92 /* IOKit.framework */,
 				089C167CFE841241C02AAC07 /* Resources */,
@@ -204,7 +204,7 @@
 			path = net;
 			sourceTree = "<group>";
 		};
-		9BC218750D40F26A000BA789 /* Added code */ = {
+		9BC218750D40F26A000BA789 /* intel */ = {
 			isa = PBXGroup;
 			children = (
 				61BED3C410847038002D7F97 /* iwl-1000.c */,
@@ -257,7 +257,7 @@
 				61BED3F310847038002D7F97 /* iwl-tx.c */,
 				61BED3F410847038002D7F97 /* iwl3945-base.c */,
 			);
-			name = "Added code";
+			name = intel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

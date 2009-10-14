@@ -28,6 +28,13 @@ extern "C" {
 #endif
 
 
+
+struct sk_buff *dev_alloc_skb(unsigned int length);
+struct sk_buff *__dev_alloc_skb(unsigned int length,
+                                               gfp_t gfp_mask);
+int skb_set_data(const struct sk_buff *skb, void *data, size_t len);
+struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw);
+int drv_tx(struct ieee80211_local *local, struct sk_buff *skb);
 void netif_tx_wake_all_queues(struct net_device *dev);
 void netif_tx_stop_all_queues(struct net_device *dev);
 void netif_tx_start_all_queues(struct net_device *dev);
@@ -245,7 +252,7 @@ static inline int bitmap_empty(const unsigned long *src, int nbits)
           return !(addr[0] | addr[1] | addr[2] | addr[3] | addr[4] | addr[5]);
   }
  
- 
+ #define dev_kfree_skb_irq(x) dev_kfree_skb(x)
  
  
  
