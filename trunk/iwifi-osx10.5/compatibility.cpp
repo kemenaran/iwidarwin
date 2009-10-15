@@ -1281,6 +1281,41 @@ static inline u32 test_and_clear_sta_flags(struct sta_info *sta,
          return ret;
  }
 
+static inline void __bss_tim_clear(struct ieee80211_if_ap *bss, u16 aid)
+{
+	/*
+	 * This format has been mandated by the IEEE specifications,
+	 * so this line may not be changed to use the __clear_bit() format.
+	 */
+	bss->tim[aid / 8] &= ~(1 << (aid % 8));
+}
+
+static inline int drv_set_tim(struct ieee80211_local *local,
+			      struct ieee80211_sta *sta, bool set)
+{
+	int ret = 0;
+	if (local->ops->set_tim)
+		ret = local->ops->set_tim(&local->hw, sta, set);
+	//trace_drv_set_tim(local, sta, set, ret);
+	return ret;
+}
+
+static void __sta_info_clear_tim_bit(struct ieee80211_if_ap *bss,
+				     struct sta_info *sta)
+{
+	BUG_ON(!bss);
+
+	__bss_tim_clear(bss, sta->sta.aid);
+
+	if (sta->local->ops->set_tim) {
+		sta->local->tim_in_locked_section = true;
+		drv_set_tim(sta->local, &sta->sta, false);
+		sta->local->tim_in_locked_section = false;
+	}
+}
+
+
+
 static void __sta_info_unlink(struct sta_info **sta)
  {
          struct ieee80211_local *local = (*sta)->local;
@@ -1304,7 +1339,7 @@ static void __sta_info_unlink(struct sta_info **sta)
                  BUG_ON(!sdata->bss);
  
                  atomic_dec(&sdata->bss->num_sta_ps);
-         //        __sta_info_clear_tim_bit(sdata->bss, *sta);
+                 __sta_info_clear_tim_bit(sdata->bss, *sta);
          }
  
          local->num_sta--;
@@ -2672,7 +2707,7 @@ static u32 ieee80211_handle_bss_capability(struct ieee80211_sub_if_data *sdata,
  {
          struct ieee80211_bss_conf *bss_conf = &sdata->vif.bss_conf;
          u32 changed = 0;
-     /*    bool use_protection;
+         bool use_protection;
          bool use_short_preamble;
          bool use_short_slot;
  
@@ -2699,7 +2734,7 @@ static u32 ieee80211_handle_bss_capability(struct ieee80211_sub_if_data *sdata,
          if (use_short_slot != bss_conf->use_short_slot) {
                  bss_conf->use_short_slot = use_short_slot;
                  changed |= BSS_CHANGED_ERP_SLOT;
-         }*/
+         }
  
          return changed;
  }
@@ -2803,9 +2838,46 @@ struct sta_info *sta_info_get(struct ieee80211_local *local, const u8 *addr)
                               &sdata->vif.bss_conf, changed);
  }
 
+static void ieee80211_enable_ps(struct ieee80211_local *local,
+				struct ieee80211_sub_if_data *sdata)
+{
+	struct ieee80211_conf *conf = &local->hw.conf;
+
+	/*
+	 * If we are scanning right now then the parameters will
+	 * take effect when scan finishes.
+	 */
+	if (local->scanning)
+		return;
+
+	if (conf->dynamic_ps_timeout > 0 &&
+	    !(local->hw.flags & IEEE80211_HW_SUPPORTS_DYNAMIC_PS)) {
+		mod_timer(&local->dynamic_ps_timer,   msecs_to_jiffies(conf->dynamic_ps_timeout));
+	} else {
+		if (local->hw.flags & IEEE80211_HW_PS_NULLFUNC_STACK)
+			ieee80211_send_nullfunc(local, sdata, 1);
+		conf->flags |= IEEE80211_CONF_PS;
+		ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
+	}
+}
+
+static void ieee80211_change_ps(struct ieee80211_local *local)
+{
+	struct ieee80211_conf *conf = &local->hw.conf;
+
+	if (local->ps_sdata) {
+		ieee80211_enable_ps(local, local->ps_sdata);
+	} else if (conf->flags & IEEE80211_CONF_PS) {
+		conf->flags &= ~IEEE80211_CONF_PS;
+		ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_PS);
+		del_timer_sync(&local->dynamic_ps_timer);
+		cancel_work_sync(&local->dynamic_ps_enable_work);
+	}
+}
+
 void ieee80211_recalc_ps(struct ieee80211_local *local, s32 latency)
  {
-      /*   struct ieee80211_sub_if_data *sdata, *found = NULL;
+        struct ieee80211_sub_if_data *sdata, *found = NULL;
          int count = 0;
  
          if (!(local->hw.flags & IEEE80211_HW_SUPPORTS_PS)) {
@@ -2829,7 +2901,7 @@ void ieee80211_recalc_ps(struct ieee80211_local *local, s32 latency)
                  s32 beaconint_us;
  
                  if (latency < 0)
-                         latency = pm_qos_requirement(PM_QOS_NETWORK_LATENCY);
+                         latency = 0;//pm_qos_requirement(PM_QOS_NETWORK_LATENCY);
  
                  beaconint_us = ieee80211_tu_to_usec(
                                          found->vif.bss_conf.beacon_int);
@@ -2841,8 +2913,10 @@ void ieee80211_recalc_ps(struct ieee80211_local *local, s32 latency)
                          int maxslp = 1;
  
                          if (dtimper > 1)
-                                 maxslp = min_t(int, dtimper,
+						 maxslp = min( dtimper,
                                                      latency / beaconint_us);
+                         //        maxslp = min_t(int, dtimper,
+                           //                          latency / beaconint_us);
  
                          local->hw.conf.max_sleep_period = maxslp;
                          local->ps_sdata = found;
@@ -2851,16 +2925,16 @@ void ieee80211_recalc_ps(struct ieee80211_local *local, s32 latency)
                  local->ps_sdata = NULL;
          }
  
-         ieee80211_change_ps(local);*/
+         ieee80211_change_ps(local);
  }
 
 static void mod_beacon_timer(struct ieee80211_sub_if_data *sdata)
  {
-      /*   if (sdata->local->hw.flags & IEEE80211_HW_BEACON_FILTER)
+         if (sdata->local->hw.flags & IEEE80211_HW_BEACON_FILTER)
                  return;
  
          mod_timer(&sdata->u.mgd.bcn_mon_timer,
-                   round_jiffies_up(jiffies + IEEE80211_BEACON_LOSS_TIME));*/
+                   round_jiffies_up( IEEE80211_BEACON_LOSS_TIME));
  }
 
 void ieee80211_ht_cap_ie_to_sta_ht_cap(struct ieee80211_supported_band *sband,
@@ -3892,7 +3966,7 @@ void ieee80211_sta_rx_notify(struct ieee80211_sub_if_data *sdata,
                  return;
  
          mod_timer(&sdata->u.mgd.conn_mon_timer,
-                   round_jiffies_up(jiffies + IEEE80211_CONNECTION_IDLE_TIME));
+                   round_jiffies_up( IEEE80211_CONNECTION_IDLE_TIME));
  }
 
 rx_mgmt_action ieee80211_rx_mgmt_assoc_resp(struct ieee80211_sub_if_data *sdata,
@@ -4518,7 +4592,7 @@ rx_mgmt_action ieee80211_direct_probe(struct ieee80211_sub_if_data *sdata,
           */
          ieee80211_send_probe_req(sdata, NULL, wk->ssid, wk->ssid_len, NULL, 0);
  
-         wk->timeout = jiffies + IEEE80211_AUTH_TIMEOUT;
+         wk->timeout =  IEEE80211_AUTH_TIMEOUT;
          run_again(ifmgd, wk->timeout);
  
          return RX_MGMT_NONE;
@@ -4558,7 +4632,7 @@ rx_mgmt_action ieee80211_authenticate(struct ieee80211_sub_if_data *sdata,
                              wk->bss->cbss.bssid, NULL, 0, 0);
          wk->auth_transaction = 2;
  
-         wk->timeout = jiffies + IEEE80211_AUTH_TIMEOUT;
+         wk->timeout =  IEEE80211_AUTH_TIMEOUT;
          run_again(ifmgd, wk->timeout);
  
          return RX_MGMT_NONE;
@@ -4595,7 +4669,7 @@ rx_mgmt_action ieee80211_associate(struct ieee80211_sub_if_data *sdata,
                 sdata->dev->name, wk->bss->cbss.bssid, wk->tries);
        //  ieee80211_send_assoc(sdata, wk);
  
-         wk->timeout = jiffies + IEEE80211_ASSOC_TIMEOUT;
+         wk->timeout =  IEEE80211_ASSOC_TIMEOUT;
          run_again(ifmgd, wk->timeout);
  
          return RX_MGMT_NONE;
@@ -4845,6 +4919,40 @@ static void ieee80211_sta_monitor_work(struct work_struct *work)
 	ieee80211_mgd_probe_ap(sdata, false);
 }
 
+void ieee80211_beacon_loss_work(struct work_struct *work)
+{
+	struct ieee80211_sub_if_data *sdata =
+		container_of(work, struct ieee80211_sub_if_data,
+			     u.mgd.beacon_loss_work);
+
+	ieee80211_mgd_probe_ap(sdata, true);
+}
+
+static void ieee80211_sta_bcn_mon_timer(unsigned long data)
+{
+	struct ieee80211_sub_if_data *sdata =
+		(struct ieee80211_sub_if_data *) data;
+	struct ieee80211_local *local = sdata->local;
+
+	if (local->quiescing)
+		return;
+
+	ieee80211_queue_work(&sdata->local->hw, &sdata->u.mgd.beacon_loss_work);
+}
+
+static void ieee80211_sta_conn_mon_timer(unsigned long data)
+{
+	struct ieee80211_sub_if_data *sdata =
+		(struct ieee80211_sub_if_data *) data;
+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+	struct ieee80211_local *local = sdata->local;
+
+	if (local->quiescing)
+		return;
+
+	ieee80211_queue_work(&local->hw, &ifmgd->monitor_work);
+}
+
  void ieee80211_sta_setup_sdata(struct ieee80211_sub_if_data *sdata)
  {
          struct ieee80211_if_managed *ifmgd;
@@ -4853,13 +4961,13 @@ static void ieee80211_sta_monitor_work(struct work_struct *work)
         INIT_WORK(&ifmgd->work, ieee80211_sta_work,32);
          INIT_WORK(&ifmgd->monitor_work, ieee80211_sta_monitor_work,33);
          INIT_WORK(&ifmgd->chswitch_work, ieee80211_chswitch_work,34);
-       //  INIT_WORK(&ifmgd->beacon_loss_work, ieee80211_beacon_loss_work,35);
+        INIT_WORK(&ifmgd->beacon_loss_work, ieee80211_beacon_loss_work,35);
          setup_timer(&ifmgd->timer, ieee80211_sta_timer,
                      (unsigned long) sdata);
-     //    setup_timer(&ifmgd->bcn_mon_timer, ieee80211_sta_bcn_mon_timer,
-       //              (unsigned long) sdata);
-        // setup_timer(&ifmgd->conn_mon_timer, ieee80211_sta_conn_mon_timer,
-          //           (unsigned long) sdata);
+         setup_timer(&ifmgd->bcn_mon_timer, ieee80211_sta_bcn_mon_timer,
+                     (unsigned long) sdata);
+         setup_timer(&ifmgd->conn_mon_timer, ieee80211_sta_conn_mon_timer,
+                     (unsigned long) sdata);
          setup_timer(&ifmgd->chswitch_timer, ieee80211_chswitch_timer,
                      (unsigned long) sdata);
          skb_queue_head_init(&ifmgd->skb_queue);
@@ -5622,6 +5730,17 @@ static int sta_info_buffer_expired(struct sta_info *sta,
          return time_after(jiffies, info->control.jiffiess + timeout);
  }
 
+void sta_info_clear_tim_bit(struct sta_info *sta)
+{
+	unsigned long flags;
+
+	BUG_ON(!sta->sdata->bss);
+
+	spin_lock_irqsave(&sta->local->sta_lock, flags);
+	__sta_info_clear_tim_bit(sta->sdata->bss, sta);
+	spin_unlock_irqrestore(&sta->local->sta_lock, flags);
+}
+
 static void sta_info_cleanup_expire_buffered(struct ieee80211_local *local,
                                               struct sta_info *sta)
  {
@@ -5652,8 +5771,8 @@ static void sta_info_cleanup_expire_buffered(struct ieee80211_local *local,
  #endif
                  dev_kfree_skb(skb);
  
-                // if (skb_queue_empty(&sta->ps_tx_buf))
-                  //       sta_info_clear_tim_bit(sta);
+                 if (skb_queue_empty(&sta->ps_tx_buf))
+                        sta_info_clear_tim_bit(sta);
          }
  }
 

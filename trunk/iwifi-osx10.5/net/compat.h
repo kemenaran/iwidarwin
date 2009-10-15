@@ -1067,6 +1067,18 @@ struct ieee80211_radiotap_header {
 #define DUMP_PREFIX_ADDRESS 1
 
 #define pci_resource_len(x,y) 0
+#define PM_QOS_RESERVED 0
+#define PM_QOS_CPU_DMA_LATENCY 1
+#define PM_QOS_NETWORK_LATENCY 2
+#define PM_QOS_NETWORK_THROUGHPUT 3
+
+#define PM_QOS_NUM_CLASSES 4
+#define PM_QOS_DEFAULT_VALUE -1
+
+#define IEEE80211_BEACON_LOSS_TIME	(2 * HZ)
+
+
+
 
 
 
