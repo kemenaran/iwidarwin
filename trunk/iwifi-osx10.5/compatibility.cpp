@@ -70,7 +70,7 @@ u8 my_mac_addr[6];
 static struct ieee80211_hw * my_hw;
 static LIST_HEAD(rate_ctrl_algs);
 int queuetx;
-
+int tlink_padding=100;//reserve space in tlink for taskinit queue_work
 
 
 /*
@@ -314,11 +314,7 @@ void skb_reserve(struct sk_buff *skb, int len) {
 
 
 void *skb_put(struct sk_buff *skb, unsigned int len) {
-    /*unsigned char *tmp = skb->tail;
-     SKB_LINEAR_ASSERT(skb);
-     skb->tail += len;
-     skb->len  += len;
-     return tmp;*/
+
     void *data = (UInt8*)mbuf_data(skb->mac_data) + mbuf_len(skb->mac_data);
     //mbuf_prepend(&skb,len,1); /* no prepend work */
     //IWI_DUMP_MBUF(1,skb,len);  
@@ -337,8 +333,8 @@ void *skb_put(struct sk_buff *skb, unsigned int len) {
 
 static inline unsigned char *__skb_pull(struct sk_buff *skb, unsigned int len)
 {
-         //skb->len -= len;
-         //return skb->data += len;
+
+
 		 if (len)
 		 mbuf_adj(skb->mac_data,len);
 		 return (unsigned char*)skb_data(skb);//added
@@ -523,7 +519,8 @@ int tasklet_kill(struct tasklet_struct *t){
 }
 
 void tasklet_init(struct tasklet_struct *t, void (*func)(unsigned long), unsigned long data){
-	t->padding++;
+	t->padding=tlink_padding;
+	tlink_padding++;
 	t->func=func;
 	t->data=data;
 	return;
@@ -1045,8 +1042,7 @@ ieee80211_local *hw_to_local(struct ieee80211_hw *hw)
 }
 
 int pci_register_driver(struct pci_driver * drv){
-	if(!thread_lock)
-		thread_lock = IOLockAlloc();
+
 	if(!drv)
 		return -6;
 	my_drv=drv;
@@ -1115,7 +1111,7 @@ static inline void setup_timer(struct timer_list2 * timer,
 	init_timer(timer);
 	timer->function = function;
     timer->data = data;
-    add_timer(timer);//hack
+    //add_timer(timer);//hack
  }
 
 #define STA_INFO_CLEANUP_INTERVAL (10 * HZ)
@@ -2072,7 +2068,7 @@ void schedule_work(struct work_struct *work)
          list_add_tail(&reg_beacon->list, &reg_pending_beacons);
          spin_unlock_bh(&reg_pending_beacons_lock);
  
-     //   schedule_work(&reg_work);
+     //   schedule_work(&reg_work); need initwork
  
          return 0;
  }
@@ -7189,7 +7185,9 @@ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
 
 		wiphy=(struct wiphy*)IOMalloc(sizeof(struct wiphy));
 		memset(wiphy,0,priv_size);
-		
+		wiphy->bss_priv_size = sizeof(struct ieee80211_bss) -
+                                sizeof(struct cfg80211_bss);
+								
 		// local = (struct ieee80211_local*)wiphy_priv(wiphy);
 		  
 		  
@@ -7663,6 +7661,36 @@ static inline __u32 skb_queue_len(const struct sk_buff_head *list_)
 void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue)
  {}
  
+ void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
+                         int rowsize, int groupsize,
+                         const void *buf, size_t len, bool ascii)
+ {
+         const u8 *ptr = (const u8*)buf;
+         int i, linelen, remaining = len;
+         unsigned char linebuf[200];
  
+         if (rowsize != 16 && rowsize != 32)
+                 rowsize = 16;
+ 
+         for (i = 0; i < len; i += rowsize) {
+                 linelen = min(remaining, rowsize);
+                 remaining -= rowsize;
+                 hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
+                                 (char*)linebuf, sizeof(linebuf), ascii);
+ 
+                 switch (prefix_type) {
+                 case DUMP_PREFIX_ADDRESS:
+                         printk("%s%s%*p: %s\n", level, prefix_str,
+                                 (int)(2 * sizeof(void *)), ptr + i, linebuf);
+                         break;
+                 case DUMP_PREFIX_OFFSET:
+                         printk("%s%s%.8x: %s\n", level, prefix_str, i, linebuf);
+                         break;
+                 default:
+                         printk("%s%s%s\n", level, prefix_str, linebuf);
+                         break;
+                 }
+		}
+}
  
  
