@@ -3,6 +3,11 @@
 #ifndef __COMPATIBILITY_H__
 #define __COMPATIBILITY_H__
 
+
+#define CONFIG_IWLWIFI_DEBUG
+//#define CONFIG_MAC80211_DEBUGFS
+
+
 #undef add_timer
 #undef del_timer
 #undef mod_timer
@@ -28,7 +33,9 @@ extern "C" {
 #endif
 
 
-
+ void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
+                         int rowsize, int groupsize,
+                         const void *buf, size_t len, bool ascii);
 struct sk_buff *dev_alloc_skb(unsigned int length);
 struct sk_buff *__dev_alloc_skb(unsigned int length,
                                                gfp_t gfp_mask);

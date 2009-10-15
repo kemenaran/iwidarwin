@@ -1613,8 +1613,8 @@ void iwl_dump_nic_error_log(struct iwl_priv *priv)
 	line = iwl_read_targ_mem(priv, base + 9 * sizeof(u32));
 	time = iwl_read_targ_mem(priv, base + 11 * sizeof(u32));
 
-	trace_iwlwifi_dev_ucode_error(priv, desc, time, data1, data2, line,
-				      blink1, blink2, ilink1, ilink2);
+//	trace_iwlwifi_dev_ucode_error(priv, desc, time, data1, data2, line,
+	//			      blink1, blink2, ilink1, ilink2);
 
 	IWL_ERR(priv, "Desc                               Time       "
 		"data1      data2      line\n");
@@ -1664,14 +1664,14 @@ static void iwl_print_event_log(struct iwl_priv *priv, u32 start_idx,
 		ptr += sizeof(u32);
 		if (mode == 0) {
 			/* data, ev */
-			trace_iwlwifi_dev_ucode_event(priv, 0, time, ev);
+			//trace_iwlwifi_dev_ucode_event(priv, 0, time, ev);
 			IWL_ERR(priv, "EVT_LOG:0x%08x:%04u\n", time, ev);
 		} else {
 			data = iwl_read_targ_mem(priv, ptr);
 			ptr += sizeof(u32);
 			IWL_ERR(priv, "EVT_LOGT:%010u:0x%08x:%04u\n",
 					time, data, ev);
-			trace_iwlwifi_dev_ucode_event(priv, time, data, ev);
+			//trace_iwlwifi_dev_ucode_event(priv, time, data, ev);
 		}
 	}
 }
@@ -2382,7 +2382,7 @@ static int iwl_mac_tx(struct ieee80211_hw *hw, struct sk_buff *skb)
 
 	IWL_DEBUG_MACDUMP(priv, "enter\n");
 
-	IWL_DEBUG_TX(priv, "dev->xmit(%d bytes) at rate 0x%02x\n", skb->len,
+	IWL_DEBUG_TX(priv, "dev->xmit(%d bytes) at rate 0x%02x\n", skb_len(skb),
 		     ieee80211_get_tx_rate(hw, IEEE80211_SKB_CB(skb))->bitrate);
 
 	if (iwl_tx_skb(priv, skb))
@@ -2636,8 +2636,7 @@ static ssize_t store_debug_level(struct device *d,
 	return strnlen(buf, count);
 }
 
-//static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,
-			show_debug_level, store_debug_level);
+//static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,			show_debug_level, store_debug_level);
 
 
 #endif /* CONFIG_IWLWIFI_DEBUG */
@@ -2898,10 +2897,10 @@ static struct attribute *iwl_sysfs_entries[] = {
 	&dev_attr_statistics.attr,
 	&dev_attr_temperature.attr,
 	&dev_attr_tx_power.attr,
-	&dev_attr_rts_ht_protection.attr,*/
+	&dev_attr_rts_ht_protection.attr,
 #ifdef CONFIG_IWLWIFI_DEBUG
 	&dev_attr_debug_level.attr,
-#endif
+#endif*/
 	NULL
 };
 
@@ -3050,6 +3049,7 @@ static int iwl_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		IWL_ERR(priv, "Unable to init EEPROM\n");
 		goto out_iounmap;
 	}
+
 	err = iwl_eeprom_check_version(priv);
 	if (err)
 		goto out_free_eeprom;
@@ -3070,7 +3070,6 @@ static int iwl_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	/*******************
 	 * 6. Setup priv
 	 *******************/
-
 	err = iwl_init_drv(priv);
 	if (err)
 		goto out_free_eeprom;
@@ -3133,6 +3132,7 @@ static int iwl_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	iwl_power_initialize(priv);
 	iwl_tt_initialize(priv);
+
 	return 0;
 
  out_remove_sysfs:

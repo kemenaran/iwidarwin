@@ -1063,9 +1063,10 @@ struct ieee80211_radiotap_header {
 #define spin_lock_bh(x)
 #define spin_unlock_bh(x)
 
+#define DUMP_PREFIX_OFFSET 0
+#define DUMP_PREFIX_ADDRESS 1
 
-
-
+#define pci_resource_len(x,y) 0
 
 
 
