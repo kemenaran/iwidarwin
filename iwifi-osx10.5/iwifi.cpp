@@ -27,7 +27,8 @@ extern "C" {
 	extern int skb_set_data(const struct sk_buff *skb, void *data, size_t len);
 	extern struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw);
 	extern int drv_tx(struct ieee80211_local *local, struct sk_buff *skb);
-	struct sk_buff *dev_alloc_skb(unsigned int length);
+	extern struct sk_buff *dev_alloc_skb(unsigned int length);
+	extern int ieee80211_reconfig(struct ieee80211_local *local);
 	extern IOPCIDevice* my_pci_device;
 	extern UInt16 my_deviceID;
 	extern int queuetx;
@@ -326,7 +327,7 @@ bool darwin_iwifi::start(IOService *provider)
 		errno_t error = ctl_register(&ep_ctl, &kctlref);
 
 		first_up=0;//ready for first load
-		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwifi::check_firstup),NULL,2000,true);
+		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwifi::check_firstup),NULL,1000,true);
 		
         return true;
     } while(false);
@@ -371,8 +372,16 @@ void darwin_iwifi::queue_te2(int num, thread_call_func_t func, thread_call_param
 
 void darwin_iwifi::check_firstup(void)
 {
-
-	
+	if (first_up==0) 
+	{
+		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwifi::check_firstup),NULL,1000,true);
+		return;
+	}
+	struct ieee80211_local *local =hw_to_local(get_my_hw());
+	if (local)//driver starts working here...
+	{
+		ieee80211_reconfig(local);
+	}
 }
 
 
@@ -1459,20 +1468,12 @@ IOReturn darwin_iwifi::enable( IONetworkInterface* netif )
 		setMyfifnet(fifnet);
 	}
     if (first_up==0)
-		{
 			first_up=1;
-		}
+
 	if ((fNetif->getFlags() & IFF_RUNNING)==0)
 	{
 		IOLog("ifconfig going up\n ");
-		//FIXME: if associated set IFF_RUNNING
-		//if (priv->status & STATUS_ASSOCIATED) 
-		//if(get_my_hw())
-		//	if (is_associated((void *)get_my_hw()->priv))
 				ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
-		/*fTransmitQueue->setCapacity(1024);
-		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
-		fTransmitQueue->start();*/
 		
 		return kIOReturnSuccess;
 	}

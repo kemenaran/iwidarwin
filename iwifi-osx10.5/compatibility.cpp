@@ -4371,6 +4371,62 @@ static void ieee80211_mgd_probe_ap_send(struct ieee80211_sub_if_data *sdata)
          run_again(ifmgd, ifmgd->probe_timeout);
  }
 
+static void ieee80211_mgd_probe_ap(struct ieee80211_sub_if_data *sdata,
+				   bool beacon)
+{
+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+	bool already = false;
+
+	if (!netif_running(sdata->dev))
+		return;
+
+	if (sdata->local->scanning)
+		return;
+
+	mutex_lock(&ifmgd->mtx);
+
+	if (!ifmgd->associated)
+		goto out;
+
+#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+	if (beacon && net_ratelimit())
+		printk(KERN_DEBUG "%s: detected beacon loss from AP "
+		       "- sending probe request\n", sdata->dev->name);
+#endif
+
+	/*
+	 * The driver/our work has already reported this event or the
+	 * connection monitoring has kicked in and we have already sent
+	 * a probe request. Or maybe the AP died and the driver keeps
+	 * reporting until we disassociate...
+	 *
+	 * In either case we have to ignore the current call to this
+	 * function (except for setting the correct probe reason bit)
+	 * because otherwise we would reset the timer every time and
+	 * never check whether we received a probe response!
+	 */
+	if (ifmgd->flags & (IEEE80211_STA_BEACON_POLL |
+			    IEEE80211_STA_CONNECTION_POLL))
+		already = true;
+
+	if (beacon)
+		ifmgd->flags |= IEEE80211_STA_BEACON_POLL;
+	else
+		ifmgd->flags |= IEEE80211_STA_CONNECTION_POLL;
+
+	if (already)
+		goto out;
+
+	mutex_lock(&sdata->local->iflist_mtx);
+	ieee80211_recalc_ps(sdata->local, -1);
+	mutex_unlock(&sdata->local->iflist_mtx);
+
+	ifmgd->probe_send_count = 0;
+	ieee80211_mgd_probe_ap_send(sdata);
+ out:
+	mutex_unlock(&ifmgd->mtx);
+}
+
 static void ieee80211_send_deauth_disassoc(struct ieee80211_sub_if_data *sdata,
                                             const u8 *bssid, u16 stype, u16 reason,
                                             void *cookie)
@@ -4780,13 +4836,22 @@ static void ieee80211_chswitch_work(struct work_struct *work)
          mutex_unlock(&ifmgd->mtx);
  }
 
+static void ieee80211_sta_monitor_work(struct work_struct *work)
+{
+	struct ieee80211_sub_if_data *sdata =
+		container_of(work, struct ieee80211_sub_if_data,
+			     u.mgd.monitor_work);
+
+	ieee80211_mgd_probe_ap(sdata, false);
+}
+
  void ieee80211_sta_setup_sdata(struct ieee80211_sub_if_data *sdata)
  {
          struct ieee80211_if_managed *ifmgd;
  
          ifmgd = &sdata->u.mgd;
         INIT_WORK(&ifmgd->work, ieee80211_sta_work,32);
-        // INIT_WORK(&ifmgd->monitor_work, ieee80211_sta_monitor_work,33);
+         INIT_WORK(&ifmgd->monitor_work, ieee80211_sta_monitor_work,33);
          INIT_WORK(&ifmgd->chswitch_work, ieee80211_chswitch_work,34);
        //  INIT_WORK(&ifmgd->beacon_loss_work, ieee80211_beacon_loss_work,35);
          setup_timer(&ifmgd->timer, ieee80211_sta_timer,
