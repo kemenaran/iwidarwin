@@ -1298,28 +1298,29 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 
 	/* Ask kernel firmware_class module to get the boot firmware off disk.
 	 * request_firmware() is synchronous, file is in memory on return. */
-	for (index = api_max; index >= api_min; index--) {
+	 index = api_max;
+	//for (index = api_max; index >= api_min; index--) {
 		sprintf(buf, "%s%d%s", name_pre, index, ".ucode");
 		ret = request_firmware(&ucode_raw, buf, &priv->pci_dev->dev);
 		if (ret < 0) {
 			IWL_ERR(priv, "%s firmware file req failed: %d\n",
 				  buf, ret);
-			if (ret == -ENOENT)
-				continue;
-			else
+			//if (ret == -ENOENT)
+			//	continue;
+			//else
 				goto error;
 		} else {
-			if (index < api_max)
+			/*if (index < api_max)
 				IWL_ERR(priv, "Loaded firmware %s, "
 					"which is deprecated. "
 					"Please use API v%u instead.\n",
-					  buf, api_max);
+					  buf, api_max);*/
 
 			IWL_DEBUG_INFO(priv, "Got firmware '%s' file (%zd bytes) from disk\n",
 				       buf, ucode_raw->size);
-			break;
+	//		break;
 		}
-	}
+//	}
 
 	if (ret < 0)
 		goto error;

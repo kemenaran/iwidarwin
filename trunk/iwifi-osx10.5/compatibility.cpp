@@ -777,6 +777,7 @@ int request_firmware(const struct firmware ** firmware_p, const char * name, str
 		break;
 	default:
 		IOLog("Invalid firmware\n");
+		return -1;
 		break;
 	}
 			
