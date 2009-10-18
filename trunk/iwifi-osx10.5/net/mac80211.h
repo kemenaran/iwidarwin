@@ -1677,7 +1677,7 @@ static inline char *ieee80211_get_radio_led_name(struct ieee80211_hw *hw)
  * @hw: the hardware this frame came in on
  * @skb: the buffer to receive, owned by mac80211 after this call
  */
-void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb);
+//void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb);
 
 /**
  * ieee80211_rx_irqsafe - receive frame
@@ -1860,9 +1860,9 @@ ieee80211_get_buffered_bc(struct ieee80211_hw *hw, struct ieee80211_vif *vif);
  * @type: TBD
  * @key: a buffer to which the key will be written
  */
-void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
-				struct sk_buff *skb,
-				enum ieee80211_tkip_key_type type, u8 *key);
+//void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
+//				struct sk_buff *skb,
+//				enum ieee80211_tkip_key_type type, u8 *key);
 /**
  * ieee80211_wake_queue - wake specific queue
  * @hw: pointer as obtained from ieee80211_alloc_hw().
@@ -2166,9 +2166,9 @@ static inline int rate_supported(struct ieee80211_sta *sta,
  * @priv_sta: private rate control structure. This may be null.
  * @txrc: rate control information we sholud populate for mac80211.
  */
-int rate_control_send_low(struct ieee80211_sta *sta,
-			   void *priv_sta,
-			   struct ieee80211_tx_rate_control *txrc);
+//int rate_control_send_low(struct ieee80211_sta *sta,
+//			   void *priv_sta,
+//			   struct ieee80211_tx_rate_control *txrc);
 
 
 static inline s8
@@ -2275,7 +2275,7 @@ struct net_device
 
 
 	struct net_device_stats* (*get_stats)(struct net_device *dev);
-	struct iw_statistics*	(*get_wireless_stats)(struct net_device *dev);
+	//struct iw_statistics*	(*get_wireless_stats)(struct net_device *dev);
 
 	/* List of functions to handle Wireless Extensions (instead of ioctl).
 	 * See <net/iw_handler.h> for details. Jean II */
@@ -2816,7 +2816,7 @@ struct ieee80211_local {
          /* number of interfaces with corresponding FIF_ flags */
          int fif_fcsfail, fif_plcpfail, fif_control, fif_other_bss, fif_pspoll;
          unsigned int filter_flags; /* FIF_* */
-         struct iw_statistics wstats;
+        // struct iw_statistics wstats;
  
          /* protects the aggregated multicast list and filter calls */
          spinlock_t filter_lock;

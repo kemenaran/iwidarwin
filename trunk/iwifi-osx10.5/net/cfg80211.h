@@ -13,6 +13,10 @@
 struct regulatory_request;
 struct ieee80211_reg_rule;
 struct iw_request_info;
+union iwreq_data;
+struct iw_point;
+struct iw_param;
+struct iw_freq;
 
 //#include <linux/netdevice.h>
 //#include <linux/debugfs.h>
@@ -1673,7 +1677,7 @@ int cfg80211_wext_siwtxpower(struct net_device *dev,
 int cfg80211_wext_giwtxpower(struct net_device *dev,
 			     struct iw_request_info *info,
 			     union iwreq_data *data, char *keybuf);
-struct iw_statistics *cfg80211_wireless_stats(struct net_device *dev);
+//struct iw_statistics *cfg80211_wireless_stats(struct net_device *dev);
 
 int cfg80211_wext_siwpower(struct net_device *dev,
 			   struct iw_request_info *info,

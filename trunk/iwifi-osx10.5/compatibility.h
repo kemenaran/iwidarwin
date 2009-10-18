@@ -6,7 +6,9 @@
 
 #define CONFIG_IWLWIFI_DEBUG
 //#define CONFIG_MAC80211_DEBUGFS
-
+#define CONFIG_IWL4965
+#define CONFIG_IWL5000
+#define CONFIG_IWLWIFI_SPECTRUM_MEASUREMENT
 
 #undef add_timer
 #undef del_timer
@@ -32,6 +34,17 @@ struct cfg80211_scan_request;
 extern "C" {
 #endif
 
+int rate_control_send_low(struct ieee80211_sta *sta,
+			   void *priv_sta,
+			   struct ieee80211_tx_rate_control *txrc);
+void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb);
+void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
+				struct sk_buff *skb,
+				enum ieee80211_tkip_key_type type, u8 *key);
+void kfree_skb(struct sk_buff *skb);
+void skb_add_rx_frag(struct sk_buff *skb, int start, void* idata, size_t offset, size_t len);
+ void pci_unmap_page(struct pci_dev *dev, dma_addr_t phys_add, size_t size, int p);
+void *alloc_pages(size_t size, dma_addr_t phys_add);
 int ieee80211_reconfig(struct ieee80211_local *local);
  void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
                          int rowsize, int groupsize,
@@ -258,8 +271,6 @@ static inline int bitmap_empty(const unsigned long *src, int nbits)
   {
           return !(addr[0] | addr[1] | addr[2] | addr[3] | addr[4] | addr[5]);
   }
- 
- #define dev_kfree_skb_irq(x) dev_kfree_skb(x)
  
  
  
