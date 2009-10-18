@@ -8,39 +8,87 @@
 
 /* Begin PBXBuildFile section */
 		32D94FC80562CBF700B6AF17 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
+		61708938108BAEFB00522569 /* iwl-core.c in Sources */ = {isa = PBXBuildFile; fileRef = 6170891D108BAEF000522569 /* iwl-core.c */; };
+		61708939108BAEFC00522569 /* iwl-eeprom.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708925108BAEF000522569 /* iwl-eeprom.c */; };
+		6170893A108BAEFC00522569 /* iwl-sta.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708934108BAEF000522569 /* iwl-sta.c */; };
+		6170893B108BAEFD00522569 /* iwl-3945-led.c in Sources */ = {isa = PBXBuildFile; fileRef = 6170890A108BAEF000522569 /* iwl-3945-led.c */; };
+		6170893C108BAEFE00522569 /* iwl-tx.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708936108BAEF000522569 /* iwl-tx.c */; };
+		6170893D108BAEFE00522569 /* iwl-devtrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708923108BAEF000522569 /* iwl-devtrace.c */; };
+		6170893E108BAEFF00522569 /* iwl-spectrum.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708932108BAEF000522569 /* iwl-spectrum.c */; };
+		6170893F108BAF0000522569 /* iwl-rx.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708930108BAEF000522569 /* iwl-rx.c */; };
+		61708940108BAF0000522569 /* iwl-agn.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708919108BAEF000522569 /* iwl-agn.c */; };
+		61708941108BAF0100522569 /* iwl-1000.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708907108BAEF000522569 /* iwl-1000.c */; };
+		61708942108BAF0100522569 /* iwl-agn-rs.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708917108BAEF000522569 /* iwl-agn-rs.c */; };
+		61708943108BAF0200522569 /* iwl-led.c in Sources */ = {isa = PBXBuildFile; fileRef = 6170892B108BAEF000522569 /* iwl-led.c */; };
+		61708944108BAF0300522569 /* iwl-calib.c in Sources */ = {isa = PBXBuildFile; fileRef = 6170891A108BAEF000522569 /* iwl-calib.c */; };
+		61708945108BAF0300522569 /* iwl-5000.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708912108BAEF000522569 /* iwl-5000.c */; };
+		61708946108BAF0400522569 /* iwl-3945.c in Sources */ = {isa = PBXBuildFile; fileRef = 6170890D108BAEF000522569 /* iwl-3945.c */; };
+		61708947108BAF0500522569 /* iwl-scan.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708931108BAEF000522569 /* iwl-scan.c */; };
+		61708949108BAF0600522569 /* iwl-6000.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708914108BAEF000522569 /* iwl-6000.c */; };
+		6170894A108BAF0700522569 /* iwl-3945-rs.c in Sources */ = {isa = PBXBuildFile; fileRef = 6170890C108BAEF000522569 /* iwl-3945-rs.c */; };
+		6170894B108BAF0800522569 /* iwl-power.c in Sources */ = {isa = PBXBuildFile; fileRef = 6170892D108BAEF000522569 /* iwl-power.c */; };
+		6170894C108BAF0900522569 /* iwl3945-base.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708937108BAEF000522569 /* iwl3945-base.c */; };
+		6170894D108BAF0A00522569 /* iwl-4965.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708910108BAEF000522569 /* iwl-4965.c */; };
+		6170894E108BAF0B00522569 /* iwl-agn-led.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708915108BAEF000522569 /* iwl-agn-led.c */; };
+		6170894F108BAF0C00522569 /* iwl-hcmd.c in Sources */ = {isa = PBXBuildFile; fileRef = 61708928108BAEF000522569 /* iwl-hcmd.c */; };
 		61BED3BD1084700C002D7F97 /* compatibility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3B81084700B002D7F97 /* compatibility.cpp */; };
 		61BED3C01084700C002D7F97 /* iwifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3BB1084700C002D7F97 /* iwifi.cpp */; };
 		61BED3C31084701D002D7F97 /* WiFiPower.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3C21084701D002D7F97 /* WiFiPower.cpp */; };
-		61BED3F51084703E002D7F97 /* iwl-core.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3DA10847038002D7F97 /* iwl-core.c */; };
-		61BED3F61084703E002D7F97 /* iwl-power.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3EA10847038002D7F97 /* iwl-power.c */; };
-		61BED3F71084703F002D7F97 /* iwl-calib.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3D710847038002D7F97 /* iwl-calib.c */; };
-		61BED3F810847040002D7F97 /* iwl-4965.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3CD10847038002D7F97 /* iwl-4965.c */; };
-		61BED3F910847040002D7F97 /* iwl-sta.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3F110847038002D7F97 /* iwl-sta.c */; };
-		61BED3FA10847045002D7F97 /* iwl-led.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3E810847038002D7F97 /* iwl-led.c */; };
-		61BED3FB10847045002D7F97 /* iwl3945-base.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3F410847038002D7F97 /* iwl3945-base.c */; };
-		61BED3FC10847046002D7F97 /* iwl-3945-led.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3C710847038002D7F97 /* iwl-3945-led.c */; };
-		61BED3FD10847047002D7F97 /* iwl-tx.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3F310847038002D7F97 /* iwl-tx.c */; };
-		61BED3FE10847047002D7F97 /* iwl-scan.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3EE10847038002D7F97 /* iwl-scan.c */; };
-		61BED3FF10847048002D7F97 /* iwl-3945-rs.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3C910847038002D7F97 /* iwl-3945-rs.c */; };
-		61BED40010847048002D7F97 /* iwl-spectrum.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3EF10847038002D7F97 /* iwl-spectrum.c */; };
-		61BED40110847049002D7F97 /* iwl-6000.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3D110847038002D7F97 /* iwl-6000.c */; };
-		61BED4021084704A002D7F97 /* iwl-eeprom.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3E210847038002D7F97 /* iwl-eeprom.c */; };
-		61BED4031084704A002D7F97 /* iwl-debugfs.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3DE10847038002D7F97 /* iwl-debugfs.c */; };
-		61BED4041084704B002D7F97 /* iwl-agn-led.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3D210847038002D7F97 /* iwl-agn-led.c */; };
-		61BED4051084704C002D7F97 /* iwl-devtrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3E010847038002D7F97 /* iwl-devtrace.c */; };
-		61BED4061084704C002D7F97 /* iwl-hcmd.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3E510847038002D7F97 /* iwl-hcmd.c */; };
-		61BED4071084704D002D7F97 /* iwl-3945.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3CA10847038002D7F97 /* iwl-3945.c */; };
-		61BED4081084704E002D7F97 /* iwl-5000.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3CF10847038002D7F97 /* iwl-5000.c */; };
-		61BED4091084704F002D7F97 /* iwl-1000.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3C410847038002D7F97 /* iwl-1000.c */; };
-		61BED40A10847052002D7F97 /* iwl-agn-rs.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3D410847038002D7F97 /* iwl-agn-rs.c */; };
-		61BED40B10847053002D7F97 /* iwl-agn.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3D610847038002D7F97 /* iwl-agn.c */; };
-		61BED40C10847054002D7F97 /* iwl-rx.c in Sources */ = {isa = PBXBuildFile; fileRef = 61BED3ED10847038002D7F97 /* iwl-rx.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		089C167EFE841241C02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		32D94FCF0562CBF700B6AF17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
 		32D94FD00562CBF700B6AF17 /* iwifi.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iwifi.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		61708907108BAEF000522569 /* iwl-1000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-1000.c"; sourceTree = "<group>"; };
+		61708908108BAEF000522569 /* iwl-3945-fh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-fh.h"; sourceTree = "<group>"; };
+		61708909108BAEF000522569 /* iwl-3945-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-hw.h"; sourceTree = "<group>"; };
+		6170890A108BAEF000522569 /* iwl-3945-led.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-3945-led.c"; sourceTree = "<group>"; };
+		6170890B108BAEF000522569 /* iwl-3945-led.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-led.h"; sourceTree = "<group>"; };
+		6170890C108BAEF000522569 /* iwl-3945-rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-3945-rs.c"; sourceTree = "<group>"; };
+		6170890D108BAEF000522569 /* iwl-3945.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-3945.c"; sourceTree = "<group>"; };
+		6170890E108BAEF000522569 /* iwl-3945.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945.h"; sourceTree = "<group>"; };
+		6170890F108BAEF000522569 /* iwl-4965-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-hw.h"; sourceTree = "<group>"; };
+		61708910108BAEF000522569 /* iwl-4965.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-4965.c"; sourceTree = "<group>"; };
+		61708911108BAEF000522569 /* iwl-5000-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-5000-hw.h"; sourceTree = "<group>"; };
+		61708912108BAEF000522569 /* iwl-5000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-5000.c"; sourceTree = "<group>"; };
+		61708913108BAEF000522569 /* iwl-6000-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-6000-hw.h"; sourceTree = "<group>"; };
+		61708914108BAEF000522569 /* iwl-6000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-6000.c"; sourceTree = "<group>"; };
+		61708915108BAEF000522569 /* iwl-agn-led.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-agn-led.c"; sourceTree = "<group>"; };
+		61708916108BAEF000522569 /* iwl-agn-led.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-agn-led.h"; sourceTree = "<group>"; };
+		61708917108BAEF000522569 /* iwl-agn-rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-agn-rs.c"; sourceTree = "<group>"; };
+		61708918108BAEF000522569 /* iwl-agn-rs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-agn-rs.h"; sourceTree = "<group>"; };
+		61708919108BAEF000522569 /* iwl-agn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-agn.c"; sourceTree = "<group>"; };
+		6170891A108BAEF000522569 /* iwl-calib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-calib.c"; sourceTree = "<group>"; };
+		6170891B108BAEF000522569 /* iwl-calib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-calib.h"; sourceTree = "<group>"; };
+		6170891C108BAEF000522569 /* iwl-commands.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-commands.h"; sourceTree = "<group>"; };
+		6170891D108BAEF000522569 /* iwl-core.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-core.c"; sourceTree = "<group>"; };
+		6170891E108BAEF000522569 /* iwl-core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-core.h"; sourceTree = "<group>"; };
+		6170891F108BAEF000522569 /* iwl-csr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-csr.h"; sourceTree = "<group>"; };
+		61708920108BAEF000522569 /* iwl-debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-debug.h"; sourceTree = "<group>"; };
+		61708921108BAEF000522569 /* iwl-debugfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-debugfs.c"; sourceTree = "<group>"; };
+		61708922108BAEF000522569 /* iwl-dev.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-dev.h"; sourceTree = "<group>"; };
+		61708923108BAEF000522569 /* iwl-devtrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-devtrace.c"; sourceTree = "<group>"; };
+		61708924108BAEF000522569 /* iwl-devtrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-devtrace.h"; sourceTree = "<group>"; };
+		61708925108BAEF000522569 /* iwl-eeprom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-eeprom.c"; sourceTree = "<group>"; };
+		61708926108BAEF000522569 /* iwl-eeprom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom.h"; sourceTree = "<group>"; };
+		61708927108BAEF000522569 /* iwl-fh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-fh.h"; sourceTree = "<group>"; };
+		61708928108BAEF000522569 /* iwl-hcmd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-hcmd.c"; sourceTree = "<group>"; };
+		61708929108BAEF000522569 /* iwl-helpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-helpers.h"; sourceTree = "<group>"; };
+		6170892A108BAEF000522569 /* iwl-io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-io.h"; sourceTree = "<group>"; };
+		6170892B108BAEF000522569 /* iwl-led.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-led.c"; sourceTree = "<group>"; };
+		6170892C108BAEF000522569 /* iwl-led.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-led.h"; sourceTree = "<group>"; };
+		6170892D108BAEF000522569 /* iwl-power.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-power.c"; sourceTree = "<group>"; };
+		6170892E108BAEF000522569 /* iwl-power.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-power.h"; sourceTree = "<group>"; };
+		6170892F108BAEF000522569 /* iwl-prph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-prph.h"; sourceTree = "<group>"; };
+		61708930108BAEF000522569 /* iwl-rx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-rx.c"; sourceTree = "<group>"; };
+		61708931108BAEF000522569 /* iwl-scan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-scan.c"; sourceTree = "<group>"; };
+		61708932108BAEF000522569 /* iwl-spectrum.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-spectrum.c"; sourceTree = "<group>"; };
+		61708933108BAEF000522569 /* iwl-spectrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-spectrum.h"; sourceTree = "<group>"; };
+		61708934108BAEF000522569 /* iwl-sta.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-sta.c"; sourceTree = "<group>"; };
+		61708935108BAEF000522569 /* iwl-sta.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-sta.h"; sourceTree = "<group>"; };
+		61708936108BAEF000522569 /* iwl-tx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-tx.c"; sourceTree = "<group>"; };
+		61708937108BAEF000522569 /* iwl3945-base.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl3945-base.c"; sourceTree = "<group>"; };
 		61BED3A010846FAD002D7F97 /* iwlwifi-1000-3.ucode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwlwifi-1000-3.ucode.h"; sourceTree = "<group>"; };
 		61BED3A110846FAD002D7F97 /* iwlwifi-3945-2.ucode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwlwifi-3945-2.ucode.h"; sourceTree = "<group>"; };
 		61BED3A210846FAD002D7F97 /* iwlwifi-4965-2.ucode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwlwifi-4965-2.ucode.h"; sourceTree = "<group>"; };
@@ -60,55 +108,6 @@
 		61BED3BB1084700C002D7F97 /* iwifi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = iwifi.cpp; sourceTree = "<group>"; };
 		61BED3BC1084700C002D7F97 /* iwifi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iwifi.h; sourceTree = "<group>"; };
 		61BED3C21084701D002D7F97 /* WiFiPower.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WiFiPower.cpp; sourceTree = "<group>"; };
-		61BED3C410847038002D7F97 /* iwl-1000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-1000.c"; sourceTree = "<group>"; };
-		61BED3C510847038002D7F97 /* iwl-3945-fh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-fh.h"; sourceTree = "<group>"; };
-		61BED3C610847038002D7F97 /* iwl-3945-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-hw.h"; sourceTree = "<group>"; };
-		61BED3C710847038002D7F97 /* iwl-3945-led.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-3945-led.c"; sourceTree = "<group>"; };
-		61BED3C810847038002D7F97 /* iwl-3945-led.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945-led.h"; sourceTree = "<group>"; };
-		61BED3C910847038002D7F97 /* iwl-3945-rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-3945-rs.c"; sourceTree = "<group>"; };
-		61BED3CA10847038002D7F97 /* iwl-3945.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-3945.c"; sourceTree = "<group>"; };
-		61BED3CB10847038002D7F97 /* iwl-3945.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-3945.h"; sourceTree = "<group>"; };
-		61BED3CC10847038002D7F97 /* iwl-4965-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-4965-hw.h"; sourceTree = "<group>"; };
-		61BED3CD10847038002D7F97 /* iwl-4965.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-4965.c"; sourceTree = "<group>"; };
-		61BED3CE10847038002D7F97 /* iwl-5000-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-5000-hw.h"; sourceTree = "<group>"; };
-		61BED3CF10847038002D7F97 /* iwl-5000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-5000.c"; sourceTree = "<group>"; };
-		61BED3D010847038002D7F97 /* iwl-6000-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-6000-hw.h"; sourceTree = "<group>"; };
-		61BED3D110847038002D7F97 /* iwl-6000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-6000.c"; sourceTree = "<group>"; };
-		61BED3D210847038002D7F97 /* iwl-agn-led.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-agn-led.c"; sourceTree = "<group>"; };
-		61BED3D310847038002D7F97 /* iwl-agn-led.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-agn-led.h"; sourceTree = "<group>"; };
-		61BED3D410847038002D7F97 /* iwl-agn-rs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-agn-rs.c"; sourceTree = "<group>"; };
-		61BED3D510847038002D7F97 /* iwl-agn-rs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-agn-rs.h"; sourceTree = "<group>"; };
-		61BED3D610847038002D7F97 /* iwl-agn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-agn.c"; sourceTree = "<group>"; };
-		61BED3D710847038002D7F97 /* iwl-calib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-calib.c"; sourceTree = "<group>"; };
-		61BED3D810847038002D7F97 /* iwl-calib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-calib.h"; sourceTree = "<group>"; };
-		61BED3D910847038002D7F97 /* iwl-commands.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-commands.h"; sourceTree = "<group>"; };
-		61BED3DA10847038002D7F97 /* iwl-core.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-core.c"; sourceTree = "<group>"; };
-		61BED3DB10847038002D7F97 /* iwl-core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-core.h"; sourceTree = "<group>"; };
-		61BED3DC10847038002D7F97 /* iwl-csr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-csr.h"; sourceTree = "<group>"; };
-		61BED3DD10847038002D7F97 /* iwl-debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-debug.h"; sourceTree = "<group>"; };
-		61BED3DE10847038002D7F97 /* iwl-debugfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-debugfs.c"; sourceTree = "<group>"; };
-		61BED3DF10847038002D7F97 /* iwl-dev.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-dev.h"; sourceTree = "<group>"; };
-		61BED3E010847038002D7F97 /* iwl-devtrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-devtrace.c"; sourceTree = "<group>"; };
-		61BED3E110847038002D7F97 /* iwl-devtrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-devtrace.h"; sourceTree = "<group>"; };
-		61BED3E210847038002D7F97 /* iwl-eeprom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-eeprom.c"; sourceTree = "<group>"; };
-		61BED3E310847038002D7F97 /* iwl-eeprom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom.h"; sourceTree = "<group>"; };
-		61BED3E410847038002D7F97 /* iwl-fh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-fh.h"; sourceTree = "<group>"; };
-		61BED3E510847038002D7F97 /* iwl-hcmd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-hcmd.c"; sourceTree = "<group>"; };
-		61BED3E610847038002D7F97 /* iwl-helpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-helpers.h"; sourceTree = "<group>"; };
-		61BED3E710847038002D7F97 /* iwl-io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-io.h"; sourceTree = "<group>"; };
-		61BED3E810847038002D7F97 /* iwl-led.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-led.c"; sourceTree = "<group>"; };
-		61BED3E910847038002D7F97 /* iwl-led.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-led.h"; sourceTree = "<group>"; };
-		61BED3EA10847038002D7F97 /* iwl-power.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-power.c"; sourceTree = "<group>"; };
-		61BED3EB10847038002D7F97 /* iwl-power.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-power.h"; sourceTree = "<group>"; };
-		61BED3EC10847038002D7F97 /* iwl-prph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-prph.h"; sourceTree = "<group>"; };
-		61BED3ED10847038002D7F97 /* iwl-rx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-rx.c"; sourceTree = "<group>"; };
-		61BED3EE10847038002D7F97 /* iwl-scan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-scan.c"; sourceTree = "<group>"; };
-		61BED3EF10847038002D7F97 /* iwl-spectrum.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-spectrum.c"; sourceTree = "<group>"; };
-		61BED3F010847038002D7F97 /* iwl-spectrum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-spectrum.h"; sourceTree = "<group>"; };
-		61BED3F110847038002D7F97 /* iwl-sta.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-sta.c"; sourceTree = "<group>"; };
-		61BED3F210847038002D7F97 /* iwl-sta.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-sta.h"; sourceTree = "<group>"; };
-		61BED3F310847038002D7F97 /* iwl-tx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-tx.c"; sourceTree = "<group>"; };
-		61BED3F410847038002D7F97 /* iwl3945-base.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl3945-base.c"; sourceTree = "<group>"; };
 		8DA8362C06AD9B9200E5AC22 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
 		9B698EFC0D61A895004A4B92 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
@@ -127,8 +126,8 @@
 		089C166AFE841209C02AAC07 /* iwi3945 */ = {
 			isa = PBXGroup;
 			children = (
+				61708906108BAEF000522569 /* iwlwifi-2.6 */,
 				247142CAFF3F8F9811CA285C /* Source */,
-				9BC218750D40F26A000BA789 /* intel */,
 				61BED3B210846FDE002D7F97 /* net */,
 				61BED3AB10846FD2002D7F97 /* linux */,
 				61BED39E10846FAD002D7F97 /* firmware */,
@@ -170,6 +169,62 @@
 			name = Source;
 			sourceTree = "<group>";
 		};
+		61708906108BAEF000522569 /* iwlwifi-2.6 */ = {
+			isa = PBXGroup;
+			children = (
+				61708907108BAEF000522569 /* iwl-1000.c */,
+				61708908108BAEF000522569 /* iwl-3945-fh.h */,
+				61708909108BAEF000522569 /* iwl-3945-hw.h */,
+				6170890A108BAEF000522569 /* iwl-3945-led.c */,
+				6170890B108BAEF000522569 /* iwl-3945-led.h */,
+				6170890C108BAEF000522569 /* iwl-3945-rs.c */,
+				6170890D108BAEF000522569 /* iwl-3945.c */,
+				6170890E108BAEF000522569 /* iwl-3945.h */,
+				6170890F108BAEF000522569 /* iwl-4965-hw.h */,
+				61708910108BAEF000522569 /* iwl-4965.c */,
+				61708911108BAEF000522569 /* iwl-5000-hw.h */,
+				61708912108BAEF000522569 /* iwl-5000.c */,
+				61708913108BAEF000522569 /* iwl-6000-hw.h */,
+				61708914108BAEF000522569 /* iwl-6000.c */,
+				61708915108BAEF000522569 /* iwl-agn-led.c */,
+				61708916108BAEF000522569 /* iwl-agn-led.h */,
+				61708917108BAEF000522569 /* iwl-agn-rs.c */,
+				61708918108BAEF000522569 /* iwl-agn-rs.h */,
+				61708919108BAEF000522569 /* iwl-agn.c */,
+				6170891A108BAEF000522569 /* iwl-calib.c */,
+				6170891B108BAEF000522569 /* iwl-calib.h */,
+				6170891C108BAEF000522569 /* iwl-commands.h */,
+				6170891D108BAEF000522569 /* iwl-core.c */,
+				6170891E108BAEF000522569 /* iwl-core.h */,
+				6170891F108BAEF000522569 /* iwl-csr.h */,
+				61708920108BAEF000522569 /* iwl-debug.h */,
+				61708921108BAEF000522569 /* iwl-debugfs.c */,
+				61708922108BAEF000522569 /* iwl-dev.h */,
+				61708923108BAEF000522569 /* iwl-devtrace.c */,
+				61708924108BAEF000522569 /* iwl-devtrace.h */,
+				61708925108BAEF000522569 /* iwl-eeprom.c */,
+				61708926108BAEF000522569 /* iwl-eeprom.h */,
+				61708927108BAEF000522569 /* iwl-fh.h */,
+				61708928108BAEF000522569 /* iwl-hcmd.c */,
+				61708929108BAEF000522569 /* iwl-helpers.h */,
+				6170892A108BAEF000522569 /* iwl-io.h */,
+				6170892B108BAEF000522569 /* iwl-led.c */,
+				6170892C108BAEF000522569 /* iwl-led.h */,
+				6170892D108BAEF000522569 /* iwl-power.c */,
+				6170892E108BAEF000522569 /* iwl-power.h */,
+				6170892F108BAEF000522569 /* iwl-prph.h */,
+				61708930108BAEF000522569 /* iwl-rx.c */,
+				61708931108BAEF000522569 /* iwl-scan.c */,
+				61708932108BAEF000522569 /* iwl-spectrum.c */,
+				61708933108BAEF000522569 /* iwl-spectrum.h */,
+				61708934108BAEF000522569 /* iwl-sta.c */,
+				61708935108BAEF000522569 /* iwl-sta.h */,
+				61708936108BAEF000522569 /* iwl-tx.c */,
+				61708937108BAEF000522569 /* iwl3945-base.c */,
+			);
+			path = "iwlwifi-2.6";
+			sourceTree = "<group>";
+		};
 		61BED39E10846FAD002D7F97 /* firmware */ = {
 			isa = PBXGroup;
 			children = (
@@ -202,62 +257,6 @@
 				61BED3B710846FDE002D7F97 /* mac80211.h */,
 			);
 			path = net;
-			sourceTree = "<group>";
-		};
-		9BC218750D40F26A000BA789 /* intel */ = {
-			isa = PBXGroup;
-			children = (
-				61BED3C410847038002D7F97 /* iwl-1000.c */,
-				61BED3C510847038002D7F97 /* iwl-3945-fh.h */,
-				61BED3C610847038002D7F97 /* iwl-3945-hw.h */,
-				61BED3C710847038002D7F97 /* iwl-3945-led.c */,
-				61BED3C810847038002D7F97 /* iwl-3945-led.h */,
-				61BED3C910847038002D7F97 /* iwl-3945-rs.c */,
-				61BED3CA10847038002D7F97 /* iwl-3945.c */,
-				61BED3CB10847038002D7F97 /* iwl-3945.h */,
-				61BED3CC10847038002D7F97 /* iwl-4965-hw.h */,
-				61BED3CD10847038002D7F97 /* iwl-4965.c */,
-				61BED3CE10847038002D7F97 /* iwl-5000-hw.h */,
-				61BED3CF10847038002D7F97 /* iwl-5000.c */,
-				61BED3D010847038002D7F97 /* iwl-6000-hw.h */,
-				61BED3D110847038002D7F97 /* iwl-6000.c */,
-				61BED3D210847038002D7F97 /* iwl-agn-led.c */,
-				61BED3D310847038002D7F97 /* iwl-agn-led.h */,
-				61BED3D410847038002D7F97 /* iwl-agn-rs.c */,
-				61BED3D510847038002D7F97 /* iwl-agn-rs.h */,
-				61BED3D610847038002D7F97 /* iwl-agn.c */,
-				61BED3D710847038002D7F97 /* iwl-calib.c */,
-				61BED3D810847038002D7F97 /* iwl-calib.h */,
-				61BED3D910847038002D7F97 /* iwl-commands.h */,
-				61BED3DA10847038002D7F97 /* iwl-core.c */,
-				61BED3DB10847038002D7F97 /* iwl-core.h */,
-				61BED3DC10847038002D7F97 /* iwl-csr.h */,
-				61BED3DD10847038002D7F97 /* iwl-debug.h */,
-				61BED3DE10847038002D7F97 /* iwl-debugfs.c */,
-				61BED3DF10847038002D7F97 /* iwl-dev.h */,
-				61BED3E010847038002D7F97 /* iwl-devtrace.c */,
-				61BED3E110847038002D7F97 /* iwl-devtrace.h */,
-				61BED3E210847038002D7F97 /* iwl-eeprom.c */,
-				61BED3E310847038002D7F97 /* iwl-eeprom.h */,
-				61BED3E410847038002D7F97 /* iwl-fh.h */,
-				61BED3E510847038002D7F97 /* iwl-hcmd.c */,
-				61BED3E610847038002D7F97 /* iwl-helpers.h */,
-				61BED3E710847038002D7F97 /* iwl-io.h */,
-				61BED3E810847038002D7F97 /* iwl-led.c */,
-				61BED3E910847038002D7F97 /* iwl-led.h */,
-				61BED3EA10847038002D7F97 /* iwl-power.c */,
-				61BED3EB10847038002D7F97 /* iwl-power.h */,
-				61BED3EC10847038002D7F97 /* iwl-prph.h */,
-				61BED3ED10847038002D7F97 /* iwl-rx.c */,
-				61BED3EE10847038002D7F97 /* iwl-scan.c */,
-				61BED3EF10847038002D7F97 /* iwl-spectrum.c */,
-				61BED3F010847038002D7F97 /* iwl-spectrum.h */,
-				61BED3F110847038002D7F97 /* iwl-sta.c */,
-				61BED3F210847038002D7F97 /* iwl-sta.h */,
-				61BED3F310847038002D7F97 /* iwl-tx.c */,
-				61BED3F410847038002D7F97 /* iwl3945-base.c */,
-			);
-			name = intel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -356,30 +355,29 @@
 				61BED3BD1084700C002D7F97 /* compatibility.cpp in Sources */,
 				61BED3C01084700C002D7F97 /* iwifi.cpp in Sources */,
 				61BED3C31084701D002D7F97 /* WiFiPower.cpp in Sources */,
-				61BED3F51084703E002D7F97 /* iwl-core.c in Sources */,
-				61BED3F61084703E002D7F97 /* iwl-power.c in Sources */,
-				61BED3F71084703F002D7F97 /* iwl-calib.c in Sources */,
-				61BED3F810847040002D7F97 /* iwl-4965.c in Sources */,
-				61BED3F910847040002D7F97 /* iwl-sta.c in Sources */,
-				61BED3FA10847045002D7F97 /* iwl-led.c in Sources */,
-				61BED3FB10847045002D7F97 /* iwl3945-base.c in Sources */,
-				61BED3FC10847046002D7F97 /* iwl-3945-led.c in Sources */,
-				61BED3FD10847047002D7F97 /* iwl-tx.c in Sources */,
-				61BED3FE10847047002D7F97 /* iwl-scan.c in Sources */,
-				61BED3FF10847048002D7F97 /* iwl-3945-rs.c in Sources */,
-				61BED40010847048002D7F97 /* iwl-spectrum.c in Sources */,
-				61BED40110847049002D7F97 /* iwl-6000.c in Sources */,
-				61BED4021084704A002D7F97 /* iwl-eeprom.c in Sources */,
-				61BED4031084704A002D7F97 /* iwl-debugfs.c in Sources */,
-				61BED4041084704B002D7F97 /* iwl-agn-led.c in Sources */,
-				61BED4051084704C002D7F97 /* iwl-devtrace.c in Sources */,
-				61BED4061084704C002D7F97 /* iwl-hcmd.c in Sources */,
-				61BED4071084704D002D7F97 /* iwl-3945.c in Sources */,
-				61BED4081084704E002D7F97 /* iwl-5000.c in Sources */,
-				61BED4091084704F002D7F97 /* iwl-1000.c in Sources */,
-				61BED40A10847052002D7F97 /* iwl-agn-rs.c in Sources */,
-				61BED40B10847053002D7F97 /* iwl-agn.c in Sources */,
-				61BED40C10847054002D7F97 /* iwl-rx.c in Sources */,
+				61708938108BAEFB00522569 /* iwl-core.c in Sources */,
+				61708939108BAEFC00522569 /* iwl-eeprom.c in Sources */,
+				6170893A108BAEFC00522569 /* iwl-sta.c in Sources */,
+				6170893B108BAEFD00522569 /* iwl-3945-led.c in Sources */,
+				6170893C108BAEFE00522569 /* iwl-tx.c in Sources */,
+				6170893D108BAEFE00522569 /* iwl-devtrace.c in Sources */,
+				6170893E108BAEFF00522569 /* iwl-spectrum.c in Sources */,
+				6170893F108BAF0000522569 /* iwl-rx.c in Sources */,
+				61708940108BAF0000522569 /* iwl-agn.c in Sources */,
+				61708941108BAF0100522569 /* iwl-1000.c in Sources */,
+				61708942108BAF0100522569 /* iwl-agn-rs.c in Sources */,
+				61708943108BAF0200522569 /* iwl-led.c in Sources */,
+				61708944108BAF0300522569 /* iwl-calib.c in Sources */,
+				61708945108BAF0300522569 /* iwl-5000.c in Sources */,
+				61708946108BAF0400522569 /* iwl-3945.c in Sources */,
+				61708947108BAF0500522569 /* iwl-scan.c in Sources */,
+				61708949108BAF0600522569 /* iwl-6000.c in Sources */,
+				6170894A108BAF0700522569 /* iwl-3945-rs.c in Sources */,
+				6170894B108BAF0800522569 /* iwl-power.c in Sources */,
+				6170894C108BAF0900522569 /* iwl3945-base.c in Sources */,
+				6170894D108BAF0A00522569 /* iwl-4965.c in Sources */,
+				6170894E108BAF0B00522569 /* iwl-agn-led.c in Sources */,
+				6170894F108BAF0C00522569 /* iwl-hcmd.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -782,9 +782,9 @@ static inline void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
 
 #define PCI_DMA_BIDIRECTIONAL   0
  #define PCI_DMA_NONE            3
-#define pci_unmap_addr(x) x
-#define pci_unmap_len(x) sizeof(x)
-#define pci_unmap_addr_set(x,y)
+#define pci_unmap_addr(x,y) x
+#define pci_unmap_len(x,y) sizeof(x)
+#define pci_unmap_addr_set(x,y,z)
 #define pci_unmap_len_set(x,y,z) 
 
 #define	NETDEV_ALIGN		32
@@ -1076,6 +1076,68 @@ struct ieee80211_radiotap_header {
 #define PM_QOS_DEFAULT_VALUE -1
 
 #define IEEE80211_BEACON_LOSS_TIME	(2 * HZ)
+
+#define DECLARE_PCI_UNMAP_ADDR(mapping)
+#define	DECLARE_PCI_UNMAP_LEN(len)
+
+  #define __GFP_WAIT      (0x10u)  /* Can wait and reschedule? */
+  #define __GFP_HIGH      (0x20u)  /* Should access emergency pools? */
+  #define __GFP_IO        (0x40u)  /* Can start physical IO? */
+  #define __GFP_FS        (0x80u)  /* Can call down to low-level FS? */
+  #define __GFP_COLD      (0x100u) /* Cache-cold page required */
+  #define __GFP_NOWARN    (0x200u) /* Suppress page allocation failure warning */
+  #define __GFP_REPEAT    (0x400u) /* See above */
+  #define __GFP_NOFAIL    (0x800u) /* See above */
+  #define __GFP_NORETRY   (0x1000u)/* See above */
+  #define __GFP_COMP      (0x4000u)/* Add compound page metadata */
+  #define __GFP_ZERO      (0x8000u)/* Return zeroed page on success */
+  #define __GFP_NOMEMALLOC (0x10000u) /* Don't use emergency reserves */
+  #define __GFP_HARDWALL   (0x20000u) /* Enforce hardwall cpuset memory allocs */
+  #define __GFP_THISNODE  (0x40000u)/* No fallback, no policies */
+  #define __GFP_RECLAIMABLE (0x80000u) /* Page is reclaimable */
+ 
+ #define __pskb_pull_tail(a,b) 0 //FIXME
+ 
+ #define sysfs_create_group(a,b) 0
+ #define sysfs_remove_group(a,b)
+#define module_param(a,b,c)
+#define ERESTARTSYS 1
+#define uninitialized_var(x) x
+#define min_t(a,b,c) (a)min(b,c)
+
+#define trace_iwlwifi_dev_iowrite32(a,b,c)
+#define trace_iwlwifi_dev_ioread32(a,b,c)
+
+#define EXPORT_SYMBOL(x)
+
+static inline int get_order(unsigned long size)
+  {
+          int order;
+  
+          size = (size - 1) >> (PAGE_SHIFT - 1);
+          order = -1;
+          do {
+                  size >>= 1;
+                  order++;
+          } while (size);
+          return order;
+  }
+ 
+#define skb_get_queue_mapping(x) 0 //FIXME
+#define pci_dma_sync_single_for_device(a,b,c,d)
+#define trace_iwlwifi_dev_tx(q,w,e,r,y,u,i)
+#define trace_iwlwifi_dev_hcmd(q,w,e,r)
+#define EXPORT_TRACEPOINT_SYMBOL(x)
+#define __free_pages(a,b)
+#define skb_linearize(a) 0
+#define free_pages(a,b)
+#define le32_to_cpup(x) le32_to_cpu(x)
+#define trace_iwlwifi_dev_ucode_event(a,b,c,d)
+#define trace_iwlwifi_dev_rx(a,b,c)
+#define trace_iwlwifi_dev_ucode_error(q,w,e,r,t,y,u,i,o,p)
+
+
+
 
 
 

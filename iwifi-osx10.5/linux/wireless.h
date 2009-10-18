@@ -72,7 +72,7 @@
 //#include <linux/types.h>		/* for __u* and __s* typedefs */
 //#include <linux/socket.h>		/* for "struct sockaddr" et al	*/
 //#include <linux/if.h>			/* for IFNAMSIZ and co... */
-
+#include "../net/compat.h"
 /***************************** VERSION *****************************/
 /*
  * This constant is used to know the availability of the wireless

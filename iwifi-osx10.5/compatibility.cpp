@@ -368,7 +368,7 @@ void dev_kfree_skb_any(struct sk_buff *skb) {
 	dev_kfree_skb(skb);
 }
 
-static inline void kfree_skb(struct sk_buff *skb){
+void kfree_skb(struct sk_buff *skb){
     IONetworkController *intf = (IONetworkController *)skb->intf;
     if (skb->mac_data)
 	if (!(mbuf_type(skb->mac_data) == MBUF_TYPE_FREE))
@@ -2914,10 +2914,8 @@ void ieee80211_recalc_ps(struct ieee80211_local *local, s32 latency)
                          int maxslp = 1;
  
                          if (dtimper > 1)
-						 maxslp = min( dtimper,
+                                 maxslp = min_t(int, dtimper,
                                                      latency / beaconint_us);
-                         //        maxslp = min_t(int, dtimper,
-                           //                          latency / beaconint_us);
  
                          local->hw.conf.max_sleep_period = maxslp;
                          local->ps_sdata = found;
@@ -7830,7 +7828,7 @@ static inline __u32 skb_queue_len(const struct sk_buff_head *list_)
                  skb_queue_len(&local->skb_queue_unreliable);
          while (tmp > IEEE80211_IRQSAFE_QUEUE_LIMIT &&
                 (skb = skb_dequeue(&local->skb_queue_unreliable))) {
-                 dev_kfree_skb_irq(skb);
+                 kfree_skb(skb);
                  tmp--;
                  I802_DEBUG_INC(local->tx_status_drop);
          }
@@ -7878,4 +7876,34 @@ void ieee80211_wake_queue(struct ieee80211_hw *hw, int queue)
 		}
 }
  
+#define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
+#define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
+ void *alloc_pages(size_t size, dma_addr_t phys_add)
+ {
+	size_t size_dma = RT_ALIGN_Z(size, PAGE_SIZE);
+	return IOMallocContiguous(size_dma, PAGE_SIZE, &phys_add);
+ 
+ }
+ 
+ void pci_unmap_page(struct pci_dev *dev, dma_addr_t phys_add, size_t size, int p)
+ {
+	phys_add=NULL;//FIXME
+ }
+
+void skb_add_rx_frag(struct sk_buff *skb, int start, void* idata, size_t offset, size_t len)
+{
+	mbuf_copyback(skb->mac_data,  offset, len, idata, MBUF_DONTWAIT);
+}
+ 
+ void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
+				struct sk_buff *skb,
+				enum ieee80211_tkip_key_type type, u8 *key)
+{}
+
+int rate_control_send_low(struct ieee80211_sta *sta,
+			   void *priv_sta,
+			   struct ieee80211_tx_rate_control *txrc)
+{
+return 0;
+}
  
