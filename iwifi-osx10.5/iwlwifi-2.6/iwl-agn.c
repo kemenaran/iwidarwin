@@ -1304,15 +1304,16 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 
 	/* Ask kernel firmware_class module to get the boot firmware off disk.
 	 * request_firmware() is synchronous, file is in memory on return. */
-	for (index = api_max; index >= api_min; index--) {
+	 index = api_max;
+	//for (index = api_max; index >= api_min; index--) {
 		sprintf(buf, "%s%d%s", name_pre, index, ".ucode");
 		ret = request_firmware(&ucode_raw, buf, &priv->pci_dev->dev);
 		if (ret < 0) {
 			IWL_ERR(priv, "%s firmware file req failed: %d\n",
 				  buf, ret);
-			if (ret == -ENOENT)
-				continue;
-			else
+		//	if (ret == -ENOENT)
+		//		continue;
+		//	else
 				goto error;
 		} else {
 			if (index < api_max)
@@ -1323,9 +1324,9 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 
 			IWL_DEBUG_INFO(priv, "Got firmware '%s' file (%zd bytes) from disk\n",
 				       buf, ucode_raw->size);
-			break;
+		//	break;
 		}
-	}
+//	}
 
 	if (ret < 0)
 		goto error;
@@ -2703,8 +2704,7 @@ static ssize_t store_debug_level(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,
-			show_debug_level, store_debug_level);
+//static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,			show_debug_level, store_debug_level);
 
 
 #endif /* CONFIG_IWLWIFI_DEBUG */
@@ -2721,7 +2721,7 @@ static ssize_t show_temperature(struct device *d,
 	return sprintf(buf, "%d\n", priv->temperature);
 }
 
-static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
+//static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
 
 static ssize_t show_tx_power(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -2756,7 +2756,7 @@ static ssize_t store_tx_power(struct device *d,
 	return ret;
 }
 
-static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
+//static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
 
 static ssize_t show_flags(struct device *d,
 			  struct device_attribute *attr, char *buf)
@@ -2794,7 +2794,7 @@ static ssize_t store_flags(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
+//static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
 
 static ssize_t show_filter_flags(struct device *d,
 				 struct device_attribute *attr, char *buf)
@@ -2835,8 +2835,7 @@ static ssize_t store_filter_flags(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,
-		   store_filter_flags);
+//static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,		   store_filter_flags);
 
 
 static ssize_t show_statistics(struct device *d,
@@ -2875,7 +2874,7 @@ static ssize_t show_statistics(struct device *d,
 	return len;
 }
 
-static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
+//static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
 
 static ssize_t show_rts_ht_protection(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -2908,8 +2907,7 @@ static ssize_t store_rts_ht_protection(struct device *d,
 	return ret;
 }
 
-static DEVICE_ATTR(rts_ht_protection, S_IWUSR | S_IRUGO,
-			show_rts_ht_protection, store_rts_ht_protection);
+//static DEVICE_ATTR(rts_ht_protection, S_IWUSR | S_IRUGO,			show_rts_ht_protection, store_rts_ht_protection);
 
 
 /*****************************************************************************

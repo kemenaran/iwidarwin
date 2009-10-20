@@ -24,8 +24,9 @@ struct ieee80211_bss;
 struct cfg80211_bss;
 struct net_device;
 struct cfg80211_scan_request;
-
-
+struct ieee80211_tx_rate_control;
+struct ieee80211_sta;
+struct ieee80211_key_conf;
 
 #include "net/mac80211.h"
 
@@ -38,9 +39,6 @@ int rate_control_send_low(struct ieee80211_sta *sta,
 			   void *priv_sta,
 			   struct ieee80211_tx_rate_control *txrc);
 void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb);
-void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
-				struct sk_buff *skb,
-				enum ieee80211_tkip_key_type type, u8 *key);
 void kfree_skb(struct sk_buff *skb);
 void skb_add_rx_frag(struct sk_buff *skb, int start, void* idata, size_t offset, size_t len);
  void pci_unmap_page(struct pci_dev *dev, dma_addr_t phys_add, size_t size, int p);
