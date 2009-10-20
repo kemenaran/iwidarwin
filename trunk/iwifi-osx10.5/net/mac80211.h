@@ -1860,9 +1860,10 @@ ieee80211_get_buffered_bc(struct ieee80211_hw *hw, struct ieee80211_vif *vif);
  * @type: TBD
  * @key: a buffer to which the key will be written
  */
-//void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
-//				struct sk_buff *skb,
-//				enum ieee80211_tkip_key_type type, u8 *key);
+static inline void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
+				struct sk_buff *skb,
+				enum ieee80211_tkip_key_type type, u8 *key)
+{}
 /**
  * ieee80211_wake_queue - wake specific queue
  * @hw: pointer as obtained from ieee80211_alloc_hw().

@@ -7895,10 +7895,7 @@ void skb_add_rx_frag(struct sk_buff *skb, int start, void* idata, size_t offset,
 	mbuf_copyback(skb->mac_data,  offset, len, idata, MBUF_DONTWAIT);
 }
  
- void ieee80211_get_tkip_key(struct ieee80211_key_conf *keyconf,
-				struct sk_buff *skb,
-				enum ieee80211_tkip_key_type type, u8 *key)
-{}
+
 
 int rate_control_send_low(struct ieee80211_sta *sta,
 			   void *priv_sta,
