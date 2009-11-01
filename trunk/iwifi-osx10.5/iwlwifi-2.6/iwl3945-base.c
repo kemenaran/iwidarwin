@@ -637,6 +637,7 @@ static int iwl3945_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 	 * within command buffer array. */
 	txcmd_phys = pci_map_single(priv->pci_dev, &out_cmd->hdr,
 				    len, PCI_DMA_TODEVICE);
+
 	/* we do not map meta data ... so we can safely access address to
 	 * provide to unmap command*/
 	pci_unmap_addr_set(out_meta, mapping, txcmd_phys);
@@ -1124,7 +1125,7 @@ static void iwl3945_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 	struct list_head *element;
 	struct iwl_rx_mem_buffer *rxb;
 	//struct page *page;
-	void *page;
+	struct sk_buff *page;
 	unsigned long flags;
 	gfp_t gfp_mask = priority;
 
@@ -1144,7 +1145,7 @@ static void iwl3945_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 			gfp_mask |= __GFP_COMP;
 
 		/* Alloc a new receive buffer */
-		page = alloc_pages(priv->hw_params.rx_page_order, rxb->page_dma);
+		page = alloc_pages(priv->hw_params.rx_page_order);
 		
 		//page = alloc_pages(gfp_mask, priv->hw_params.rx_page_order);
 		if (!page) {
@@ -1174,7 +1175,7 @@ static void iwl3945_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 
 		rxb->page = page;
 		/* Get physical address of RB/SKB */
-		//rxb->page_dma = pci_map_page(priv->pci_dev, page, 0,
+		rxb->page_dma = pci_map_page(priv->pci_dev, page);//, 0,
 		//		PAGE_SIZE << priv->hw_params.rx_page_order,
 		//		PCI_DMA_FROMDEVICE);
 
@@ -2728,8 +2729,10 @@ static void iwl3945_bg_alive_start(struct work_struct *data)
  */
 static void iwl3945_rfkill_poll(struct work_struct *data)
 {
+
 	struct iwl_priv *priv =
 	    container_of(data, struct iwl_priv, rfkill_poll.work);
+
 	bool old_rfkill = test_bit(STATUS_RF_KILL_HW, &priv->status);
 	bool new_rfkill = !(iwl_read32(priv, CSR_GP_CNTRL)
 			& CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
@@ -3102,7 +3105,7 @@ void iwl3945_post_associate(struct iwl_priv *priv)
 	iwl_activate_qos(priv, 0);
 
 	/* we have just associated, don't start scan too early */
-	priv->next_scan_jiffies = jiffies + IWL_DELAY_NEXT_SCAN;
+	priv->next_scan_jiffies = /*jiffies +*/ IWL_DELAY_NEXT_SCAN;
 }
 
 /*****************************************************************************
@@ -4060,8 +4063,11 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 
 	iwl_set_rxon_channel(priv,
 			     &priv->bands[IEEE80211_BAND_2GHZ].channels[5]);
+				 IOLog("1\n");
 	iwl3945_setup_deferred_work(priv);
+
 	iwl3945_setup_rx_handlers(priv);
+
 	iwl_power_initialize(priv);
 
 	/*********************************
@@ -4250,5 +4256,5 @@ MODULE_PARM_DESC(disable_hw_scan, "disable hardware scanning (default 0)");
 module_param_named(fw_restart3945, iwl3945_mod_params.restart_fw, int, S_IRUGO);
 MODULE_PARM_DESC(fw_restart3945, "restart firmware in case of error");
 
-module_exit(iwl3945_exit);
+//module_exit(iwl3945_exit);
 module_init(iwl3945_init);

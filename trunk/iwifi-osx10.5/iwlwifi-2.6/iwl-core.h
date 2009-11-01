@@ -559,6 +559,7 @@ irqreturn_t iwl_isr_ict(int irq, void *data);
 
 static inline u16 iwl_pcie_link_ctl(struct iwl_priv *priv)
 {
+	return 0;//hack
 	int pos;
 	u16 pci_lnk_ctl;
 	pos = pci_find_capability(priv->pci_dev, PCI_CAP_ID_EXP);

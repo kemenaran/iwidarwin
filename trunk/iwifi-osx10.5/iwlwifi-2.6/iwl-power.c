@@ -462,7 +462,7 @@ static void iwl_tt_check_exit_ct_kill(unsigned long data)
 		 * CT_KILL_EXIT_DURATION seconds to ensure we get a
 		 * thermal update */
 		IWL_DEBUG_POWER(priv, "schedule ct_kill exit timer\n");
-		mod_timer(&priv->thermal_throttle.ct_kill_exit_tm, jiffies +
+		mod_timer(&priv->thermal_throttle.ct_kill_exit_tm, /*jiffies +*/
 			  CT_KILL_EXIT_DURATION * HZ);
 	}
 }
@@ -476,7 +476,7 @@ static void iwl_perform_ct_kill_task(struct iwl_priv *priv,
 			ieee80211_stop_queues(priv->hw);
 		IWL_DEBUG_POWER(priv,
 				"Schedule 5 seconds CT_KILL Timer\n");
-		mod_timer(&priv->thermal_throttle.ct_kill_exit_tm, jiffies +
+		mod_timer(&priv->thermal_throttle.ct_kill_exit_tm,  /*jiffies +*/
 			  CT_KILL_EXIT_DURATION * HZ);
 	} else {
 		IWL_DEBUG_POWER(priv, "Wake all queues\n");
@@ -509,7 +509,7 @@ static void iwl_prepare_ct_kill_task(struct iwl_priv *priv)
 	iwl_send_statistics_request(priv, 0);
 	/* Reschedule the ct_kill wait timer */
 	mod_timer(&priv->thermal_throttle.ct_kill_waiting_tm,
-		 jiffies + msecs_to_jiffies(CT_KILL_WAITING_DURATION));
+		  /*jiffies +*/ msecs_to_jiffies(CT_KILL_WAITING_DURATION));
 }
 
 #define IWL_MINIMAL_POWER_THRESHOLD		(CT_KILL_THRESHOLD_LEGACY)

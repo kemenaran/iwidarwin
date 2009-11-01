@@ -8,6 +8,7 @@
  */
 
 #include "iwifi.h"
+
 //#include "defines.h"
 //#include "compatibility.h"
 
@@ -22,35 +23,36 @@ OSDefineMetaClassAndStructors(darwin_iwifi, IOEthernetController);
 
 // Magic to make the init/exit routines public.
 extern "C" {
+
     extern int (*init_routine)();
 	extern int (*init_routine2)();
-	extern int skb_set_data(const struct sk_buff *skb, void *data, size_t len);
-	extern struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw);
-	extern int drv_tx(struct ieee80211_local *local, struct sk_buff *skb);
-	extern struct sk_buff *dev_alloc_skb(unsigned int length);
-	extern int ieee80211_reconfig(struct ieee80211_local *local);
 	extern IOPCIDevice* my_pci_device;
 	extern UInt16 my_deviceID;
 	extern int queuetx;
 	extern IOService * my_provider;
 	extern IONetworkController *currentController;
 	extern u8 my_mac_addr[6];
-	
-	
+	extern IOWorkLoop * my_workqueue;
+	extern IOInterruptEventSource *	my_fInterruptSrc;
+	extern IONetworkStats		*my_netStats;
+	extern struct net_device *main_dev;
 }
 
-
-extern IOWorkLoop * getWorkLoop();
-extern IOInterruptEventSource * getInterruptEventSource();
-
+extern void ieee80211_tx_skb(struct ieee80211_sub_if_data *sdata, struct sk_buff *skb,
+                       int encrypt);
+extern int ieee80211_open();
+extern int skb_set_data(const struct sk_buff *skb, void *data, size_t len);
+extern struct ieee80211_local *hw_to_local(struct ieee80211_hw *hw);
+extern int drv_start(struct ieee80211_local *local);
+extern void drv_stop(struct ieee80211_local *local);
+extern struct sk_buff *dev_alloc_skb(unsigned int length);
+extern int ieee80211_reconfig(struct ieee80211_local *local);
 extern IOPCIDevice * getPCIDevice();
 extern IOMemoryMap * getMap();
 extern void setUnloaded();
 extern void start_undirect_scan();
-
 extern void setMyfifnet(ifnet_t fifnet);
 extern struct ieee80211_hw * get_my_hw();
-
 extern void setfNetif(IOEthernetInterface*	Intf);
 extern void setfTransmitQueue(IOBasicOutputQueue* fT);
 extern struct sk_buff *dev_alloc_skb(unsigned int length);
@@ -173,6 +175,11 @@ bool darwin_iwifi::init(OSDictionary *dict)
 	return super::init(dict);
 }
 
+IOWorkLoop * darwin_iwifi::getWorkLoop( void ) const
+{
+    return workqueue;
+}
+
 bool darwin_iwifi::createWorkLoop( void )
 {
     workqueue = IOWorkLoop::workLoop();
@@ -217,7 +224,8 @@ bool darwin_iwifi::start(IOService *provider)
 		
 		currentController=this;
 		my_provider=provider;
-
+		my_workqueue=workqueue;
+		
 		if ( (fPCIDevice = OSDynamicCast(IOPCIDevice, provider)) == 0) {
 			IOLog("%s  fPCIDevice == 0 :(\n", getName());
 			break;
@@ -237,19 +245,12 @@ bool darwin_iwifi::start(IOService *provider)
 				break;
        		}
 	
-		queuetx=0;
-		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
-		setfTransmitQueue(fTransmitQueue);
-		if (fTransmitQueue == NULL)
-		{
-			IOLog("ERR: getOutputQueue()\n");
-			break;
-		}
-		fTransmitQueue->setCapacity(0);
+
 				
 		my_pci_device=fPCIDevice;	
 		deviceID = fPCIDevice->configRead16(kIOPCIConfigDeviceID);		
 		my_deviceID=deviceID;
+		my_netStats=netStats;
 		IOLog("Card ID: %04x\n", deviceID);
 
 		if (deviceID==0x4222 || deviceID==0x4227)
@@ -263,15 +264,22 @@ bool darwin_iwifi::start(IOService *provider)
 			if( init_routine2() )
 			return false;
 		}
-		
+	
+		queuetx=0;
+		fTransmitQueue = (IOBasicOutputQueue*)createOutputQueue();
+		setfTransmitQueue(fTransmitQueue);
+		if (fTransmitQueue == NULL)
+		{
+			IOLog("ERR: getOutputQueue()\n");
+			break;
+		}
+		fTransmitQueue->setCapacity(1024);
+			
+		fInterruptSrc=my_fInterruptSrc;
 
 		mac_addr = my_mac_addr;
-		//getHardwareAddress(mac_addr);
-		        // Publish the MAC address
-        if ( (setProperty(kIOMACAddress, mac_addr, kIOEthernetAddressSize) == false) )
-        {
-            IOLog("Couldn't set the kIOMACAddress property\n");
-        }
+
+
         // Attach the IO80211Interface to this card.  This also creates a
         // new IO80211Interface, and stores the resulting object in fNetif.
 		if (attachInterface((IONetworkInterface **) &fNetif, false) == false) {
@@ -327,7 +335,10 @@ bool darwin_iwifi::start(IOService *provider)
 		errno_t error = ctl_register(&ep_ctl, &kctlref);
 
 		first_up=0;//ready for first load
-		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwifi::check_firstup),NULL,1000,true);
+		ieee80211_open();
+
+
+		//queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwifi::check_firstup),NULL,1000,true);
 		
         return true;
     } while(false);
@@ -377,11 +388,9 @@ void darwin_iwifi::check_firstup(void)
 		queue_te2(0,OSMemberFunctionCast(thread_call_func_t,this,&darwin_iwifi::check_firstup),NULL,1000,true);
 		return;
 	}
-	struct ieee80211_local *local =hw_to_local(get_my_hw());
-	if (local)//driver starts working here...
-	{
-		ieee80211_reconfig(local);
-	}
+
+
+
 }
 
 
@@ -418,8 +427,6 @@ void darwin_iwifi::stop(IOService *provider)
 	IOLog("Stopping\n");
 	setUnloaded();//Stop all the workqueue
 	IOSleep(1000);//wait for unfinished thread crappy oh Yeah!
-	IOWorkLoop * workqueue = getWorkLoop();
-	IOInterruptEventSource * fInterruptSrc = getInterruptEventSource();
 	if (fInterruptSrc && workqueue){
         workqueue->removeEventSource(fInterruptSrc);
 		fInterruptSrc->disable();
@@ -1470,11 +1477,15 @@ IOReturn darwin_iwifi::enable( IONetworkInterface* netif )
     if (first_up==0)
 			first_up=1;
 
-	if ((fNetif->getFlags() & IFF_RUNNING)==0)
+	if ((netif->getFlags() & IFF_RUNNING)==0)
 	{
 		IOLog("ifconfig going up\n ");
-				ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
-		
+		ifnet_set_flags(fifnet, IFF_RUNNING, IFF_RUNNING );
+		fTransmitQueue->setCapacity(1024);
+		fTransmitQueue->service(IOBasicOutputQueue::kServiceAsync);
+		fTransmitQueue->start();
+		//struct ieee80211_local *local =hw_to_local(get_my_hw());
+		//if (local) drv_start(local);
 		return kIOReturnSuccess;
 	}
 	else
@@ -1628,11 +1639,12 @@ copy_packet:
 		return kIOReturnOutputSuccess;//kIOReturnOutputDropped;
 	}
 	IOLog("outputpacket2\n");
-	struct ieee80211_local *local=hw_to_local(get_my_hw());
-	if (!local) return kIOReturnOutputSuccess;
+	if (!main_dev) return kIOReturnOutputSuccess;
 	struct sk_buff *skb=dev_alloc_skb(mbuf_len(m));
 	skb_set_data(skb,mbuf_data(m),mbuf_len(m));
-	drv_tx(local,skb);
+	struct ieee80211_sub_if_data *sdata = (struct ieee80211_sub_if_data*)netdev_priv(main_dev);
+	ieee80211_tx_skb(sdata, skb, 0);
+	netStats->outputPackets++;
 	
 finish:	
 	//spin_unlock_irqrestore(spin, flags);
@@ -1643,7 +1655,7 @@ finish:
 
 UInt32 darwin_iwifi::outputPacket(mbuf_t m, void * param)
 {
-	if (queuetx)
+	if (1)//queuetx)
 	{
 		if (!(fTransmitQueue->getState() & 0x1))
 		{
@@ -1658,18 +1670,19 @@ UInt32 darwin_iwifi::outputPacket(mbuf_t m, void * param)
 }
 
 
-IOReturn darwin_iwifi::disable( IONetworkInterface* /*netif*/ )
+IOReturn darwin_iwifi::disable( IONetworkInterface* netif )
 {
 
-	if ((fNetif->getFlags() & IFF_RUNNING)!=0)
+	if ((netif->getFlags() & IFF_RUNNING)!=0)
 	{
 		IOLog("ifconfig going down\n");
-		/*setLinkStatus(kIONetworkLinkValid);
+		//setLinkStatus(kIONetworkLinkValid);
 		fTransmitQueue->stop();
 		fTransmitQueue->setCapacity(0);
-		fTransmitQueue->flush();*/
+		fTransmitQueue->flush();
 		ifnet_set_flags(fifnet, 0 , IFF_RUNNING);
-					
+		//struct ieee80211_local *local =hw_to_local(get_my_hw());
+		//if (local) drv_stop(local);			
 		return kIOReturnSuccess;
 		
 	}
@@ -1717,8 +1730,8 @@ IOReturn darwin_iwifi::getPacketFilters(const OSSymbol * group, UInt32 *        
 
 void darwin_iwifi::getPacketBufferConstraints(IOPacketBufferConstraints * constraints) const {
 	assert(constraintsP);
-    constraints->alignStart  = kIOPacketBufferAlign1;	
-    constraints->alignLength = kIOPacketBufferAlign1;	
+    constraints->alignStart  = kIOPacketBufferAlign4;//FIXME	
+    constraints->alignLength = kIOPacketBufferAlign4;	
 }
 
 IOReturn darwin_iwifi::enablePacketFilter(const OSSymbol * group,
@@ -1766,11 +1779,9 @@ bool darwin_iwifi::configureInterface( IONetworkInterface *netif )
 
 
 
-//FIXME: Mac from iwl3945
 IOReturn darwin_iwifi::getHardwareAddress(IOEthernetAddress *addr)
 {
 	u8 *tmp = my_mac_addr;
-	//addr = (IOEthernetAddress *)IOMalloc(sizeof(IOEthernetAddress));
 	addr->bytes[0] = tmp[0];
 	addr->bytes[1] = tmp[1];
 	addr->bytes[2] = tmp[2];

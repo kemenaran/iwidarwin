@@ -1463,16 +1463,15 @@ struct ieee80211_radiotap_iterator {
 	u32 bitmap_shifter;
 };
 
-extern int ieee80211_radiotap_iterator_init(
-   struct ieee80211_radiotap_iterator *iterator,
-   struct ieee80211_radiotap_header *radiotap_header,
-   int max_length);
+//extern int ieee80211_radiotap_iterator_init(
+  // struct ieee80211_radiotap_iterator *iterator,
+  // struct ieee80211_radiotap_header *radiotap_header,
+  // int max_length);
 
-extern int ieee80211_radiotap_iterator_next(
-   struct ieee80211_radiotap_iterator *iterator);
+//extern int ieee80211_radiotap_iterator_next(
+  // struct ieee80211_radiotap_iterator *iterator);
 
-extern const unsigned char rfc1042_header[6];
-extern const unsigned char bridge_tunnel_header[6];
+
 
 /**
  * ieee80211_get_hdrlen_from_skb - get header length from data

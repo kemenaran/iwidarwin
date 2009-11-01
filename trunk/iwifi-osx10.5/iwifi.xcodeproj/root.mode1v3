@@ -317,7 +317,7 @@
 								<key>PBXProjectModuleGUID</key>
 								<string>1CE0B20306471E060097A5F4</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>iwl-agn.c</string>
+								<string>compatibility.cpp</string>
 								<key>PBXSplitModuleInNavigatorKey</key>
 								<dict>
 									<key>Split0</key>
@@ -325,37 +325,45 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CE0B20406471E060097A5F4</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>iwl-agn.c</string>
+										<string>compatibility.cpp</string>
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>61B85646108E1EBE0012F2C6</string>
+										<string>6112BF88109E30EA002A2E6D</string>
 										<key>history</key>
 										<array>
-											<string>617B2C7A108488B400A784D6</string>
-											<string>61EDC9711085245600E778E5</string>
-											<string>6121F94D10852D7B007E5875</string>
 											<string>61A422241085A1C2006BCE31</string>
-											<string>61A422311085A26B006BCE31</string>
 											<string>6104D8F410890B0A00DA48E5</string>
 											<string>6104D8F510890B0A00DA48E5</string>
 											<string>6104D8F610890B0A00DA48E5</string>
 											<string>6104D8F710890B0A00DA48E5</string>
 											<string>6104D8F810890B0A00DA48E5</string>
 											<string>61708CE2108BC59700522569</string>
-											<string>61708CE6108BC59700522569</string>
-											<string>61709208108BE82A00522569</string>
 											<string>61709209108BE82A00522569</string>
-											<string>6170920A108BE82A00522569</string>
-											<string>61709258108BE8ED00522569</string>
 											<string>6170927C108BEA6800522569</string>
-											<string>61B565CB108BED960082B7E8</string>
 											<string>61B565CC108BED960082B7E8</string>
-											<string>6117621C108CC9C300C31AF6</string>
 											<string>6117621D108CC9C300C31AF6</string>
-											<string>61B8563E108E1E9B0012F2C6</string>
-											<string>61B8563F108E1E9B0012F2C6</string>
-											<string>61B85624108E1E980012F2C6</string>
+											<string>61AF5CFC108E3243008441C6</string>
+											<string>61AF5CFE108E3243008441C6</string>
+											<string>61AF5CFF108E3243008441C6</string>
+											<string>61AF5D02108E3243008441C6</string>
+											<string>61AF5D03108E3243008441C6</string>
+											<string>617ED45A109B8BCE00643CBA</string>
+											<string>617EF4F3109B97E700F36F39</string>
+											<string>617E9D3E109BA66600F1C730</string>
+											<string>617FBBB4109CDD1100550BBF</string>
+											<string>61E88D19109D3CFA00DD4657</string>
+											<string>61E88D1A109D3CFA00DD4657</string>
+											<string>61343503109D8B690041F60B</string>
+											<string>6134356D109D91140041F60B</string>
+											<string>613435C8109DA4C60041F60B</string>
+											<string>613435C9109DA4C60041F60B</string>
+											<string>613435CA109DA4C60041F60B</string>
+											<string>613435CB109DA4C60041F60B</string>
+											<string>61B08D7D109E254C0001EA67</string>
+											<string>61B08D7E109E254C0001EA67</string>
+											<string>6112BF85109E30EA002A2E6D</string>
+											<string>6112BF86109E30EA002A2E6D</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -370,7 +378,6 @@
 											<string>617B5B4510847B65005C483F</string>
 											<string>617B5B4A10847B65005C483F</string>
 											<string>617B2C7F108488B400A784D6</string>
-											<string>617B2C92108488B400A784D6</string>
 											<string>61EDC8C410851C5E00E778E5</string>
 											<string>61EDC8CF10851D6A00E778E5</string>
 											<string>61EDC8E910851F3800E778E5</string>
@@ -385,12 +392,21 @@
 											<string>6104D90010890B0A00DA48E5</string>
 											<string>61709210108BE82A00522569</string>
 											<string>61709211108BE82A00522569</string>
-											<string>6170921D108BE82A00522569</string>
 											<string>6170927E108BEA6800522569</string>
 											<string>6170927F108BEA6800522569</string>
 											<string>61B565CE108BED960082B7E8</string>
 											<string>61B85640108E1E9B0012F2C6</string>
-											<string>61B85641108E1E9B0012F2C6</string>
+											<string>61AF5D04108E3243008441C6</string>
+											<string>61AF5D0D108E3243008441C6</string>
+											<string>61AF5D0F108E3243008441C6</string>
+											<string>61AF5D10108E3243008441C6</string>
+											<string>61AF5D11108E3243008441C6</string>
+											<string>61AF5D13108E3243008441C6</string>
+											<string>61AF5D14108E3243008441C6</string>
+											<string>618F9D43109B88DB006A7439</string>
+											<string>618F9D46109B88DB006A7439</string>
+											<string>617FBBBF109CDD1100550BBF</string>
+											<string>6112BF87109E30EA002A2E6D</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -448,9 +464,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>61B85643108E1E9B0012F2C6</string>
+				<string>6112BF89109E30EA002A2E6D</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>61B85644108E1E9B0012F2C6</string>
+				<string>6112BF8A109E30EA002A2E6D</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -582,7 +598,6 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>61846FE110844EC300792CDB</string>
 		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>/var/root/svn/trunk/iwifi-osx10.5/iwifi.xcodeproj</string>
 	</array>
@@ -603,14 +618,12 @@
 					<key>Dock</key>
 					<array>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
 								<string>1CD0528F0623707200166675</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>iwl-agn.c</string>
+								<string></string>
 								<key>StatusBarVisibility</key>
 								<true/>
 							</dict>
@@ -666,7 +679,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>61846FE110844EC300792CDB</string>
-				<string>61B85626108E1E980012F2C6</string>
+				<string>61BF3361109E2D4200EB92D2</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -804,7 +817,7 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CDD528C0622207200134675</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>iwl-tx.c</string>
+										<string>compatibility.cpp</string>
 										<key>StatusBarVisibility</key>
 										<true/>
 									</dict>
@@ -862,8 +875,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>61B8563A108E1E980012F2C6</string>
-				<string>61B8563B108E1E980012F2C6</string>
+				<string>6112BF81109E2ECD002A2E6D</string>
+				<string>6112BF82109E2ECD002A2E6D</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>

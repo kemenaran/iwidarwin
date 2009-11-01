@@ -1489,4 +1489,40 @@ enum {
 	IEEE80211_ADDBA_MSG	= 4,
 };
 
+typedef unsigned ieee80211_rx_result;
+#define RX_CONTINUE		((__force ieee80211_rx_result) 0u)
+#define RX_DROP_UNUSABLE	((__force ieee80211_rx_result) 1u)
+#define RX_DROP_MONITOR		((__force ieee80211_rx_result) 2u)
+#define RX_QUEUED		((__force ieee80211_rx_result) 3u)
+
+#define IEEE80211_RX_IN_SCAN		BIT(0)
+/* frame is destined to interface currently processed (incl. multicast frames) */
+#define IEEE80211_RX_RA_MATCH		BIT(1)
+#define IEEE80211_RX_AMSDU		BIT(2)
+#define IEEE80211_RX_CMNTR_REPORTED	BIT(3)
+#define IEEE80211_RX_FRAGMENTED		BIT(4)
+
+struct ieee80211_rx_data {
+	struct sk_buff *skb;
+	struct net_device *dev;
+	struct ieee80211_local *local;
+	struct ieee80211_sub_if_data *sdata;
+	struct sta_info *sta;
+	struct ieee80211_key *key;
+	struct ieee80211_rx_status *status;
+	struct ieee80211_rate *rate;
+
+	unsigned int flags;
+	int sent_ps_buffered;
+	int queue;
+	u32 tkip_iv32;
+	u16 tkip_iv16;
+};
+
+struct ethhdr {
+	unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
+	unsigned char	h_source[ETH_ALEN];	/* source ether addr	*/
+	__be16		h_proto;		/* packet type ID field	*/
+} __attribute__((packed));
+
 #endif /* LINUX_IEEE80211_H */
