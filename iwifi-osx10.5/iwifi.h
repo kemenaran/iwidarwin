@@ -103,7 +103,7 @@ extern "C" {
 #include <IOKit/IOInterruptEventSource.h>
 
 //#include "defines.h"
-
+#include "net/mac80211.h"
 
 
 #pragma mark -
@@ -301,7 +301,7 @@ class darwin_iwifi : public IOEthernetController
 
         
         virtual IOReturn enable( IONetworkInterface* netif );
-        virtual IOReturn disable( IONetworkInterface* /*netif*/ );
+        virtual IOReturn disable( IONetworkInterface* netif );
                 
         virtual int outputRaw80211Packet( IO80211Interface * interface, mbuf_t m );
 										

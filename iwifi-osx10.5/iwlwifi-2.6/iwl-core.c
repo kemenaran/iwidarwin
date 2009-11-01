@@ -60,7 +60,7 @@ MODULE_LICENSE("GPL");
 				    IWL_RATE_##pp##M_INDEX,    \
 				    IWL_RATE_##np##M_INDEX }
 
-u32 iwl_debug_level=0xffffffff & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP | IWL_DL_TXPOWER);
+u32 iwl_debug_level=0xffffffff;// & ~(IWL_DL_IO | IWL_DL_ISR | IWL_DL_POWER | IWL_DL_TEMP | IWL_DL_TXPOWER);
 EXPORT_SYMBOL(iwl_debug_level);
 
 static irqreturn_t iwl_isr(int irq, void *data);
@@ -2500,7 +2500,7 @@ void iwl_bss_info_changed(struct ieee80211_hw *hw,
 			 *
 			 * XXX: do this in mac80211
 			 */
-			priv->next_scan_jiffies = jiffies +
+			priv->next_scan_jiffies = /*jiffies +*/
 					IWL_DELAY_NEXT_SCAN_AFTER_ASSOC;
 			if (!iwl_is_rfkill(priv))
 				priv->cfg->ops->lib->post_associate(priv);

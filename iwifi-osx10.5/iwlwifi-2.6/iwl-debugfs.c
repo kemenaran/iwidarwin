@@ -1847,6 +1847,7 @@ DEBUGFS_READ_FILE_OPS(power_save_status);
  */
 int iwl_dbgfs_register(struct iwl_priv *priv, const char *name)
 {
+	return 0;
 	struct iwl_debugfs *dbgfs;
 	struct dentry *phyd = priv->hw->wiphy->debugfsdir;
 	int ret = 0;

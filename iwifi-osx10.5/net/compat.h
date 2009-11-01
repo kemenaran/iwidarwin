@@ -55,8 +55,7 @@ typedef __u64 __be64;
 
 #define __user
 #define IFNAMSIZ        16
-#define true 1
-#define false 0
+
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 //#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
 #define DIV_ROUND_CLOSEST(x, divisor)(                  \
@@ -85,12 +84,12 @@ typedef IOPhysicalAddress dma_addr_t;
 #define cpu_to_le64(x) OSSwapHostToLittleInt64(x)
 typedef int spinlock_t;
 typedef unsigned gfp_t;
-#define __iomem
+
 struct sk_buff {
 
 	struct sk_buff          *next;
 	struct sk_buff          *prev;
-	int pkt_type;
+	int pkt_type, priority;
     struct net_device *dev;
     mbuf_t mac_data;
     /*
@@ -661,7 +660,7 @@ static inline void mutex_unlock(struct mutex *new_mtx) {
     return;
 }
 
-#define net_ratelimit() 1
+#define net_ratelimit() 0
 
 static inline void put_unaligned_le16(u16 val, u8 *p)
   {
@@ -743,10 +742,10 @@ static inline void spin_lock_init(spinlock_t *new_lock) {
     return;
 }
 
-//FIXME
+//FIXME?
 #define wait_event_interruptible_timeout(wq, condition, timeout)    \
 ({                                      \
-long __ret = timeout;                 \
+long __ret = jiffies_to_msecs(timeout);                 \
 while(!(condition)) {                   \
     IOSleep(1);                    \
     __ret--;                            \
@@ -782,8 +781,8 @@ static inline void spin_unlock_irqrestore(spinlock_t *lock, int fl) {
 
 #define PCI_DMA_BIDIRECTIONAL   0
  #define PCI_DMA_NONE            3
-#define pci_unmap_addr(x,y) x
-#define pci_unmap_len(x,y) sizeof(x)
+#define pci_unmap_addr(x,y) (dma_addr_t)x
+#define pci_unmap_len(x,y) 0
 #define pci_unmap_addr_set(x,y,z)
 #define pci_unmap_len_set(x,y,z) 
 
@@ -1112,7 +1111,8 @@ struct ieee80211_radiotap_header {
 
 static inline int get_order(unsigned long size)
   {
-          int order;
+          return size;//hack
+		  int order;
   
           size = (size - 1) >> (PAGE_SHIFT - 1);
           order = -1;
@@ -1128,13 +1128,35 @@ static inline int get_order(unsigned long size)
 #define trace_iwlwifi_dev_tx(q,w,e,r,y,u,i)
 #define trace_iwlwifi_dev_hcmd(q,w,e,r)
 #define EXPORT_TRACEPOINT_SYMBOL(x)
-#define __free_pages(a,b)
 #define skb_linearize(a) 0
 #define free_pages(a,b)
 #define le32_to_cpup(x) le32_to_cpu(x)
 #define trace_iwlwifi_dev_ucode_event(a,b,c,d)
 #define trace_iwlwifi_dev_rx(a,b,c)
 #define trace_iwlwifi_dev_ucode_error(q,w,e,r,t,y,u,i,o,p)
+#define __free_pages(a,b) dev_kfree_skb(a)
+
+#define ETH_P_AARP	0x80F3		/* Appletalk AARP		*/
+#define ETH_P_IPX	0x8137		/* IPX over DIX			*/
+#define ETH_P_PAE 0x888E	/* Port Access Entity (IEEE 802.1X) */
+
+#define ETH_HLEN 30//FIXME?
+typedef unsigned ieee80211_tx_result;
+#define TX_CONTINUE	((ieee80211_tx_result) 0u)
+#define TX_DROP		((ieee80211_tx_result) 1u)
+#define TX_QUEUED	((ieee80211_tx_result) 2u)
+#define IEEE80211_TX_OK		0
+#define IEEE80211_TX_AGAIN	1
+#define IEEE80211_TX_PENDING	2
+#define IEEE80211_TX_FRAGMENTED		BIT(0)
+#define IEEE80211_TX_UNICAST		BIT(1)
+#define IEEE80211_TX_PS_BUFFERED	BIT(2)
+#define TOTAL_MAX_TX_BUFFER 512
+#define STA_MAX_TX_BUFFER 128
+#define AP_MAX_BC_BUFFER 128
+
+
+
 
 
 

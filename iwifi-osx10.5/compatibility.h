@@ -27,6 +27,8 @@ struct cfg80211_scan_request;
 struct ieee80211_tx_rate_control;
 struct ieee80211_sta;
 struct ieee80211_key_conf;
+struct ieee80211_sub_if_data;
+struct ieee80211_rx_data;
 
 #include "net/mac80211.h"
 
@@ -35,6 +37,18 @@ struct ieee80211_key_conf;
 extern "C" {
 #endif
 
+void *netdev_priv(struct net_device *dev);
+void ieee80211_tx_skb(struct ieee80211_sub_if_data *sdata, struct sk_buff *skb,
+                       int encrypt);
+int ieee80211_open();
+void ieee80211_invoke_rx_handlers(struct ieee80211_sub_if_data *sdata,
+					 struct ieee80211_rx_data *rx,
+					 struct sk_buff *skb);
+void drv_stop(struct ieee80211_local *local);
+int drv_start(struct ieee80211_local *local);
+struct sk_buff *skb_copy( struct sk_buff *skb, gfp_t gfp_mask);
+struct sk_buff *skb_dequeue(struct sk_buff_head *list);
+dma_addr_t pci_map_page(struct pci_dev *dev, struct sk_buff *page);
 int rate_control_send_low(struct ieee80211_sta *sta,
 			   void *priv_sta,
 			   struct ieee80211_tx_rate_control *txrc);
@@ -42,7 +56,7 @@ void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb);
 void kfree_skb(struct sk_buff *skb);
 void skb_add_rx_frag(struct sk_buff *skb, int start, void* idata, size_t offset, size_t len);
  void pci_unmap_page(struct pci_dev *dev, dma_addr_t phys_add, size_t size, int p);
-void *alloc_pages(size_t size, dma_addr_t phys_add);
+struct sk_buff *alloc_pages(size_t size);
 int ieee80211_reconfig(struct ieee80211_local *local);
  void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
                          int rowsize, int groupsize,
@@ -115,8 +129,8 @@ int pci_request_regions (struct pci_dev * pdev, char * res_name);
 void pci_release_regions (struct pci_dev * pdev);
 int pci_register_driver(struct pci_driver * drv);
 int pci_pme_capable(struct pci_dev *dev, u8 where);
-void pci_iounmap(struct pci_dev *dev, void __iomem * addr);
-void __iomem * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen);
+void pci_iounmap(struct pci_dev *dev, void  * addr);
+void  * pci_iomap (	struct pci_dev *  	dev,int  	bar,unsigned long  	maxlen);
 void *pci_get_drvdata (struct pci_dev *pdev);
 int pci_find_capability(struct pci_dev *dev, u8 where);
 int pci_enable_msi  (struct pci_dev * dev);
@@ -133,7 +147,7 @@ void pci_disable_device (struct pci_dev * dev);
     int pci_read_config_byte(struct pci_dev *dev, int where, u8 *val);
     int pci_read_config_word(struct pci_dev *dev, int where, u16 *val);
     int pci_read_config_dword(struct pci_dev *dev, int where, u32 *val);
-    addr64_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction);
+    dma_addr_t pci_map_single(struct pci_dev *hwdev, void *ptr, size_t size, int direction);
 void wiphy_rfkill_set_hw_state(struct wiphy *wiphy, int blocked);
 void tasklet_schedule(struct tasklet_struct *t);
 int tasklet_kill(struct tasklet_struct *t);
@@ -270,8 +284,8 @@ static inline int bitmap_empty(const unsigned long *src, int nbits)
           return !(addr[0] | addr[1] | addr[2] | addr[3] | addr[4] | addr[5]);
   }
  
- 
- 
+
+
 
 
 

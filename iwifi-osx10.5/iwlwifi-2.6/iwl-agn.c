@@ -381,7 +381,7 @@ static inline dma_addr_t iwl_tfd_tb_get_addr(struct iwl_tfd *tfd, u8 idx)
 {
 	struct iwl_tfd_tb *tb = &tfd->tbs[idx];
 
-	dma_addr_t addr = get_unaligned_le32(&tb->lo);
+	dma_addr_t addr = tb->lo;//get_unaligned_le32(&tb->lo);
 	if (sizeof(dma_addr_t) > sizeof(u32))
 		addr |=
 		((dma_addr_t)(le16_to_cpu(tb->hi_n_len) & 0xF) << 16) << 16;
@@ -402,7 +402,8 @@ static inline void iwl_tfd_set_tb(struct iwl_tfd *tfd, u8 idx,
 	struct iwl_tfd_tb *tb = &tfd->tbs[idx];
 	u16 hi_n_len = len << 4;
 
-	put_unaligned_le32(addr, &tb->lo);
+	//put_unaligned_le32(addr, &tb->lo);
+	tb->lo=addr;
 	if (sizeof(dma_addr_t) > sizeof(u32))
 		hi_n_len |= ((addr >> 16) >> 16) & 0xF;
 
@@ -3380,7 +3381,7 @@ static struct pci_device_id iwl_hw_card_ids[] = {
 
 	{0}
 };
-MODULE_DEVICE_TABLE(pci, iwl_hw_card_ids);
+//MODULE_DEVICE_TABLE(pci, iwl_hw_card_ids);
 
 static struct pci_driver iwl_driver = {
 	.name = DRV_NAME,

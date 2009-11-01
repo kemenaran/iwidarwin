@@ -147,12 +147,12 @@ extern void iwl5000_temperature(struct iwl_priv *priv);
 struct iwl_rx_mem_buffer {
 	dma_addr_t page_dma;
 	//struct page *page;
-	void *page;
+	struct sk_buff *page;
 	struct list_head list;
 };
 
 //#define rxb_addr(r) page_address(r->page)
-#define rxb_addr(r) (r->page)
+#define rxb_addr(r) skb_data(r->page)
 
 /* defined below */
 struct iwl_device_cmd;
@@ -1060,7 +1060,7 @@ struct iwl_priv {
 	struct pci_dev *pci_dev;
 
 	/* pci hardware address support */
-	void __iomem *hw_base;
+	void  *hw_base;
 	u32  hw_rev;
 	u32  hw_wa_rev;
 	u8   rev_id;

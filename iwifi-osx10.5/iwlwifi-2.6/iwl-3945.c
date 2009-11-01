@@ -565,7 +565,7 @@ static void iwl3945_pass_packet_to_mac80211(struct iwl_priv *priv,
 		return;
 	}
 
-	skb = alloc_skb(IWL_LINK_HDR_MAX, GFP_ATOMIC);
+	skb = skb_copy(rxb->page,GFP_ATOMIC);//alloc_skb(IWL_LINK_HDR_MAX, GFP_ATOMIC);
 	if (!skb) {
 		IWL_ERR(priv, "alloc_skb failed\n");
 		return;
@@ -576,8 +576,8 @@ static void iwl3945_pass_packet_to_mac80211(struct iwl_priv *priv,
 				       (struct ieee80211_hdr *)rxb_addr(rxb),
 				       le32_to_cpu(rx_end->status), stats);
 
-	skb_add_rx_frag(skb, 0, rxb->page,
-			(void *)rx_hdr->payload - (void *)pkt, len);
+	//skb_add_rx_frag(skb, 0, rxb->page,
+	//		(void *)rx_hdr->payload - (void *)pkt, len);
 
 	/* mac80211 currently doesn't support paged SKB. Convert it to
 	 * linear SKB for management frame and data frame requires
@@ -2862,4 +2862,4 @@ struct pci_device_id iwl3945_hw_card_ids[] = {
 	{0}
 };
 
-MODULE_DEVICE_TABLE(pci, iwl3945_hw_card_ids);
+//MODULE_DEVICE_TABLE(pci, iwl3945_hw_card_ids);

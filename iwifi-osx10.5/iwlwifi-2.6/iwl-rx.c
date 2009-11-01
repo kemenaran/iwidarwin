@@ -240,7 +240,7 @@ void iwl_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 	struct list_head *element;
 	struct iwl_rx_mem_buffer *rxb;
 	//struct page *page;
-	void *page;
+	struct sk_buff *page;
 	unsigned long flags;
 	gfp_t gfp_mask = priority;
 
@@ -259,7 +259,7 @@ void iwl_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 			gfp_mask |= __GFP_COMP;
 
 		/* Alloc a new receive buffer */
-		page = alloc_pages(priv->hw_params.rx_page_order, rxb->page_dma);
+		page = alloc_pages(priv->hw_params.rx_page_order);
 		
 		//page = alloc_pages(gfp_mask, priv->hw_params.rx_page_order);
 		if (!page) {
@@ -294,7 +294,7 @@ void iwl_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 
 		rxb->page = page;
 		/* Get physical address of the RB */
-		//rxb->page_dma = pci_map_page(priv->pci_dev, page, 0,
+		rxb->page_dma = pci_map_page(priv->pci_dev, page);//, 0,
 		//		PAGE_SIZE << priv->hw_params.rx_page_order,
 		//		PCI_DMA_FROMDEVICE);
 		/* dma address must be no more than 36 bits */
@@ -623,7 +623,7 @@ void iwl_rx_statistics(struct iwl_priv *priv,
 	 * REG_RECALIB_PERIOD seconds to ensure we get a
 	 * thermal update even if the uCode doesn't give
 	 * us one */
-	mod_timer(&priv->statistics_periodic, jiffies +
+	mod_timer(&priv->statistics_periodic,  /*jiffies +*/
 		  msecs_to_jiffies(REG_RECALIB_PERIOD * 1000));
 
 	if (unlikely(!test_bit(STATUS_SCANNING, &priv->status)) &&
@@ -940,13 +940,13 @@ static void iwl_pass_packet_to_mac80211(struct iwl_priv *priv,
 	    iwl_set_decrypted_flag(priv, hdr, ampdu_status, stats))
 		return;
 
-	skb = alloc_skb(IWL_LINK_HDR_MAX, GFP_ATOMIC);
+	skb = skb_copy(rxb->page,GFP_ATOMIC);//alloc_skb(IWL_LINK_HDR_MAX, GFP_ATOMIC);
 	if (!skb) {
 		IWL_ERR(priv, "alloc_skb failed\n");
 		return;
 	}
 
-	skb_add_rx_frag(skb, 0, rxb->page, (void *)hdr - rxb_addr(rxb), len);
+	//skb_add_rx_frag(skb, 0, rxb->page, (u8 *)hdr - (u8*)rxb_addr(rxb), len);
 
 	/* mac80211 currently doesn't support paged SKB. Convert it to
 	 * linear SKB for management frame and data frame requires

@@ -2027,9 +2027,9 @@ void ieee80211_start_tx_ba_cb(struct ieee80211_hw *hw, u8 *ra, u16 tid);
  * the need to stop aggregation on a certain RA/TID, the session level
  * will be managed by the mac80211.
  */
-int ieee80211_stop_tx_ba_session(struct ieee80211_hw *hw,
-				 u8 *ra, u16 tid,
-				 enum ieee80211_back_parties initiator);
+//int ieee80211_stop_tx_ba_session(struct ieee80211_hw *hw,
+//				 u8 *ra, u16 tid,
+//				 enum ieee80211_back_parties initiator);
 
 /**
  * ieee80211_stop_tx_ba_cb - low level driver ready to stop aggregate.
