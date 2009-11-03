@@ -30,8 +30,6 @@
 
 #include "iwl-commands.h"
 
-#define IWL_CONN_LISTEN_INTERVAL	10
-
 #define IWL_ABSOLUTE_ZERO		0
 #define IWL_ABSOLUTE_MAX		0xFFFFFFFF
 #define IWL_TT_INCREASE_MARGIN	5
@@ -141,6 +139,7 @@ void iwl_tt_exit_ct_kill(struct iwl_priv *priv);
 void iwl_tt_handler(struct iwl_priv *priv);
 void iwl_tt_initialize(struct iwl_priv *priv);
 void iwl_tt_exit(struct iwl_priv *priv);
+void iwl_power_cmd_initialize(struct iwl_priv *priv);
 void iwl_power_initialize(struct iwl_priv *priv);
 
 extern bool no_sleep_autoadjust;

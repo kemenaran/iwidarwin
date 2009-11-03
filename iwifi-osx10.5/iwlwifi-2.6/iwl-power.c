@@ -163,9 +163,9 @@ static void iwl_static_sleep_cmd(struct iwl_priv *priv,
 		cmd->flags &= ~IWL_POWER_SLEEP_OVER_DTIM_MSK;
 
 	slp_itrvl = le32_to_cpu(cmd->sleep_interval[IWL_POWER_VEC_SIZE - 1]);
-	if (slp_itrvl > IWL_CONN_LISTEN_INTERVAL)
+	if (slp_itrvl > IWL_CONN_MAX_LISTEN_INTERVAL)
 		cmd->sleep_interval[IWL_POWER_VEC_SIZE - 1] =
-			cpu_to_le32(IWL_CONN_LISTEN_INTERVAL);
+			cpu_to_le32(IWL_CONN_MAX_LISTEN_INTERVAL);
 
 	/* enforce max sleep interval */
 	for (i = IWL_POWER_VEC_SIZE - 1; i >= 0 ; i--) {
@@ -476,7 +476,7 @@ static void iwl_perform_ct_kill_task(struct iwl_priv *priv,
 			ieee80211_stop_queues(priv->hw);
 		IWL_DEBUG_POWER(priv,
 				"Schedule 5 seconds CT_KILL Timer\n");
-		mod_timer(&priv->thermal_throttle.ct_kill_exit_tm,  /*jiffies +*/
+		mod_timer(&priv->thermal_throttle.ct_kill_exit_tm, /*jiffies +*/
 			  CT_KILL_EXIT_DURATION * HZ);
 	} else {
 		IWL_DEBUG_POWER(priv, "Wake all queues\n");
@@ -509,7 +509,7 @@ static void iwl_prepare_ct_kill_task(struct iwl_priv *priv)
 	iwl_send_statistics_request(priv, 0);
 	/* Reschedule the ct_kill wait timer */
 	mod_timer(&priv->thermal_throttle.ct_kill_waiting_tm,
-		  /*jiffies +*/ msecs_to_jiffies(CT_KILL_WAITING_DURATION));
+		 /*jiffies +*/ msecs_to_jiffies(CT_KILL_WAITING_DURATION));
 }
 
 #define IWL_MINIMAL_POWER_THRESHOLD		(CT_KILL_THRESHOLD_LEGACY)
@@ -957,6 +957,14 @@ void iwl_tt_exit(struct iwl_priv *priv)
 EXPORT_SYMBOL(iwl_tt_exit);
 
 /* initialize to default */
+void iwl_power_cmd_initialize(struct iwl_priv *priv)
+{
+	memset(&priv->power_data.sleep_cmd, 0,
+		sizeof(priv->power_data.sleep_cmd));
+}
+EXPORT_SYMBOL(iwl_power_cmd_initialize);
+
+/* initialize to default */
 void iwl_power_initialize(struct iwl_priv *priv)
 {
 	u16 lctl = iwl_pcie_link_ctl(priv);
@@ -965,7 +973,6 @@ void iwl_power_initialize(struct iwl_priv *priv)
 
 	priv->power_data.debug_sleep_level_override = -1;
 
-	memset(&priv->power_data.sleep_cmd, 0,
-		sizeof(priv->power_data.sleep_cmd));
+	iwl_power_cmd_initialize(priv);
 }
 EXPORT_SYMBOL(iwl_power_initialize);

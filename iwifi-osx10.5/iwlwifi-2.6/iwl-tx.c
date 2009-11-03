@@ -97,7 +97,8 @@ int iwl_txq_update_write_ptr(struct iwl_priv *priv, struct iwl_tx_queue *txq)
 		reg = iwl_read32(priv, CSR_UCODE_DRV_GP1);
 
 		if (reg & CSR_UCODE_DRV_GP1_BIT_MAC_SLEEP) {
-			IWL_DEBUG_INFO(priv, "Requesting wakeup, GP1 = 0x%x\n", reg);
+			IWL_DEBUG_INFO(priv, "Tx queue %d requesting wakeup, GP1 = 0x%x\n",
+				      txq_id, reg);
 			iwl_set_bit(priv, CSR_GP_CNTRL,
 				    CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
 			return ret;
@@ -132,7 +133,7 @@ void iwl_tx_queue_free(struct iwl_priv *priv, int txq_id)
 	struct iwl_tx_queue *txq = &priv->txq[txq_id];
 	struct iwl_queue *q = &txq->q;
 	struct pci_dev *dev = priv->pci_dev;
-	int i, len;
+	int i;
 
 	if (q->n_bd == 0)
 		return;
@@ -141,8 +142,6 @@ void iwl_tx_queue_free(struct iwl_priv *priv, int txq_id)
 	for (; q->write_ptr != q->read_ptr;
 	     q->read_ptr = iwl_queue_inc_wrap(q->read_ptr, q->n_bd))
 		priv->cfg->ops->lib->txq_free_tfd(priv, txq);
-
-	len = sizeof(struct iwl_device_cmd) * q->n_window;
 
 	/* De-alloc array of command/tx buffers */
 	for (i = 0; i < TFD_TX_CMD_SLOTS; i++)
@@ -181,13 +180,10 @@ void iwl_cmd_queue_free(struct iwl_priv *priv)
 	struct iwl_tx_queue *txq = &priv->txq[IWL_CMD_QUEUE_NUM];
 	struct iwl_queue *q = &txq->q;
 	struct pci_dev *dev = priv->pci_dev;
-	int i, len;
+	int i;
 
 	if (q->n_bd == 0)
 		return;
-
-	len = sizeof(struct iwl_device_cmd) * q->n_window;
-	len += IWL_MAX_SCAN_SIZE;
 
 	/* De-alloc array of command/tx buffers */
 	for (i = 0; i <= TFD_CMD_SLOTS; i++)
@@ -370,8 +366,13 @@ int iwl_tx_queue_init(struct iwl_priv *priv, struct iwl_tx_queue *txq,
 
 	txq->need_update = 0;
 
-	/* aggregation TX queues will get their ID when aggregation begins */
-	if (txq_id <= IWL_TX_FIFO_AC3)
+	/*
+	 * Aggregation TX queues will get their ID when aggregation begins;
+	 * they overwrite the setting done here. The command FIFO doesn't
+	 * need an swq_id so don't set one to catch errors, all others can
+	 * be set up to the identity mapping.
+	 */
+	if (txq_id != IWL_CMD_QUEUE_NUM)
 		txq->swq_id = txq_id;
 
 	/* TFD_QUEUE_SIZE_MAX must be power-of-two size, otherwise
@@ -678,7 +679,8 @@ static void iwl_tx_cmd_build_hwcrypto(struct iwl_priv *priv,
 
 	case ALG_TKIP:
 		tx_cmd->sec_ctl = TX_CMD_SEC_TKIP;
-		//ieee80211_get_tkip_key(keyconf, skb_frag,			IEEE80211_TKIP_P2_KEY, tx_cmd->key);
+		ieee80211_get_tkip_key(keyconf, skb_frag,
+			IEEE80211_TKIP_P2_KEY, tx_cmd->key);
 		IWL_DEBUG_TX(priv, "tx_cmd with tkip hwcrypto\n");
 		break;
 
@@ -984,7 +986,8 @@ int iwl_enqueue_hcmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
 	       !(cmd->flags & CMD_SIZE_HUGE));
 
 	if (iwl_is_rfkill(priv) || iwl_is_ctkill(priv)) {
-		IWL_DEBUG_INFO(priv, "Not sending command - RF/CT KILL\n");
+		IWL_WARN(priv, "Not sending command - %s KILL\n",
+			 iwl_is_rfkill(priv) ? "RF" : "CT");
 		return -EIO;
 	}
 
@@ -1126,11 +1129,6 @@ static void iwl_hcmd_queue_reclaim(struct iwl_priv *priv, int txq_id,
 		return;
 	}
 
-	pci_unmap_single(priv->pci_dev,
-		pci_unmap_addr(&txq->meta[cmd_idx], mapping),
-		pci_unmap_len(&txq->meta[cmd_idx], len),
-		PCI_DMA_BIDIRECTIONAL);
-
 	for (idx = iwl_queue_inc_wrap(idx, q->n_bd); q->read_ptr != idx;
 	     q->read_ptr = iwl_queue_inc_wrap(q->read_ptr, q->n_bd)) {
 
@@ -1177,6 +1175,11 @@ void iwl_tx_cmd_complete(struct iwl_priv *priv, struct iwl_rx_mem_buffer *rxb)
 	cmd_index = get_cmd_index(&priv->txq[IWL_CMD_QUEUE_NUM].q, index, huge);
 	cmd = priv->txq[IWL_CMD_QUEUE_NUM].cmd[cmd_index];
 	meta = &priv->txq[IWL_CMD_QUEUE_NUM].meta[cmd_index];
+
+	pci_unmap_single(priv->pci_dev,
+			 pci_unmap_addr(meta, mapping),
+			 pci_unmap_len(meta, len),
+			 PCI_DMA_BIDIRECTIONAL);
 
 	/* Input error checking is done when commands are added to queue. */
 	if (meta->flags & CMD_WANT_SKB) {
