@@ -228,6 +228,8 @@ struct iwl_mod_params {
  * @chain_noise_num_beacons: number of beacons used to compute chain noise
  * @adv_thermal_throttle: support advance thermal throttle
  * @support_ct_kill_exit: support ct kill exit condition
+ * @support_sm_ps: support spatial multiplexing power save
+ * @support_wimax_coexist: support wimax/wifi co-exist
  *
  * We enable the driver to be backward compatible wrt API version. The
  * driver specifies which APIs it supports (with @ucode_api_max being the
@@ -283,6 +285,8 @@ struct iwl_cfg {
 	const bool supports_idle;
 	bool adv_thermal_throttle;
 	bool support_ct_kill_exit;
+	bool support_sm_ps;
+	const bool support_wimax_coexist;
 };
 
 /***************************
@@ -316,8 +320,6 @@ void iwl_configure_filter(struct ieee80211_hw *hw,
 			  unsigned int *total_flags, u64 multicast);
 int iwl_hw_nic_init(struct iwl_priv *priv);
 int iwl_set_hw_params(struct iwl_priv *priv);
-int iwl_init_drv(struct iwl_priv *priv);
-void iwl_uninit_drv(struct iwl_priv *priv);
 bool iwl_is_monitor_mode(struct iwl_priv *priv);
 void iwl_post_associate(struct iwl_priv *priv);
 void iwl_bss_info_changed(struct ieee80211_hw *hw,
@@ -340,6 +342,7 @@ int iwl_alloc_txq_mem(struct iwl_priv *priv);
 void iwl_free_txq_mem(struct iwl_priv *priv);
 void iwlcore_rts_tx_cmd_flag(struct ieee80211_tx_info *info,
 				__le32 *tx_flags);
+int iwl_send_wimax_coex(struct iwl_priv *priv);
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 int iwl_alloc_traffic_mem(struct iwl_priv *priv);
 void iwl_free_traffic_mem(struct iwl_priv *priv);
@@ -559,7 +562,6 @@ irqreturn_t iwl_isr_ict(int irq, void *data);
 
 static inline u16 iwl_pcie_link_ctl(struct iwl_priv *priv)
 {
-	return 0;//hack
 	int pos;
 	u16 pci_lnk_ctl;
 	pos = pci_find_capability(priv->pci_dev, PCI_CAP_ID_EXP);
@@ -577,12 +579,17 @@ int iwl_pci_resume(struct pci_dev *pdev);
 #ifdef CONFIG_IWLWIFI_DEBUG
 void iwl_dump_nic_event_log(struct iwl_priv *priv);
 void iwl_dump_nic_error_log(struct iwl_priv *priv);
+void iwl_print_rx_config_cmd(struct iwl_priv *priv);
 #else
 static inline void iwl_dump_nic_event_log(struct iwl_priv *priv)
 {
 }
 
 static inline void iwl_dump_nic_error_log(struct iwl_priv *priv)
+{
+}
+
+static inline void iwl_print_rx_config_cmd(struct iwl_priv *priv)
 {
 }
 #endif

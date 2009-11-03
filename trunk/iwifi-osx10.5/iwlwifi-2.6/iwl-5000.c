@@ -52,8 +52,8 @@
 #define IWL5150_UCODE_API_MAX 2
 
 /* Lowest firmware API version supported */
-#define IWL5000_UCODE_API_MIN 1
-#define IWL5150_UCODE_API_MIN 1
+#define IWL5000_UCODE_API_MIN 2
+#define IWL5150_UCODE_API_MIN 2
 
 #define IWL5000_FW_PRE "iwlwifi-5000-"
 #define _IWL5000_MODULE_FIRMWARE(api) IWL5000_FW_PRE #api ".ucode"
@@ -592,16 +592,6 @@ static void iwl5000_tx_queue_set_status(struct iwl_priv *priv,
 		       scd_retry ? "BA" : "AC", txq_id, tx_fifo_id);
 }
 
-static int iwl5000_send_wimax_coex(struct iwl_priv *priv)
-{
-	struct iwl_wimax_coex_cmd coex_cmd;
-
-	memset(&coex_cmd, 0, sizeof(coex_cmd));
-
-	return iwl_send_cmd_pdu(priv, COEX_PRIORITY_TABLE_CMD,
-				sizeof(coex_cmd), &coex_cmd);
-}
-
 int iwl5000_alive_notify(struct iwl_priv *priv)
 {
 	u32 a;
@@ -672,9 +662,13 @@ int iwl5000_alive_notify(struct iwl_priv *priv)
 		iwl_txq_ctx_activate(priv, i);
 		iwl5000_tx_queue_set_status(priv, &priv->txq[i], ac, 0);
 	}
-	/* TODO - need to initialize those FIFOs inside the loop above,
-	 * not only mark them as active */
-	iwl_txq_ctx_activate(priv, 4);
+
+	/*
+	 * TODO - need to initialize these queues and map them to FIFOs
+	 * in the loop above, not only mark them as active. We do this
+	 * because we want the first aggregation queue to be queue #10,
+	 * but do not use 8 or 9 otherwise yet.
+	 */
 	iwl_txq_ctx_activate(priv, 7);
 	iwl_txq_ctx_activate(priv, 8);
 	iwl_txq_ctx_activate(priv, 9);
@@ -682,7 +676,7 @@ int iwl5000_alive_notify(struct iwl_priv *priv)
 	spin_unlock_irqrestore(&priv->lock, flags);
 
 
-	iwl5000_send_wimax_coex(priv);
+	iwl_send_wimax_coex(priv);
 
 	iwl5000_set_Xtal_calib(priv);
 	iwl_send_calib_results(priv);
@@ -1398,8 +1392,8 @@ static int iwl5000_hw_channel_switch(struct iwl_priv *priv, u16 channel)
 		priv->active_rxon.channel, channel);
 	cmd.band = priv->band == IEEE80211_BAND_2GHZ;
 	cmd.channel = cpu_to_le16(channel);
-	cmd.rxon_flags = priv->active_rxon.flags;
-	cmd.rxon_filter_flags = priv->active_rxon.filter_flags;
+	cmd.rxon_flags = priv->staging_rxon.flags;
+	cmd.rxon_filter_flags = priv->staging_rxon.filter_flags;
 	cmd.switch_time = cpu_to_le32(priv->ucode_beacon_time);
 	ch_info = iwl_get_channel_info(priv, priv->band, channel);
 	if (ch_info)
@@ -1409,6 +1403,8 @@ static int iwl5000_hw_channel_switch(struct iwl_priv *priv, u16 channel)
 			priv->active_rxon.channel, channel);
 		return -EFAULT;
 	}
+	priv->switch_rxon.channel = cpu_to_le16(channel);
+	priv->switch_rxon.switch_in_progress = true;
 
 	return iwl_send_cmd_sync(priv, &hcmd);
 }

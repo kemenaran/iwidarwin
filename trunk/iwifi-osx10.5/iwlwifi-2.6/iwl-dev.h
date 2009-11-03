@@ -519,6 +519,7 @@ struct iwl_ht_config {
 	bool is_ht;
 	bool is_40mhz;
 	bool single_chain_sufficient;
+	u8 sm_ps;
 	/* BSS related data */
 	u8 extension_chan_offset;
 	u8 ht_protection;
@@ -932,8 +933,7 @@ enum iwl_access_mode {
  */
 enum iwl_pa_type {
 	IWL_PA_SYSTEM = 0,
-	IWL_PA_HYBRID = 1,
-	IWL_PA_INTERNAL = 2,
+	IWL_PA_INTERNAL = 1,
 };
 
 /* interrupt statistics */
@@ -993,6 +993,11 @@ struct traffic_stats {
 	u64 data_bytes;
 };
 #endif
+
+struct iwl_switch_rxon {
+	bool switch_in_progress;
+	__le16 channel;
+};
 
 struct iwl_priv {
 
@@ -1087,7 +1092,7 @@ struct iwl_priv {
 	const struct iwl_rxon_cmd active_rxon;
 	struct iwl_rxon_cmd staging_rxon;
 
-	struct iwl_rxon_cmd recovery_rxon;
+	struct iwl_switch_rxon switch_rxon;
 
 	/* 1st responses from initialize and runtime uCode images.
 	 * 4965's initialize alive response contains some calibration data. */

@@ -637,7 +637,6 @@ static int iwl3945_tx_skb(struct iwl_priv *priv, struct sk_buff *skb)
 	 * within command buffer array. */
 	txcmd_phys = pci_map_single(priv->pci_dev, &out_cmd->hdr,
 				    len, PCI_DMA_TODEVICE);
-
 	/* we do not map meta data ... so we can safely access address to
 	 * provide to unmap command*/
 	pci_unmap_addr_set(out_meta, mapping, txcmd_phys);
@@ -1146,7 +1145,6 @@ static void iwl3945_rx_allocate(struct iwl_priv *priv, gfp_t priority)
 
 		/* Alloc a new receive buffer */
 		page = alloc_pages(priv->hw_params.rx_page_order);
-		
 		//page = alloc_pages(gfp_mask, priv->hw_params.rx_page_order);
 		if (!page) {
 			if (net_ratelimit())
@@ -1372,7 +1370,7 @@ static void iwl3945_rx_handle(struct iwl_priv *priv)
 	i = rxq->read;
 
 	/* calculate total frames need to be restock after handling RX */
-	total_empty = r - priv->rxq.write_actual;
+	total_empty = r - rxq->write_actual;
 	if (total_empty < 0)
 		total_empty += RX_QUEUE_SIZE;
 
@@ -1443,25 +1441,28 @@ static void iwl3945_rx_handle(struct iwl_priv *priv)
 				IWL_WARN(priv, "Claim null rxb?\n");
 		}
 
-		/* For now we just don't re-use anything.  We can tweak this
-		 * later to try and re-use notification packets and SKBs that
-		 * fail to Rx correctly */
-		if (rxb->page != NULL) {
-			priv->alloc_rxb_page--;
-			__free_pages(rxb->page, priv->hw_params.rx_page_order);
-			rxb->page = NULL;
-		}
-
+		/* Reuse the page if possible. For notification packets and
+		 * SKBs that fail to Rx correctly, add them back into the
+		 * rx_free list for reuse later. */
 		spin_lock_irqsave(&rxq->lock, flags);
-		list_add_tail(&rxb->list, &priv->rxq.rx_used);
+		if (rxb->page != NULL) {
+			rxb->page_dma = pci_map_page(priv->pci_dev, rxb->page);//,
+			//	0, PAGE_SIZE << priv->hw_params.rx_page_order,
+			//	PCI_DMA_FROMDEVICE);
+			list_add_tail(&rxb->list, &rxq->rx_free);
+			rxq->free_count++;
+		} else
+			list_add_tail(&rxb->list, &rxq->rx_used);
+
 		spin_unlock_irqrestore(&rxq->lock, flags);
+
 		i = (i + 1) & RX_QUEUE_MASK;
 		/* If there are a lot of unused frames,
 		 * restock the Rx queue so ucode won't assert. */
 		if (fill_rx) {
 			count++;
 			if (count >= 8) {
-				priv->rxq.read = i;
+				rxq->read = i;
 				iwl3945_rx_replenish_now(priv);
 				count = 0;
 			}
@@ -1469,7 +1470,7 @@ static void iwl3945_rx_handle(struct iwl_priv *priv)
 	}
 
 	/* Backtrack one entry */
-	priv->rxq.read = i;
+	rxq->read = i;
 	if (fill_rx)
 		iwl3945_rx_replenish_now(priv);
 	else
@@ -1572,6 +1573,7 @@ static void iwl3945_print_event_log(struct iwl_priv *priv, u32 start_idx,
 	u32 event_size;	/* 2 u32s, or 3 u32s if timestamp recorded */
 	u32 ptr;        /* SRAM byte address of log data */
 	u32 ev, time, data; /* event log data */
+	unsigned long reg_flags;
 
 	if (num_events == 0)
 		return;
@@ -1585,25 +1587,37 @@ static void iwl3945_print_event_log(struct iwl_priv *priv, u32 start_idx,
 
 	ptr = base + EVENT_START_OFFSET + (start_idx * event_size);
 
+	/* Make sure device is powered up for SRAM reads */
+	spin_lock_irqsave(&priv->reg_lock, reg_flags);
+	iwl_grab_nic_access(priv);
+
+	/* Set starting address; reads will auto-increment */
+	_iwl_write_direct32(priv, HBUS_TARG_MEM_RADDR, ptr);
+	rmb();
+
 	/* "time" is actually "data" for mode 0 (no timestamp).
 	 * place event id # at far right for easier visual parsing. */
 	for (i = 0; i < num_events; i++) {
-		ev = iwl_read_targ_mem(priv, ptr);
-		ptr += sizeof(u32);
-		time = iwl_read_targ_mem(priv, ptr);
-		ptr += sizeof(u32);
+		ev = _iwl_read_direct32(priv, HBUS_TARG_MEM_RDAT);
+		time = _iwl_read_direct32(priv, HBUS_TARG_MEM_RDAT);
 		if (mode == 0) {
 			/* data, ev */
 			IWL_ERR(priv, "0x%08x\t%04u\n", time, ev);
 			trace_iwlwifi_dev_ucode_event(priv, 0, time, ev);
 		} else {
-			data = iwl_read_targ_mem(priv, ptr);
-			ptr += sizeof(u32);
+			data = _iwl_read_direct32(priv, HBUS_TARG_MEM_RDAT);
 			IWL_ERR(priv, "%010u\t0x%08x\t%04u\n", time, data, ev);
 			trace_iwlwifi_dev_ucode_event(priv, time, data, ev);
 		}
 	}
+
+	/* Allow device to power down */
+	iwl_release_nic_access(priv);
+	spin_unlock_irqrestore(&priv->reg_lock, reg_flags);
 }
+
+/* For sanity check only.  Actual size is determined by uCode, typ. 512 */
+#define IWL3945_MAX_EVENT_LOG_SIZE (512)
 
 void iwl3945_dump_nic_event_log(struct iwl_priv *priv)
 {
@@ -1625,6 +1639,18 @@ void iwl3945_dump_nic_event_log(struct iwl_priv *priv)
 	mode = iwl_read_targ_mem(priv, base + (1 * sizeof(u32)));
 	num_wraps = iwl_read_targ_mem(priv, base + (2 * sizeof(u32)));
 	next_entry = iwl_read_targ_mem(priv, base + (3 * sizeof(u32)));
+
+	if (capacity > IWL3945_MAX_EVENT_LOG_SIZE) {
+		IWL_ERR(priv, "Log capacity %d is bogus, limit to %d entries\n",
+			capacity, IWL3945_MAX_EVENT_LOG_SIZE);
+		capacity = IWL3945_MAX_EVENT_LOG_SIZE;
+	}
+
+	if (next_entry > IWL3945_MAX_EVENT_LOG_SIZE) {
+		IWL_ERR(priv, "Log write index %d is bogus, limit to %d\n",
+			next_entry, IWL3945_MAX_EVENT_LOG_SIZE);
+		next_entry = IWL3945_MAX_EVENT_LOG_SIZE;
+	}
 
 	size = num_wraps ? capacity : next_entry;
 
@@ -1766,6 +1792,7 @@ static void iwl3945_irq_tasklet(struct iwl_priv *priv)
 	if (inta & (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX)) {
 		iwl3945_rx_handle(priv);
 		priv->isr_stats.rx++;
+		iwl_leds_background(priv);
 		handled |= (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX);
 	}
 
@@ -2162,6 +2189,14 @@ static int iwl3945_read_ucode(struct iwl_priv *priv)
 		IWL_UCODE_MINOR(priv->ucode_ver),
 		IWL_UCODE_API(priv->ucode_ver),
 		IWL_UCODE_SERIAL(priv->ucode_ver));
+
+	snprintf(priv->hw->wiphy->fw_version,
+		 sizeof(priv->hw->wiphy->fw_version),
+		 "%u.%u.%u.%u",
+		 IWL_UCODE_MAJOR(priv->ucode_ver),
+		 IWL_UCODE_MINOR(priv->ucode_ver),
+		 IWL_UCODE_API(priv->ucode_ver),
+		 IWL_UCODE_SERIAL(priv->ucode_ver));
 
 	IWL_DEBUG_INFO(priv, "f/w package hdr ucode version raw = 0x%x\n",
 		       priv->ucode_ver);
@@ -2570,9 +2605,8 @@ static void __iwl3945_down(struct iwl_priv *priv)
 	iwl3945_hw_txq_ctx_stop(priv);
 	iwl3945_hw_rxq_stop(priv);
 
-	iwl_write_prph(priv, APMG_CLK_DIS_REG,
-				APMG_CLK_VAL_DMA_CLK_RQT);
-
+	/* Power-down device's busmaster DMA clocks */
+	iwl_write_prph(priv, APMG_CLK_DIS_REG, APMG_CLK_VAL_DMA_CLK_RQT);
 	udelay(5);
 
 	/* Stop the device, and put it in low power state */
@@ -2655,6 +2689,14 @@ static int __iwl3945_up(struct iwl_priv *priv)
 	if (test_bit(STATUS_RF_KILL_HW, &priv->status))
 		return 0;
 
+	/*
+	 * Reset saved/prior power-saving command, to force a power command
+	 * to get sent to device after any restart, e.g. after uCode error.
+	 * Power command might not otherwise get sent, if it matched the
+	 * last power command sent before the uCode error.
+	 */
+	iwl_power_cmd_initialize(priv);
+
 	for (i = 0; i < MAX_HW_RESTARTS; i++) {
 
 		iwl_clear_stations_table(priv);
@@ -2729,10 +2771,8 @@ static void iwl3945_bg_alive_start(struct work_struct *data)
  */
 static void iwl3945_rfkill_poll(struct work_struct *data)
 {
-
 	struct iwl_priv *priv =
 	    container_of(data, struct iwl_priv, rfkill_poll.work);
-
 	bool old_rfkill = test_bit(STATUS_RF_KILL_HW, &priv->status);
 	bool new_rfkill = !(iwl_read32(priv, CSR_GP_CNTRL)
 			& CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
@@ -3388,7 +3428,8 @@ static ssize_t store_debug_level(struct device *d,
 	return strnlen(buf, count);
 }
 
-//static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,			show_debug_level, store_debug_level);
+static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,
+			show_debug_level, store_debug_level);
 
 #endif /* CONFIG_IWLWIFI_DEBUG */
 
@@ -3403,7 +3444,7 @@ static ssize_t show_temperature(struct device *d,
 	return sprintf(buf, "%d\n", iwl3945_hw_get_temperature(priv));
 }
 
-//static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
+static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
 
 static ssize_t show_tx_power(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -3429,7 +3470,7 @@ static ssize_t store_tx_power(struct device *d,
 	return count;
 }
 
-//static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
+static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
 
 static ssize_t show_flags(struct device *d,
 			  struct device_attribute *attr, char *buf)
@@ -3463,7 +3504,7 @@ static ssize_t store_flags(struct device *d,
 	return count;
 }
 
-//static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
+static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
 
 static ssize_t show_filter_flags(struct device *d,
 				 struct device_attribute *attr, char *buf)
@@ -3499,7 +3540,8 @@ static ssize_t store_filter_flags(struct device *d,
 	return count;
 }
 
-//static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,		   store_filter_flags);
+static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,
+		   store_filter_flags);
 
 #ifdef CONFIG_IWL3945_SPECTRUM_MEASUREMENT
 
@@ -3570,7 +3612,8 @@ static ssize_t store_measurement(struct device *d,
 	return count;
 }
 
-//static DEVICE_ATTR(measurement, S_IRUSR | S_IWUSR,		   show_measurement, store_measurement);
+static DEVICE_ATTR(measurement, S_IRUSR | S_IWUSR,
+		   show_measurement, store_measurement);
 #endif /* CONFIG_IWL3945_SPECTRUM_MEASUREMENT */
 
 static ssize_t store_retry_rate(struct device *d,
@@ -3593,7 +3636,8 @@ static ssize_t show_retry_rate(struct device *d,
 	return sprintf(buf, "%d", priv->retry_rate);
 }
 
-//static DEVICE_ATTR(retry_rate, S_IWUSR | S_IRUSR, show_retry_rate,		   store_retry_rate);
+static DEVICE_ATTR(retry_rate, S_IWUSR | S_IRUSR, show_retry_rate,
+		   store_retry_rate);
 
 
 static ssize_t show_channels(struct device *d,
@@ -3603,7 +3647,7 @@ static ssize_t show_channels(struct device *d,
 	return 0;
 }
 
-//static DEVICE_ATTR(channels, S_IRUSR, show_channels, NULL);
+static DEVICE_ATTR(channels, S_IRUSR, show_channels, NULL);
 
 static ssize_t show_statistics(struct device *d,
 			       struct device_attribute *attr, char *buf)
@@ -3641,7 +3685,7 @@ static ssize_t show_statistics(struct device *d,
 	return len;
 }
 
-//static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
+static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
 
 static ssize_t show_antenna(struct device *d,
 			    struct device_attribute *attr, char *buf)
@@ -3679,7 +3723,7 @@ static ssize_t store_antenna(struct device *d,
 	return count;
 }
 
-//static DEVICE_ATTR(antenna, S_IWUSR | S_IRUGO, show_antenna, store_antenna);
+static DEVICE_ATTR(antenna, S_IWUSR | S_IRUGO, show_antenna, store_antenna);
 
 static ssize_t show_status(struct device *d,
 			   struct device_attribute *attr, char *buf)
@@ -3690,7 +3734,7 @@ static ssize_t show_status(struct device *d,
 	return sprintf(buf, "0x%08x\n", (int)priv->status);
 }
 
-//static DEVICE_ATTR(status, S_IRUGO, show_status, NULL);
+static DEVICE_ATTR(status, S_IRUGO, show_status, NULL);
 
 static ssize_t dump_error_log(struct device *d,
 			      struct device_attribute *attr,
@@ -3705,7 +3749,7 @@ static ssize_t dump_error_log(struct device *d,
 	return strnlen(buf, count);
 }
 
-//static DEVICE_ATTR(dump_errors, S_IWUSR, NULL, dump_error_log);
+static DEVICE_ATTR(dump_errors, S_IWUSR, NULL, dump_error_log);
 
 /*****************************************************************************
  *
@@ -3767,10 +3811,10 @@ static struct attribute *iwl3945_sysfs_entries[] = {
 	NULL*/
 };
 
-/*static struct attribute_group iwl3945_attribute_group = {
-	.name = NULL,		
-	.attrs = iwl3945_sysfs_entries,
-};*/
+//static struct attribute_group iwl3945_attribute_group = {
+//	.name = NULL,		/* put in device directory */
+//	.attrs = iwl3945_sysfs_entries,
+//};
 
 static struct ieee80211_ops iwl3945_hw_ops = {
 	.tx = iwl3945_mac_tx,
@@ -3993,13 +4037,6 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 	 */
 	spin_lock_init(&priv->reg_lock);
 
-	/* amp init */
-	err = priv->cfg->ops->lib->apm_ops.init(priv);
-	if (err < 0) {
-		IWL_DEBUG_INFO(priv, "Failed to init the card\n");
-		goto out_iounmap;
-	}
-
 	/***********************
 	 * 4. Read EEPROM
 	 * ********************/
@@ -4063,11 +4100,8 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
 
 	iwl_set_rxon_channel(priv,
 			     &priv->bands[IEEE80211_BAND_2GHZ].channels[5]);
-				 IOLog("1\n");
 	iwl3945_setup_deferred_work(priv);
-
 	iwl3945_setup_rx_handlers(priv);
-
 	iwl_power_initialize(priv);
 
 	/*********************************
@@ -4138,6 +4172,15 @@ static void __devexit iwl3945_pci_remove(struct pci_dev *pdev)
 	} else {
 		iwl3945_down(priv);
 	}
+
+	/*
+	 * Make sure device is reset to low power before unloading driver.
+	 * This may be redundant with iwl_down(), but there are paths to
+	 * run iwl_down() without calling apm_ops.stop(), and there are
+	 * paths to avoid running iwl_down() at all before leaving driver.
+	 * This (inexpensive) call *makes sure* device is reset.
+	 */
+	priv->cfg->ops->lib->apm_ops.stop(priv);
 
 	/* make sure we flush any pending irq or
 	 * tasklet for the driver

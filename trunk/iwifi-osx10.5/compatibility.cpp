@@ -272,7 +272,7 @@ static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
 static inline void skb_set_network_header(struct sk_buff *skb, const int offset)
 {
         //need to change skb->mac_data
-	//skb->network_header = skb->data + offset;
+	//skb->network_header = skb_data(skb) + offset;
 	/*u8 et[ETH_ALEN];
 		memset(et,0,sizeof(et));
 		mbuf_adj(skb->mac_data, ETH_ALEN);
@@ -1070,6 +1070,14 @@ int pci_register_driver(struct pci_driver * drv){
 
 	reg16 &= ~kIOPCICommandIOSpace;  // disable I/O space
 	my_pci_device->configWrite16(kIOPCIConfigCommand,reg16);
+	
+	// Hardware bug fix ???
+	reg16 = my_pci_device->configRead16(kIOPCIConfigCommand);
+	if (reg16 & 0x0400) {
+		printf("PCIe INTx Disable\n");
+		reg16 &= 0x0400;
+		my_pci_device->configWrite16(kIOPCIConfigCommand,reg16);
+	}
 		
 	int c=0;
 	u16 dID = my_pci_device->configRead16(kIOPCIConfigDeviceID);
@@ -2499,7 +2507,7 @@ static int __ieee80211_tx(struct ieee80211_local *local,
                  }
  
                  ret = drv_tx(local, skb);
-               /*  if (WARN_ON(ret != NETDEV_TX_OK && skb->len != len)) {
+               /*  if (WARN_ON(ret != NETDEV_TX_OK && skb_len(skb) != len)) {
                          dev_kfree_skb(skb);
                          ret = NETDEV_TX_OK;
                  }
@@ -2793,7 +2801,7 @@ static bool __ieee80211_parse_tx_radiotap(struct ieee80211_tx_data *tx,
 	/*
 	 * remove the radiotap header
 	 * iterator->max_length was sanity-checked against
-	 * skb->len by iterator init
+	 * skb_len(skb) by iterator init
 	 */
 	skb_pull(skb, iterator.max_length);
 
@@ -8331,7 +8339,7 @@ static struct sk_buff *ieee80211_rx_monitor(struct ieee80211_local *local, struc
  
                  prev_dev = sdata->dev;
             //     sdata->dev->stats.rx_packets++;
-            //     sdata->dev->stats.rx_bytes += skb->len;
+            //     sdata->dev->stats.rx_bytes += skb_len(skb);
          }
  
          if (prev_dev) {
@@ -9427,7 +9435,7 @@ static ieee80211_rx_result ieee80211_rx_h_amsdu(struct ieee80211_rx_data *rx)
 	skb->dev = dev;
 
 //	dev->stats.rx_packets++;
-//	dev->stats.rx_bytes += skb->len;
+//	dev->stats.rx_bytes += skb_len(skb);
 
 	/* skip the wrapping header */
 	eth = (struct ethhdr *) skb_pull(skb, sizeof(struct ethhdr));
@@ -9538,7 +9546,7 @@ static ieee80211_rx_result ieee80211_rx_h_data(struct ieee80211_rx_data *rx)
 	rx->skb->dev = dev;
 
 	//dev->stats.rx_packets++;
-	//dev->stats.rx_bytes += rx->skb->len;
+	//dev->stats.rx_bytes += rx->skb_len(skb);
 
 	ieee80211_deliver_skb(rx);
 
@@ -10543,7 +10551,7 @@ static void ieee80211_rx_cooked_monitor(struct ieee80211_rx_data *rx)
 
 		prev_dev = sdata->dev;
 		//sdata->dev->stats.rx_packets++;
-	//	sdata->dev->stats.rx_bytes += skb->len;
+	//	sdata->dev->stats.rx_bytes += skb_len(skb);
 	}
 
 	if (prev_dev) {

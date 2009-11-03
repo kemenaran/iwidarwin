@@ -123,6 +123,17 @@ int iwl_commit_rxon(struct iwl_priv *priv)
 		return -EINVAL;
 	}
 
+	/*
+	 * receive commit_rxon request
+	 * abort any previous channel switch if still in process
+	 */
+	if (priv->switch_rxon.switch_in_progress &&
+	    (priv->switch_rxon.channel != priv->staging_rxon.channel)) {
+		IWL_DEBUG_11H(priv, "abort channel switch on %d\n",
+		      le16_to_cpu(priv->switch_rxon.channel));
+		priv->switch_rxon.switch_in_progress = false;
+	}
+
 	/* If we don't need to send a full RXON, we can use
 	 * iwl_rxon_assoc_cmd which is used to reconfigure filter
 	 * and other flags for the current radio configuration. */
@@ -134,6 +145,7 @@ int iwl_commit_rxon(struct iwl_priv *priv)
 		}
 
 		memcpy(active_rxon, &priv->staging_rxon, sizeof(*active_rxon));
+		iwl_print_rx_config_cmd(priv);
 		return 0;
 	}
 
@@ -191,11 +203,7 @@ int iwl_commit_rxon(struct iwl_priv *priv)
 	priv->start_calib = 0;
 
 	/* Add the broadcast address so we can send broadcast frames */
-	if (iwl_rxon_add_station(priv, iwl_bcast_addr, 0) ==
-						IWL_INVALID_STATION) {
-		IWL_ERR(priv, "Error adding BROADCAST address for transmit.\n");
-		return -EIO;
-	}
+	iwl_add_bcast_station(priv);
 
 	/* If we have set the ASSOC_MSK and we are in BSS mode then
 	 * add the IWL_AP_ID to the station rate table */
@@ -233,6 +241,7 @@ int iwl_commit_rxon(struct iwl_priv *priv)
 		}
 		memcpy(active_rxon, &priv->staging_rxon, sizeof(*active_rxon));
 	}
+	iwl_print_rx_config_cmd(priv);
 
 	iwl_init_sensitivity(priv);
 
@@ -771,7 +780,7 @@ void iwl_rx_handle(struct iwl_priv *priv)
 		IWL_DEBUG_RX(priv, "r = %d, i = %d\n", r, i);
 
 	/* calculate total frames need to be restock after handling RX */
-	total_empty = r - priv->rxq.write_actual;
+	total_empty = r - rxq->write_actual;
 	if (total_empty < 0)
 		total_empty += RX_QUEUE_SIZE;
 
@@ -843,25 +852,28 @@ void iwl_rx_handle(struct iwl_priv *priv)
 				IWL_WARN(priv, "Claim null rxb?\n");
 		}
 
-		/* For now we just don't re-use anything.  We can tweak this
-		 * later to try and re-use notification packets and SKBs that
-		 * fail to Rx correctly */
-		if (rxb->page != NULL) {
-			priv->alloc_rxb_page--;
-			__free_pages(rxb->page, priv->hw_params.rx_page_order);
-			rxb->page = NULL;
-		}
-
+		/* Reuse the page if possible. For notification packets and
+		 * SKBs that fail to Rx correctly, add them back into the
+		 * rx_free list for reuse later. */
 		spin_lock_irqsave(&rxq->lock, flags);
-		list_add_tail(&rxb->list, &priv->rxq.rx_used);
+		if (rxb->page != NULL) {
+			rxb->page_dma = pci_map_page(priv->pci_dev, rxb->page);//,
+			//	0, PAGE_SIZE << priv->hw_params.rx_page_order,
+			//	PCI_DMA_FROMDEVICE);
+			list_add_tail(&rxb->list, &rxq->rx_free);
+			rxq->free_count++;
+		} else
+			list_add_tail(&rxb->list, &rxq->rx_used);
+
 		spin_unlock_irqrestore(&rxq->lock, flags);
+
 		i = (i + 1) & RX_QUEUE_MASK;
 		/* If there are a lot of unused frames,
 		 * restock the Rx queue so ucode wont assert. */
 		if (fill_rx) {
 			count++;
 			if (count >= 8) {
-				priv->rxq.read = i;
+				rxq->read = i;
 				iwl_rx_replenish_now(priv);
 				count = 0;
 			}
@@ -869,7 +881,7 @@ void iwl_rx_handle(struct iwl_priv *priv)
 	}
 
 	/* Backtrack one entry */
-	priv->rxq.read = i;
+	rxq->read = i;
 	if (fill_rx)
 		iwl_rx_replenish_now(priv);
 	else
@@ -889,6 +901,7 @@ static void iwl_irq_tasklet_legacy(struct iwl_priv *priv)
 	u32 inta, handled = 0;
 	u32 inta_fh;
 	unsigned long flags;
+	u32 i;
 #ifdef CONFIG_IWLWIFI_DEBUG
 	u32 inta_mask;
 #endif
@@ -1006,19 +1019,17 @@ static void iwl_irq_tasklet_legacy(struct iwl_priv *priv)
 		handled |= CSR_INT_BIT_SW_ERR;
 	}
 
-	/* uCode wakes up after power-down sleep */
+	/*
+	 * uCode wakes up after power-down sleep.
+	 * Tell device about any new tx or host commands enqueued,
+	 * and about any Rx buffers made available while asleep.
+	 */
 	if (inta & CSR_INT_BIT_WAKEUP) {
 		IWL_DEBUG_ISR(priv, "Wakeup interrupt\n");
 		iwl_rx_queue_update_write_ptr(priv, &priv->rxq);
-		iwl_txq_update_write_ptr(priv, &priv->txq[0]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[1]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[2]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[3]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[4]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[5]);
-
+		for (i = 0; i < priv->hw_params.max_txq_num; i++)
+			iwl_txq_update_write_ptr(priv, &priv->txq[i]);
 		priv->isr_stats.wakeup++;
-
 		handled |= CSR_INT_BIT_WAKEUP;
 	}
 
@@ -1032,11 +1043,12 @@ static void iwl_irq_tasklet_legacy(struct iwl_priv *priv)
 		handled |= (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX);
 	}
 
+	/* This "Tx" DMA channel is used only for loading uCode */
 	if (inta & CSR_INT_BIT_FH_TX) {
-		IWL_DEBUG_ISR(priv, "Tx interrupt\n");
+		IWL_DEBUG_ISR(priv, "uCode load interrupt\n");
 		priv->isr_stats.tx++;
 		handled |= CSR_INT_BIT_FH_TX;
-		/* FH finished to write, send event */
+		/* Wake up uCode load routine, now that load is complete */
 		priv->ucode_write_complete = 1;
 		wake_up_interruptible(&priv->wait_command_queue);
 	}
@@ -1074,6 +1086,7 @@ static void iwl_irq_tasklet(struct iwl_priv *priv)
 	u32 inta = 0;
 	u32 handled = 0;
 	unsigned long flags;
+	u32 i;
 #ifdef CONFIG_IWLWIFI_DEBUG
 	u32 inta_mask;
 #endif
@@ -1184,12 +1197,8 @@ static void iwl_irq_tasklet(struct iwl_priv *priv)
 	if (inta & CSR_INT_BIT_WAKEUP) {
 		IWL_DEBUG_ISR(priv, "Wakeup interrupt\n");
 		iwl_rx_queue_update_write_ptr(priv, &priv->rxq);
-		iwl_txq_update_write_ptr(priv, &priv->txq[0]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[1]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[2]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[3]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[4]);
-		iwl_txq_update_write_ptr(priv, &priv->txq[5]);
+		for (i = 0; i < priv->hw_params.max_txq_num; i++)
+			iwl_txq_update_write_ptr(priv, &priv->txq[i]);
 
 		priv->isr_stats.wakeup++;
 
@@ -1233,12 +1242,13 @@ static void iwl_irq_tasklet(struct iwl_priv *priv)
 		iwl_leds_background(priv);
 	}
 
+	/* This "Tx" DMA channel is used only for loading uCode */
 	if (inta & CSR_INT_BIT_FH_TX) {
 		iwl_write32(priv, CSR_FH_INT_STATUS, CSR49_FH_INT_TX_MASK);
-		IWL_DEBUG_ISR(priv, "Tx interrupt\n");
+		IWL_DEBUG_ISR(priv, "uCode load interrupt\n");
 		priv->isr_stats.tx++;
 		handled |= CSR_INT_BIT_FH_TX;
-		/* FH finished to write, send event */
+		/* Wake up uCode load routine, now that load is complete */
 		priv->ucode_write_complete = 1;
 		wake_up_interruptible(&priv->wait_command_queue);
 	}
@@ -1376,6 +1386,14 @@ static int iwl_read_ucode(struct iwl_priv *priv)
 	       IWL_UCODE_MINOR(priv->ucode_ver),
 	       IWL_UCODE_API(priv->ucode_ver),
 	       IWL_UCODE_SERIAL(priv->ucode_ver));
+
+	snprintf(priv->hw->wiphy->fw_version,
+		 sizeof(priv->hw->wiphy->fw_version),
+		 "%u.%u.%u.%u",
+		 IWL_UCODE_MAJOR(priv->ucode_ver),
+		 IWL_UCODE_MINOR(priv->ucode_ver),
+		 IWL_UCODE_API(priv->ucode_ver),
+		 IWL_UCODE_SERIAL(priv->ucode_ver));
 
 	if (build)
 		IWL_DEBUG_INFO(priv, "Build %u\n", build);
@@ -1648,6 +1666,7 @@ static void iwl_print_event_log(struct iwl_priv *priv, u32 start_idx,
 	u32 event_size; /* 2 u32s, or 3 u32s if timestamp recorded */
 	u32 ptr;        /* SRAM byte address of log data */
 	u32 ev, time, data; /* event log data */
+	unsigned long reg_flags;
 
 	if (num_events == 0)
 		return;
@@ -1663,26 +1682,38 @@ static void iwl_print_event_log(struct iwl_priv *priv, u32 start_idx,
 
 	ptr = base + EVENT_START_OFFSET + (start_idx * event_size);
 
+	/* Make sure device is powered up for SRAM reads */
+	spin_lock_irqsave(&priv->reg_lock, reg_flags);
+	iwl_grab_nic_access(priv);
+
+	/* Set starting address; reads will auto-increment */
+	_iwl_write_direct32(priv, HBUS_TARG_MEM_RADDR, ptr);
+	rmb();
+
 	/* "time" is actually "data" for mode 0 (no timestamp).
 	* place event id # at far right for easier visual parsing. */
 	for (i = 0; i < num_events; i++) {
-		ev = iwl_read_targ_mem(priv, ptr);
-		ptr += sizeof(u32);
-		time = iwl_read_targ_mem(priv, ptr);
-		ptr += sizeof(u32);
+		ev = _iwl_read_direct32(priv, HBUS_TARG_MEM_RDAT);
+		time = _iwl_read_direct32(priv, HBUS_TARG_MEM_RDAT);
 		if (mode == 0) {
 			/* data, ev */
 			trace_iwlwifi_dev_ucode_event(priv, 0, time, ev);
 			IWL_ERR(priv, "EVT_LOG:0x%08x:%04u\n", time, ev);
 		} else {
-			data = iwl_read_targ_mem(priv, ptr);
-			ptr += sizeof(u32);
+			data = _iwl_read_direct32(priv, HBUS_TARG_MEM_RDAT);
 			IWL_ERR(priv, "EVT_LOGT:%010u:0x%08x:%04u\n",
 					time, data, ev);
 			trace_iwlwifi_dev_ucode_event(priv, time, data, ev);
 		}
 	}
+
+	/* Allow device to power down */
+	iwl_release_nic_access(priv);
+	spin_unlock_irqrestore(&priv->reg_lock, reg_flags);
 }
+
+/* For sanity check only.  Actual size is determined by uCode, typ. 512 */
+#define MAX_EVENT_LOG_SIZE (512)
 
 void iwl_dump_nic_event_log(struct iwl_priv *priv)
 {
@@ -1708,6 +1739,18 @@ void iwl_dump_nic_event_log(struct iwl_priv *priv)
 	mode = iwl_read_targ_mem(priv, base + (1 * sizeof(u32)));
 	num_wraps = iwl_read_targ_mem(priv, base + (2 * sizeof(u32)));
 	next_entry = iwl_read_targ_mem(priv, base + (3 * sizeof(u32)));
+
+	if (capacity > MAX_EVENT_LOG_SIZE) {
+		IWL_ERR(priv, "Log capacity %d is bogus, limit to %d entries\n",
+			capacity, MAX_EVENT_LOG_SIZE);
+		capacity = MAX_EVENT_LOG_SIZE;
+	}
+
+	if (next_entry > MAX_EVENT_LOG_SIZE) {
+		IWL_ERR(priv, "Log write index %d is bogus, limit to %d\n",
+			next_entry, MAX_EVENT_LOG_SIZE);
+		next_entry = MAX_EVENT_LOG_SIZE;
+	}
 
 	size = num_wraps ? capacity : next_entry;
 
@@ -1894,18 +1937,16 @@ static void __iwl_down(struct iwl_priv *priv)
 
 	/* device going down, Stop using ICT table */
 	iwl_disable_ict(priv);
-	spin_lock_irqsave(&priv->lock, flags);
-	iwl_clear_bit(priv, CSR_GP_CNTRL,
-			 CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
-	spin_unlock_irqrestore(&priv->lock, flags);
 
 	iwl_txq_ctx_stop(priv);
 	iwl_rxq_stop(priv);
 
-	iwl_write_prph(priv, APMG_CLK_DIS_REG,
-				APMG_CLK_VAL_DMA_CLK_RQT);
-
+	/* Power-down device's busmaster DMA clocks */
+	iwl_write_prph(priv, APMG_CLK_DIS_REG, APMG_CLK_VAL_DMA_CLK_RQT);
 	udelay(5);
+
+	/* Make sure (redundant) we've released our request to stay awake */
+	iwl_clear_bit(priv, CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
 
 	/* Stop the device, and put it in low power state */
 	priv->cfg->ops->lib->apm_ops.stop(priv);
@@ -2043,6 +2084,14 @@ static int __iwl_up(struct iwl_priv *priv)
 	 * data SRAM for a clean start when the runtime program first loads. */
 	memcpy(priv->ucode_data_backup.v_addr, priv->ucode_data.v_addr,
 	       priv->ucode_data.len);
+
+	/*
+	 * Reset saved/prior power-saving command, to force a power command
+	 * to get sent to device after any restart, e.g. after uCode error.
+	 * Power command might not otherwise get sent, if it matched the
+	 * last power command sent before the uCode error.
+	 */
+	iwl_power_cmd_initialize(priv);
 
 	for (i = 0; i < MAX_HW_RESTARTS; i++) {
 
@@ -2515,7 +2564,7 @@ void iwl_config_ap(struct iwl_priv *priv)
 		spin_lock_irqsave(&priv->lock, flags);
 		iwl_activate_qos(priv, 1);
 		spin_unlock_irqrestore(&priv->lock, flags);
-		iwl_rxon_add_station(priv, iwl_bcast_addr, 0);
+		iwl_add_bcast_station(priv);
 	}
 	iwl_send_beacon_cmd(priv);
 
@@ -2705,7 +2754,8 @@ static ssize_t store_debug_level(struct device *d,
 	return strnlen(buf, count);
 }
 
-//static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,			show_debug_level, store_debug_level);
+static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO,
+			show_debug_level, store_debug_level);
 
 
 #endif /* CONFIG_IWLWIFI_DEBUG */
@@ -2722,7 +2772,7 @@ static ssize_t show_temperature(struct device *d,
 	return sprintf(buf, "%d\n", priv->temperature);
 }
 
-//static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
+static DEVICE_ATTR(temperature, S_IRUGO, show_temperature, NULL);
 
 static ssize_t show_tx_power(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -2757,7 +2807,7 @@ static ssize_t store_tx_power(struct device *d,
 	return ret;
 }
 
-//static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
+static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, show_tx_power, store_tx_power);
 
 static ssize_t show_flags(struct device *d,
 			  struct device_attribute *attr, char *buf)
@@ -2795,7 +2845,7 @@ static ssize_t store_flags(struct device *d,
 	return count;
 }
 
-//static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
+static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, show_flags, store_flags);
 
 static ssize_t show_filter_flags(struct device *d,
 				 struct device_attribute *attr, char *buf)
@@ -2836,7 +2886,8 @@ static ssize_t store_filter_flags(struct device *d,
 	return count;
 }
 
-//static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,		   store_filter_flags);
+static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, show_filter_flags,
+		   store_filter_flags);
 
 
 static ssize_t show_statistics(struct device *d,
@@ -2875,7 +2926,7 @@ static ssize_t show_statistics(struct device *d,
 	return len;
 }
 
-//static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
+static DEVICE_ATTR(statistics, S_IRUGO, show_statistics, NULL);
 
 static ssize_t show_rts_ht_protection(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -2908,7 +2959,8 @@ static ssize_t store_rts_ht_protection(struct device *d,
 	return ret;
 }
 
-//static DEVICE_ATTR(rts_ht_protection, S_IWUSR | S_IRUGO,			show_rts_ht_protection, store_rts_ht_protection);
+static DEVICE_ATTR(rts_ht_protection, S_IWUSR | S_IRUGO,
+			show_rts_ht_protection, store_rts_ht_protection);
 
 
 /*****************************************************************************
@@ -2960,8 +3012,102 @@ static void iwl_cancel_deferred_work(struct iwl_priv *priv)
 	del_timer_sync(&priv->statistics_periodic);
 }
 
+static void iwl_init_hw_rates(struct iwl_priv *priv,
+			      struct ieee80211_rate *rates)
+{
+	int i;
+
+	for (i = 0; i < IWL_RATE_COUNT_LEGACY; i++) {
+		rates[i].bitrate = iwl_rates[i].ieee * 5;
+		rates[i].hw_value = i; /* Rate scaling will work on indexes */
+		rates[i].hw_value_short = i;
+		rates[i].flags = 0;
+		if ((i >= IWL_FIRST_CCK_RATE) && (i <= IWL_LAST_CCK_RATE)) {
+			/*
+			 * If CCK != 1M then set short preamble rate flag.
+			 */
+			rates[i].flags |=
+				(iwl_rates[i].plcp == IWL_RATE_1M_PLCP) ?
+					0 : IEEE80211_RATE_SHORT_PREAMBLE;
+		}
+	}
+}
+
+static int iwl_init_drv(struct iwl_priv *priv)
+{
+	int ret;
+
+	priv->ibss_beacon = NULL;
+
+	spin_lock_init(&priv->lock);
+	spin_lock_init(&priv->sta_lock);
+	spin_lock_init(&priv->hcmd_lock);
+
+	INIT_LIST_HEAD(&priv->free_frames);
+
+	mutex_init(&priv->mutex);
+
+	/* Clear the driver's (not device's) station table */
+	iwl_clear_stations_table(priv);
+
+	priv->ieee_channels = NULL;
+	priv->ieee_rates = NULL;
+	priv->band = IEEE80211_BAND_2GHZ;
+
+	priv->iw_mode = NL80211_IFTYPE_STATION;
+	if (priv->cfg->support_sm_ps)
+		priv->current_ht_config.sm_ps = WLAN_HT_CAP_SM_PS_DYNAMIC;
+	else
+		priv->current_ht_config.sm_ps = WLAN_HT_CAP_SM_PS_DISABLED;
+
+	/* Choose which receivers/antennas to use */
+	if (priv->cfg->ops->hcmd->set_rxon_chain)
+		priv->cfg->ops->hcmd->set_rxon_chain(priv);
+
+	iwl_init_scan_params(priv);
+
+	iwl_reset_qos(priv);
+
+	priv->qos_data.qos_active = 0;
+	priv->qos_data.qos_cap.val = 0;
+
+	priv->rates_mask = IWL_RATES_MASK;
+	/* Set the tx_power_user_lmt to the lowest power level
+	 * this value will get overwritten by channel max power avg
+	 * from eeprom */
+	priv->tx_power_user_lmt = IWL_TX_POWER_TARGET_POWER_MIN;
+
+	ret = iwl_init_channel_map(priv);
+	if (ret) {
+		IWL_ERR(priv, "initializing regulatory failed: %d\n", ret);
+		goto err;
+	}
+
+	ret = iwlcore_init_geos(priv);
+	if (ret) {
+		IWL_ERR(priv, "initializing geos failed: %d\n", ret);
+		goto err_free_channel_map;
+	}
+	iwl_init_hw_rates(priv, priv->ieee_rates);
+
+	return 0;
+
+err_free_channel_map:
+	iwl_free_channel_map(priv);
+err:
+	return ret;
+}
+
+static void iwl_uninit_drv(struct iwl_priv *priv)
+{
+	iwl_calib_free_results(priv);
+	iwlcore_free_geos(priv);
+	iwl_free_channel_map(priv);
+	kfree(priv->scan);
+}
+
 static struct attribute *iwl_sysfs_entries[] = {
-/*	&dev_attr_flags.attr,
+	/*&dev_attr_flags.attr,
 	&dev_attr_filter_flags.attr,
 	&dev_attr_statistics.attr,
 	&dev_attr_temperature.attr,
@@ -2973,10 +3119,10 @@ static struct attribute *iwl_sysfs_entries[] = {
 	NULL*/
 };
 
-/*static struct attribute_group iwl_attribute_group = {
-	.name = NULL,		
-	.attrs = iwl_sysfs_entries,
-};*/
+//static struct attribute_group iwl_attribute_group = {
+//	.name = NULL,		/* put in device directory */
+//	.attrs = iwl_sysfs_entries,
+//};
 
 static struct ieee80211_ops iwl_hw_ops = {
 	.tx = iwl_mac_tx,
@@ -3102,12 +3248,6 @@ static int iwl_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		goto out_iounmap;
 	}
 
-	/* amp init */
-	err = priv->cfg->ops->lib->apm_ops.init(priv);
-	if (err < 0) {
-		IWL_ERR(priv, "Failed to init APMG\n");
-		goto out_iounmap;
-	}
 	/*****************
 	 * 4. Read EEPROM
 	 *****************/
@@ -3253,6 +3393,15 @@ static void __devexit iwl_pci_remove(struct pci_dev *pdev)
 		iwl_down(priv);
 	}
 
+	/*
+	 * Make sure device is reset to low power before unloading driver.
+	 * This may be redundant with iwl_down(), but there are paths to
+	 * run iwl_down() without calling apm_ops.stop(), and there are
+	 * paths to avoid running iwl_down() at all before leaving driver.
+	 * This (inexpensive) call *makes sure* device is reset.
+	 */
+	priv->cfg->ops->lib->apm_ops.stop(priv);
+
 	iwl_tt_exit(priv);
 
 	/* make sure we flush any pending irq or
@@ -3334,14 +3483,6 @@ static struct pci_device_id iwl_hw_card_ids[] = {
 	{IWL_PCI_DEVICE(0x423D, PCI_ANY_ID, iwl5150_agn_cfg)},
 
 /* 6x00 Series */
-	{IWL_PCI_DEVICE(0x008D, 0x1301, iwl6000h_2agn_cfg)},
-	{IWL_PCI_DEVICE(0x008D, 0x1321, iwl6000h_2agn_cfg)},
-	{IWL_PCI_DEVICE(0x008D, 0x1326, iwl6000h_2abg_cfg)},
-	{IWL_PCI_DEVICE(0x008D, 0x1306, iwl6000h_2abg_cfg)},
-	{IWL_PCI_DEVICE(0x008D, 0x1307, iwl6000h_2bg_cfg)},
-	{IWL_PCI_DEVICE(0x008E, 0x1311, iwl6000h_2agn_cfg)},
-	{IWL_PCI_DEVICE(0x008E, 0x1316, iwl6000h_2abg_cfg)},
-
 	{IWL_PCI_DEVICE(0x422B, 0x1101, iwl6000_3agn_cfg)},
 	{IWL_PCI_DEVICE(0x422B, 0x1121, iwl6000_3agn_cfg)},
 	{IWL_PCI_DEVICE(0x422C, 0x1301, iwl6000i_2agn_cfg)},
@@ -3381,7 +3522,7 @@ static struct pci_device_id iwl_hw_card_ids[] = {
 
 	{0}
 };
-//MODULE_DEVICE_TABLE(pci, iwl_hw_card_ids);
+MODULE_DEVICE_TABLE(pci, iwl_hw_card_ids);
 
 static struct pci_driver iwl_driver = {
 	.name = DRV_NAME,
